@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 /** Crockford base32 alphabet (no I, L, O, U) for unambiguous human-readable references (ADR-012). */
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
@@ -11,6 +9,14 @@ export const RefPrefix = {
   IMPORT_BATCH: 'KBS-B-',
 } as const;
 export type RefPrefix = (typeof RefPrefix)[keyof typeof RefPrefix];
+
+function randomBytes(length: number): Uint8Array {
+  // Web Crypto is available in Node 22, browsers and Hermes (React Native); no node:crypto import so the
+  // package stays portable across API, web and mobile.
+  const c = (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } }).crypto;
+  if (!c?.getRandomValues) throw new Error('crypto.getRandomValues is not available');
+  return c.getRandomValues(new Uint8Array(length));
+}
 
 export function makePublicRef(prefix: RefPrefix, length = 8): string {
   const bytes = randomBytes(length);
