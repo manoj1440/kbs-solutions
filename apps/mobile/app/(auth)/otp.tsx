@@ -1,17 +1,20 @@
 import { ApiClientError, type AuthSessionResponse, type OtpRequestResponse } from '@kbs/shared';
 import * as Device from 'expo-device';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, TextInput, View } from 'react-native';
 
-import { Button, ErrorText, Heading, Input, Label, Muted, Screen } from '@/components/ui';
+import { Button, ErrorText, Heading, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { routeFor, useSession } from '@/lib/session';
 
-/** S07 OTP verification — masked number, resend with countdown, expiry handling (REQ-12). */
+const BOXES = 6;
+
+/** S07 OTP verification — 6 boxes, masked number, edit, resend countdown (REQ-12). */
 export default function OtpScreen() {
   const params = useLocalSearchParams<{ challengeId: string; mobile: string; purpose: string; resendAfterSec: string }>();
   const { signIn, refresh } = useSession();
+  const input = useRef<TextInput>(null);
   const [challengeId, setChallengeId] = useState(params.challengeId);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -58,24 +61,55 @@ export default function OtpScreen() {
     }
   }
 
-  const masked = `+91 •••••• ${(params.mobile ?? '').slice(-4)}`;
+  const masked = `+91 ${(params.mobile ?? '').slice(0, 2)}••• ${(params.mobile ?? '').slice(-4)}`;
+  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+  const ss = String(secondsLeft % 60).padStart(2, '0');
   return (
-    <Screen>
-      <View className="gap-6">
-        <View className="gap-2">
-          <Heading>Enter the code</Heading>
-          <Muted>Sent to {masked}</Muted>
+    <Screen className="pt-14">
+      <View className="gap-8">
+        <View className="gap-1">
+          <Heading>OTP Verification</Heading>
+          <Muted>
+            Enter the 6-digit OTP sent to{'\n'}
+            {masked}{' '}
+            <Text className="font-semibold text-primary" onPress={() => router.back()}>
+              Edit
+            </Text>
+          </Muted>
         </View>
-        <View>
-          <Label>One-time code</Label>
-          <Input keyboardType="number-pad" maxLength={6} autoComplete="sms-otp" textContentType="oneTimeCode" value={code} onChangeText={(v) => setCode(v.replace(/\D/g, ''))} autoFocus />
+        <Pressable accessibilityRole="button" onPress={() => input.current?.focus()} className="relative">
+          <View className="flex-row justify-between" pointerEvents="none">
+            {Array.from({ length: BOXES }, (_, i) => (
+              <View key={i} className={`h-14 w-12 items-center justify-center rounded-xl border-2 ${code.length === i ? 'border-primary' : 'border-border'} bg-card`}>
+                <Text className="text-xl font-semibold">{code[i] ?? ''}</Text>
+              </View>
+            ))}
+          </View>
+          <TextInput
+            ref={input}
+            value={code}
+            onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, BOXES))}
+            keyboardType="number-pad"
+            autoComplete="sms-otp"
+            textContentType="oneTimeCode"
+            autoFocus
+            className="absolute inset-0 opacity-0"
+          />
+        </Pressable>
+        <View className="items-center">
+          {secondsLeft > 0 ? (
+            <Muted>
+              Resend OTP in {mm}:{ss}
+            </Muted>
+          ) : (
+            <Pressable accessibilityRole="button" onPress={resend}>
+              <Text className="font-semibold text-primary">Resend OTP</Text>
+            </Pressable>
+          )}
         </View>
         <ErrorText>{error}</ErrorText>
-        <Button title={busy ? 'Verifying…' : 'Continue'} disabled={busy || code.length !== 6} onPress={verify} />
-        <View className="flex-row justify-between">
-          <Button title="Change number" variant="ghost" onPress={() => router.back()} />
-          <Button title={secondsLeft > 0 ? `Resend in ${secondsLeft}s` : 'Resend code'} variant="ghost" disabled={secondsLeft > 0} onPress={resend} />
-        </View>
+        <Button title={busy ? 'Verifying…' : 'Verify OTP'} disabled={busy || code.length !== BOXES} onPress={verify} className="rounded-xl" />
+        <Muted className="text-center">Didn&apos;t receive OTP?</Muted>
       </View>
     </Screen>
   );

@@ -1,12 +1,12 @@
 import { ApiClientError, isValidE164India, type OtpRequestResponse } from '@kbs/shared';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
-import { Button, ErrorText, Heading, Input, Label, Muted, Screen } from '@/components/ui';
+import { Button, ErrorText, Heading, Input, Label, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 
-/** S06 Mobile number — same UI whether or not the number exists (REQ-23 §23.1). */
+/** S06 Login — mobile + OTP only (REQ-12; passwords are never used). */
 export default function MobileScreen() {
   const { purpose = 'LOGIN' } = useLocalSearchParams<{ purpose?: 'LOGIN' | 'ADVISOR_SIGNUP' }>();
   const [mobile, setMobile] = useState('');
@@ -30,20 +30,41 @@ export default function MobileScreen() {
     }
   }
 
+  const signup = purpose === 'ADVISOR_SIGNUP';
   return (
-    <Screen>
-      <View className="gap-6">
-        <View className="gap-2">
-          <Heading>{purpose === 'ADVISOR_SIGNUP' ? 'Register as an Advisor' : 'Sign in'}</Heading>
-          <Muted>We will send a one-time code to your registered mobile number.</Muted>
+    <Screen className="pt-14">
+      <View className="gap-8">
+        <View className="gap-1">
+          <Text className="text-3xl font-bold text-primary">KBS</Text>
+          <Heading className="text-2xl">{signup ? 'Create Account' : 'Welcome Back'}</Heading>
+          <Muted>{signup ? 'Register as an Advisor to continue' : 'Sign in to continue'}</Muted>
         </View>
         <View>
-          <Label>Mobile number</Label>
-          <Input keyboardType="phone-pad" autoComplete="tel" placeholder="98765 43210" value={mobile} onChangeText={setMobile} autoFocus />
+          <Label>📱 Mobile Number</Label>
+          <Input keyboardType="phone-pad" autoComplete="tel" placeholder="98765 43210" value={mobile} onChangeText={setMobile} autoFocus className="rounded-xl" />
         </View>
         <ErrorText>{error}</ErrorText>
-        <Button title={busy ? 'Sending…' : 'Send code'} disabled={busy} onPress={submit} />
-        <Muted>By continuing you agree to the KBS privacy notice. Passwords are never used.</Muted>
+        <Button title={busy ? 'Sending…' : signup ? 'Send OTP' : 'Login'} disabled={busy} onPress={submit} className="rounded-xl" />
+        <Muted className="text-center text-xs">We will send a one-time code — passwords are never used.</Muted>
+        <View className="items-center">
+          {signup ? (
+            <Link href="/(auth)/mobile?purpose=LOGIN" asChild>
+              <Pressable accessibilityRole="button">
+                <Muted>
+                  Already registered? <Text className="font-semibold text-primary">Sign in</Text>
+                </Muted>
+              </Pressable>
+            </Link>
+          ) : (
+            <Link href="/(auth)/mobile?purpose=ADVISOR_SIGNUP" asChild>
+              <Pressable accessibilityRole="button">
+                <Muted>
+                  New here? <Text className="font-semibold text-primary">Create Account</Text>
+                </Muted>
+              </Pressable>
+            </Link>
+          )}
+        </View>
       </View>
     </Screen>
   );
