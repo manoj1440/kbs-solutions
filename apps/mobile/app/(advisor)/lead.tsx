@@ -20,6 +20,8 @@ interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   employmentType: string;
   annualIncomeItr: number;
   operationalEvents: OperationalEvent[];
+  followUps: { id: string; text: string; dueAt: string; doneAt: string | null; owner: { id: string; fullName: string } }[];
+  remarks: { id: string; text: string; at: string; editedAt: string | null; author: { id: string; fullName: string } }[];
   bankStatus: { matched: boolean; provenance: string; lastMatchedAt: string | null; lastMatchedBatchRef: string | null; finalDecisionDate: string | null; raw: Record<string, string> | null };
   bankRemarks: { remarks: RemarkField[]; kyc: RemarkField[] };
   bankReference: { value: string | null; kind?: string; status?: string; label?: string; at?: string };
@@ -60,6 +62,9 @@ export default function LeadScreen() {
   const toggle = (k: string) => setExpanded((p) => ({ ...p, [k]: !p[k] }));
   const [error, setError] = useState<string | null>(null);
   const [ref, setRef] = useState('');
+  const [taskText, setTaskText] = useState('');
+  const [taskDays, setTaskDays] = useState(1);
+  const [remark, setRemark] = useState('');
   const [kind, setKind] = useState<'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER' | 'OTHER'>('APPLICATION_NO');
   const load = useCallback(async () => {
     try {
@@ -91,6 +96,32 @@ export default function LeadScreen() {
       await load();
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not save the reference.');
+    }
+  };
+  const addTask = async () => {
+    try {
+      await api.post(`/leads/${id}/follow-ups`, { text: taskText.trim(), dueAt: new Date(Date.now() + taskDays * 86_400_000).toISOString() });
+      setTaskText('');
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Could not create the task.');
+    }
+  };
+  const addRemark = async () => {
+    try {
+      await api.post(`/leads/${id}/remarks`, { text: remark.trim() });
+      setRemark('');
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Could not add the remark.');
+    }
+  };
+  const doneTask = async (taskId: string) => {
+    try {
+      await api.post(`/follow-ups/${taskId}/done`, {});
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Could not update the task.');
     }
   };
   return (
@@ -164,6 +195,40 @@ export default function LeadScreen() {
                 </Muted>
               ))}
             </Card>
+            <Section title="Follow-up tasks & my remarks" subtitle="KBS activity — never changes bank status" open={!!expanded.tasks} onToggle={() => toggle('tasks')}>
+              {l.followUps.map((t) => (
+                <View key={t.id} className="gap-0.5">
+                  <View className="flex-row items-center gap-2">
+                    <Badge label="Follow-up task" variant={t.doneAt ? 'secondary' : 'warning'} />
+                    <Text className="flex-1 text-xs">{t.text}</Text>
+                  </View>
+                  <Muted>
+                    {t.owner.fullName} · due {formatDateTime(t.dueAt)}
+                    {t.doneAt ? ` · done` : ''}
+                  </Muted>
+                  {!t.doneAt ? <Button title="Mark done" variant="ghost" onPress={() => void doneTask(t.id)} /> : null}
+                </View>
+              ))}
+              <Label>New follow-up task</Label>
+              <Input value={taskText} onChangeText={setTaskText} placeholder="What needs to be done" />
+              <View className="flex-row gap-2">
+                {[1, 3, 7].map((d) => (
+                  <Button key={d} title={`in ${d} day${d > 1 ? 's' : ''}`} variant={taskDays === d ? 'default' : 'outline'} onPress={() => setTaskDays(d)} />
+                ))}
+              </View>
+              <Button title="Add follow-up task" disabled={taskText.trim().length < 3} onPress={() => void addTask()} />
+              {l.remarks.map((r) => (
+                <View key={r.id} className="gap-0.5 border-t border-border pt-2">
+                  <Text className="text-xs">{r.text}</Text>
+                  <Muted>
+                    {r.author.fullName} · {formatDateTime(r.at)}
+                  </Muted>
+                </View>
+              ))}
+              <Label>Add operational remark</Label>
+              <Input value={remark} onChangeText={setRemark} placeholder="Dated note with your name attached" />
+              <Button title="Add remark" variant="outline" disabled={!remark.trim()} onPress={() => void addRemark()} />
+            </Section>
             <Section title="C · Bank reason / remarks" subtitle="Named bank fields, verbatim" open={!!expanded.remarks} onToggle={() => toggle('remarks')}>
               {l.bankRemarks.remarks.map((f) => (
                 <View key={f.field} className="flex-row justify-between gap-2">

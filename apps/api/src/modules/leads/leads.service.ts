@@ -418,6 +418,10 @@ export class LeadsService {
     const tokens = this.blankTokens();
     const matched = l.statusSnapshot !== null;
     const current = l.linkages.find((x) => !x.supersededAt) ?? null;
+    const [followUps, remarks] = await Promise.all([
+      this.prisma.client.followUpTask.findMany({ where: { leadId: id }, orderBy: { dueAt: 'asc' }, include: { owner: { select: { id: true, fullName: true } } } }),
+      this.prisma.client.operationalRemark.findMany({ where: { entityType: 'Lead', entityId: id }, orderBy: { at: 'desc' }, include: { author: { select: { id: true, fullName: true } } } }),
+    ]);
     const row = this.toRow({ ...l, linkages: current ? [current] : [] }, await this.crosswalks([l]), tokens);
     const s = l.statusSnapshot;
     return {
@@ -436,7 +440,9 @@ export class LeadsService {
       bureauAckAt: l.bureauAckAt.toISOString(),
       reportingParentUserIdSnapshot: l.reportingParentUserIdSnapshot,
       /** Section A: KBS operational events, explicitly labelled and never a bank stage (REQ-11 §11.9, REQ-14 §14.1). */
-      operationalEvents: this.operationalEvents(l),
+      operationalEvents: this.operationalEvents(l, followUps, remarks),
+      followUps: followUps.map((t) => ({ id: t.id, text: t.text, dueAt: t.dueAt.toISOString(), doneAt: t.doneAt?.toISOString() ?? null, owner: t.owner })),
+      remarks: remarks.map((r) => ({ id: r.id, text: r.text, at: r.at.toISOString(), editedAt: r.editedAt?.toISOString() ?? null, author: r.author })),
       bankStatus: {
         matched,
         provenance: matched ? 'BANK_MIS' : 'NONE',
@@ -458,12 +464,14 @@ export class LeadsService {
     };
   }
 
-  private operationalEvents(l: { id: string; createdAt: Date; linkages: Array<{ id: string; referenceKind: string; referenceValue: string; source: string; at: Date }>; linkInitiations: Array<{ id: string; action: string; linkVersion: number; at: Date }>; shareActions: Array<{ id: string; kind: string; at: Date; targetMobileMasked: string; handoffResult: string; deliveryStatus: string }> }): OperationalEvent[] {
+  private operationalEvents(l: { id: string; createdAt: Date; linkages: Array<{ id: string; referenceKind: string; referenceValue: string; source: string; at: Date }>; linkInitiations: Array<{ id: string; action: string; linkVersion: number; at: Date }>; shareActions: Array<{ id: string; kind: string; at: Date; targetMobileMasked: string; handoffResult: string; deliveryStatus: string }> }, followUps: Array<{ id: string; text: string; dueAt: Date; doneAt: Date | null; createdAt: Date; owner: { fullName: string } }>, remarks: Array<{ id: string; text: string; at: Date; author: { fullName: string } }>): OperationalEvent[] {
     const ev: OperationalEvent[] = [{ id: `created-${l.id}`, at: l.createdAt.toISOString(), kind: 'LEAD_CREATED', label: 'Lead created in KBS', detail: null, provenance: 'KBS_OPERATIONAL' }];
     for (const i of l.linkInitiations) ev.push({ id: i.id, at: i.at.toISOString(), kind: i.action === 'SHARED' ? 'LINK_SHARED' : 'LINK_OPENED', label: i.action === 'SHARED' ? 'Application link shared' : 'Application link opened', detail: `link v${i.linkVersion}`, provenance: 'KBS_OPERATIONAL' });
     const asc = [...l.linkages].sort((a, b) => a.at.getTime() - b.at.getTime());
     asc.forEach((x, n) => ev.push({ id: x.id, at: x.at.toISOString(), kind: n === 0 ? 'BANK_REFERENCE_ENTERED' : 'BANK_REFERENCE_CORRECTED', label: n === 0 ? 'Bank application reference entered' : 'Bank application reference corrected', detail: `${x.referenceKind} ${x.referenceValue} (${x.source.toLowerCase().replace(/_/g, ' ')})`, provenance: 'KBS_OPERATIONAL' }));
     for (const sh of l.shareActions) ev.push({ id: sh.id, at: sh.at.toISOString(), kind: 'SHARE_SENT', label: `${sh.kind.toLowerCase().replace(/_/g, ' ')} shared to ${sh.targetMobileMasked}`, detail: `handoff ${sh.handoffResult.toLowerCase()} · delivery ${sh.deliveryStatus.toLowerCase()}`, provenance: 'KBS_OPERATIONAL' });
+    for (const t of followUps) ev.push({ id: `task-${t.id}`, at: t.createdAt.toISOString(), kind: 'FOLLOW_UP_TASK', label: `Follow-up task: ${t.text}`, detail: `owner ${t.owner.fullName} · due ${t.dueAt.toISOString()}${t.doneAt ? ' · done' : ''}`, provenance: 'KBS_OPERATIONAL' });
+    for (const r of remarks) ev.push({ id: `remark-${r.id}`, at: r.at.toISOString(), kind: 'OPERATIONAL_REMARK', label: `Operational remark by ${r.author.fullName}`, detail: r.text, provenance: 'KBS_OPERATIONAL' });
     return ev.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
   }
 

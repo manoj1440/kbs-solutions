@@ -1,6 +1,7 @@
 import { formatDateTime, type LeadStatusRow, type MisHistoryGroup, type OperationalEvent } from '@kbs/shared';
 import Link from 'next/link';
 
+import { type FollowUpDto, LeadOps, type RemarkDto } from '@/components/lead-ops';
 import { ActivationBadge, DecisionBadge, FreshnessLabel, ProvenanceChip, StageBadge } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,8 @@ export interface LeadDetailDto extends Omit<LeadStatusRow, 'bankReference'> {
   employmentType: string;
   annualIncomeItr: number;
   operationalEvents: OperationalEvent[];
+  followUps: FollowUpDto[];
+  remarks: RemarkDto[];
   bankStatus: { matched: boolean; provenance: string; lastMatchedAt: string | null; lastMatchedBatchRef: string | null; firstMatchedAt: string | null; finalDecisionDate: string | null; raw: Record<string, string> | null };
   bankRemarks: { remarks: RemarkField[]; kyc: RemarkField[] };
   bankReference: { value: string | null; kind?: string; status?: string; source?: string; label?: string; at?: string };
@@ -141,6 +144,8 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
           </CardContent>
         </Card>
       </div>
+
+      <LeadOps leadId={l.id} followUps={l.followUps} remarks={l.remarks} />
 
       <Card>
         <CardHeader>
