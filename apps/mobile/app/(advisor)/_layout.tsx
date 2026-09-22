@@ -16,6 +16,8 @@ export default function AdvisorLayout() {
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       <Tabs.Screen name="card" options={{ href: null }} />
       <Tabs.Screen name="lead-new" options={{ href: null }} />
+      <Tabs.Screen name="lead-created" options={{ href: null }} />
+      <Tabs.Screen name="lead" options={{ href: null }} />
     </Tabs>
   );
 }

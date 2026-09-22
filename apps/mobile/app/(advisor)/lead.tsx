@@ -1,0 +1,145 @@
+import { ApiClientError, formatDateTime } from '@kbs/shared';
+import * as Linking from 'expo-linking';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ScrollView, View } from 'react-native';
+
+import { ShareButtons } from '@/components/share-buttons';
+import { Badge, Button, Card, ErrorText, Heading, Input, Label, Muted, Screen, Text } from '@/components/ui';
+import { api } from '@/lib/api';
+
+interface LeadDetail {
+  id: string;
+  publicRef: string;
+  customerFullName: string;
+  customerMobileMasked: string | null;
+  customerPanMasked: string | null;
+  panVerificationStatus: string;
+  card: string;
+  bank: string;
+  cardId: string;
+  createdAt: string;
+  pincode: string;
+  city: string | null;
+  state: string | null;
+  employmentType: string;
+  annualIncomeItr: number;
+  bankStatus: { matched: boolean; provenance: string; stage: string; decision: string; activation: string };
+  bankReference: { value: string | null; kind?: string; status?: string; label?: string; at?: string };
+  referenceHistory: { id: string; value: string; status: string; at: string; supersededAt: string | null }[];
+  linkActivity: { id: string; action: string; linkVersion: number; at: string; label: string }[];
+  shares: { id: string; kind: string; at: string; handoffResult: string; deliveryStatus: string }[];
+}
+
+/** Lead detail (F-406/F-407 view; sections A/B — MIS history section C arrives with F-408). */
+export default function LeadScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [l, setL] = useState<LeadDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [ref, setRef] = useState('');
+  const [kind, setKind] = useState<'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER' | 'OTHER'>('APPLICATION_NO');
+  const load = useCallback(async () => {
+    try {
+      setL((await api.get<LeadDetail>(`/leads/${id}`)).data);
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Could not load the lead.');
+    }
+  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+  const open = async () => {
+    try {
+      const r = await api.post<{ url: string }>(`/leads/${id}/link/open`, {});
+      await Linking.openURL(r.data.url);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Could not open the link.');
+    }
+  };
+  const saveRef = async () => {
+    try {
+      await api.post(`/leads/${id}/bank-reference`, { referenceKind: kind, referenceValue: ref });
+      setRef('');
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Could not save the reference.');
+    }
+  };
+  return (
+    <Screen>
+      <ScrollView contentContainerClassName="gap-3 pb-8">
+        <Button title="← Back" variant="ghost" onPress={() => router.back()} />
+        <ErrorText>{error}</ErrorText>
+        {l ? (
+          <>
+            <View>
+              <Muted>{l.publicRef}</Muted>
+              <Heading>{l.customerFullName}</Heading>
+              <Muted>
+                {l.bank} {l.card} · created {formatDateTime(l.createdAt)}
+              </Muted>
+            </View>
+            <Card className="gap-1">
+              <Text className="font-medium">Bank status (from MIS only)</Text>
+              <Badge label={`Stage: ${l.bankStatus.stage}`} variant={l.bankStatus.matched ? 'info' : 'unknown'} />
+              <Badge label={`Decision: ${l.bankStatus.decision}`} variant={l.bankStatus.matched ? 'info' : 'unknown'} />
+              <Badge label={`Activation: ${l.bankStatus.activation}`} variant={l.bankStatus.matched ? 'info' : 'unknown'} />
+              <Muted>{l.bankStatus.matched ? 'Exact values from the latest accepted bank MIS.' : 'No MIS row has matched this lead yet.'}</Muted>
+            </Card>
+            <Card className="gap-1">
+              <Text className="font-medium">Customer</Text>
+              <Muted>
+                {l.customerMobileMasked} · PAN {l.customerPanMasked} ({l.panVerificationStatus.toLowerCase()})
+              </Muted>
+              <Muted>
+                {l.pincode} · {l.city ?? '—'}, {l.state ?? '—'} · {l.employmentType.toLowerCase().replace(/_/g, ' ')} · ₹{l.annualIncomeItr.toLocaleString('en-IN')}
+              </Muted>
+            </Card>
+            <Card className="gap-2">
+              <Text className="font-medium">Application link</Text>
+              <Button title="Open application link" variant="outline" onPress={() => void open()} />
+              <ShareButtons target={{ type: 'LEAD', id: l.id }} cardId={l.cardId} kinds={['APPLICATION_LINK']} onShared={() => void api.post(`/leads/${id}/link/share`, {}).then(load).catch(() => undefined)} />
+              {l.linkActivity.map((a) => (
+                <Muted key={a.id}>
+                  {formatDateTime(a.at)} · {a.label} (v{a.linkVersion})
+                </Muted>
+              ))}
+            </Card>
+            <Card className="gap-2">
+              <Text className="font-medium">Bank application reference</Text>
+              {l.bankReference.value ? (
+                <>
+                  <Text>
+                    {l.bankReference.value} <Badge label={l.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'Verified by MIS match' : 'Unverified'} variant={l.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'success' : 'warning'} />
+                  </Text>
+                </>
+              ) : (
+                <Muted>{l.bankReference.label ?? 'Bank application reference not yet available'}</Muted>
+              )}
+              {l.bankReference.status !== 'VERIFIED_BY_MIS_MATCH' ? (
+                <>
+                  <View className="flex-row gap-2">
+                    {(['APPLICATION_NO', 'APPLICATION_REFERENCE_NUMBER', 'OTHER'] as const).map((k) => (
+                      <Button key={k} title={k === 'APPLICATION_NO' ? 'App no.' : k === 'APPLICATION_REFERENCE_NUMBER' ? 'Ref no.' : 'Other'} variant={kind === k ? 'default' : 'outline'} onPress={() => setKind(k)} />
+                    ))}
+                  </View>
+                  <Label>Reference exactly as the bank shows it</Label>
+                  <Input value={ref} onChangeText={setRef} autoCapitalize="none" />
+                  <Button title={l.bankReference.value ? 'Correct reference' : 'Save reference'} disabled={!ref.trim()} onPress={() => void saveRef()} />
+                </>
+              ) : null}
+              {l.referenceHistory.filter((h) => h.supersededAt).map((h) => (
+                <Muted key={h.id}>
+                  Earlier: {h.value} ({formatDateTime(h.at)})
+                </Muted>
+              ))}
+            </Card>
+          </>
+        ) : null}
+      </ScrollView>
+    </Screen>
+  );
+}

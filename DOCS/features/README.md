@@ -59,8 +59,8 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-403-card-catalogue-admin.md](./F-403-card-catalogue-admin.md) | F-403 Bank and credit-card catalogue administration | Advisor | DONE | F-108, F-104 |
 | [F-404-bank-pincode-profiles-and-import.md](./F-404-bank-pincode-profiles-and-import.md) | F-404 Bank-specific pincode profiles, import and sourceability | Advisor | DONE | F-108, F-110, F-403 |
 | [F-405-advisor-catalogue-browse.md](./F-405-advisor-catalogue-browse.md) | F-405 Advisor card discovery: catalogue, categories, search, filters, detail | Advisor | DONE | F-403, F-404, F-802 |
-| [F-406-advisor-create-lead.md](./F-406-advisor-create-lead.md) | F-406 Advisor creates customer operational lead (multi-step) | Advisor | PLANNED | F-405, F-304, F-109, F-107 |
-| [F-407-link-initiation-and-bank-reference.md](./F-407-link-initiation-and-bank-reference.md) | F-407 Application-link initiation and bank reference linkage | Advisor | PLANNED | F-406, F-311, F-403 |
+| [F-406-advisor-create-lead.md](./F-406-advisor-create-lead.md) | F-406 Advisor creates customer operational lead (multi-step) | Advisor | DONE | F-405, F-304, F-109, F-107 |
+| [F-407-link-initiation-and-bank-reference.md](./F-407-link-initiation-and-bank-reference.md) | F-407 Application-link initiation and bank reference linkage | Advisor | DONE | F-406, F-311, F-403 |
 | [F-408-my-leads-and-lead-detail.md](./F-408-my-leads-and-lead-detail.md) | F-408 My Leads list, search, filters and lead detail with MIS history | Advisor | PLANNED | F-407, F-506 |
 | [F-409-pending-actions-and-followup-tasks.md](./F-409-pending-actions-and-followup-tasks.md) | F-409 Pending Actions and operational follow-up tasks | Advisor | PLANNED | F-408, F-701 |
 | [F-410-advisor-profile-and-support.md](./F-410-advisor-profile-and-support.md) | F-410 Advisor profile and support | Advisor | PLANNED | F-401, F-402 |

@@ -82,7 +82,7 @@ export default function AdvisorCardDetail() {
         </Card>
         <Card className="gap-2">
           {card.benefitPdfFileId ? <Button title="Open benefit PDF" variant="outline" onPress={() => void fileUrl(card.benefitPdfFileId as string).then((u) => Linking.openURL(u)).catch(() => setError('Could not open the PDF.'))} /> : null}
-          <Button title="Create lead for a customer" onPress={() => router.push({ pathname: '/(advisor)/lead-new', params: { cardId: card.id, cardName: card.name, bankName: card.bank.displayName } })} />
+          <Button title="Create lead for a customer" onPress={() => router.push({ pathname: '/(advisor)/lead-new', params: { cardId: card.id } })} />
           <Muted>Creates a KBS operational lead only; the bank status appears after the MIS upload.</Muted>
         </Card>
       </ScrollView>

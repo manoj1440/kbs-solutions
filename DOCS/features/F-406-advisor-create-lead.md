@@ -1,6 +1,6 @@
 # F-406 Advisor creates customer operational lead (multi-step)
 
-- Group: Advisor · Status: **PLANNED** · Depends on: F-405, F-304, F-109, F-107
+- Group: Advisor · Status: **DONE** · Depends on: F-405, F-304, F-109, F-107
 - PRD refs: REQ-11 §11.1 (flow), §11.4 (exact fields: customer mobile → details/name → PAN entry + verification state → residence pincode + confirmed city/state → employment Salaried/Self Employed/Self Employed Professional → annual income per ITR → declarations + Credit Bureau acknowledgement + consent → review → submit; step errors; keep selected card; avoid duplicate customers; KBS lead reference), §11.5, REQ-12 S13–S20, REQ-23 §23.4, INV-01
 - QA ids: FOS-03, FOS-04, FOS-05
 
@@ -11,7 +11,10 @@
 4. Mobile screens S13–S20 with stepper, inline validation, back/edit from review.
 
 ## Acceptance criteria
-- [ ] FOS-03: all fields captured and persisted; enum limited to the three types.
-- [ ] FOS-04: after submit, `GET /leads/:id` shows stage/decision/activation = "Awaiting MIS Update" (display) and no bank fields set.
-- [ ] FOS-05: PAN mismatch, missing declaration, invalid mobile → step errors; no lead row created.
-- [ ] Double submit with same key → one lead.
+- [x] FOS-03: all fields captured and persisted; enum limited to the three types.
+- [x] FOS-04: after submit, `GET /leads/:id` shows stage/decision/activation = "Awaiting MIS Update" (display) and no bank fields set.
+- [x] FOS-05: PAN mismatch, missing declaration, invalid mobile → step errors; no lead row created.
+- [x] Double submit with same key → one lead.
+
+## Progress notes
+- 2026-09-22 (session 3): `LeadsService` — `POST /leads/drafts {cardId}` (blocked with CONFIG_MISSING while `leads.declarations` is empty; card must be PUBLISHED with an effective ADVISOR link), `GET /leads/drafts[/ :id]` (resume), `PATCH /leads/drafts/:id/{mobile,details,pan,pincode,employment,income,declarations}` (order enforced server-side; every step refreshes the 7-day TTL; strict Zod bodies). Mobile step: E.164 + duplicate guard (own lead, same mobile+card, 30 days → 409 LEAD_DUPLICATE_REFERENCE unless `duplicateOverrideReason`). PAN step: `normalizePan` → `PanVerificationProvider.verify` → stored encrypted + last4 in the draft; MISMATCH/FAILED → 400 with status (step stays), UNAVAILABLE → 429 RETRY_LATER unless `leads.allowUnverifiedPan`; sensitive access PAN logged. Pincode step pre-fills city/state from PincodeMaster; employment enum of three; income decimal; declarations require every configured id + `bureauAcknowledged: true` (timestamp stored with versions). `POST /leads/drafts/:id/submit` (Idempotency-Key = `Lead.idempotencyKey`, replay returns the same lead) creates the `Lead` with `reportingParentUserIdSnapshot`, encrypted PAN, declarations JSON, **no BankStatusSnapshot** (display "Awaiting MIS Update" via `bankValueDisplay`), deletes the draft, flags `possibleCollision` against calling records with interests on the same mobile, notifies the reporting parent. Reads: `GET /leads?q&advisorId` (scoped own/team/all), `GET /leads/:id` (sections A/B: customer masked, bank status with provenance, bank reference + history, link activity, shares). Mobile: `(advisor)/lead-new.tsx` wizard (S13–S19 with resume by draftId and edit-from-review), `lead-created.tsx` (S20 with share CTA), `leads.tsx` (basic list + resumable drafts), `lead.tsx` (detail). e2e `leads.e2e-spec.ts`.
