@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/require-role';
 const NAV = [
   { href: '/admin', label: 'Overview' },
   { href: '/admin/users', label: 'Users & teams' },
+  { href: '/admin/training', label: 'Training' },
   { href: '/admin/config', label: 'Configuration' },
 ];
 
