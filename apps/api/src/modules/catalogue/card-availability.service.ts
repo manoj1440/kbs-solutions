@@ -1,4 +1,4 @@
-import { type AvailableCard, type CreatePublicationBody, NO_CARD_AVAILABLE_MESSAGE } from '@kbs/shared';
+import { type AvailableCard, type BrowseCard, type BrowseCardsQuery, type CreatePublicationBody, NO_CARD_AVAILABLE_MESSAGE } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -122,5 +122,56 @@ export class CardAvailabilityService {
     if (!allowed) throw AppError.notFound('Record');
     if (!/^\d{6}$/.test(r.pincode) || r.pincode === '000000') return { cards: [], message: NO_CARD_AVAILABLE_MESSAGE, asOf: new Date().toISOString(), pincode: r.pincode, location: { state: null, district: null } };
     return this.available(r.pincode, 'TELECALLER');
+  }
+
+  /**
+   * F-405: Advisor catalogue browse — PUBLISHED cards with an effective ADVISOR link, filtered by category/bank/text.
+   * With `pincode`, each card is annotated from the bank's uploaded data (never hidden: Advisors see why a card is unavailable).
+   */
+  async browse(q: BrowseCardsQuery): Promise<{ cards: BrowseCard[]; pincode: string | null; asOf: string }> {
+    const asOf = new Date();
+    const cards = await this.prisma.client.creditCard.findMany({
+      where: {
+        status: 'PUBLISHED',
+        bank: { active: true },
+        ...(q.bankId ? { bankId: q.bankId } : {}),
+        ...(q.category ? { categories: { some: { category: { key: q.category } } } } : {}),
+        ...(q.q ? { OR: [{ name: { contains: q.q, mode: 'insensitive' } }, { bank: { displayName: { contains: q.q, mode: 'insensitive' } } }, { description: { contains: q.q, mode: 'insensitive' } }] } : {}),
+      },
+      include: { bank: { select: { id: true, code: true, displayName: true } }, categories: { include: { category: { select: { key: true, label: true } } } } },
+    });
+    const sourceable = q.pincode ? await this.profiles.sourceability(q.pincode) : null;
+    const banksWithData = q.pincode ? new Set((await this.profiles.liveBatches()).map((l) => l.bankId)) : new Set<string>();
+    const batchIds = sourceable ? [...new Set(sourceable.map((s) => s.batchId))] : [];
+    const uploadedAt = new Map((batchIds.length ? await this.prisma.client.bankPincodeBatch.findMany({ where: { id: { in: batchIds } }, select: { id: true, uploadedAt: true } }) : []).map((b) => [b.id, b.uploadedAt]));
+    const out: BrowseCard[] = [];
+    for (const c of cards) {
+      const link = await this.catalogue.effectiveLink(c.id, 'ADVISOR', asOf);
+      if (!link) continue;
+      const s = sourceable?.find((x) => x.bankId === c.bankId) ?? null;
+      out.push({
+        id: c.id,
+        name: c.name,
+        version: c.version,
+        bank: c.bank,
+        categories: c.categories.map((x) => x.category),
+        description: c.description,
+        benefits: (c.benefits as string[] | null) ?? [],
+        joiningFee: c.joiningFee === null ? null : Number(c.joiningFee),
+        annualFee: c.annualFee === null ? null : Number(c.annualFee),
+        majorCharges: (c.majorCharges as { label: string; value: string }[] | null) ?? [],
+        eligibilityHighlights: c.eligibilityHighlights,
+        disclosures: c.disclosures,
+        imageFileId: c.imageFileId,
+        benefitPdfFileId: c.benefitPdfFileId,
+        link: { id: link.id, version: link.version, channel: link.channel },
+        // unknown = the bank has no approved+imported pincode data yet; absent row under live data = not sourceable
+        sourceableAtPincode: !q.pincode ? null : !banksWithData.has(c.bankId) ? 'unknown' : s?.sourceability === 'SOURCEABLE',
+        sourceabilityProvenance: s ? { sourceability: s.sourceability, batchUploadedAt: uploadedAt.get(s.batchId)?.toISOString() ?? null } : null,
+      });
+    }
+    const key = q.sort;
+    out.sort((a, b) => (key === 'name' ? a.name.localeCompare(b.name) : key === 'joiningFee' || key === 'annualFee' ? (a[key] ?? Infinity) - (b[key] ?? Infinity) : a.bank.displayName.localeCompare(b.bank.displayName) || a.name.localeCompare(b.name)));
+    return { cards: out, pincode: q.pincode ?? null, asOf: asOf.toISOString() };
   }
 }

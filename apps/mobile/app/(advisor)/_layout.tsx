@@ -12,7 +12,10 @@ export default function AdvisorLayout() {
   return (
     <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="leads" options={{ title: 'My leads' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="card" options={{ href: null }} />
+      <Tabs.Screen name="lead-new" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -120,4 +120,53 @@ describe('F-308 card availability (sourceability ∩ publication ∩ link)', () 
     // generic route is not for Telecallers' customers but still permitted for catalogue reads; training gate applies
     await api().get('/api/v1/cards/available?pincode=302002&channel=TELECALLER').set(auth(t.accessToken)).expect(200);
   });
+
+  it('F-405 browse: PUBLISHED + ADVISOR link, category/text filters, pincode annotation (true/false/unknown), Advisor gate', async () => {
+    const all = await api().get('/api/v1/cards/browse').set(auth(adminToken)).expect(200);
+    const names = all.body.data.cards.map((c: { name: string }) => c.name);
+    expect(names).toEqual(expect.arrayContaining(['RBL Platinum', 'RBL Advisor Only', 'RBL Rajasthan Only', 'HSBC Ambiguous']));
+    expect(names).not.toContain('RBL NoLink');
+    expect(names).not.toContain('RBL Draft');
+    expect(all.body.data.cards[0].sourceableAtPincode).toBeNull();
+    const travel = await api().get('/api/v1/cards/browse?category=TRAVEL&q=advisor').set(auth(adminToken)).expect(200);
+    expect(travel.body.data.cards.map((c: { name: string }) => c.name)).toEqual(['RBL Advisor Only']);
+    const pin = await api().get('/api/v1/cards/browse?pincode=110001').set(auth(adminToken)).expect(200);
+    const byName = Object.fromEntries(pin.body.data.cards.map((c: { name: string; sourceableAtPincode: unknown }) => [c.name, c.sourceableAtPincode]));
+    expect(byName['RBL Platinum']).toBe(false); // RBL says N for 110001
+    expect(byName['HSBC Ambiguous']).toBe(false); // HSBC has no row for 110001 → not sourceable
+    const pin2 = await api().get('/api/v1/cards/browse?pincode=302001').set(auth(adminToken)).expect(200);
+    const byName2 = Object.fromEntries(pin2.body.data.cards.map((c: { name: string; sourceableAtPincode: unknown; sourceabilityProvenance: { sourceability: string } | null }) => [c.name, c]));
+    expect(byName2['RBL Platinum'].sourceableAtPincode).toBe(true);
+    expect(byName2['HSBC Ambiguous']).toMatchObject({ sourceableAtPincode: false, sourceabilityProvenance: { sourceability: 'REQUIRES_BANK_MAPPING' } });
+    // a bank with no approved import → 'unknown'
+    const au = await prisma.bank.findUniqueOrThrow({ where: { code: 'AU' } });
+    await card(au.id, 'AU Unknown', { publish: true, link: true });
+    const pin3 = await api().get('/api/v1/cards/browse?pincode=302001&q=AU%20Unknown').set(auth(adminToken)).expect(200);
+    expect(pin3.body.data.cards[0].sourceableAtPincode).toBe('unknown');
+    // an Advisor still onboarding is gated
+    const req = await api().post('/api/v1/auth/otp/request').send({ mobile: '9333301111', purpose: 'ADVISOR_SIGNUP' }).expect(201);
+    const v = await api().post('/api/v1/auth/otp/verify').send({ challengeId: req.body.data.challengeId, code: '000000', platform: 'ANDROID' }).expect(201);
+    const g = await api().get('/api/v1/cards/browse').set(auth(v.body.data.accessToken)).expect(403);
+    expect(g.body.error.code).toBe('GATE_ONBOARDING_INCOMPLETE');
+  });
+
+  it('no Advisor/Telecaller-facing copy promises approval (snapshot of shared strings + mobile screens)', async () => {
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const roots = [join(__dirname, '..', '..', 'mobile', 'app'), join(__dirname, '..', '..', 'mobile', 'components'), join(__dirname, '..', '..', '..', 'packages', 'shared', 'src')];
+    const files: string[] = [];
+    const walk = (d: string) => {
+      for (const f of readdirSync(d)) {
+        const p = join(d, f);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.(tsx?|ts)$/.test(f)) files.push(p);
+      }
+    };
+    roots.forEach(walk);
+    const offenders = files.filter((f) => {
+      const t = readFileSync(f, 'utf8').replace(/forbiddenPhrases[^\n]*/g, '');
+      return /guaranteed approval|instant approval|assured approval|eligible for sure|approval guaranteed/i.test(t);
+    });
+    expect(offenders).toEqual([]);
+  });
 });

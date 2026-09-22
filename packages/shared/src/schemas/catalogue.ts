@@ -99,3 +99,21 @@ export interface AvailableCard {
   link: { id: string; version: number; channel: string } | null;
   provenance: { sourceability: string; batchId: string; rawFlags: Record<string, string>; batchUploadedAt: string | null; publication: { scope: 'GLOBAL' | 'STATE' | 'PINCODE'; id: string } };
 }
+
+// ── F-405 Advisor browse ──
+export const BrowseCardsQuery = z.object({
+  category: z.string().min(1).optional(),
+  bankId: z.string().uuid().optional(),
+  q: z.string().trim().max(80).optional(),
+  pincode: z.string().regex(/^\d{6}$/).optional(),
+  sort: z.enum(['bank', 'name', 'joiningFee', 'annualFee']).default('bank'),
+});
+export type BrowseCardsQuery = z.infer<typeof BrowseCardsQuery>;
+
+/** Catalogue card as browsed by an Advisor (S08–S12). */
+export interface BrowseCard extends Omit<AvailableCard, 'provenance' | 'link'> {
+  link: { id: string; version: number; channel: string } | null;
+  /** Only when `pincode` was supplied: true/false from the bank's uploaded data, 'unknown' when the bank has no approved import. */
+  sourceableAtPincode: boolean | 'unknown' | null;
+  sourceabilityProvenance: { sourceability: 'SOURCEABLE' | 'NOT_SOURCEABLE' | 'REQUIRES_BANK_MAPPING'; batchUploadedAt: string | null } | null;
+}

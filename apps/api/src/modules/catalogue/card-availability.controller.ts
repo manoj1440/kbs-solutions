@@ -1,4 +1,4 @@
-import { AvailableCardsQuery, CreatePublicationBody, ReasonBody } from '@kbs/shared';
+import { AvailableCardsQuery, BrowseCardsQuery, CreatePublicationBody, ReasonBody } from '@kbs/shared';
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -10,6 +10,14 @@ import { CardAvailabilityService } from './card-availability.service';
 @Controller()
 export class CardAvailabilityController {
   constructor(private readonly svc: CardAvailabilityService) {}
+
+  /** F-405: Advisor-facing catalogue (published + ADVISOR link), optional pincode annotation. Onboarding gate applies to Advisors. */
+  @Get('cards/browse')
+  @RequirePermission('CATALOGUE_READ')
+  @RequireGates('onboarding')
+  browse(@Query() raw: unknown) {
+    return this.svc.browse(BrowseCardsQuery.parse(raw));
+  }
 
   /** Generic lookup (Advisor catalogue F-405 and Admin checks). Telecallers use the record-scoped route below. */
   @Get('cards/available')
