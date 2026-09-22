@@ -2,15 +2,13 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-09-22, end of session 1)
+## Current state (as of 2026-09-22, session 2 in progress)
 
-- **Phase:** Foundation (core) — **built and verified**. Feature slices start next.
+- **Phase:** Vertical slice 1 (Telecaller lifecycle) **done**; slice 2 (calling desk) starts next.
 - **Green checks:** `pnpm turbo run typecheck lint test` → 21/21 tasks; `pnpm build` → 5/5; API e2e 16/16 (`pnpm --filter api test:e2e` with `DATABASE_URL=…/kbs_test`); web login → admin overview verified in a real browser; mobile `expo export` bundles.
-- **Feature status:** 12 DONE, 9 IN_PROGRESS (API done, screens pending), 49 PLANNED, 1 BLOCKED — see `DOCS/features/README.md`.
-- **Next step for a new session (in order):**
-  1. **F-106** finish Agent Codes (CRUD, `POST /me/agent-code`, Admin approval when leads exist) — schema and hierarchy helpers exist.
-  2. **F-201 → F-205** Telecaller lifecycle vertical slice (create Telecaller UI on web/mobile Manager area, training content + modules + attempts, deadline sweep job + Manager reactivation, progress views). `TrainingEnrollment` rows, the 72-h deadline stamp on first login and the lazy gate already work.
-  3. Then F-306 → F-313 (calling desk), per the roadmap in `DOCS/features/README.md`.
+- **Feature status:** 19 DONE (F-001…006, 101–103, 106–111, 201–205, 108, 301 API), 8 IN_PROGRESS (screens pending), 43 PLANNED, 1 BLOCKED — see `DOCS/features/README.md`.
+- **Next step for a new session (in order):** slice 2 — F-306 (suppression), F-304 (pincode master), F-303 (customer list import), F-305 (allocation), F-403/F-404 (catalogue + bank pincode profiles), F-308, F-307 (queue), F-312, F-309, F-310, F-311, F-313 — per the roadmap in `DOCS/features/README.md`.
+- **Sync procedure used from the cloud sandbox:** `git bundle` of new commits → written into the Mac folder → `git fetch <bundle> main:refs/remotes/sync/main && git merge --ff-only` on the Mac. On a normal machine just push/pull.
 - **Known environment caveats (not product blockers):**
   - The build sandbox could not reach `binaries.prisma.sh`, `ui.shadcn.com`, `fonts.googleapis.com`. Consequences: migrations were generated with the Prisma **WASM** engine (`packages/db/scripts/wasm-migrate.mjs`), which yields the same SQL as the CLI; shadcn components were hand-authored (identical to CLI output, `components.json` is ready for `npx shadcn add`); web uses a system font stack. On a normal machine `pnpm db:migrate:dev` and `npx shadcn add` work as usual.
   - `prisma generate` wrapper (`packages/db/scripts/generate.mjs`) falls back to a stub engine path when the download fails — harmless, generation never runs the engine.
@@ -29,6 +27,10 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 ```
 
 ## Session log
+
+### 2026-09-22 — Session 2
+- F-106 Agent Codes (API + e2e FOS-02). F-201 Manager screens (web + mobile). F-108 files module (upload/sniff/presign, S3 + memory). F-202 training content admin (API + web editor). F-203 learner flow (API + mobile screens). F-204/F-205 expiry sweep, reactivation, progress views (API + web + mobile). Minimal notifications module (`GET /notifications`).
+- API e2e: 25 tests across 6 suites; unit 13. Each feature committed and synced to the Mac after verification.
 
 ### 2026-09-22 — Session 1 (initial)
 - Analysed PRD end-to-end; wrote gap analysis (18 gaps, 11 ambiguities, risk table, better approaches) with dispositions.
