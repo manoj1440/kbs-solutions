@@ -1,0 +1,16 @@
+# F-802 Mobile shell: Expo Router, OTP login, gates routing, base components
+
+- Group: UX shells · Status: **PLANNED** · Depends on: F-003, F-006, F-101, F-111
+- PRD refs: REQ-20 §20.3 (mobile: bottom/tab/stack navigation, compact cards, robust OTP, multi-step forms, persistent calling controls, adaptive empty/error/loading), §20.5 (text scaling, touch targets), REQ-04 §4.2 (role-dependent first login), REQ-25 §25.1, REQ-12 S06–S07
+- QA ids: AUTH-01, AUTH-02, TRAIN-03 (client routing)
+
+## Detailed requirements
+1. Routes: `app/(auth)/welcome|mobile|otp`, `app/(telecaller)/(tabs)`, `app/(advisor)/(tabs)`, `app/(manager)/(tabs)`, `app/(gates)/training|network-blocked|onboarding|deactivated`. Root layout loads session from `expo-secure-store`, calls `/auth/me`, routes on role + gates; re-checks on app foreground.
+2. OTP screen: 6-digit input, masked number, edit number, resend with countdown, error states from `ErrorCode`.
+3. API client: bearer tokens, silent refresh with single-flight, idempotency header for mutations, request id, SSID hint header (Telecaller only; `expo-network` best-effort), offline banner.
+4. Base components via react-native-reusables + in-house: `Screen`, `SecureScreen` (F-302), `StatusBadge` family (F-803), `ProvenanceChip`, `EmptyState`, `ErrorState`, `ListSkeleton`, `Stepper`, `BottomSheet`.
+5. Dev-client build instructions and `eas.json` preview profile producing an APK.
+
+## Acceptance criteria
+- [ ] Telecaller with unpassed training is routed to training landing; Advisor pending onboarding to onboarding; Manager to team tabs.
+- [ ] Refresh-token rotation works across app restart.
