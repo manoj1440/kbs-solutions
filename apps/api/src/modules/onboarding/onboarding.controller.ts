@@ -17,6 +17,12 @@ export class OnboardingController {
     return this.svc.view(actor);
   }
 
+  @Get('me/profile')
+  @RequirePermission('ONBOARDING_SELF')
+  profile(@CurrentActor() actor: Actor) {
+    return this.svc.profileView(actor);
+  }
+
   @Put('onboarding/me/personal')
   @RequirePermission('ONBOARDING_SELF')
   @Audited({ action: 'onboarding.personal', entityType: 'User' })

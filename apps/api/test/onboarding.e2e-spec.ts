@@ -86,6 +86,11 @@ describe('F-401 Advisor onboarding / F-402 Agent Code (FOS-01, FOS-02)', () => {
     const up = await api().post('/api/v1/files/cheque').set(t).attach('file', png, { filename: 'cheque.png', contentType: 'image/png' }).expect(201);
     const ch = await api().put('/api/v1/onboarding/me/cheque').set(t).send({ fileId: up.body.data.id }).expect(200);
     expect(ch.body.data.step).toBe('AGENT_CODE');
+    // F-410: profile DTO carries status/date + last4/IFSC only — no file ids, URLs, full account number or identity payload
+    const profile = await api().get('/api/v1/me/profile').set(t).expect(200);
+    expect(profile.body.data).toMatchObject({ fullName: 'Asha Advisor', identity: { status: 'VERIFIED' }, bank: { bankName: 'HDFC Bank', accountLast4: '9012', ifsc: 'HDFC0001234' }, onboarding: { step: 'AGENT_CODE' }, support: { contact: null } });
+    expect(Object.keys(profile.body.data).sort()).toEqual(['bank', 'email', 'fullName', 'idCard', 'identity', 'mobileMasked', 'onboarding', 'reporting', 'support']);
+    expect(JSON.stringify(profile.body.data)).not.toMatch(/123456789012|cheque|fileId|MOCK_OK|http/);
 
     // FOS-02: blank code → Admin stays the reporting person
     const ac = await api().put('/api/v1/onboarding/me/agent-code').set(t).send({}).expect(200);

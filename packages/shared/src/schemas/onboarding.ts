@@ -62,3 +62,23 @@ export interface OnboardingView {
   requiresAdminReview: boolean;
   privacyNoticeVersion: string;
 }
+
+// ── F-410 advisor profile (REQ-11 §11.11, REQ-25 §25.1) ──
+/**
+ * Strict schema for the Advisor profile DTO: identity is status/date only, bank is last4 + IFSC + bank name,
+ * and there is deliberately no file id / URL / full account number anywhere in it (schema test in shared).
+ */
+export const AdvisorProfileView = z
+  .object({
+    fullName: z.string(),
+    mobileMasked: z.string(),
+    email: z.string().nullable(),
+    identity: z.object({ status: z.string(), verifiedAt: z.string().nullable(), method: z.string().nullable() }).strict(),
+    reporting: z.object({ parent: z.object({ id: z.string(), fullName: z.string(), role: z.string() }).strict().nullable(), agentCode: z.string().nullable(), since: z.string().nullable(), pendingChange: z.object({ toAgentCode: z.string(), requestedAt: z.string() }).strict().nullable() }).strict(),
+    bank: z.object({ bankName: z.string(), accountLast4: z.string().length(4), ifsc: z.string() }).strict().nullable(),
+    onboarding: z.object({ step: z.string(), submittedAt: z.string().nullable(), reviewOutcome: z.string().nullable() }).strict(),
+    support: z.object({ contact: z.string().nullable() }).strict(),
+    idCard: z.object({ publicRef: z.string(), status: z.string() }).strict().nullable(),
+  })
+  .strict();
+export type AdvisorProfileView = z.infer<typeof AdvisorProfileView>;

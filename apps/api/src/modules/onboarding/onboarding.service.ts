@@ -1,4 +1,4 @@
-import { type OnboardingAgentCodeBody, type OnboardingBankBody, type OnboardingChequeBody, type OnboardingConsentBody, type OnboardingIdentityCompleteBody, type OnboardingPersonalBody, type OnboardingReviewBody, type OnboardingStepName, type OnboardingView, ONBOARDING_STEPS } from '@kbs/shared';
+import { AdvisorProfileView, maskMobile, type OnboardingAgentCodeBody, type OnboardingBankBody, type OnboardingChequeBody, type OnboardingConsentBody, type OnboardingIdentityCompleteBody, type OnboardingPersonalBody, type OnboardingReviewBody, type OnboardingStepName, type OnboardingView, ONBOARDING_STEPS } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -84,6 +84,29 @@ export class OnboardingService {
       requiresAdminReview: this.config.getBool('onboarding.requiresAdminReview'),
       privacyNoticeVersion: this.config.getString('onboarding.privacyNoticeVersion') ?? 'v1-draft',
     };
+  }
+
+  /** F-410: profile screen DTO — status/date only for identity, last4 + IFSC for bank, no files or full numbers (REQ-25 §25.1). */
+  async profileView(actor: Actor): Promise<AdvisorProfileView> {
+    const p = await this.prisma.client.advisorProfile.findUnique({ where: { userId: actor.userId }, include: { user: { select: { fullName: true, email: true, mobile: true } } } });
+    if (!p) throw AppError.notFound('Profile');
+    const [assignment, pending, idCard] = await Promise.all([
+      this.prisma.client.reportingAssignment.findFirst({ where: { childUserId: actor.userId, effectiveTo: null, status: 'ACTIVE' }, include: { parent: { select: { id: true, fullName: true, role: true } }, agentCode: { select: { code: true } } } }),
+      this.prisma.client.reportingAssignment.findFirst({ where: { childUserId: actor.userId, status: 'PENDING_APPROVAL' }, include: { agentCode: { select: { code: true } } } }),
+      this.prisma.client.officialIdCard.findFirst({ where: { userId: actor.userId, revokedAt: null }, orderBy: { version: 'desc' }, select: { fields: true } }),
+    ]);
+    const idFields = (idCard?.fields as { publicRef?: string } | null) ?? null;
+    return AdvisorProfileView.parse({
+      fullName: p.user.fullName,
+      mobileMasked: maskMobile(p.user.mobile) ?? '',
+      email: p.user.email,
+      identity: { status: p.identityStatus, verifiedAt: p.identityVerifiedAt?.toISOString() ?? null, method: p.identityMethod },
+      reporting: { parent: assignment?.parent ?? null, agentCode: assignment?.agentCode?.code ?? null, since: assignment?.effectiveFrom.toISOString() ?? null, pendingChange: pending?.agentCode ? { toAgentCode: pending.agentCode.code, requestedAt: pending.createdAt.toISOString() } : null },
+      bank: p.bankAccountLast4 ? { bankName: p.bankName ?? '', accountLast4: p.bankAccountLast4, ifsc: p.ifsc ?? '' } : null,
+      onboarding: { step: p.onboardingStep, submittedAt: p.submittedAt?.toISOString() ?? null, reviewOutcome: p.reviewOutcome },
+      support: { contact: this.config.getString('support.contact') },
+      idCard: idFields?.publicRef ? { publicRef: idFields.publicRef, status: 'ACTIVE' } : null,
+    });
   }
 
   async personal(actor: Actor, body: OnboardingPersonalBody) {
