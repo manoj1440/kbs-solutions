@@ -28,3 +28,23 @@ export const UserListQuery = PaginationQuery.extend({
 export type UserListQuery = z.infer<typeof UserListQuery>;
 
 export const LifecycleBody = z.object({ reason: z.string().min(3).max(500) });
+
+// ── F-106 Agent Codes & reporting hierarchy ──
+export const CreateAgentCodeBody = z.object({
+  ownerUserId: z.string().uuid(),
+  code: z.string().trim().min(4).max(12).optional(),
+  expiresAt: z.coerce.date().nullable().optional(),
+});
+export type CreateAgentCodeBody = z.infer<typeof CreateAgentCodeBody>;
+
+export const ApplyAgentCodeBody = z.object({ code: z.string().trim().min(4).max(12) });
+export type ApplyAgentCodeBody = z.infer<typeof ApplyAgentCodeBody>;
+
+export const ReassignReportingBody = z.object({ parentUserId: z.string().uuid(), reason: z.string().min(3).max(500) });
+export type ReassignReportingBody = z.infer<typeof ReassignReportingBody>;
+
+export const AgentCodeApplyResult = z.object({
+  status: z.enum(['APPLIED', 'PENDING_APPROVAL']),
+  reportingParent: z.object({ id: z.string().uuid(), fullName: z.string(), role: z.string() }),
+});
+export type AgentCodeApplyResult = z.infer<typeof AgentCodeApplyResult>;
