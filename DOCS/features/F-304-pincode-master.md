@@ -1,6 +1,6 @@
 # F-304 Pincode master reference and location resolution
 
-- Group: Telecaller ops · Status: **PLANNED** · Depends on: F-108
+- Group: Telecaller ops · Status: **DONE** · Depends on: F-108
 - PRD refs: REQ-06 §6.1 (resolve city/state from validated pincode/reference data where possible, otherwise 'Location unavailable'), REQ-11 §11.4 (residence pincode with confirmed city/state), REQ-12 S16, gap analysis A4
 
 ## Detailed requirements
@@ -9,5 +9,8 @@
 3. Never used for sourceability — that is F-404.
 
 ## Acceptance criteria
-- [ ] Unknown pincode → `resolved:false`, UI text "Location unavailable".
-- [ ] Import of 150k rows completes within job limits and is idempotent.
+- [x] Unknown pincode → `resolved:false`, UI text "Location unavailable".
+- [x] Import of 150k rows completes within job limits and is idempotent.
+
+## Progress notes
+- 2026-09-22 (session 2): `POST /pincodes/import` (India Post CSV/XLSX, tolerant headers, batched upsert, idempotent) and `GET /pincodes/:pincode` (`resolved:false` → "Location unavailable"). Shared tabular parser `common/import/tabular.ts` (exceljs/csv-parse, cells always text). Admin upload on `/admin/compliance`. e2e covered.

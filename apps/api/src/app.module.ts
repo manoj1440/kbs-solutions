@@ -18,6 +18,7 @@ import { AccessPolicyModule } from './modules/access-policy/access-policy.module
 import { AuditInterceptor } from './modules/audit/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CallingListModule } from './modules/calling-list/calling-list.module';
 import { ConfigModule } from './modules/config/config.module';
 import { FilesModule } from './modules/files/files.module';
 import { GatesModule } from './modules/gates/gates.module';
@@ -74,6 +75,7 @@ export const LOG_REDACT_PATHS = [
     FilesModule,
     NotificationsModule,
     TrainingModule,
+    CallingListModule,
   ],
   controllers: [HealthController],
   providers: [
