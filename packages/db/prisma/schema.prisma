@@ -1,0 +1,1740 @@
+// KBS Solutions — executable data model. Keep DOCS/architecture/03-data-model.md in sync.
+// Conventions: UUIDv7 ids, UTC timestamptz, never hard-delete audit-bearing rows.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── enums (mirror @kbs/shared) ─────────────────────────────
+
+enum Role {
+  ADMIN
+  MANAGER
+  TELECALLER
+  ADVISOR
+  ACCOUNTS
+}
+
+enum UserStatus {
+  PENDING_ONBOARDING
+  ACTIVE
+  DEACTIVATED
+  BLOCKED
+}
+
+enum Platform {
+  ANDROID
+  WEB
+}
+
+enum OtpPurpose {
+  LOGIN
+  ADVISOR_SIGNUP
+}
+
+enum Provenance {
+  BANK_MIS
+  KBS_OPERATIONAL
+  KBS_PAYMENT
+}
+
+enum UserLifecycleEventType {
+  CREATED
+  ACTIVATED
+  DEACTIVATED
+  BLOCKED
+  REACTIVATED
+  MOBILE_CHANGED
+}
+
+enum ReportingSource {
+  MANAGER_CREATED_TELECALLER
+  AGENT_CODE
+  ADMIN_DEFAULT
+  ADMIN_REASSIGNED
+}
+
+enum ReportingAssignmentStatus {
+  ACTIVE
+  PENDING_APPROVAL
+  CLOSED
+  REJECTED
+}
+
+enum AgentCodeStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum ConfigValueType {
+  STRING
+  INT
+  BOOL
+  JSON
+  USER_ID
+  DURATION
+}
+
+enum SensitiveField {
+  PAN
+  MOBILE
+  BANK_ACCOUNT
+  RECORDING
+  CHEQUE
+  PROOF
+  AADHAAR_RESULT
+  MIS_RAW_ROW
+  ID_CARD
+}
+
+enum NetworkAccessOutcome {
+  ALLOWED_OFFICE
+  ALLOWED_WFH
+  DENIED
+}
+
+enum TrainingEnrollmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PASSED
+  EXPIRED_DEACTIVATED
+  REACTIVATED_IN_PROGRESS
+}
+
+enum ModuleResultStatus {
+  LOCKED
+  IN_PROGRESS
+  PASSED
+}
+
+enum TrainingModuleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum ImportBatchStatus {
+  UPLOADED
+  VALIDATED
+  IMPORTED
+  FAILED
+  REJECTED
+}
+
+enum InteractionStatus {
+  UNTOUCHED
+  FOLLOW_UP
+  INTERESTED
+  LINK_SHARED
+  DECLINED
+  COMPLETED
+  UNREACHABLE
+}
+
+enum RecordReviewStatus {
+  ACCEPTED
+  NEEDS_REVIEW
+  EXCLUDED
+}
+
+enum SuppressionReason {
+  CUSTOMER_REQUEST
+  COMPLIANCE
+  DND_LIST
+}
+
+enum CardStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+enum Channel {
+  TELECALLER
+  ADVISOR
+  BOTH
+}
+
+enum ProfileStatus {
+  DRAFT
+  APPROVED
+  RETIRED
+}
+
+enum Sourceability {
+  SOURCEABLE
+  NOT_SOURCEABLE
+  REQUIRES_BANK_MAPPING
+}
+
+enum CallProviderState {
+  REQUESTED
+  RINGING
+  CONNECTED
+  ENDED
+  FAILED
+  NO_ANSWER
+  UNKNOWN
+}
+
+enum RecordingStatus {
+  NOT_ATTEMPTED
+  PENDING
+  AVAILABLE
+  FAILED
+}
+
+enum CallOutcomeKind {
+  NO_ANSWER_OR_FAILED
+  CONNECTED_INTERESTED
+  CONNECTED_LINK_OR_PDF_SHARED
+  FOLLOW_UP
+  DECLINED
+  COMPLETED_NO_FURTHER
+}
+
+enum ShareKind {
+  BENEFIT_PDF
+  OFFICE_ID
+  APPLICATION_LINK
+}
+
+enum ShareChannel {
+  WHATSAPP_HANDOFF
+  WHATSAPP_BUSINESS_API
+}
+
+enum HandoffResult {
+  OPENED
+  FAILED
+}
+
+enum DeliveryStatus {
+  UNKNOWN
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum OnboardingStep {
+  PERSONAL
+  CONSENT
+  IDENTITY
+  BANK
+  CHEQUE
+  AGENT_CODE
+  REVIEW
+  AWAITING_REVIEW
+  COMPLETE
+}
+
+enum VerificationStatus {
+  NOT_STARTED
+  PENDING
+  VERIFIED
+  MISMATCH
+  FAILED
+  UNAVAILABLE
+}
+
+enum ReviewOutcome {
+  APPROVED
+  REJECTED
+}
+
+enum EmploymentType {
+  SALARIED
+  SELF_EMPLOYED
+  SELF_EMPLOYED_PROFESSIONAL
+}
+
+enum LinkAction {
+  SHARED
+  OPENED
+}
+
+enum BankReferenceKind {
+  APPLICATION_NO
+  APPLICATION_REFERENCE_NUMBER
+  OTHER
+}
+
+enum LinkageSource {
+  ADVISOR_ENTERED
+  ADMIN_ENTERED
+  ISSUER_CALLBACK
+  MIS_RESOLVED_BY_ADMIN
+}
+
+enum LinkageVerification {
+  UNVERIFIED
+  VERIFIED_BY_MIS_MATCH
+  REJECTED
+}
+
+enum MisSnapshotMode {
+  DELTA
+  FULL_SNAPSHOT
+}
+
+enum MisBatchStage {
+  UPLOADED
+  PARSED
+  MAPPED
+  PREVIEWED
+  APPLYING
+  APPLIED
+  FAILED
+  REJECTED
+}
+
+enum MisRowMatchState {
+  PENDING
+  MATCHED
+  UNMATCHED
+  CONFLICT
+  INVALID
+  DUPLICATE_IN_BATCH
+  IGNORED
+}
+
+enum BankStatusChangeKind {
+  SET
+  CHANGED
+  CONFIRMED_SAME
+  REPORTED_BLANK
+  ABSENT_FROM_BATCH
+}
+
+enum RuleStatus {
+  DRAFT
+  APPROVED
+  RETIRED
+}
+
+enum PayoutEntitlementState {
+  PENDING_HOLD
+  ELIGIBLE_AVAILABLE
+  RESERVED
+  PAID
+  UNDER_REVIEW
+  VOID
+}
+
+enum PayoutRequestState {
+  PENDING_APPROVALS
+  APPROVED
+  REJECTED
+  CANCELLED
+  PAYMENT_RECORDED_PENDING_PROOF
+  PAID
+  ON_HOLD
+}
+
+enum ApprovalRole {
+  MANAGER
+  ADMIN
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+enum ExternalPaymentState {
+  RECORDED
+  PROOF_PENDING
+  VERIFIED
+  EXCEPTION
+}
+
+enum FilePurpose {
+  CUSTOMER_LIST
+  BANK_PINCODE
+  PINCODE_MASTER
+  MIS
+  TRAINING_VIDEO
+  CARD_IMAGE
+  BENEFIT_PDF
+  CHEQUE
+  PAYMENT_PROOF
+  ID_CARD
+  RECORDING
+  DND_LIST
+}
+
+enum FileScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  SKIPPED
+}
+
+enum NotificationKind {
+  ASSIGNMENT_NEW
+  TRAINING_DEADLINE
+  TRAINING_DEACTIVATED
+  TRAINING_REACTIVATED
+  TRAINING_PASSED
+  WFH_GRANTED
+  WFH_REVOKED
+  FOLLOW_UP_DUE
+  RECORDING_STATUS
+  ONBOARDING_ISSUE
+  ONBOARDING_APPROVED
+  LEAD_CREATED
+  MIS_MATCHED
+  MIS_CHANGED
+  MIS_IMPORT_RESULT
+  PAYOUT_SUBMITTED
+  PAYOUT_APPROVAL_REQUIRED
+  PAYOUT_DECISION
+  PAYOUT_READY_FOR_PAYMENT
+  PAYOUT_PAID
+  PAYOUT_EXCEPTION
+  SECURITY_EVENT
+  ANNOUNCEMENT
+}
+
+// ───────────────────────────── 1. identity, roles, hierarchy ─────────────────────────────
+
+model User {
+  id              String     @id @default(uuid(7))
+  publicRef       String     @unique
+  mobile          String     @unique // E.164
+  role            Role
+  status          UserStatus @default(ACTIVE)
+  fullName        String
+  email           String?
+  employeeCode    String?    @unique
+  createdByUserId String?
+  lastLoginAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  createdBy            User?                 @relation("UserCreatedBy", fields: [createdByUserId], references: [id])
+  createdUsers         User[]                @relation("UserCreatedBy")
+  lifecycleEvents      UserLifecycleEvent[]  @relation("LifecycleSubject")
+  lifecycleActions     UserLifecycleEvent[]  @relation("LifecycleActor")
+  reportingAsChild     ReportingAssignment[] @relation("ReportingChild")
+  reportingAsParent    ReportingAssignment[] @relation("ReportingParent")
+  ownedAgentCodes      AgentCode[]
+  sessions             Session[]
+  auditLogs            AuditLog[]
+  sensitiveAccessLogs  SensitiveAccessLog[]
+  wfhExceptions        WfhException[]        @relation("WfhTelecaller")
+  wfhGrants            WfhException[]        @relation("WfhGrantedBy")
+  networkAccessEvents  NetworkAccessEvent[]
+  trainingEnrollment   TrainingEnrollment?
+  trainingReactivations TrainingReactivation[]
+  assignedCallingRecords CallingRecord[]
+  callAttempts         CallAttempt[]
+  callOutcomes         CallOutcome[]
+  callingInterests     CallingInterest[]
+  shareActions         ShareAction[]
+  officialIdCards      OfficialIdCard[]
+  operationalRemarks   OperationalRemark[]
+  advisorProfile       AdvisorProfile?
+  leads                Lead[]                @relation("LeadAdvisor")
+  uploadedFiles        StoredFile[]
+  notifications        Notification[]
+  payoutEntitlements   PayoutEntitlement[]
+  payoutRequests       PayoutRequest[]       @relation("PayoutRequestAdvisor")
+  payoutApprovals      PayoutApproval[]
+  externalPayments     ExternalPayment[]
+  misBatchesUploaded   MisImportBatch[]
+  customerBatchesUploaded CustomerImportBatch[]
+  pincodeBatchesUploaded BankPincodeBatch[]
+  followUpTasks        FollowUpTask[]
+  configChanges        SystemConfigHistory[]
+
+  @@index([role, status])
+}
+
+model UserLifecycleEvent {
+  id          String                 @id @default(uuid(7))
+  userId      String
+  eventType   UserLifecycleEventType
+  actorUserId String?
+  reason      String?
+  metadata    Json?
+  at          DateTime               @default(now())
+
+  user  User  @relation("LifecycleSubject", fields: [userId], references: [id])
+  actor User? @relation("LifecycleActor", fields: [actorUserId], references: [id])
+
+  @@index([userId, at])
+}
+
+model ReportingAssignment {
+  id               String                    @id @default(uuid(7))
+  childUserId      String
+  parentUserId     String
+  source           ReportingSource
+  status           ReportingAssignmentStatus @default(ACTIVE)
+  agentCodeId      String?
+  effectiveFrom    DateTime                  @default(now())
+  effectiveTo      DateTime?
+  approvedByUserId String?
+  reason           String?
+  createdAt        DateTime                  @default(now())
+
+  child     User       @relation("ReportingChild", fields: [childUserId], references: [id])
+  parent    User       @relation("ReportingParent", fields: [parentUserId], references: [id])
+  agentCode AgentCode? @relation(fields: [agentCodeId], references: [id])
+
+  @@index([childUserId, effectiveTo])
+  @@index([parentUserId, effectiveTo])
+}
+
+model AgentCode {
+  id              String          @id @default(uuid(7))
+  code            String          @unique
+  ownerUserId     String
+  status          AgentCodeStatus @default(ACTIVE)
+  expiresAt       DateTime?
+  createdByUserId String
+  createdAt       DateTime        @default(now())
+  revokedAt       DateTime?
+
+  owner       User                  @relation(fields: [ownerUserId], references: [id])
+  assignments ReportingAssignment[]
+}
+
+model Session {
+  id            String    @id @default(uuid(7))
+  userId        String
+  platform      Platform
+  deviceId      String?
+  userAgent     String?
+  ipAtLogin     String?
+  pushToken     String?
+  createdAt     DateTime  @default(now())
+  lastSeenAt    DateTime  @default(now())
+  revokedAt     DateTime?
+  revokedReason String?
+
+  user          User           @relation(fields: [userId], references: [id])
+  refreshTokens RefreshToken[]
+
+  @@index([userId, revokedAt])
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid(7))
+  sessionId    String
+  tokenHash    String    @unique
+  familyId     String
+  expiresAt    DateTime
+  usedAt       DateTime?
+  replacedById String?
+  createdAt    DateTime  @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id])
+
+  @@index([familyId])
+}
+
+model OtpChallenge {
+  id         String     @id @default(uuid(7))
+  mobile     String
+  purpose    OtpPurpose
+  codeHash   String
+  phantom    Boolean    @default(false)
+  attempts   Int        @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  ip         String?
+  createdAt  DateTime   @default(now())
+
+  @@index([mobile, createdAt])
+  @@index([ip, createdAt])
+}
+
+// ───────────────────────────── 2. configuration & audit ─────────────────────────────
+
+model SystemConfig {
+  key                     String          @id
+  valueType               ConfigValueType
+  value                   Json?
+  defaultValue            Json?
+  description             String
+  requiresValueBeforeProd Boolean         @default(false)
+  updatedByUserId         String?
+  updatedAt               DateTime        @default(now())
+
+  history SystemConfigHistory[]
+}
+
+model SystemConfigHistory {
+  id              String   @id @default(uuid(7))
+  key             String
+  oldValue        Json?
+  newValue        Json?
+  reason          String
+  changedByUserId String
+  at              DateTime @default(now())
+
+  config    SystemConfig @relation(fields: [key], references: [key])
+  changedBy User         @relation(fields: [changedByUserId], references: [id])
+
+  @@index([key, at])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid(7))
+  at          DateTime @default(now())
+  actorUserId String?
+  actorRole   Role?
+  action      String
+  entityType  String?
+  entityId    String?
+  requestId   String?
+  ip          String?
+  before      Json?
+  after       Json?
+  reason      String?
+  metadata    Json?
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId, at])
+  @@index([actorUserId, at])
+  @@index([action, at])
+}
+
+model SensitiveAccessLog {
+  id          String         @id @default(uuid(7))
+  at          DateTime       @default(now())
+  actorUserId String
+  entityType  String
+  entityId    String
+  field       SensitiveField
+  purpose     String?
+  requestId   String?
+
+  actor User @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId, at])
+  @@index([actorUserId, at])
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(uuid(7))
+  userId         String
+  key            String
+  route          String
+  responseStatus Int
+  responseBody   Json
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, key, route])
+  @@index([createdAt])
+}
+
+// ───────────────────────────── 3. access policy (telecaller network) ─────────────────────────────
+
+model OfficeNetwork {
+  id              String   @id @default(uuid(7))
+  label           String
+  cidr            String
+  active          Boolean  @default(true)
+  createdByUserId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  accessEvents NetworkAccessEvent[]
+}
+
+model WfhException {
+  id               String    @id @default(uuid(7))
+  telecallerUserId String
+  grantedByUserId  String
+  startsAt         DateTime
+  endsAt           DateTime?
+  revokedAt        DateTime?
+  revokedByUserId  String?
+  reason           String
+  createdAt        DateTime  @default(now())
+
+  telecaller   User                 @relation("WfhTelecaller", fields: [telecallerUserId], references: [id])
+  grantedBy    User                 @relation("WfhGrantedBy", fields: [grantedByUserId], references: [id])
+  accessEvents NetworkAccessEvent[]
+
+  @@index([telecallerUserId, startsAt, endsAt, revokedAt])
+}
+
+model NetworkAccessEvent {
+  id               String               @id @default(uuid(7))
+  userId           String
+  at               DateTime             @default(now())
+  ip               String
+  ssidHint         String?
+  outcome          NetworkAccessOutcome
+  matchedNetworkId String?
+  exceptionId      String?
+  route            String?
+
+  user           User           @relation(fields: [userId], references: [id])
+  matchedNetwork OfficeNetwork? @relation(fields: [matchedNetworkId], references: [id])
+  exception      WfhException?  @relation(fields: [exceptionId], references: [id])
+
+  @@index([userId, at])
+}
+
+// ───────────────────────────── 4. training ─────────────────────────────
+
+model TrainingModule {
+  id                String               @id @default(uuid(7))
+  sequence          Int                  @unique
+  title             String
+  videoFileId       String?
+  materialText      String?
+  passThresholdPct  Int
+  status            TrainingModuleStatus @default(DRAFT)
+  version           Int                  @default(1)
+  publishedAt       DateTime?
+  publishedByUserId String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  videoFile StoredFile?            @relation(fields: [videoFileId], references: [id])
+  questions TrainingQuestion[]
+  results   TrainingModuleResult[]
+}
+
+model TrainingQuestion {
+  id         String   @id @default(uuid(7))
+  moduleId   String
+  sequence   Int
+  text       String
+  options    Json // [{key:'A', text:'...'}]
+  correctKey String
+  version    Int      @default(1)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  module TrainingModule @relation(fields: [moduleId], references: [id])
+
+  @@index([moduleId, sequence])
+}
+
+model TrainingEnrollment {
+  id                    String                   @id @default(uuid(7))
+  telecallerUserId      String                   @unique
+  firstLoginAt          DateTime?
+  deadlineAt            DateTime?
+  status                TrainingEnrollmentStatus @default(NOT_STARTED)
+  currentModuleSequence Int                      @default(1)
+  passedAt              DateTime?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  telecaller    User                   @relation(fields: [telecallerUserId], references: [id])
+  moduleResults TrainingModuleResult[]
+  reactivations TrainingReactivation[]
+
+  @@index([status, deadlineAt])
+}
+
+model TrainingModuleResult {
+  id               String             @id @default(uuid(7))
+  enrollmentId     String
+  moduleId         String
+  status           ModuleResultStatus @default(LOCKED)
+  passedAt         DateTime?
+  bestScorePct     Int?
+  videoCompletedAt DateTime?
+  attemptCount     Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  enrollment TrainingEnrollment @relation(fields: [enrollmentId], references: [id])
+  module     TrainingModule     @relation(fields: [moduleId], references: [id])
+  attempts   TrainingAttempt[]
+
+  @@unique([enrollmentId, moduleId])
+}
+
+model TrainingAttempt {
+  id             String    @id @default(uuid(7))
+  moduleResultId String
+  moduleVersion  Int
+  questionIds    Json // ordered ids served to the client
+  startedAt      DateTime  @default(now())
+  submittedAt    DateTime?
+  answers        Json?
+  scorePct       Int?
+  passed         Boolean?
+
+  moduleResult TrainingModuleResult @relation(fields: [moduleResultId], references: [id])
+
+  @@index([moduleResultId, startedAt])
+}
+
+model TrainingReactivation {
+  id                      String    @id @default(uuid(7))
+  enrollmentId            String
+  byManagerUserId         String
+  at                      DateTime  @default(now())
+  reason                  String
+  originalDeadlineAt      DateTime?
+  newDeadlineAt           DateTime?
+  resumedAtModuleSequence Int
+
+  enrollment TrainingEnrollment @relation(fields: [enrollmentId], references: [id])
+  byManager  User               @relation(fields: [byManagerUserId], references: [id])
+}
+
+// ───────────────────────────── 5. calling list ─────────────────────────────
+
+model CustomerImportBatch {
+  id                           String            @id @default(uuid(7))
+  publicRef                    String            @unique
+  fileId                       String
+  uploaderUserId               String
+  uploadedAt                   DateTime          @default(now())
+  checksum                     String            @unique
+  sheetName                    String?
+  headerMapping                Json?
+  totals                       Json?
+  status                       ImportBatchStatus @default(UPLOADED)
+  error                        String?
+  consentRepresentationConfirmed Boolean         @default(false)
+  sourceVendor                 String?
+  permittedUseBasis            String?
+  allocatedAt                  DateTime?
+
+  file     StoredFile      @relation(fields: [fileId], references: [id])
+  uploader User            @relation(fields: [uploaderUserId], references: [id])
+  records  CallingRecord[]
+}
+
+model CallingRecord {
+  id                       String             @id @default(uuid(7))
+  batchId                  String
+  sourceRowNumber          Int
+  fullName                 String
+  mobile                   String
+  panEncrypted             String?
+  panLast4                 String?
+  pincode                  String // 6-char string
+  resolvedCity             String?
+  resolvedState            String?
+  locationResolved         Boolean            @default(false)
+  assignedTelecallerUserId String?
+  assignedAt               DateTime?
+  interactionStatus        InteractionStatus  @default(UNTOUCHED)
+  nextFollowUpAt           DateTime?
+  hiddenAt                 DateTime?
+  hiddenReason             String?
+  suppressed               Boolean            @default(false)
+  reviewStatus             RecordReviewStatus @default(ACCEPTED)
+  reviewReason             String?
+  possibleCollision        Boolean            @default(false)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  batch              CustomerImportBatch @relation(fields: [batchId], references: [id])
+  assignedTelecaller User?               @relation(fields: [assignedTelecallerUserId], references: [id])
+  allocationEvents   AllocationEvent[]
+  callAttempts       CallAttempt[]
+  outcomes           CallOutcome[]
+  interests          CallingInterest[]
+  shareActions       ShareAction[]
+  followUpTasks      FollowUpTask[]
+
+  @@index([assignedTelecallerUserId, hiddenAt, nextFollowUpAt])
+  @@index([mobile])
+  @@index([batchId, sourceRowNumber])
+}
+
+model AllocationEvent {
+  id                   String   @id @default(uuid(7))
+  callingRecordId      String
+  fromTelecallerUserId String?
+  toTelecallerUserId   String?
+  batchId              String?
+  at                   DateTime @default(now())
+  actorUserId          String?
+  reason               String
+  algorithmVersion     String?
+
+  callingRecord CallingRecord @relation(fields: [callingRecordId], references: [id])
+
+  @@index([callingRecordId, at])
+}
+
+model ContactSuppression {
+  id                    String            @id @default(uuid(7))
+  mobile                String            @unique
+  reason                SuppressionReason
+  sourceCallingRecordId String?
+  createdByUserId       String?
+  at                    DateTime          @default(now())
+  liftedAt              DateTime?
+  liftedByUserId        String?
+  liftReason            String?
+}
+
+model PincodeMaster {
+  pincode    String
+  officeName String
+  district   String
+  state      String
+  importedAt DateTime @default(now())
+
+  @@id([pincode, officeName])
+  @@index([pincode])
+}
+
+// ───────────────────────────── 6. catalogue & bank pincode sourcing ─────────────────────────────
+
+model Bank {
+  id          String   @id @default(uuid(7))
+  code        String   @unique
+  displayName String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  cards           CreditCard[]
+  crosswalks      ProductCodeCrosswalk[]
+  pincodeProfiles BankPincodeProfile[]
+  misProfiles     MisImportProfile[]
+  misBatches      MisImportBatch[]
+  linkages        BankApplicationLinkage[]
+  leads           Lead[]
+  payoutRules     PayoutRule[]
+  statusSnapshots BankStatusSnapshot[]
+  entitlements    PayoutEntitlement[]
+}
+
+model CardCategory {
+  id       String  @id @default(uuid(7))
+  key      String  @unique
+  label    String
+  sequence Int     @default(0)
+  active   Boolean @default(true)
+
+  cards CreditCardCategory[]
+}
+
+model CreditCard {
+  id                     String     @id @default(uuid(7))
+  bankId                 String
+  name                   String
+  productCode            String?
+  imageFileId            String?
+  description            String?
+  benefits               Json?
+  joiningFee             Decimal?   @db.Decimal(12, 2)
+  annualFee              Decimal?   @db.Decimal(12, 2)
+  majorCharges           Json?
+  eligibilityHighlights  String?
+  disclosures            String?
+  benefitPdfFileId       String?
+  status                 CardStatus @default(DRAFT)
+  version                Int        @default(1)
+  forbiddenPhraseOverride String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  bank         Bank                   @relation(fields: [bankId], references: [id])
+  image        StoredFile?            @relation("CardImage", fields: [imageFileId], references: [id])
+  benefitPdf   StoredFile?            @relation("CardPdf", fields: [benefitPdfFileId], references: [id])
+  categories   CreditCardCategory[]
+  links        ApplicationLink[]
+  publications CardPincodePublication[]
+  crosswalks   ProductCodeCrosswalk[]
+  leads        Lead[]
+  interests    CallingInterest[]
+  shareActions ShareAction[]
+  outcomes     CallOutcome[]
+  entitlements PayoutEntitlement[]
+
+  @@index([bankId, status])
+}
+
+model CreditCardCategory {
+  cardId     String
+  categoryId String
+
+  card     CreditCard   @relation(fields: [cardId], references: [id])
+  category CardCategory @relation(fields: [categoryId], references: [id])
+
+  @@id([cardId, categoryId])
+}
+
+model ApplicationLink {
+  id              String    @id @default(uuid(7))
+  cardId          String
+  channel         Channel
+  url             String // stored verbatim
+  version         Int
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+
+  card        CreditCard           @relation(fields: [cardId], references: [id])
+  initiations LeadLinkInitiation[]
+  interests   CallingInterest[]
+
+  @@index([cardId, channel, effectiveFrom, effectiveTo])
+}
+
+model ProductCodeCrosswalk {
+  id                String   @id @default(uuid(7))
+  bankId            String
+  misProductCode    String
+  cardId            String
+  confirmedByUserId String
+  at                DateTime @default(now())
+
+  bank Bank       @relation(fields: [bankId], references: [id])
+  card CreditCard @relation(fields: [cardId], references: [id])
+
+  @@unique([bankId, misProductCode])
+}
+
+model BankPincodeProfile {
+  id                 String        @id @default(uuid(7))
+  bankId             String
+  version            Int
+  name               String
+  sheetName          String?
+  headerMapping      Json
+  pincodeColumn      String
+  semantics          Json
+  padNumericPincodes Boolean       @default(true)
+  status             ProfileStatus @default(DRAFT)
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  createdAt          DateTime      @default(now())
+
+  bank    Bank               @relation(fields: [bankId], references: [id])
+  batches BankPincodeBatch[]
+
+  @@unique([bankId, version])
+}
+
+model BankPincodeBatch {
+  id             String            @id @default(uuid(7))
+  profileId      String
+  fileId         String
+  checksum       String
+  uploaderUserId String
+  uploadedAt     DateTime          @default(now())
+  rowCount       Int?
+  status         ImportBatchStatus @default(UPLOADED)
+  error          String?
+
+  profile  BankPincodeProfile @relation(fields: [profileId], references: [id])
+  file     StoredFile         @relation(fields: [fileId], references: [id])
+  uploader User               @relation(fields: [uploaderUserId], references: [id])
+  rows     BankPincodeRow[]
+
+  @@unique([profileId, checksum])
+}
+
+model BankPincodeRow {
+  id              String        @id @default(uuid(7))
+  batchId         String
+  bankId          String
+  sourceRowNumber Int
+  pincode         String
+  wasPadded       Boolean       @default(false)
+  raw             Json
+  sourceability   Sourceability
+  channelFlags    Json?
+
+  batch BankPincodeBatch @relation(fields: [batchId], references: [id])
+
+  @@index([bankId, pincode])
+  @@index([batchId])
+}
+
+model CardPincodePublication {
+  id                String    @id @default(uuid(7))
+  cardId            String
+  pincode           String?
+  state             String?
+  channel           Channel
+  publishedByUserId String
+  effectiveFrom     DateTime  @default(now())
+  effectiveTo       DateTime?
+
+  card CreditCard @relation(fields: [cardId], references: [id])
+
+  @@index([pincode])
+  @@index([state])
+  @@index([cardId, channel])
+}
+
+// ───────────────────────────── 7. telephony & sharing ─────────────────────────────
+
+model CallAttempt {
+  id                String            @id @default(uuid(7))
+  callingRecordId   String
+  telecallerUserId  String
+  providerKey       String
+  providerCallId    String?
+  targetMobileMasked String
+  initiatedAt       DateTime          @default(now())
+  providerState     CallProviderState @default(REQUESTED)
+  connectedAt       DateTime?
+  endedAt           DateTime?
+  durationSec       Int?
+  failureReason     String?
+  idempotencyKey    String            @unique
+
+  callingRecord CallingRecord  @relation(fields: [callingRecordId], references: [id])
+  telecaller    User           @relation(fields: [telecallerUserId], references: [id])
+  recording     CallRecording?
+  outcomes      CallOutcome[]
+
+  @@index([callingRecordId, initiatedAt])
+  @@index([telecallerUserId, initiatedAt])
+  @@index([providerKey, providerCallId])
+}
+
+model CallRecording {
+  id                  String          @id @default(uuid(7))
+  callAttemptId       String          @unique
+  providerRecordingId String?
+  status              RecordingStatus @default(NOT_ATTEMPTED)
+  fileId              String?
+  durationSec         Int?
+  retrievedAt         DateTime?
+  failureReason       String?
+
+  callAttempt CallAttempt @relation(fields: [callAttemptId], references: [id])
+  file        StoredFile? @relation(fields: [fileId], references: [id])
+}
+
+model CallOutcome {
+  id               String      @id @default(uuid(7))
+  callAttemptId    String?
+  callingRecordId  String
+  telecallerUserId String
+  outcome          CallOutcomeKind
+  remarks          String?
+  followUpAt       DateTime?
+  selectedCardId   String?
+  doNotContact     Boolean     @default(false)
+  at               DateTime    @default(now())
+
+  callAttempt   CallAttempt?  @relation(fields: [callAttemptId], references: [id])
+  callingRecord CallingRecord @relation(fields: [callingRecordId], references: [id])
+  telecaller    User          @relation(fields: [telecallerUserId], references: [id])
+  selectedCard  CreditCard?   @relation(fields: [selectedCardId], references: [id])
+
+  @@index([callingRecordId, at])
+}
+
+model CallingInterest {
+  id                String   @id @default(uuid(7))
+  callingRecordId   String
+  telecallerUserId  String
+  cardId            String
+  applicationLinkId String?
+  at                DateTime @default(now())
+
+  callingRecord   CallingRecord    @relation(fields: [callingRecordId], references: [id])
+  telecaller      User             @relation(fields: [telecallerUserId], references: [id])
+  card            CreditCard       @relation(fields: [cardId], references: [id])
+  applicationLink ApplicationLink? @relation(fields: [applicationLinkId], references: [id])
+
+  @@index([callingRecordId, at])
+}
+
+model ShareAction {
+  id                 String         @id @default(uuid(7))
+  actorUserId        String
+  callingRecordId    String?
+  leadId             String?
+  kind               ShareKind
+  cardId             String?
+  assetVersionRef    String?
+  targetMobileMasked String
+  channel            ShareChannel
+  handoffResult      HandoffResult
+  deliveryStatus     DeliveryStatus @default(UNKNOWN)
+  providerMessageId  String?
+  at                 DateTime       @default(now())
+
+  actor         User           @relation(fields: [actorUserId], references: [id])
+  callingRecord CallingRecord? @relation(fields: [callingRecordId], references: [id])
+  lead          Lead?          @relation(fields: [leadId], references: [id])
+  card          CreditCard?    @relation(fields: [cardId], references: [id])
+
+  @@index([callingRecordId, at])
+  @@index([leadId, at])
+}
+
+model OfficialIdCard {
+  id             String    @id @default(uuid(7))
+  userId         String
+  version        Int
+  renderedFileId String?
+  fields         Json
+  issuedAt       DateTime  @default(now())
+  revokedAt      DateTime?
+
+  user User        @relation(fields: [userId], references: [id])
+  file StoredFile? @relation(fields: [renderedFileId], references: [id])
+
+  @@index([userId, revokedAt])
+}
+
+model OperationalRemark {
+  id           String    @id @default(uuid(7))
+  entityType   String
+  entityId     String
+  authorUserId String
+  text         String
+  at           DateTime  @default(now())
+  editedAt     DateTime?
+  editHistory  Json?
+
+  author User @relation(fields: [authorUserId], references: [id])
+
+  @@index([entityType, entityId, at])
+}
+
+// ───────────────────────────── 8. advisor onboarding & leads ─────────────────────────────
+
+model AdvisorProfile {
+  id                        String             @id @default(uuid(7))
+  userId                    String             @unique
+  onboardingStep            OnboardingStep     @default(PERSONAL)
+  identityStatus            VerificationStatus @default(NOT_STARTED)
+  identityProvider          String?
+  identityProviderRef       String?
+  identityVerifiedAt        DateTime?
+  identityMethod            String?
+  identityEvidenceSummary   Json?
+  bankAccountEncrypted      String?
+  bankAccountLast4          String?
+  ifsc                      String?
+  bankName                  String?
+  accountHolderName         String?
+  chequeFileId              String?
+  consentRecords            Json?
+  submittedAt               DateTime?
+  reviewedByUserId          String?
+  reviewedAt                DateTime?
+  reviewOutcome             ReviewOutcome?
+  reviewReason              String?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id])
+  chequeFile StoredFile? @relation(fields: [chequeFileId], references: [id])
+}
+
+model LeadDraft {
+  id            String   @id @default(uuid(7))
+  advisorUserId String
+  cardId        String
+  step          String
+  data          Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  expiresAt     DateTime
+
+  @@index([advisorUserId, expiresAt])
+}
+
+model Lead {
+  id                            String         @id @default(uuid(7))
+  publicRef                     String         @unique
+  advisorUserId                 String
+  reportingParentUserIdSnapshot String
+  cardId                        String
+  bankId                        String
+  customerFullName              String
+  customerMobile                String
+  customerPanEncrypted          String?
+  customerPanLast4              String?
+  panVerificationStatus         VerificationStatus @default(NOT_STARTED)
+  panVerificationRef            String?
+  pincode                       String
+  city                          String?
+  state                         String?
+  locationConfirmed             Boolean        @default(false)
+  employmentType                EmploymentType
+  annualIncomeItr               Decimal        @db.Decimal(14, 2)
+  declarations                  Json
+  bureauAckAt                   DateTime
+  possibleCollision             Boolean        @default(false)
+  idempotencyKey                String         @unique
+  createdAt                     DateTime       @default(now())
+  updatedAt                     DateTime       @updatedAt
+
+  advisor         User                     @relation("LeadAdvisor", fields: [advisorUserId], references: [id])
+  card            CreditCard               @relation(fields: [cardId], references: [id])
+  bank            Bank                     @relation(fields: [bankId], references: [id])
+  linkInitiations LeadLinkInitiation[]
+  linkages        BankApplicationLinkage[]
+  statusSnapshot  BankStatusSnapshot?
+  statusHistory   BankStatusHistory[]
+  misRows         MisRow[]
+  shareActions    ShareAction[]
+  followUpTasks   FollowUpTask[]
+  entitlements    PayoutEntitlement[]
+
+  @@index([advisorUserId, createdAt])
+  @@index([reportingParentUserIdSnapshot])
+  @@index([customerMobile])
+}
+
+model LeadLinkInitiation {
+  id                String     @id @default(uuid(7))
+  leadId            String
+  applicationLinkId String
+  linkVersion       Int
+  action            LinkAction
+  byUserId          String
+  at                DateTime   @default(now())
+
+  lead            Lead            @relation(fields: [leadId], references: [id])
+  applicationLink ApplicationLink @relation(fields: [applicationLinkId], references: [id])
+
+  @@index([leadId, at])
+}
+
+model BankApplicationLinkage {
+  id                 String              @id @default(uuid(7))
+  leadId             String
+  bankId             String
+  referenceKind      BankReferenceKind
+  referenceValue     String
+  source             LinkageSource
+  verificationStatus LinkageVerification @default(UNVERIFIED)
+  enteredByUserId    String?
+  at                 DateTime            @default(now())
+  supersededAt       DateTime?
+
+  lead Lead @relation(fields: [leadId], references: [id])
+  bank Bank @relation(fields: [bankId], references: [id])
+
+  @@unique([bankId, referenceKind, referenceValue])
+  @@index([leadId])
+}
+
+model FollowUpTask {
+  id              String    @id @default(uuid(7))
+  leadId          String?
+  callingRecordId String?
+  ownerUserId     String
+  text            String
+  dueAt           DateTime
+  doneAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  lead          Lead?          @relation(fields: [leadId], references: [id])
+  callingRecord CallingRecord? @relation(fields: [callingRecordId], references: [id])
+  owner         User           @relation(fields: [ownerUserId], references: [id])
+
+  @@index([ownerUserId, dueAt, doneAt])
+}
+
+// ───────────────────────────── 9. MIS (bank source of truth) ─────────────────────────────
+
+model MisImportProfile {
+  id               String          @id @default(uuid(7))
+  bankId           String
+  version          Int
+  name             String
+  sheetSelector    String?
+  headerAliases    Json
+  fieldMap         Json
+  referenceFields  Json
+  snapshotMode     MisSnapshotMode @default(DELTA)
+  blankOverwrites  Boolean         @default(false)
+  timezone         String          @default("Asia/Kolkata")
+  timezoneAssumed  Boolean         @default(true)
+  dateFormats      Json?
+  knownValues      Json?
+  status           ProfileStatus   @default(DRAFT)
+  approvedByUserId String?
+  approvedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  bank    Bank             @relation(fields: [bankId], references: [id])
+  batches MisImportBatch[]
+
+  @@unique([bankId, version])
+}
+
+model MisImportBatch {
+  id             String        @id @default(uuid(7))
+  publicRef      String        @unique
+  bankId         String
+  profileId      String
+  fileId         String
+  checksum       String
+  sheetName      String?
+  uploaderUserId String
+  uploadedAt     DateTime      @default(now())
+  stage          MisBatchStage @default(UPLOADED)
+  totals         Json?
+  preview        Json?
+  appliedAt      DateTime?
+  error          String?
+  rejectReason   String?
+
+  bank      Bank                @relation(fields: [bankId], references: [id])
+  profile   MisImportProfile    @relation(fields: [profileId], references: [id])
+  file      StoredFile          @relation(fields: [fileId], references: [id])
+  uploader  User                @relation(fields: [uploaderUserId], references: [id])
+  rows      MisRow[]
+  snapshots BankStatusSnapshot[]
+  history   BankStatusHistory[]
+  entitlements PayoutEntitlement[]
+
+  @@unique([bankId, checksum])
+  @@index([stage, uploadedAt])
+}
+
+model MisRow {
+  id               String           @id @default(uuid(7))
+  batchId          String
+  sourceRowNumber  Int
+  rowHash          String
+  raw              Json
+  mapped           Json?
+  mappedDates      Json?
+  referenceValues  Json?
+  matchState       MisRowMatchState @default(PENDING)
+  matchedLeadId    String?
+  matchExplanation String?
+  reviewedByUserId String?
+  reviewedAt       DateTime?
+  resolution       String?
+  appliedAt        DateTime?
+
+  batch       MisImportBatch      @relation(fields: [batchId], references: [id])
+  matchedLead Lead?               @relation(fields: [matchedLeadId], references: [id])
+  history     BankStatusHistory[]
+  entitlements PayoutEntitlement[]
+
+  @@unique([batchId, rowHash])
+  @@index([batchId, matchState])
+  @@index([matchedLeadId])
+}
+
+/// Written ONLY by the MIS apply service (INV-01). Absent row = "Awaiting MIS Update"; null field = "Not reported".
+model BankStatusSnapshot {
+  id                         String    @id @default(uuid(7))
+  leadId                     String    @unique
+  bankId                     String
+  applicationNo              String?
+  applicationReferenceNumber String?
+  currentStage               String?
+  finalDecision              String?
+  cardActivationStatus       String?
+  ipaStatus                  String?
+  kycStatus                  String?
+  vkycStatus                 String?
+  bkycStatus                 String?
+  kycSuccessNr               String?
+  dropoffReason              String?
+  declineCode                String?
+  declineDescription         String?
+  declineDescription2        String?
+  declineType                String?
+  reason                     String?
+  curableFlag                String?
+  dapFinalFlag               String?
+  idcomStatus                String?
+  productCode                String?
+  productDescription         String?
+  cardType                   String?
+  securedUnsecured           String?
+  customerType               String?
+  channel                    String?
+  promoCode                  String?
+  lc2Code                    String?
+  bankCreationDateTime       DateTime?
+  bankCreationDate           DateTime?
+  finalDecisionDate          DateTime?
+  vkycConsentDate            DateTime?
+  vkycExpiryDate             DateTime?
+  decisionMonth              String?
+  rawLatest                  Json
+  lastMatchedBatchId         String
+  lastMatchedAt              DateTime
+  firstMatchedAt             DateTime
+  updatedAt                  DateTime  @updatedAt
+
+  lead             Lead           @relation(fields: [leadId], references: [id])
+  bank             Bank           @relation(fields: [bankId], references: [id])
+  lastMatchedBatch MisImportBatch @relation(fields: [lastMatchedBatchId], references: [id])
+
+  @@index([bankId, finalDecision])
+  @@index([bankId, cardActivationStatus])
+  @@index([lastMatchedAt])
+}
+
+model BankStatusHistory {
+  id                String               @id @default(uuid(7))
+  leadId            String
+  batchId           String
+  misRowId          String?
+  field             String
+  oldValue          String?
+  newValue          String?
+  reportedEventDate DateTime?
+  importedAt        DateTime
+  uploaderUserId    String
+  changeKind        BankStatusChangeKind
+
+  lead   Lead           @relation(fields: [leadId], references: [id])
+  batch  MisImportBatch @relation(fields: [batchId], references: [id])
+  misRow MisRow?        @relation(fields: [misRowId], references: [id])
+
+  @@unique([leadId, batchId, field])
+  @@index([leadId, importedAt])
+}
+
+// ───────────────────────────── 10. payouts ─────────────────────────────
+
+model PayoutRule {
+  id                 String     @id @default(uuid(7))
+  bankId             String
+  name               String
+  version            Int
+  triggerField       String
+  triggerValues      Json
+  productCodePattern String?
+  holdDays           Int        @default(0)
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  status             RuleStatus @default(DRAFT)
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  notes              String?
+  createdAt          DateTime   @default(now())
+
+  bank         Bank                @relation(fields: [bankId], references: [id])
+  rates        PayoutRate[]
+  entitlements PayoutEntitlement[]
+
+  @@unique([bankId, name, version])
+  @@index([bankId, status, effectiveFrom, effectiveTo])
+}
+
+model PayoutRate {
+  id               String     @id @default(uuid(7))
+  ruleId           String
+  amountInr        Decimal    @db.Decimal(12, 2)
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  status           RuleStatus @default(DRAFT)
+  approvedByUserId String?
+  approvedAt       DateTime?
+  createdAt        DateTime   @default(now())
+
+  rule         PayoutRule          @relation(fields: [ruleId], references: [id])
+  entitlements PayoutEntitlement[]
+
+  @@index([ruleId, effectiveFrom, effectiveTo])
+}
+
+model PayoutEntitlement {
+  id                      String                 @id @default(uuid(7))
+  leadId                  String
+  advisorUserId           String
+  reportingParentSnapshot String
+  bankId                  String
+  cardId                  String
+  eventKey                String                 @unique
+  ruleId                  String
+  ruleVersion             Int
+  rateId                  String
+  amountInr               Decimal                @db.Decimal(12, 2)
+  evidenceBatchId         String
+  evidenceMisRowId        String?
+  triggerFieldValue       String
+  eligibleAt              DateTime
+  state                   PayoutEntitlementState @default(PENDING_HOLD)
+  currentRequestId        String?
+  reviewReason            String?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+
+  lead          Lead                     @relation(fields: [leadId], references: [id])
+  advisor       User                     @relation(fields: [advisorUserId], references: [id])
+  bank          Bank                     @relation(fields: [bankId], references: [id])
+  card          CreditCard               @relation(fields: [cardId], references: [id])
+  rule          PayoutRule               @relation(fields: [ruleId], references: [id])
+  rate          PayoutRate               @relation(fields: [rateId], references: [id])
+  evidenceBatch MisImportBatch           @relation(fields: [evidenceBatchId], references: [id])
+  evidenceRow   MisRow?                  @relation(fields: [evidenceMisRowId], references: [id])
+  events        PayoutEntitlementEvent[]
+  requestItems  PayoutRequestItem[]
+
+  @@index([advisorUserId, state])
+  @@index([leadId])
+  @@index([state, eligibleAt])
+}
+
+model PayoutEntitlementEvent {
+  id            String                 @id @default(uuid(7))
+  entitlementId String
+  at            DateTime               @default(now())
+  fromState     PayoutEntitlementState?
+  toState       PayoutEntitlementState
+  requestId     String?
+  actorUserId   String?
+  reason        String?
+  batchId       String?
+
+  entitlement PayoutEntitlement @relation(fields: [entitlementId], references: [id])
+
+  @@index([entitlementId, at])
+}
+
+model PayoutRequest {
+  id                    String             @id @default(uuid(7))
+  publicRef             String             @unique
+  advisorUserId         String
+  managerApproverUserId String
+  itemCount             Int
+  totalAmountInr        Decimal            @db.Decimal(14, 2)
+  submittedAt           DateTime           @default(now())
+  state                 PayoutRequestState @default(PENDING_APPROVALS)
+  snapshot              Json
+  idempotencyKey        String             @unique
+  cancelledAt           DateTime?
+  cancelledByUserId     String?
+  cancelReason          String?
+  updatedAt             DateTime           @updatedAt
+
+  advisor   User                @relation("PayoutRequestAdvisor", fields: [advisorUserId], references: [id])
+  items     PayoutRequestItem[]
+  approvals PayoutApproval[]
+  payment   ExternalPayment?
+
+  @@index([advisorUserId, state])
+  @@index([managerApproverUserId, state])
+  @@index([state, submittedAt])
+}
+
+model PayoutRequestItem {
+  id                String   @id @default(uuid(7))
+  requestId         String
+  entitlementId     String
+  amountSnapshotInr Decimal  @db.Decimal(12, 2)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  request     PayoutRequest     @relation(fields: [requestId], references: [id])
+  entitlement PayoutEntitlement @relation(fields: [entitlementId], references: [id])
+
+  @@index([requestId])
+  @@index([entitlementId, active])
+}
+
+model PayoutApproval {
+  id             String           @id @default(uuid(7))
+  requestId      String
+  approverRole   ApprovalRole
+  approverUserId String
+  decision       ApprovalDecision
+  reason         String?
+  at             DateTime         @default(now())
+
+  request  PayoutRequest @relation(fields: [requestId], references: [id])
+  approver User          @relation(fields: [approverUserId], references: [id])
+
+  @@unique([requestId, approverRole])
+}
+
+model ExternalPayment {
+  id               String               @id @default(uuid(7))
+  requestId        String               @unique
+  recordedByUserId String
+  paidAt           DateTime
+  amountInr        Decimal              @db.Decimal(14, 2)
+  transferReference String              @unique
+  method           String?
+  proofFileId      String?
+  state            ExternalPaymentState @default(RECORDED)
+  exceptionReason  String?
+  correctionOfId   String?
+  createdAt        DateTime             @default(now())
+
+  request    PayoutRequest @relation(fields: [requestId], references: [id])
+  recordedBy User          @relation(fields: [recordedByUserId], references: [id])
+  proofFile  StoredFile?   @relation(fields: [proofFileId], references: [id])
+}
+
+// ───────────────────────────── 11. files, notifications, outbox ─────────────────────────────
+
+model StoredFile {
+  id               String         @id @default(uuid(7))
+  bucket           String
+  key              String
+  originalName     String
+  contentType      String
+  sizeBytes        Int
+  sha256           String
+  uploadedByUserId String
+  purpose          FilePurpose
+  scanStatus       FileScanStatus @default(PENDING)
+  scannedAt        DateTime?
+  createdAt        DateTime       @default(now())
+
+  uploadedBy       User                  @relation(fields: [uploadedByUserId], references: [id])
+  trainingModules  TrainingModule[]
+  customerBatches  CustomerImportBatch[]
+  pincodeBatches   BankPincodeBatch[]
+  misBatches       MisImportBatch[]
+  cardImages       CreditCard[]          @relation("CardImage")
+  cardPdfs         CreditCard[]          @relation("CardPdf")
+  recordings       CallRecording[]
+  idCards          OfficialIdCard[]
+  advisorCheques   AdvisorProfile[]
+  paymentProofs    ExternalPayment[]
+
+  @@unique([bucket, key])
+  @@index([purpose, createdAt])
+}
+
+model Notification {
+  id              String           @id @default(uuid(7))
+  recipientUserId String
+  kind            NotificationKind
+  title           String
+  body            String
+  deepLink        Json?
+  sourceRef       Json?
+  dedupeKey       String           @unique
+  createdAt       DateTime         @default(now())
+  readAt          DateTime?
+  pushedAt        DateTime?
+
+  recipient User @relation(fields: [recipientUserId], references: [id])
+
+  @@index([recipientUserId, readAt, createdAt])
+}
+
+model OutboxEvent {
+  id          String    @id @default(uuid(7))
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  attempts    Int       @default(0)
+  lastError   String?
+
+  @@index([processedAt, createdAt])
+}

@@ -8,4 +8,5 @@ export * from './refs';
 export * from './money';
 export * from './time';
 export * from './schemas';
+export * from './config-keys';
 export * from './client';

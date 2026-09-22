@@ -1,0 +1,55 @@
+{
+  "name": "@kbs/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "generated",
+    "prisma"
+  ],
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "build": "node scripts/generate.mjs && tsup",
+    "typecheck": "node scripts/generate.mjs && tsc --noEmit",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset --force",
+    "validate": "prisma validate",
+    "studio": "prisma studio",
+    "seed": "tsx src/seed.ts",
+    "migrate:offline": "node scripts/wasm-migrate.mjs apply"
+  },
+  "dependencies": {
+    "@kbs/shared": "workspace:*",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@kbs/config": "workspace:*",
+    "@prisma/driver-adapter-utils": "7.10.0",
+    "@prisma/schema-engine-wasm": "7.10.0-4.0edf323efd1d98336f3f0a68684b56f689b900d3",
+    "@types/node": "^22.18.6",
+    "@types/pg": "^8.15.5",
+    "dotenv": "^17.2.2",
+    "eslint": "^9.36.0",
+    "prisma": "7.10.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
