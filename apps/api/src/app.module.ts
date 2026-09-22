@@ -19,6 +19,7 @@ import { AuditInterceptor } from './modules/audit/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from './modules/config/config.module';
+import { FilesModule } from './modules/files/files.module';
 import { GatesModule } from './modules/gates/gates.module';
 import { HealthController } from './modules/health/health.controller';
 import { JobsModule } from './modules/jobs/jobs.module';
@@ -68,6 +69,7 @@ export const LOG_REDACT_PATHS = [
     GatesModule,
     AuthModule,
     JobsModule,
+    FilesModule,
   ],
   controllers: [HealthController],
   providers: [

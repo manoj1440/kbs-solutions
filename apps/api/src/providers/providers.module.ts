@@ -10,6 +10,7 @@ import { MockPanAdapter } from './adapters/mock-pan.adapter';
 import { MockPushAdapter } from './adapters/mock-push.adapter';
 import { MockTelephonyAdapter } from './adapters/mock-telephony.adapter';
 import { NoopScanAdapter } from './adapters/noop-scan.adapter';
+import { S3StorageAdapter } from './adapters/s3-storage.adapter';
 import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER, STORAGE_PROVIDER, TELEPHONY_PROVIDER, WHATSAPP_PROVIDER } from './ports';
 
 /** Selects adapters by env. Real vendor adapters are added per feature once contracts exist (REQ-28 §28.1). */
@@ -27,10 +28,8 @@ import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER,
       provide: STORAGE_PROVIDER,
       inject: [ENV],
       useFactory: (env: Env) => {
-        // S3 adapter lands with F-108 (files module); memory adapter keeps the core bootable everywhere.
         if (env.STORAGE_PROVIDER === 's3') {
-           
-          console.warn('[providers] STORAGE_PROVIDER=s3 requested but the S3 adapter arrives in F-108; using memory storage');
+          return new S3StorageAdapter({ endpoint: env.S3_ENDPOINT, region: env.S3_REGION, accessKeyId: env.S3_ACCESS_KEY, secretAccessKey: env.S3_SECRET_KEY, forcePathStyle: env.S3_FORCE_PATH_STYLE });
         }
         return new MemoryStorageAdapter();
       },
