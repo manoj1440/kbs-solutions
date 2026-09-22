@@ -20,6 +20,7 @@ export default function AdvisorLayout() {
       <Tabs.Screen name="lead-new" options={{ href: null }} />
       <Tabs.Screen name="lead-created" options={{ href: null }} />
       <Tabs.Screen name="lead" options={{ href: null }} />
+      <Tabs.Screen name="payout-request" options={{ href: null }} />
     </Tabs>
   );
 }

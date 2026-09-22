@@ -73,3 +73,30 @@ export interface PayoutRuleView {
   currentRate: PayoutRateView | null;
   entitlementCount: number;
 }
+
+// ── F-603 / F-604 requests and approvals ──
+export const CreatePayoutRequestBody = z
+  .object({ entitlementIds: z.array(z.string().uuid()).min(1).max(500).optional(), all: z.boolean().optional() })
+  .strict()
+  .refine((b) => b.all === true || (b.entitlementIds?.length ?? 0) > 0, 'Select entitlements or pass all: true');
+export type CreatePayoutRequestBody = z.infer<typeof CreatePayoutRequestBody>;
+
+export const PayoutApprovalBody = z
+  .object({ decision: z.enum(['APPROVED', 'REJECTED']), reason: z.string().trim().max(500).optional() })
+  .strict()
+  .refine((b) => b.decision === 'APPROVED' || (b.reason?.length ?? 0) >= 3, 'A rejection needs a reason');
+export type PayoutApprovalBody = z.infer<typeof PayoutApprovalBody>;
+
+export const PayoutRequestListQuery = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  state: z.enum(['PENDING_APPROVALS', 'APPROVED', 'REJECTED', 'CANCELLED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD']).optional(),
+  advisorId: z.string().uuid().optional(),
+  /** Only requests awaiting the actor's own approval. */
+  awaitingMe: z.preprocess((v) => v === 'true' || v === '1', z.boolean()).default(false),
+});
+export type PayoutRequestListQuery = z.infer<typeof PayoutRequestListQuery>;
+
+/** Ledger "position" vocabulary (REQ-17 §17.8) — derived from entitlement + request state, never from bank status. */
+export const LEDGER_POSITIONS = ['Pending hold', 'Available for claim', 'Request submitted', 'Manager approval pending', 'Admin approval pending', 'Both approved / Accounts payment pending', 'Payment recorded / proof pending', 'Paid', 'Under review', 'On hold', 'Void'] as const;
+export type LedgerPosition = (typeof LEDGER_POSITIONS)[number];

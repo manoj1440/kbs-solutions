@@ -4,9 +4,11 @@ import { UsersModule } from '../users/users.module';
 
 import { PayoutEligibilityService } from './eligibility.service';
 import { EntitlementsController } from './entitlements.controller';
+import { PayoutRequestsController } from './payout-requests.controller';
+import { PayoutRequestsService } from './payout-requests.service';
 import { PayoutRulesController } from './payout-rules.controller';
 import { PayoutRulesService } from './payout-rules.service';
 
 /** Slice 5: payout rules (F-601), entitlement evaluation (F-602), ledger/requests (F-603+). */
-@Module({ imports: [UsersModule], controllers: [PayoutRulesController, EntitlementsController], providers: [PayoutRulesService, PayoutEligibilityService], exports: [PayoutRulesService, PayoutEligibilityService] })
+@Module({ imports: [UsersModule], controllers: [PayoutRulesController, EntitlementsController, PayoutRequestsController], providers: [PayoutRulesService, PayoutEligibilityService, PayoutRequestsService], exports: [PayoutRulesService, PayoutEligibilityService, PayoutRequestsService] })
 export class PayoutsModule {}
