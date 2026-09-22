@@ -14,6 +14,8 @@ export const EnvSchema = z.object({
   JOBS_INLINE: bool,
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   WEB_ORIGIN: z.string().default('http://localhost:3000'),
+  /** Externally reachable API base (provider webhooks / redirect links). */
+  API_PUBLIC_URL: z.string().default('http://localhost:4000'),
   LOG_LEVEL: z.string().default('info'),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().default('redis://localhost:6379'),

@@ -3,6 +3,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { CallDesk } from '@/components/call-desk';
 import { SecureScreen } from '@/components/secure-screen';
 import { Badge, Button, Card, ErrorText, Heading, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -64,11 +65,7 @@ export default function RecordScreen() {
                   {rec.nextFollowUpAt ? <Badge label={`Follow up ${formatDateTime(rec.nextFollowUpAt)}`} variant="warning" /> : null}
                 </View>
               </View>
-              <Card className="gap-2">
-                <Text className="font-medium">Actions</Text>
-                <Button title={rec.canCall ? 'Call customer' : 'Calling not available'} disabled />
-                <Muted>{rec.canCall ? 'Calling, outcomes and card sharing are enabled in the next release of this app.' : rec.suppressed ? 'This customer asked not to be contacted.' : 'This record is hidden (read-only history).'}</Muted>
-              </Card>
+              {!rec.hiddenAt ? <CallDesk recordId={rec.id} canCall={rec.canCall} cards={cards?.cards ?? []} onChanged={load} /> : <Muted>{rec.suppressed ? 'This customer asked not to be contacted.' : 'This record is hidden (read-only history).'}</Muted>}
               {!rec.hiddenAt ? (
                 <Card className="gap-2">
                   <Text className="font-medium">Cards for pincode {rec.pincode}</Text>
