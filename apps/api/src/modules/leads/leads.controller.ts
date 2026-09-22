@@ -101,6 +101,12 @@ export class LeadsController {
     return this.svc.submit(actor, id, req.header('idempotency-key') as string);
   }
 
+  @Get('filters')
+  @RequirePermission('LEAD_READ_OWN', 'LEAD_READ_TEAM', 'LEAD_READ_ALL')
+  filters(@CurrentActor() actor: Actor) {
+    return this.svc.filterOptions(actor);
+  }
+
   @Get()
   @RequirePermission('LEAD_READ_OWN', 'LEAD_READ_TEAM', 'LEAD_READ_ALL')
   list(@CurrentActor() actor: Actor, @Query() raw: unknown) {

@@ -36,7 +36,7 @@ export class MisPipelineController {
 
   @Get('leads/:id/mis-history')
   @RequirePermission('LEAD_READ_OWN', 'LEAD_READ_TEAM', 'LEAD_READ_ALL')
-  history(@Param('id') id: string) {
-    return this.svc.leadHistory(id);
+  history(@CurrentActor() actor: Actor, @Param('id') id: string) {
+    return this.svc.leadHistory(actor, id);
   }
 }

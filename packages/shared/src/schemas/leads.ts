@@ -59,5 +59,52 @@ export interface LeadDraftView {
 export const BankReferenceBody = z.object({ referenceKind: z.enum(['APPLICATION_NO', 'APPLICATION_REFERENCE_NUMBER', 'OTHER']), referenceValue: z.string().min(1).max(120) }).strict();
 export type BankReferenceBody = z.infer<typeof BankReferenceBody>;
 
-export const LeadListQuery = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(100).default(50), q: z.string().trim().max(80).optional(), advisorId: z.string().uuid().optional() });
+// ── F-408 ──
+export const MIS_FRESHNESS = ['never', 'recent', 'older7d', 'older30d'] as const;
+export const LEAD_SORTS = ['createdAt_desc', 'createdAt_asc', 'lastMatchedAt_desc', 'lastMatchedAt_asc', 'customer_asc'] as const;
+/** Sentinel filter value meaning "never matched to any MIS row" (display 'Awaiting MIS Update'). */
+export const FILTER_AWAITING = '__awaiting__';
+/** Sentinel filter value meaning "matched but the bank reported no value" (display 'Not reported'). */
+export const FILTER_NOT_REPORTED = '__not_reported__';
+const boolQuery = z.preprocess((v) => (v === 'true' || v === '1' ? true : v === 'false' || v === '0' ? false : v), z.boolean().optional());
+export const LeadListQuery = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  /** Customer name, mobile (any format) or KBS / bank reference. */
+  q: z.string().trim().max(80).optional(),
+  advisorId: z.string().uuid().optional(),
+  bankId: z.string().uuid().optional(),
+  cardId: z.string().uuid().optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  stage: z.string().trim().max(120).optional(),
+  decision: z.string().trim().max(120).optional(),
+  activation: z.string().trim().max(120).optional(),
+  misFreshness: z.enum(MIS_FRESHNESS).optional(),
+  /** Leads the actor can still act on: no MIS match yet and no verified bank reference. */
+  actionable: boolQuery,
+  sort: z.enum(LEAD_SORTS).default('createdAt_desc'),
+});
+export interface LeadFilterOptions {
+  banks: { id: string; displayName: string }[];
+  cards: { id: string; name: string; bankId: string }[];
+  stages: string[];
+  decisions: string[];
+  activations: string[];
+}
+export interface OperationalEvent {
+  id: string;
+  at: string;
+  kind: 'LEAD_CREATED' | 'LINK_SHARED' | 'LINK_OPENED' | 'BANK_REFERENCE_ENTERED' | 'BANK_REFERENCE_CORRECTED' | 'SHARE_SENT' | 'FOLLOW_UP_TASK' | 'OPERATIONAL_REMARK';
+  label: string;
+  detail: string | null;
+  provenance: 'KBS_OPERATIONAL';
+}
+export interface MisHistoryGroup {
+  batchId: string;
+  publicRef: string;
+  importedAt: string;
+  uploaderRole: string;
+  changes: { field: string; oldValue: string | null; newValue: string | null; changeKind: string; reportedEventDate: string | null }[];
+}
 export type LeadListQuery = z.infer<typeof LeadListQuery>;

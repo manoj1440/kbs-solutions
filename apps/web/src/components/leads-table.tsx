@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
  * F-506 — the REQ-14 §14.2 status table. Stage / Decision / Activation are separate columns with their own badges;
  * the expandable panel shows the remarks preview and raw bank values. There is no "next stage" action (§14.2 row 13).
  */
-export function LeadsTable({ rows, detailHref }: { rows: LeadStatusRow[]; detailHref: (row: LeadStatusRow) => string }) {
+export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath: string }) {
   'use no memo'; // TanStack Table returns unstable functions; React Compiler must skip this component.
   const [sorting, setSorting] = useState<SortingState>([{ id: 'leadCreatedAt', desc: true }]);
   const [expanded, setExpanded] = useState<ExpandedState>({});
@@ -48,7 +48,7 @@ export function LeadsTable({ rows, detailHref }: { rows: LeadStatusRow[]; detail
     { id: 'action', header: 'Action', enableSorting: false, cell: ({ row }) => (
         <div className="flex gap-1">
           <Button asChild size="sm" variant="outline">
-            <Link href={detailHref(row.original)}>Open details</Link>
+            <Link href={`${basePath}/${row.original.id}`}>Open details</Link>
           </Button>
           <Button size="sm" variant="ghost" onClick={row.getToggleExpandedHandler()} aria-expanded={row.getIsExpanded()}>
             {row.getIsExpanded() ? 'Hide' : 'Raw'}

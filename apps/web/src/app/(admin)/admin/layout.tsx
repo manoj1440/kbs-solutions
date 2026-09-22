@@ -5,6 +5,7 @@ const NAV = [
   { href: '/admin', label: 'Overview' },
   { href: '/admin/users', label: 'Users & teams' },
   { href: '/admin/onboarding', label: 'Advisor onboarding' },
+  { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/training', label: 'Training content' },
   { href: '/admin/training/team', label: 'Training progress' },
   { href: '/admin/calling-list', label: 'Calling lists' },

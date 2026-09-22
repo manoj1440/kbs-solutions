@@ -1,4 +1,5 @@
-import { type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, DEFAULT_BLANK_TOKENS, type DeclarationText, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, RefPrefix, toE164India } from '@kbs/shared';
+import type { Prisma } from '@kbs/db';
+import { type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, DEFAULT_BLANK_TOKENS, type DeclarationText, FILTER_AWAITING, FILTER_NOT_REPORTED, isBlankBankValue, isValidE164India, type LeadFilterOptions, type OperationalEvent, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, RefPrefix, toE164India } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -324,15 +325,89 @@ export class LeadsService {
     });
   }
 
+  /** F-408 search + filters. `q` matches customer name, mobile (any Indian format) or a KBS / bank reference — never status text. */
+  private listWhere(actor: Actor, q: LeadListQuery): Prisma.LeadWhereInput {
+    const and: Prisma.LeadWhereInput[] = [this.scopeWhere(actor, q.advisorId)];
+    if (q.q) {
+      const or: Prisma.LeadWhereInput[] = [{ customerFullName: { contains: q.q, mode: 'insensitive' } }, { publicRef: { contains: q.q.toUpperCase() } }, { linkages: { some: { referenceValue: q.q } } }];
+      if (isValidE164India(q.q)) or.push({ customerMobile: toE164India(q.q) });
+      and.push({ OR: or });
+    }
+    if (q.bankId) and.push({ bankId: q.bankId });
+    if (q.cardId) and.push({ cardId: q.cardId });
+    if (q.from) and.push({ createdAt: { gte: new Date(`${q.from}T00:00:00+05:30`) } });
+    if (q.to) and.push({ createdAt: { lt: new Date(new Date(`${q.to}T00:00:00+05:30`).getTime() + 86_400_000) } });
+    const tokens = this.blankTokens();
+    const statusFilter = (field: 'currentStage' | 'finalDecision' | 'cardActivationStatus', v: string | undefined) => {
+      if (!v) return;
+      if (v === FILTER_AWAITING) and.push({ statusSnapshot: null });
+      else if (v === FILTER_NOT_REPORTED) and.push({ statusSnapshot: { OR: [{ [field]: null }, { [field]: { in: [...tokens] } }] } });
+      else and.push({ statusSnapshot: { [field]: { equals: v, mode: 'insensitive' } } });
+    };
+    statusFilter('currentStage', q.stage);
+    statusFilter('finalDecision', q.decision);
+    statusFilter('cardActivationStatus', q.activation);
+    if (q.misFreshness) {
+      const now = Date.now();
+      if (q.misFreshness === 'never') and.push({ statusSnapshot: null });
+      else if (q.misFreshness === 'recent') and.push({ statusSnapshot: { lastMatchedAt: { gte: new Date(now - 7 * 86_400_000) } } });
+      else if (q.misFreshness === 'older7d') and.push({ statusSnapshot: { lastMatchedAt: { lt: new Date(now - 7 * 86_400_000) } } });
+      else and.push({ statusSnapshot: { lastMatchedAt: { lt: new Date(now - 30 * 86_400_000) } } });
+    }
+    if (q.actionable === true) and.push({ statusSnapshot: null, linkages: { none: { supersededAt: null, verificationStatus: 'VERIFIED_BY_MIS_MATCH' } } });
+    if (q.actionable === false) and.push({ OR: [{ statusSnapshot: { isNot: null } }, { linkages: { some: { supersededAt: null, verificationStatus: 'VERIFIED_BY_MIS_MATCH' } } }] });
+    return { AND: and };
+  }
+
   async list(actor: Actor, q: LeadListQuery) {
-    const where = { ...this.scopeWhere(actor, q.advisorId), ...(q.q ? { OR: [{ customerFullName: { contains: q.q, mode: 'insensitive' as const } }, { publicRef: { contains: q.q.toUpperCase() } }] } : {}) };
-    const [rows, total] = await Promise.all([
-      this.prisma.client.lead.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: this.rowInclude }),
-      this.prisma.client.lead.count({ where }),
-    ]);
+    const where = this.listWhere(actor, q);
+    const skip = (q.page - 1) * q.pageSize;
+    let rows: RowSource[];
+    let total: number;
+    if (q.sort === 'lastMatchedAt_desc' || q.sort === 'lastMatchedAt_asc') {
+      // Postgres puts NULLs first on DESC; never-matched leads must sort last either way, so order ids in memory (cheap: ids only).
+      const all = await this.prisma.client.lead.findMany({ where, select: { id: true, createdAt: true, statusSnapshot: { select: { lastMatchedAt: true } } } });
+      const dir = q.sort === 'lastMatchedAt_desc' ? -1 : 1;
+      all.sort((a, b) => {
+        const am = a.statusSnapshot?.lastMatchedAt.getTime() ?? null;
+        const bm = b.statusSnapshot?.lastMatchedAt.getTime() ?? null;
+        if (am === null && bm === null) return b.createdAt.getTime() - a.createdAt.getTime();
+        if (am === null) return 1;
+        if (bm === null) return -1;
+        return dir * (am - bm) || b.createdAt.getTime() - a.createdAt.getTime();
+      });
+      total = all.length;
+      const pageIds = all.slice(skip, skip + q.pageSize).map((x) => x.id);
+      const fetched = await this.prisma.client.lead.findMany({ where: { id: { in: pageIds } }, include: this.rowInclude });
+      const byId = new Map(fetched.map((r) => [r.id, r]));
+      rows = pageIds.map((id) => byId.get(id)).filter((r): r is NonNullable<typeof r> => !!r);
+    } else {
+      const orderBy: Prisma.LeadOrderByWithRelationInput[] = q.sort === 'createdAt_asc' ? [{ createdAt: 'asc' }] : q.sort === 'customer_asc' ? [{ customerFullName: 'asc' }, { createdAt: 'desc' }] : [{ createdAt: 'desc' }];
+      [rows, total] = await Promise.all([this.prisma.client.lead.findMany({ where, orderBy, skip, take: q.pageSize, include: this.rowInclude }), this.prisma.client.lead.count({ where })]);
+    }
     const xw = await this.crosswalks(rows);
     const tokens = this.blankTokens();
-    return new Paginated(rows.map((l) => this.toRow(l, xw, tokens)), q.page, q.pageSize, total);
+    return new Paginated(rows.map((l) => this.toRow(l, xw, tokens)), q.page, q.pageSize, total, { filters: { q: q.q ?? null, bankId: q.bankId ?? null, cardId: q.cardId ?? null, stage: q.stage ?? null, decision: q.decision ?? null, activation: q.activation ?? null, misFreshness: q.misFreshness ?? null, actionable: q.actionable ?? null, sort: q.sort } });
+  }
+
+  /** Distinct filter values within the actor's scope — verbatim bank values, never a fixed list (REQ-14 §14.1). */
+  async filterOptions(actor: Actor): Promise<LeadFilterOptions> {
+    const scope = this.scopeWhere(actor);
+    const [banks, cards, snaps] = await Promise.all([
+      this.prisma.client.lead.findMany({ where: scope, distinct: ['bankId'], select: { bank: { select: { id: true, displayName: true } } }, orderBy: { bank: { displayName: 'asc' } } }),
+      this.prisma.client.lead.findMany({ where: scope, distinct: ['cardId'], select: { card: { select: { id: true, name: true, bankId: true } } }, orderBy: { card: { name: 'asc' } } }),
+      this.prisma.client.bankStatusSnapshot.findMany({ where: { lead: scope }, select: { currentStage: true, finalDecision: true, cardActivationStatus: true } }),
+    ]);
+    const tokens = this.blankTokens();
+    const distinct = (vals: (string | null)[]) => [...new Set(vals.filter((v): v is string => typeof v === 'string' && !isBlankBankValue(v, tokens)).map((v) => v.trim()))].sort();
+    return { banks: banks.map((b) => b.bank), cards: cards.map((c) => c.card), stages: distinct(snaps.map((x) => x.currentStage)), decisions: distinct(snaps.map((x) => x.finalDecision)), activations: distinct(snaps.map((x) => x.cardActivationStatus)) };
+  }
+
+  /** Scope check shared with other modules that expose per-lead reads (e.g. MIS history). */
+  async assertCanRead(actor: Actor, leadId: string) {
+    const l = await this.prisma.client.lead.findUnique({ where: { id: leadId }, select: { advisorUserId: true } });
+    const ok = !!l && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId);
+    if (!ok) throw AppError.notFound('Lead');
   }
 
   async detail(actor: Actor, id: string) {
@@ -360,7 +435,8 @@ export class LeadsService {
       declarations: l.declarations,
       bureauAckAt: l.bureauAckAt.toISOString(),
       reportingParentUserIdSnapshot: l.reportingParentUserIdSnapshot,
-      /** Section B: latest snapshot with raw values (REQ-11 §11.9). */
+      /** Section A: KBS operational events, explicitly labelled and never a bank stage (REQ-11 §11.9, REQ-14 §14.1). */
+      operationalEvents: this.operationalEvents(l),
       bankStatus: {
         matched,
         provenance: matched ? 'BANK_MIS' : 'NONE',
@@ -380,6 +456,15 @@ export class LeadsService {
       linkActivity: l.linkInitiations.map((i) => ({ id: i.id, action: i.action, linkVersion: i.linkVersion, at: i.at.toISOString(), label: i.action === 'SHARED' ? 'Application link shared (KBS activity)' : 'Application link opened (KBS activity)', provenance: 'KBS_OPERATIONAL' })),
       shares: l.shareActions.map((s) => ({ id: s.id, kind: s.kind, at: s.at.toISOString(), handoffResult: s.handoffResult, deliveryStatus: s.deliveryStatus })),
     };
+  }
+
+  private operationalEvents(l: { id: string; createdAt: Date; linkages: Array<{ id: string; referenceKind: string; referenceValue: string; source: string; at: Date }>; linkInitiations: Array<{ id: string; action: string; linkVersion: number; at: Date }>; shareActions: Array<{ id: string; kind: string; at: Date; targetMobileMasked: string; handoffResult: string; deliveryStatus: string }> }): OperationalEvent[] {
+    const ev: OperationalEvent[] = [{ id: `created-${l.id}`, at: l.createdAt.toISOString(), kind: 'LEAD_CREATED', label: 'Lead created in KBS', detail: null, provenance: 'KBS_OPERATIONAL' }];
+    for (const i of l.linkInitiations) ev.push({ id: i.id, at: i.at.toISOString(), kind: i.action === 'SHARED' ? 'LINK_SHARED' : 'LINK_OPENED', label: i.action === 'SHARED' ? 'Application link shared' : 'Application link opened', detail: `link v${i.linkVersion}`, provenance: 'KBS_OPERATIONAL' });
+    const asc = [...l.linkages].sort((a, b) => a.at.getTime() - b.at.getTime());
+    asc.forEach((x, n) => ev.push({ id: x.id, at: x.at.toISOString(), kind: n === 0 ? 'BANK_REFERENCE_ENTERED' : 'BANK_REFERENCE_CORRECTED', label: n === 0 ? 'Bank application reference entered' : 'Bank application reference corrected', detail: `${x.referenceKind} ${x.referenceValue} (${x.source.toLowerCase().replace(/_/g, ' ')})`, provenance: 'KBS_OPERATIONAL' }));
+    for (const sh of l.shareActions) ev.push({ id: sh.id, at: sh.at.toISOString(), kind: 'SHARE_SENT', label: `${sh.kind.toLowerCase().replace(/_/g, ' ')} shared to ${sh.targetMobileMasked}`, detail: `handoff ${sh.handoffResult.toLowerCase()} · delivery ${sh.deliveryStatus.toLowerCase()}`, provenance: 'KBS_OPERATIONAL' });
+    return ev.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
   }
 
   // ── F-407 link initiation ──

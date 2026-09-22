@@ -1,8 +1,9 @@
-import { ApiClientError, formatDateTime, type LeadStatusRow } from '@kbs/shared';
+import { ApiClientError, formatDateTime, type LeadStatusRow, type MisHistoryGroup, type OperationalEvent } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import type React from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { ShareButtons } from '@/components/share-buttons';
 import { ActivationBadge, DecisionBadge, ProvenanceChip, StageBadge } from '@/components/status';
@@ -18,7 +19,8 @@ interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   state: string | null;
   employmentType: string;
   annualIncomeItr: number;
-  bankStatus: { matched: boolean; provenance: string; lastMatchedAt: string | null; lastMatchedBatchRef: string | null };
+  operationalEvents: OperationalEvent[];
+  bankStatus: { matched: boolean; provenance: string; lastMatchedAt: string | null; lastMatchedBatchRef: string | null; finalDecisionDate: string | null; raw: Record<string, string> | null };
   bankRemarks: { remarks: RemarkField[]; kyc: RemarkField[] };
   bankReference: { value: string | null; kind?: string; status?: string; label?: string; at?: string };
   referenceHistory: { id: string; value: string; status: string; at: string; supersededAt: string | null }[];
@@ -32,16 +34,38 @@ interface RemarkField {
   display: string;
 }
 
-/** Lead detail (F-406/F-407 view; sections A/B — MIS history section C arrives with F-408). */
+const CHANGE_LABEL: Record<string, string> = { SET: 'set', CHANGED: 'changed', CONFIRMED_SAME: 'confirmed unchanged', REPORTED_BLANK: 'reported blank', ABSENT_FROM_BATCH: 'absent from batch' };
+
+function Section({ title, subtitle, open, onToggle, children }: { title: string; subtitle?: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <Card className="gap-2">
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={onToggle} className="flex-row items-center justify-between">
+        <View className="flex-1">
+          <Text className="font-medium">{title}</Text>
+          {subtitle ? <Muted>{subtitle}</Muted> : null}
+        </View>
+        <Muted>{open ? '▲' : '▼'}</Muted>
+      </Pressable>
+      {open ? children : null}
+    </Card>
+  );
+}
+
+/** F-408 lead detail: A customer + KBS activity, B references + raw snapshot, C bank remarks / KYC, MIS history by batch. No timeline. */
 export default function LeadScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [l, setL] = useState<LeadDetail | null>(null);
+  const [history, setHistory] = useState<MisHistoryGroup[]>([]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ remarks: true });
+  const toggle = (k: string) => setExpanded((p) => ({ ...p, [k]: !p[k] }));
   const [error, setError] = useState<string | null>(null);
   const [ref, setRef] = useState('');
   const [kind, setKind] = useState<'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER' | 'OTHER'>('APPLICATION_NO');
   const load = useCallback(async () => {
     try {
-      setL((await api.get<LeadDetail>(`/leads/${id}`)).data);
+      const [d, h] = await Promise.all([api.get<LeadDetail>(`/leads/${id}`), api.get<MisHistoryGroup[]>(`/leads/${id}/mis-history`)]);
+      setL(d.data);
+      setHistory(h.data);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load the lead.');
     }
@@ -140,6 +164,72 @@ export default function LeadScreen() {
                 </Muted>
               ))}
             </Card>
+            <Section title="C · Bank reason / remarks" subtitle="Named bank fields, verbatim" open={!!expanded.remarks} onToggle={() => toggle('remarks')}>
+              {l.bankRemarks.remarks.map((f) => (
+                <View key={f.field} className="flex-row justify-between gap-2">
+                  <Muted>{f.label}</Muted>
+                  <Text className={`flex-1 text-right ${f.raw === null ? 'text-muted-foreground italic' : ''}`}>{f.display}</Text>
+                </View>
+              ))}
+            </Section>
+            <Section title="Bank/KYC information" subtitle="Sub-statuses and dates from the bank" open={!!expanded.kyc} onToggle={() => toggle('kyc')}>
+              {l.bankRemarks.kyc.map((f) => (
+                <View key={f.field} className="flex-row justify-between gap-2">
+                  <Muted>{f.label}</Muted>
+                  <Text className={`flex-1 text-right ${f.raw === null ? 'text-muted-foreground italic' : ''}`}>{f.display}</Text>
+                </View>
+              ))}
+            </Section>
+            <Section title="MIS update history" subtitle={history.length ? `${history.length} batch(es)` : 'No MIS batch has matched this lead yet'} open={!!expanded.history} onToggle={() => toggle('history')}>
+              {history.map((g) => {
+                const changed = g.changes.filter((c) => c.changeKind === 'SET' || c.changeKind === 'CHANGED' || c.changeKind === 'ABSENT_FROM_BATCH');
+                const quiet = g.changes.length - changed.length;
+                return (
+                  <View key={g.batchId} className="gap-1 border-t border-border pt-2">
+                    <Text className="text-xs font-medium">
+                      {g.publicRef} · imported {formatDateTime(g.importedAt)} by {g.uploaderRole.toLowerCase()}
+                    </Text>
+                    {changed.length === 0 ? <Muted>Identical repeat — no bank value changed.</Muted> : null}
+                    {changed.map((c) => (
+                      <View key={`${g.batchId}-${c.field}`} className="gap-0.5">
+                        <View className="flex-row items-center gap-2">
+                          <Text className="text-xs">{c.field === '*' ? '(whole row)' : c.field}</Text>
+                          <Badge label={CHANGE_LABEL[c.changeKind] ?? c.changeKind.toLowerCase()} variant={c.changeKind === 'ABSENT_FROM_BATCH' ? 'warning' : 'info'} />
+                        </View>
+                        <Muted>
+                          {c.oldValue ?? 'blank'} → {c.newValue ?? 'blank'}
+                          {c.reportedEventDate ? ` · bank date ${formatDateTime(c.reportedEventDate)}` : ''}
+                        </Muted>
+                      </View>
+                    ))}
+                    {quiet ? <Muted>{quiet} field(s) confirmed unchanged or reported blank</Muted> : null}
+                  </View>
+                );
+              })}
+            </Section>
+            <Section title="B · Raw bank values" subtitle={l.bankStatus.raw ? `Batch ${l.bankStatus.lastMatchedBatchRef ?? ''}` : 'Awaiting MIS Update'} open={!!expanded.raw} onToggle={() => toggle('raw')}>
+              {l.bankStatus.raw ? (
+                Object.entries(l.bankStatus.raw).map(([k, v]) => (
+                  <View key={k} className="flex-row justify-between gap-2">
+                    <Muted>{k}</Muted>
+                    <Text className="flex-1 text-right">{v === '' ? '(blank)' : v}</Text>
+                  </View>
+                ))
+              ) : (
+                <Muted>No MIS row has matched this lead yet.</Muted>
+              )}
+            </Section>
+            <Section title="A · KBS activity" subtitle="Operational events — never a bank stage" open={!!expanded.ops} onToggle={() => toggle('ops')}>
+              {l.operationalEvents.map((e) => (
+                <View key={e.id} className="gap-0.5">
+                  <Text className="text-xs">{e.label}</Text>
+                  <Muted>
+                    {formatDateTime(e.at)}
+                    {e.detail ? ` · ${e.detail}` : ''} · KBS activity
+                  </Muted>
+                </View>
+              ))}
+            </Section>
           </>
         ) : null}
       </ScrollView>
