@@ -169,4 +169,30 @@ describe('F-309 calls / F-310 outcomes (CALL-01/02/04, CUST-04)', () => {
     expect(detail.body.data.remarks[0].text).toBe('prefers evening calls after 7pm');
     expect(detail.body.data.callAttempts).toHaveLength(1);
   });
+
+  it('F-313: team overview + activity are scoped (Manager team only), counts have provider-confirmed connected', async () => {
+    const ov = await api().get('/api/v1/calling/team/overview').set(auth(team.manager.accessToken)).expect(200);
+    expect(ov.body.data.telecallers.map((t: { id: string }) => t.id)).toEqual([team.telecallerId]);
+    const me = ov.body.data.telecallers[0];
+    expect(me).toMatchObject({ training: 'PASSED', attempts: 2, connected: 1, talkTimeSec: 60, interests: 2 });
+    expect(me.outcomes.FOLLOW_UP).toBe(1);
+    expect(me.outcomes.DECLINED).toBe(2);
+    const act = await api().get(`/api/v1/calling/team/telecallers/${team.telecallerId}/activity`).set(auth(team.manager.accessToken)).expect(200);
+    expect(act.body.data.attempts).toHaveLength(2);
+    const connectedAttempt = act.body.data.attempts.find((a: { providerState: string }) => a.providerState === 'ENDED');
+    expect(connectedAttempt).toMatchObject({ recording: 'Recording available', canPlay: true, durationSec: 60 });
+    expect(connectedAttempt.customer.mobileMasked).toBe('+91••••••0001');
+    expect(act.body.data.outcomes.length).toBeGreaterThanOrEqual(4);
+    expect(act.body.data.remarks).toHaveLength(1);
+    expect(JSON.stringify(act.body)).not.toContain('+919555800001');
+    // Admin sees everyone; another Manager cannot open this Telecaller; Telecaller cannot use team views
+    const all = await api().get('/api/v1/calling/team/overview').set(auth(adminToken)).expect(200);
+    expect(all.body.data.telecallers.length).toBeGreaterThan(1);
+    const other = await setupManagerAndTelecaller(app, prisma, '40004');
+    await api().get(`/api/v1/calling/team/telecallers/${team.telecallerId}/activity`).set(auth(other.manager.accessToken)).expect(404);
+    await api().get('/api/v1/calling/team/overview').set(auth(tcToken)).expect(403);
+    // date filter excludes everything when the range is in the past
+    const past = await api().get('/api/v1/calling/team/overview?from=2020-01-01T00:00:00Z&to=2020-01-02T00:00:00Z').set(auth(team.manager.accessToken)).expect(200);
+    expect(past.body.data.telecallers[0]).toMatchObject({ attempts: 0, connected: 0 });
+  });
 });

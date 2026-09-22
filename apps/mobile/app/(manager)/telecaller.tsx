@@ -19,9 +19,18 @@ interface Detail {
 const LABEL: Record<string, string> = { NOT_STARTED: 'Not started', IN_PROGRESS: 'In progress', PASSED: 'Passed', EXPIRED_DEACTIVATED: 'Deadline passed', REACTIVATED_IN_PROGRESS: 'Reactivated' };
 
 /** F-204/F-205 (mobile): Telecaller training detail + reactivation. */
+interface Ops {
+  queueSize: number;
+  attempts: { id: string; at: string; customer: { fullName: string }; providerState: string; durationSec: number | null; recording: string }[];
+  outcomes: { id: string }[];
+  shares: { id: string }[];
+  followUps: { id: string; overdue: boolean }[];
+}
+
 export default function TelecallerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [d, setD] = useState<Detail | null>(null);
+  const [ops, setOps] = useState<Ops | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -29,6 +38,7 @@ export default function TelecallerDetail() {
   const load = useCallback(async () => {
     try {
       setD((await api.get<Detail>(`/telecallers/${id}/training`)).data);
+      setOps((await api.get<Ops>(`/calling/team/telecallers/${id}/activity`)).data);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load.');
     }
@@ -101,6 +111,22 @@ export default function TelecallerDetail() {
               </Muted>
             ))}
           </>
+        ) : null}
+        {ops ? (
+          <Card className="gap-1">
+            <Text className="font-medium">Calling — last 7 days</Text>
+            <Muted>
+              Queue {ops.queueSize} · attempts {ops.attempts.length} · connected {ops.attempts.filter((a) => a.providerState === 'ENDED').length} · outcomes {ops.outcomes.length} · shares {ops.shares.length}
+            </Muted>
+            {ops.followUps.filter((f) => f.overdue).length ? <Badge label={`${ops.followUps.filter((f) => f.overdue).length} follow-ups overdue`} variant="destructive" /> : null}
+            {ops.attempts.slice(0, 5).map((a) => (
+              <Muted key={a.id}>
+                {formatDateTime(a.at)} · {a.customer.fullName} · {a.providerState.toLowerCase()}
+                {a.durationSec ? ` · ${a.durationSec}s` : ''} · {a.recording}
+              </Muted>
+            ))}
+            <Muted>Recording playback is available on the web console (logged).</Muted>
+          </Card>
         ) : null}
         <Button title="Back" variant="ghost" onPress={() => router.back()} />
       </ScrollView>
