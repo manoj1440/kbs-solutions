@@ -1,6 +1,6 @@
 # F-401 Advisor self-registration and verified onboarding
 
-- Group: Advisor · Status: **PLANNED** · Depends on: F-101, F-108, F-109, F-111
+- Group: Advisor · Status: **DONE** · Depends on: F-101, F-108, F-109, F-111
 - PRD refs: REQ-10 §10.1 (steps: mobile → OTP → name/email → consent/instructions → Aadhaar via authorised method → bank details → cancelled cheque → optional Agent Code → review/submit → available when review complete; only name/mobile/email mandatory profile fields; record consent; privacy notice), §10.2 (Aadhaar safeguards; never store number/XML/share code), §10.3 (bank details, cheque; mask; log privileged access; Advisor PAN OPEN), REQ-12 S01–S07, REQ-21 §21.4, REQ-28 P0 (verification mode)
 - QA ids: FOS-01
 
@@ -15,6 +15,9 @@
 8. Admin web: onboarding review queue with identity summary (provider result only), masked bank, cheque viewer (audited), approve/reject.
 
 ## Acceptance criteria
-- [ ] FOS-01: full path with mock KYC → submitted → Admin approves → Advisor home accessible.
-- [ ] Schema test: any field named like `aadhaar*` other than `aadhaarVerificationStatus` rejected; DB has no such column.
-- [ ] Resuming after app kill lands on the correct step.
+- [x] FOS-01: full path with mock KYC → submitted → Admin approves → Advisor home accessible.
+- [x] Schema test: any field named like `aadhaar*` other than `aadhaarVerificationStatus` rejected; DB has no such column.
+- [x] Resuming after app kill lands on the correct step.
+
+## Progress notes
+- 2026-09-22 (session 3): `OnboardingService` — server-ordered, resumable steps: `GET /onboarding/me` (view with step index/total), `PUT /onboarding/me/{personal,consent,bank,cheque,agent-code}`, `POST /onboarding/me/identity/{start,complete}`, `POST /onboarding/me/submit`. All bodies are `.strict()` Zod schemas; identity `payload` refuses keys matching `aadhaar|uid|share code|xml` and 12-digit strings; provider evidence summary is scrubbed of such keys before storage; e2e asserts no `aadha*` column in schema.prisma or the live DB. Consent stores `{privacyNoticeVersion (must equal config onboarding.privacyNoticeVersion), identityConsent, termsAccepted, at, ip}` records. Bank account AES-encrypted + last4; IFSC regex; cheque must be a CHEQUE-purpose file uploaded by the Advisor. Steps lock after submission (AWAITING_REVIEW/COMPLETE → 409); reject returns the Advisor to REVIEW with the reason and keeps verified steps. `onboarding.requiresAdminReview` true → Admin `GET /onboarding/review[/ :userId?reveal=bank]` (reveal needs SENSITIVE_REVEAL_BANK, logs BANK_ACCOUNT access) + `POST /onboarding/review/:userId {APPROVE|REJECT reason}`; approve activates the user (lifecycle ACTIVATED, notification ONBOARDING_APPROVED); false → submit activates when identity VERIFIED. Web `/admin/onboarding[/userId]`. Mobile `(gates)/onboarding.tsx` wizard (progress bar, step screens, KYC start/complete via provider instructions, cheque via image picker, Agent Code with live validation, review/edit, awaiting-review state). Advisor PAN not collected (OPEN, flag reserved).

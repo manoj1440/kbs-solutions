@@ -1,6 +1,6 @@
 # F-402 Agent Code in signup and profile (Advisor-facing)
 
-- Group: Advisor · Status: **PLANNED** · Depends on: F-106, F-401
+- Group: Advisor · Status: **DONE** · Depends on: F-106, F-401
 - PRD refs: REQ-10 §10.4, REQ-11 §11.11 (submit code later under auditable effective-date policy), REQ-12 S29
 - QA ids: FOS-02
 
@@ -10,4 +10,7 @@
 3. Copy makes clear that historical leads/payouts keep their original attribution.
 
 ## Acceptance criteria
-- [ ] FOS-02 UI path (blank → Admin; valid → Manager; invalid → message, unchanged).
+- [x] FOS-02 UI path (blank → Admin; valid → Manager; invalid → message, unchanged).
+
+## Progress notes
+- 2026-09-22 (session 3): Signup step in the mobile wizard: optional code with live `GET /agent-codes/validate` (valid/invalid only, no owner name) → `PUT /onboarding/me/agent-code` applies F-106 rules; blank keeps the Admin (seeded ADMIN_DEFAULT assignment). After apply the review screen shows "Reporting to: <name>". Profile "Change code" and pending-approval display remain on the F-106 API (`POST /me/agent-code`) — Advisor profile screen wiring lands with F-405. e2e FOS-02 in `onboarding.e2e-spec.ts`.

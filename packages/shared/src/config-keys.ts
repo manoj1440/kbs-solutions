@@ -73,6 +73,7 @@ export const CONFIG_KEYS: readonly ConfigKeyDefinition[] = [
   def('files.presignExpirySec', ConfigValueType.INT, 300, 'Presigned download URL validity.'),
   // onboarding / leads
   def('onboarding.requiresAdminReview', ConfigValueType.BOOL, true, 'Advisor account activates only after Admin review (REQ-10 §10.1).'),
+  def('onboarding.privacyNoticeVersion', ConfigValueType.STRING, 'v1-draft', 'Version label of the privacy notice Advisors consent to at signup (REQ-21 §21.4); bump when the text changes.'),
   def('onboarding.collectAdvisorPan', ConfigValueType.BOOL, false, 'Collect Advisor PAN during onboarding (REQ-10 §10.3 OPEN).'),
   def('leads.allowUnverifiedPan', ConfigValueType.BOOL, false, 'Allow lead submission when PAN verification is unavailable (REQ-11 §11.4 OPEN).'),
   def('leads.declarations', ConfigValueType.JSON, [], 'Versioned declaration texts the customer must accept (REQ-11 §11.4). Empty = lead creation blocked.', true),
