@@ -19,30 +19,30 @@ Each feature file is the unit of work: small enough for one session, fully trace
 
 | File | Title | Group | Status | Depends on |
 |---|---|---|---|---|
-| [F-001-monorepo-tooling.md](./F-001-monorepo-tooling.md) | F-001 Monorepo tooling | Foundation | PLANNED | — |
-| [F-002-infra-and-env.md](./F-002-infra-and-env.md) | F-002 Local infrastructure and environment files | Foundation | PLANNED | F-001 |
-| [F-003-app-scaffolds.md](./F-003-app-scaffolds.md) | F-003 Application scaffolds (api, web, mobile) | Foundation | PLANNED | F-001, F-002 |
-| [F-004-shared-package.md](./F-004-shared-package.md) | F-004 `@kbs/shared` contracts package | Foundation | PLANNED | F-001 |
-| [F-005-database-schema.md](./F-005-database-schema.md) | F-005 `@kbs/db` Prisma schema — full domain | Foundation | PLANNED | F-001, F-002, F-004 |
-| [F-006-ui-tokens.md](./F-006-ui-tokens.md) | F-006 `@kbs/ui-tokens` design tokens | Foundation | PLANNED | F-001 |
-| [F-101-otp-authentication.md](./F-101-otp-authentication.md) | F-101 OTP-only authentication and sessions | Core | PLANNED | F-003, F-004, F-005, F-109 |
-| [F-102-rbac-and-scoping.md](./F-102-rbac-and-scoping.md) | F-102 RBAC, permissions matrix and data scoping | Core | PLANNED | F-101 |
-| [F-103-audit-and-logging.md](./F-103-audit-and-logging.md) | F-103 Audit log, sensitive-access log, request ids, redacted logging | Core | PLANNED | F-003, F-005 |
-| [F-104-system-config.md](./F-104-system-config.md) | F-104 SystemConfig with history and launch-gate checklist | Core | PLANNED | F-005, F-102, F-103 |
-| [F-105-user-administration.md](./F-105-user-administration.md) | F-105 User administration and lifecycle | Core | PLANNED | F-101, F-102, F-103 |
-| [F-106-reporting-hierarchy-agent-codes.md](./F-106-reporting-hierarchy-agent-codes.md) | F-106 Reporting hierarchy and Agent Codes | Core | PLANNED | F-105 |
-| [F-107-common-http-conventions.md](./F-107-common-http-conventions.md) | F-107 Common HTTP conventions: envelope, errors, pagination, idempotency | Core | PLANNED | F-003, F-004 |
+| [F-001-monorepo-tooling.md](./F-001-monorepo-tooling.md) | F-001 Monorepo tooling | Foundation | DONE | — |
+| [F-002-infra-and-env.md](./F-002-infra-and-env.md) | F-002 Local infrastructure and environment files | Foundation | DONE | F-001 |
+| [F-003-app-scaffolds.md](./F-003-app-scaffolds.md) | F-003 Application scaffolds (api, web, mobile) | Foundation | DONE | F-001, F-002 |
+| [F-004-shared-package.md](./F-004-shared-package.md) | F-004 `@kbs/shared` contracts package | Foundation | DONE | F-001 |
+| [F-005-database-schema.md](./F-005-database-schema.md) | F-005 `@kbs/db` Prisma schema — full domain | Foundation | DONE | F-001, F-002, F-004 |
+| [F-006-ui-tokens.md](./F-006-ui-tokens.md) | F-006 `@kbs/ui-tokens` design tokens | Foundation | DONE | F-001 |
+| [F-101-otp-authentication.md](./F-101-otp-authentication.md) | F-101 OTP-only authentication and sessions | Core | DONE | F-003, F-004, F-005, F-109 |
+| [F-102-rbac-and-scoping.md](./F-102-rbac-and-scoping.md) | F-102 RBAC, permissions matrix and data scoping | Core | DONE | F-101 |
+| [F-103-audit-and-logging.md](./F-103-audit-and-logging.md) | F-103 Audit log, sensitive-access log, request ids, redacted logging | Core | DONE | F-003, F-005 |
+| [F-104-system-config.md](./F-104-system-config.md) | F-104 SystemConfig with history and launch-gate checklist | Core | IN_PROGRESS | F-005, F-102, F-103 |
+| [F-105-user-administration.md](./F-105-user-administration.md) | F-105 User administration and lifecycle | Core | IN_PROGRESS | F-101, F-102, F-103 |
+| [F-106-reporting-hierarchy-agent-codes.md](./F-106-reporting-hierarchy-agent-codes.md) | F-106 Reporting hierarchy and Agent Codes | Core | IN_PROGRESS | F-105 |
+| [F-107-common-http-conventions.md](./F-107-common-http-conventions.md) | F-107 Common HTTP conventions: envelope, errors, pagination, idempotency | Core | DONE | F-003, F-004 |
 | [F-108-files-module.md](./F-108-files-module.md) | F-108 Files: upload, storage port, scan status, presigned access | Core | PLANNED | F-102, F-103, F-109 |
-| [F-109-provider-ports.md](./F-109-provider-ports.md) | F-109 Provider ports and mock adapters | Core | PLANNED | F-003 |
-| [F-110-jobs-and-outbox.md](./F-110-jobs-and-outbox.md) | F-110 Background jobs (BullMQ), worker mode and outbox | Core | PLANNED | F-002, F-003 |
-| [F-111-access-gates.md](./F-111-access-gates.md) | F-111 Access gates (training / network / onboarding) in `/auth/me` and guards | Core | PLANNED | F-101, F-102, F-104 |
+| [F-109-provider-ports.md](./F-109-provider-ports.md) | F-109 Provider ports and mock adapters | Core | DONE | F-003 |
+| [F-110-jobs-and-outbox.md](./F-110-jobs-and-outbox.md) | F-110 Background jobs (BullMQ), worker mode and outbox | Core | IN_PROGRESS | F-002, F-003 |
+| [F-111-access-gates.md](./F-111-access-gates.md) | F-111 Access gates (training / network / onboarding) in `/auth/me` and guards | Core | DONE | F-101, F-102, F-104 |
 | [F-201-manager-creates-telecaller.md](./F-201-manager-creates-telecaller.md) | F-201 Manager creates Telecaller (name + mobile) with employee code | Training | PLANNED | F-105, F-106 |
 | [F-202-training-content-admin.md](./F-202-training-content-admin.md) | F-202 Training content administration (modules, videos, MCQs, thresholds) | Training | PLANNED | F-104, F-108 |
 | [F-203-training-enrollment-and-gate.md](./F-203-training-enrollment-and-gate.md) | F-203 Training enrollment, 72-hour window, sequential modules, assessment | Training | PLANNED | F-111, F-201, F-202 |
 | [F-204-training-expiry-and-reactivation.md](./F-204-training-expiry-and-reactivation.md) | F-204 Deadline expiry deactivation and Manager reactivation | Training | PLANNED | F-110, F-203 |
 | [F-205-training-visibility.md](./F-205-training-visibility.md) | F-205 Training progress visibility for Manager and Admin | Training | PLANNED | F-203, F-204 |
-| [F-301-office-network-policy.md](./F-301-office-network-policy.md) | F-301 Office-network policy, WFH exceptions and network gate | Telecaller ops | PLANNED | F-104, F-111 |
-| [F-302-mobile-secure-screens.md](./F-302-mobile-secure-screens.md) | F-302 Android protected screens (FLAG_SECURE) and residual-risk documentation | Telecaller ops | PLANNED | F-802 |
+| [F-301-office-network-policy.md](./F-301-office-network-policy.md) | F-301 Office-network policy, WFH exceptions and network gate | Telecaller ops | IN_PROGRESS | F-104, F-111 |
+| [F-302-mobile-secure-screens.md](./F-302-mobile-secure-screens.md) | F-302 Android protected screens (FLAG_SECURE) and residual-risk documentation | Telecaller ops | IN_PROGRESS | F-802 |
 | [F-303-customer-list-import.md](./F-303-customer-list-import.md) | F-303 Admin customer calling-list import | Telecaller ops | PLANNED | F-108, F-110, F-104, F-306 |
 | [F-304-pincode-master.md](./F-304-pincode-master.md) | F-304 Pincode master reference and location resolution | Telecaller ops | PLANNED | F-108 |
 | [F-305-automatic-allocation.md](./F-305-automatic-allocation.md) | F-305 Automatic allocation of accepted records to trained Telecallers | Telecaller ops | PLANNED | F-303, F-203, F-104 |
@@ -81,9 +81,9 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-702-manager-dashboard.md](./F-702-manager-dashboard.md) | F-702 Manager dashboard | Dashboards & notifications | PLANNED | F-313, F-408, F-602, F-604 |
 | [F-703-admin-dashboards.md](./F-703-admin-dashboards.md) | F-703 Admin dashboards (executive, telecaller, manager, advisor, bank/card mix, payouts) | Dashboards & notifications | PLANNED | F-702, F-507, F-606 |
 | [F-704-audit-dashboard.md](./F-704-audit-dashboard.md) | F-704 Data and permissions audit dashboard | Dashboards & notifications | PLANNED | F-103, F-104 |
-| [F-801-web-shell.md](./F-801-web-shell.md) | F-801 Web shell: layout, navigation, OTP login, role routing | UX shells | PLANNED | F-003, F-006, F-101, F-111 |
-| [F-802-mobile-shell.md](./F-802-mobile-shell.md) | F-802 Mobile shell: Expo Router, OTP login, gates routing, base components | UX shells | PLANNED | F-003, F-006, F-101, F-111 |
-| [F-803-status-and-provenance-components.md](./F-803-status-and-provenance-components.md) | F-803 Shared status/provenance component set (web + mobile) | UX shells | PLANNED | F-006, F-004 |
+| [F-801-web-shell.md](./F-801-web-shell.md) | F-801 Web shell: layout, navigation, OTP login, role routing | UX shells | IN_PROGRESS | F-003, F-006, F-101, F-111 |
+| [F-802-mobile-shell.md](./F-802-mobile-shell.md) | F-802 Mobile shell: Expo Router, OTP login, gates routing, base components | UX shells | IN_PROGRESS | F-003, F-006, F-101, F-111 |
+| [F-803-status-and-provenance-components.md](./F-803-status-and-provenance-components.md) | F-803 Shared status/provenance component set (web + mobile) | UX shells | IN_PROGRESS | F-006, F-004 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | PLANNED | F-801, F-802 |
 | [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | PLANNED | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | PLANNED | F-505 |

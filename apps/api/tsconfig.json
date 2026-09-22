@@ -12,7 +12,7 @@
     "strictPropertyInitialization": false,
     "noUncheckedIndexedAccess": false,
     "verbatimModuleSyntax": false,
-    "isolatedModules": false,
+    "isolatedModules": true,
     "paths": {
       "@/*": [
         "src/*"

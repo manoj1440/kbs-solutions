@@ -1,6 +1,6 @@
 # F-005 `@kbs/db` Prisma schema — full domain
 
-- Group: Foundation · Status: **PLANNED** · Depends on: F-001, F-002, F-004 · ADR-002, ADR-005, ADR-008, ADR-011, ADR-012
+- Group: Foundation · Status: **DONE** · Depends on: F-001, F-002, F-004 · ADR-002, ADR-005, ADR-008, ADR-011, ADR-012
 - PRD refs: REQ-22 (conceptual model), REQ-13 §13.2 (36 HDFC columns), REQ-17, REQ-06, REQ-07 §7.2, and `DOCS/architecture/03-data-model.md`
 
 ## Scope
@@ -12,7 +12,10 @@
 - README documenting Prisma 7 specifics.
 
 ## Acceptance criteria
-- [ ] `prisma validate`, `prisma migrate deploy` on fresh DB, `prisma generate` succeed.
-- [ ] Seed is idempotent (second run makes no changes).
-- [ ] INV-01 guard test: writing `BankStatusSnapshot` outside the MIS context throws.
-- [ ] Second `ADMIN` insert fails at DB level (INV/RBAC).
+- [x] `prisma validate`, `prisma migrate deploy` on fresh DB, `prisma generate` succeed.
+- [x] Seed is idempotent (second run makes no changes).
+- [x] INV-01 guard test: writing `BankStatusSnapshot` outside the MIS context throws.
+- [x] Second `ADMIN` insert fails at DB level (INV/RBAC).
+
+## Progress notes
+- 2026-09-22 (session 1): Schema (57 enums, 60+ models), migrations `*_init` (Prisma-generated via WASM engine) + `*_constraints`, INV-01 guard extension, idempotent seed, 6 tests. Offline migrate runner `scripts/wasm-migrate.mjs` documented in packages/db/README.md.

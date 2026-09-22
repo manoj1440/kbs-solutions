@@ -1,6 +1,6 @@
 # F-302 Android protected screens (FLAG_SECURE) and residual-risk documentation
 
-- Group: Telecaller ops · Status: **PLANNED** · Depends on: F-802
+- Group: Telecaller ops · Status: **IN_PROGRESS** · Depends on: F-802
 - PRD refs: REQ-09 §9.3 (platform secure-window facilities; policy scope: customer lists, PAN views, Advisor identity/bank records, call/payout materials; residual risks; do not claim prevention of every capture), REQ-20 §20.5 (do not silently block assistive tech), REQ-24 §24.5
 - QA ids: SEC-02
 
@@ -12,3 +12,6 @@
 ## Acceptance criteria
 - [ ] SEC-02: manual test on Android 12+ shows black screenshot on protected screens; TalkBack still reads content.
 - [ ] Unprotected marketing/onboarding screens (S01–S05) allow capture.
+
+## Progress notes
+- 2026-09-22 (session 1): `SecureScreen` component applied to the Telecaller home; runbook written. Pending: root-detection banner, manual SEC-02 verification on device.

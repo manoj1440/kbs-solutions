@@ -1,6 +1,6 @@
 # F-110 Background jobs (BullMQ), worker mode and outbox
 
-- Group: Core · Status: **PLANNED** · Depends on: F-002, F-003 · ADR-004
+- Group: Core · Status: **IN_PROGRESS** · Depends on: F-002, F-003 · ADR-004
 - PRD refs: REQ-05 §5.4 (automatic deactivation at deadline), REQ-13 §13.4 (batch processing), REQ-19 (notifications), REQ-24 §24.1 (retry without duplicates)
 
 ## Detailed requirements
@@ -14,3 +14,6 @@
 - [ ] Outbox events created in a rolled-back transaction are not relayed.
 - [ ] Re-adding a job with the same id is a no-op.
 - [ ] Worker mode boots without listening on HTTP.
+
+## Progress notes
+- 2026-09-22 (session 1): JobsService (BullMQ queues), OutboxService relay with deterministic job ids, worker mode boot. Pending: repeatable sweeps and processors (added by F-204/F-505/F-701) and the relay scheduler in worker mode.

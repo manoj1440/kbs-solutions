@@ -1,6 +1,6 @@
 # F-004 `@kbs/shared` contracts package
 
-- Group: Foundation · Status: **PLANNED** · Depends on: F-001 · ADR-010
+- Group: Foundation · Status: **DONE** · Depends on: F-001 · ADR-010
 - PRD refs: REQ-13 §13.6 (display rules), REQ-14 §14.2–14.4, REQ-20 §20.3 (provenance chips), REQ-21 §21.1 (masking), REQ-03 (roles)
 
 ## Scope
@@ -16,6 +16,9 @@
 - Vitest unit tests for display, mask, normalize, refs.
 
 ## Acceptance criteria
-- [ ] `bankValueDisplay('#N/A', true) === 'Not reported'`; `bankValueDisplay(null,false) === 'Awaiting MIS Update'` (MIS-03, MIS-04).
-- [ ] `normalizePincode('  302001 ') === '302001'`, `normalizePincode(302001 as any)` throws (PIN-03).
-- [ ] Package builds to ESM+CJS with types.
+- [x] `bankValueDisplay('#N/A', true) === 'Not reported'`; `bankValueDisplay(null,false) === 'Awaiting MIS Update'` (MIS-03, MIS-04).
+- [x] `normalizePincode('  302001 ') === '302001'`, `normalizePincode(302001 as any)` throws (PIN-03).
+- [x] Package builds to ESM+CJS with types.
+
+## Progress notes
+- 2026-09-22 (session 1): All listed modules + tests (18). `refs.ts` uses Web Crypto so the package runs on API, web and Hermes.

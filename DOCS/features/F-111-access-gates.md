@@ -1,6 +1,6 @@
 # F-111 Access gates (training / network / onboarding) in `/auth/me` and guards
 
-- Group: Core · Status: **PLANNED** · Depends on: F-101, F-102, F-104
+- Group: Core · Status: **DONE** · Depends on: F-101, F-102, F-104
 - PRD refs: REQ-04 §4.1 (login validates role, activation, training gate, network restrictions, onboarding, session policy before home), §4.2, REQ-05 §5.2 (queue blocked until modules pass), REQ-09 §9.1–9.2 (Telecaller only), REQ-23 §23.1
 - QA ids: TRAIN-03, SEC-01 (server side), AUTH-01
 
@@ -18,6 +18,9 @@
 4. Clients route purely on `gates` from `/auth/me`; mobile re-fetches on foreground.
 
 ## Acceptance criteria
-- [ ] TRAIN-03: Telecaller with Module 3 unpassed gets `GATE_TRAINING_BLOCKED` on `GET /calling/queue`.
-- [ ] SEC-01: Telecaller from a non-allowlisted IP without WFH gets `GATE_NETWORK_BLOCKED`; Advisor from any IP is never network-gated.
-- [ ] Deadline passed but sweep job not yet run → still blocked (lazy evaluation test).
+- [x] TRAIN-03: Telecaller with Module 3 unpassed gets `GATE_TRAINING_BLOCKED` on `GET /calling/queue`.
+- [x] SEC-01: Telecaller from a non-allowlisted IP without WFH gets `GATE_NETWORK_BLOCKED`; Advisor from any IP is never network-gated.
+- [x] Deadline passed but sweep job not yet run → still blocked (lazy evaluation test).
+
+## Progress notes
+- 2026-09-22 (session 1): GatesService (lazy evaluation), PolicyGuard with @RequireGates, error codes + recovery hints, `/auth/me` gates; e2e covers deadline-passed lazy block and network gates; mobile routes on gates.

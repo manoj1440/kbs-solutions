@@ -1,6 +1,6 @@
 # F-104 SystemConfig with history and launch-gate checklist
 
-- Group: Core · Status: **PLANNED** · Depends on: F-005, F-102, F-103
+- Group: Core · Status: **IN_PROGRESS** · Depends on: F-005, F-102, F-103
 - PRD refs: REQ-05 §5.3 (Admin-configurable training rules), REQ-06 §6.4 (configurable allocation), REQ-08 §8.6 (configurable taxonomy requirements), REQ-17 (rule/rate versions), REQ-28 (OPEN items + §28.2 release gates), gap analysis D6
 
 ## Detailed requirements
@@ -26,3 +26,6 @@
 - [ ] Changing a value without reason is rejected; history row created with old/new/actor.
 - [ ] Cache invalidation propagates to a second API instance within 1 s (integration test with two app contexts sharing Redis).
 - [ ] Launch-gate endpoint lists all ★ keys, none set on a fresh seed except those with defaults.
+
+## Progress notes
+- 2026-09-22 (session 1): API complete (typed access, history, reason required, launch gates, Redis invalidation) with e2e. Web page is read-only; edit dialog + history drawer pending.

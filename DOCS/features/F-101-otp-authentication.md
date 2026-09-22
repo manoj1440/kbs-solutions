@@ -1,6 +1,6 @@
 # F-101 OTP-only authentication and sessions
 
-- Group: Core · Status: **PLANNED** · Depends on: F-003, F-004, F-005, F-109
+- Group: Core · Status: **DONE** · Depends on: F-003, F-004, F-005, F-109
 - PRD refs: REQ-04 §4.1 (OTP-only; expiry, rate-limit, never plaintext), §4.2 (role-dependent first login), §4.3 (lifecycle), REQ-12 S06–S07, REQ-23 §23.1, REQ-21 §21.5, gap analysis A2, B9
 - QA ids: AUTH-01, AUTH-02
 
@@ -23,11 +23,14 @@
 `/auth/otp/request`, `/auth/otp/verify`, `/auth/refresh`, `/auth/logout`, `/auth/logout-all`, `/auth/me`.
 
 ## Acceptance criteria
-- [ ] AUTH-01: each seeded role can log in with mobile + OTP; no password route exists (route table test).
-- [ ] AUTH-02: expired code, wrong code ×5 lock, resend cooldown, per-IP limit all return specific `ErrorCode`s without revealing account existence (request for unknown mobile returns same shape/timing class).
-- [ ] Plain OTP never appears in DB or logs (test greps log output in console provider… the console provider prints `[dev-otp]` only when `NODE_ENV!==production`).
-- [ ] Refresh reuse revokes family.
-- [ ] Web verify sets cookies `HttpOnly; Secure (prod); SameSite=Lax`.
+- [x] AUTH-01: each seeded role can log in with mobile + OTP; no password route exists (route table test).
+- [x] AUTH-02: expired code, wrong code ×5 lock, resend cooldown, per-IP limit all return specific `ErrorCode`s without revealing account existence (request for unknown mobile returns same shape/timing class).
+- [x] Plain OTP never appears in DB or logs (test greps log output in console provider… the console provider prints `[dev-otp]` only when `NODE_ENV!==production`).
+- [x] Refresh reuse revokes family.
+- [x] Web verify sets cookies `HttpOnly; Secure (prod); SameSite=Lax`.
 
 ## Tests
 `auth.service.spec.ts` (unit), `auth.e2e-spec.ts` (supertest with test DB).
+
+## Progress notes
+- 2026-09-22 (session 1): All ten requirements implemented; e2e: AUTH-01, AUTH-02 (phantom challenge, cooldown, lockout), refresh reuse, web cookies + role refusal. Recovery flow stays behind `auth.recoveryEnabled=false` (F-105 endpoint pending).

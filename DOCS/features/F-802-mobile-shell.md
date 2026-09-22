@@ -1,6 +1,6 @@
 # F-802 Mobile shell: Expo Router, OTP login, gates routing, base components
 
-- Group: UX shells · Status: **PLANNED** · Depends on: F-003, F-006, F-101, F-111
+- Group: UX shells · Status: **IN_PROGRESS** · Depends on: F-003, F-006, F-101, F-111
 - PRD refs: REQ-20 §20.3 (mobile: bottom/tab/stack navigation, compact cards, robust OTP, multi-step forms, persistent calling controls, adaptive empty/error/loading), §20.5 (text scaling, touch targets), REQ-04 §4.2 (role-dependent first login), REQ-25 §25.1, REQ-12 S06–S07
 - QA ids: AUTH-01, AUTH-02, TRAIN-03 (client routing)
 
@@ -14,3 +14,6 @@
 ## Acceptance criteria
 - [ ] Telecaller with unpassed training is routed to training landing; Advisor pending onboarding to onboarding; Manager to team tabs.
 - [ ] Refresh-token rotation works across app restart.
+
+## Progress notes
+- 2026-09-22 (session 1): Expo Router tree, OTP screens, session provider (secure store, single-flight refresh, foreground re-check), gate screens, role tab areas, base UI. Pending: EAS/dev-client build verification on a device, offline banner, SSID hint wiring via expo-network.

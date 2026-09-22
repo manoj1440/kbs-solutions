@@ -1,6 +1,6 @@
 # F-301 Office-network policy, WFH exceptions and network gate
 
-- Group: Telecaller ops · Status: **PLANNED** · Depends on: F-104, F-111
+- Group: Telecaller ops · Status: **IN_PROGRESS** · Depends on: F-104, F-111
 - PRD refs: REQ-09 §9.1 (server-side checks not relying on SSID; Admin allowlist; Manager WFH grant/remove; record actor/scope/start/end/revocation/outcome), §9.2 (never Advisors), REQ-15 §15.1, REQ-16 §16.2, REQ-19 §19.1, REQ-28 P1 (egress IPs OPEN), gap analysis B8
 - QA ids: SEC-01
 
@@ -16,3 +16,6 @@
 - [ ] SEC-01: denied outside allowlist without exception; allowed with active exception; Advisor never evaluated.
 - [ ] Revoking an exception blocks the next request immediately (no cache longer than 5 s).
 - [ ] Access events show actor/IP/outcome; denials always recorded.
+
+## Progress notes
+- 2026-09-22 (session 1): API complete: CIDR allowlist CRUD, WFH grant/revoke (team-scoped), evaluation order, access events (denials always), SSID hint header; e2e SEC-01. Pending: Admin/Manager screens.

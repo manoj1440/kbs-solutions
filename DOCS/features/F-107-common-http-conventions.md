@@ -1,6 +1,6 @@
 # F-107 Common HTTP conventions: envelope, errors, pagination, idempotency
 
-- Group: Core · Status: **PLANNED** · Depends on: F-003, F-004
+- Group: Core · Status: **DONE** · Depends on: F-003, F-004
 - PRD refs: REQ-24 §24.1 (retry without duplicate side effects), REQ-08 §8.2 (double-tap), REQ-17 §17.3 (double-tap / simultaneous requests), REQ-23 §23.1 (messages that do not reveal other accounts), `DOCS/architecture/04-api-conventions.md`
 
 ## Detailed requirements
@@ -12,6 +12,9 @@
 6. Health/readiness endpoints.
 
 ## Acceptance criteria
-- [ ] Two concurrent POSTs with the same key produce one side effect and identical responses.
-- [ ] Missing key on an `@Idempotent` route → `VALIDATION_FAILED` with a clear message.
-- [ ] Error bodies never include stack traces or internal ids in production mode.
+- [x] Two concurrent POSTs with the same key produce one side effect and identical responses.
+- [x] Missing key on an `@Idempotent` route → `VALIDATION_FAILED` with a clear message.
+- [x] Error bodies never include stack traces or internal ids in production mode.
+
+## Progress notes
+- 2026-09-22 (session 1): Envelope, AppError + filter, pagination schema, Idempotency interceptor with Redis lock + Postgres replay (e2e), throttler, health.

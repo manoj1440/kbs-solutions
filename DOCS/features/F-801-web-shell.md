@@ -1,6 +1,6 @@
 # F-801 Web shell: layout, navigation, OTP login, role routing
 
-- Group: UX shells · Status: **PLANNED** · Depends on: F-003, F-006, F-101, F-111
+- Group: UX shells · Status: **IN_PROGRESS** · Depends on: F-003, F-006, F-101, F-111
 - PRD refs: REQ-20 §20.1 (shadcn/ui), §20.3 (web components: sidebar, cards, dialogs, command/search, data tables, upload steps, badges, filters, date-range, drill-down, viewers, notification drawer), REQ-25 §25.1 (shared screens), REQ-02 §2.3 (web roles), REQ-23 §23.1
 - QA ids: AUTH-01, AUTH-02
 
@@ -13,3 +13,6 @@
 ## Acceptance criteria
 - [ ] Admin logs in on web and lands on `/admin`; Advisor login on web → access denied screen.
 - [ ] Playwright smoke: login + role redirect + logout.
+
+## Progress notes
+- 2026-09-22 (session 1): Login (OTP, cookies), proxy redirect, role-gated route groups, AppShell sidebar, admin overview (launch gates), config + users tables, access-denied. Pending: shadcn Sidebar/DataTable/date-range/command components, notification drawer, `/verify/[ref]`, Playwright smoke in CI.

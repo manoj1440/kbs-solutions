@@ -1,6 +1,6 @@
 # F-006 `@kbs/ui-tokens` design tokens
 
-- Group: Foundation · Status: **PLANNED** · Depends on: F-001 · ADR-003
+- Group: Foundation · Status: **DONE** · Depends on: F-001 · ADR-003
 - PRD refs: REQ-20 §20.1 (shared tokens: spacing, typography, semantic colours, shape, iconography, field/error states), §20.2 (labels never colour-only), §20.5 (contrast, text scaling)
 
 ## Scope
@@ -10,5 +10,8 @@
 - Contrast check test (WCAG AA for text on each semantic background).
 
 ## Acceptance criteria
-- [ ] Web tailwind config and mobile tailwind config both import from this package.
-- [ ] All semantic text/background pairs pass 4.5:1 in the test.
+- [x] Web tailwind config and mobile tailwind config both import from this package.
+- [x] All semantic text/background pairs pass 4.5:1 in the test.
+
+## Progress notes
+- 2026-09-22 (session 1): Tokens, CSS variables, NativeWind theme, 22 WCAG contrast tests.

@@ -1,6 +1,6 @@
 # F-102 RBAC, permissions matrix and data scoping
 
-- Group: Core · Status: **PLANNED** · Depends on: F-101
+- Group: Core · Status: **DONE** · Depends on: F-101
 - PRD refs: REQ-03 §3.1–3.3 (roles, hierarchy, server-side enforcement), REQ-15 §15.1 (Manager own team), REQ-18 §18.2 (Accounts limits), ADR-006
 - QA ids: RBAC-01, RBAC-02
 
@@ -13,6 +13,9 @@
 6. Admin's sensitive reads are permitted but always logged (F-103).
 
 ## Acceptance criteria
-- [ ] RBAC-01: fixture with 2 Managers, 2 Telecallers each, 2 Advisors each, Accounts; list endpoints return exactly the scoped rows per actor.
-- [ ] RBAC-02: direct `GET` of another user's lead/PAN reveal/recording/cheque/proof returns 404-shaped `NOT_FOUND` (not 403, to avoid existence leaks) and is audited.
-- [ ] Matrix test: every controller route declares a permission (reflection test fails on an undecorated protected route).
+- [x] RBAC-01: fixture with 2 Managers, 2 Telecallers each, 2 Advisors each, Accounts; list endpoints return exactly the scoped rows per actor.
+- [x] RBAC-02: direct `GET` of another user's lead/PAN reveal/recording/cheque/proof returns 404-shaped `NOT_FOUND` (not 403, to avoid existence leaks) and is audited.
+- [x] Matrix test: every controller route declares a permission (reflection test fails on an undecorated protected route).
+
+## Progress notes
+- 2026-09-22 (session 1): Actor + RolesGuard (undecorated routes refused) + scope checks in users; e2e RBAC-01/RBAC-02 (NOT_FOUND shape). Scope builders for leads/payouts/recordings are added by their feature files.

@@ -1,6 +1,6 @@
 # F-105 User administration and lifecycle
 
-- Group: Core · Status: **PLANNED** · Depends on: F-101, F-102, F-103
+- Group: Core · Status: **IN_PROGRESS** · Depends on: F-101, F-102, F-103
 - PRD refs: REQ-03 §3.1 (account origins), REQ-04 §4.3 (lifecycle events with who/when/why; preserve history), REQ-16 §16.1, REQ-25 §25.4, ADR-006, gap analysis A1
 - QA ids: AUDIT-01 (user changes)
 
@@ -17,3 +17,6 @@
 - [ ] A second `ADMIN` cannot be created via API (400) or DB (unique violation).
 - [ ] Deactivating a Telecaller with assigned customers keeps assignments visible to the Manager with the user flagged inactive.
 - [ ] Every lifecycle transition has an audit row + lifecycle event with reason.
+
+## Progress notes
+- 2026-09-22 (session 1): API: Admin creates Manager/Accounts, deactivate/reactivate with lifecycle events, session revoke, scoped list/detail (e2e covered). Pending: web dialogs, `change-mobile` behind recovery flag.

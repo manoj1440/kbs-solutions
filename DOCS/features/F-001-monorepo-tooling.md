@@ -1,6 +1,6 @@
 # F-001 Monorepo tooling
 
-- Group: Foundation · Status: **PLANNED** · Depends on: — · Blocks: everything
+- Group: Foundation · Status: **DONE** · Depends on: — · Blocks: everything
 - PRD refs: REQ-20 §20.1 (shared design system needs a monorepo), REQ-30 §30.2 (shadcn monorepo guidance), ADR-001
 
 ## Goal
@@ -15,10 +15,13 @@ A single `pnpm install` + `pnpm typecheck/lint/test/build` that works across API
 - Root scripts as listed in `DOCS/architecture/02-monorepo-structure.md`.
 
 ## Acceptance criteria
-- [ ] `pnpm install` succeeds from a clean clone.
-- [ ] `pnpm typecheck && pnpm lint` succeed with empty apps.
-- [ ] Turbo caches a second `pnpm typecheck` run.
-- [ ] CI workflow file lints (actionlint not required, but YAML valid).
+- [x] `pnpm install` succeeds from a clean clone.
+- [x] `pnpm typecheck && pnpm lint` succeed with empty apps.
+- [x] Turbo caches a second `pnpm typecheck` run.
+- [x] CI workflow file lints (actionlint not required, but YAML valid).
 
 ## Tests
 None (tooling). Verified by running the commands.
+
+## Progress notes
+- 2026-09-22 (session 1): Root workspace, turbo (with env passthrough), tsconfig presets, eslint flat config, prettier, CI workflow. All acceptance criteria verified by running the commands.

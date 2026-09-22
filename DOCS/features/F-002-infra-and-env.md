@@ -1,6 +1,6 @@
 # F-002 Local infrastructure and environment files
 
-- Group: Foundation · Status: **PLANNED** · Depends on: F-001
+- Group: Foundation · Status: **DONE** · Depends on: F-001
 - PRD refs: REQ-24 §24.4 (object storage), ADR-002, ADR-004
 
 ## Scope
@@ -9,5 +9,8 @@
 - Root scripts `infra:up` / `infra:down` / `infra:reset`.
 
 ## Acceptance criteria
-- [ ] `pnpm infra:up` brings up all three services healthy.
-- [ ] `.env` files are git-ignored; `.env.example` committed.
+- [x] `pnpm infra:up` brings up all three services healthy.
+- [x] `.env` files are git-ignored; `.env.example` committed.
+
+## Progress notes
+- 2026-09-22 (session 1): docker-compose (postgres/redis/minio + bucket init), .env.example per app/package, infra scripts.

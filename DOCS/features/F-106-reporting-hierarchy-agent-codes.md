@@ -1,6 +1,6 @@
 # F-106 Reporting hierarchy and Agent Codes
 
-- Group: Core · Status: **PLANNED** · Depends on: F-105
+- Group: Core · Status: **IN_PROGRESS** · Depends on: F-105
 - PRD refs: REQ-03 §3.2, REQ-10 §10.4 (code during signup or later; valid code → mapped person; blank → Admin; unknown/revoked → clear message, pending/none), REQ-15 §15.1 (no cross-team reassignment without logged authorisation), REQ-28 P1 (attribution policy), gap analysis B7
 - QA ids: FOS-02, TRAIN-06 (team boundary)
 
@@ -15,3 +15,6 @@
 ## Acceptance criteria
 - [ ] FOS-02: valid code → parent = code owner; blank → Admin; later code change with existing leads → pending until Admin approves; historical leads keep old snapshot.
 - [ ] Manager A cannot see or act on Manager B's Telecaller (scope test reused by TRAIN-06).
+
+## Progress notes
+- 2026-09-22 (session 1): HierarchyService (current parent, team ids), ReportingAssignment created for Telecallers (Manager) and Advisors (Admin default). Pending: AgentCode CRUD/apply/approval endpoints and screens.

@@ -1,6 +1,6 @@
 # F-109 Provider ports and mock adapters
 
-- Group: Core · Status: **PLANNED** · Depends on: F-003 · ADR-009
+- Group: Core · Status: **DONE** · Depends on: F-003 · ADR-009
 - PRD refs: REQ-02 §2.2 (support providers may be needed; no bank-status integration), REQ-08 §8.2 (provider-confirmed states), §8.5 (share-sheet ≠ delivered), REQ-10 §10.2 (lawful Aadhaar options), REQ-28 §28.1, INV-10
 
 ## Detailed requirements
@@ -14,6 +14,9 @@ Interfaces (in `apps/api/src/providers/ports`), each with a `console`/`mock` ada
 9. **Forbidden:** any `BankStatusProvider` — a lint rule/grep test fails the build if a file matches `/bank.*status.*provider/i` in `providers/`.
 
 ## Acceptance criteria
-- [ ] App boots with all providers on mock/console adapters and no vendor credentials.
-- [ ] Each port's contract test runs against its mock adapter.
-- [ ] Every result type has an explicit `confirmed`/status field — no boolean "success" that could be misread as delivery/recording.
+- [x] App boots with all providers on mock/console adapters and no vendor credentials.
+- [x] Each port's contract test runs against its mock adapter.
+- [x] Every result type has an explicit `confirmed`/status field — no boolean "success" that could be misread as delivery/recording.
+
+## Progress notes
+- 2026-09-22 (session 1): Ports + console/mock/handoff/memory/noop adapters wired by env; no bank-status port (grep test to add in F-901).

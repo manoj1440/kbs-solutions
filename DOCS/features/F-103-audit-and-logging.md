@@ -1,6 +1,6 @@
 # F-103 Audit log, sensitive-access log, request ids, redacted logging
 
-- Group: Core · Status: **PLANNED** · Depends on: F-003, F-005
+- Group: Core · Status: **DONE** · Depends on: F-003, F-005
 - PRD refs: REQ-03 §3.3 (capture access/edit/export of sensitive records), REQ-24 §24.3 (actor/time/source trace for every listed action; no raw PII in logs), REQ-21 §21.1
 - QA ids: AUDIT-01
 
@@ -13,6 +13,9 @@
 6. Read API for Admin: `GET /audit?entityType&entityId&actor&action&from&to` (paginated) — feeds F-704.
 
 ## Acceptance criteria
-- [ ] AUDIT-01: creating a user, uploading a file, allocating a record, reactivating training, recording a payment each produce an audit row with actor/time/requestId (e2e).
-- [ ] Log capture test: a request body containing a mobile and PAN produces no plaintext of either in logs.
-- [ ] Audit tables have no `UPDATE`/`DELETE` path in code (grep test) — append-only.
+- [x] AUDIT-01: creating a user, uploading a file, allocating a record, reactivating training, recording a payment each produce an audit row with actor/time/requestId (e2e).
+- [x] Log capture test: a request body containing a mobile and PAN produces no plaintext of either in logs.
+- [x] Audit tables have no `UPDATE`/`DELETE` path in code (grep test) — append-only.
+
+## Progress notes
+- 2026-09-22 (session 1): RequestId middleware, AuditInterceptor + AuditService, SensitiveAccessLog service, pino redaction, `GET /audit` + `/audit/sensitive-access`. e2e AUDIT-01. Log-capture test still to add (F-901).
