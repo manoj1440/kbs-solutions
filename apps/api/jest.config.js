@@ -6,6 +6,6 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testRegex: '.*\\.spec\\.ts$',
   moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
-  transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.json', isolatedModules: true }] },
+  transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.json' }] },
   setupFiles: ['<rootDir>/test/setup-env.ts'],
 };
