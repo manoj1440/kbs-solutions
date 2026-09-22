@@ -1,3 +1,4 @@
+import { Prisma } from '@kbs/db';
 import { CONFIG_KEY_MAP, CONFIG_KEYS } from '@kbs/shared';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 
@@ -99,11 +100,11 @@ export class ConfigService implements OnModuleInit {
     await this.prisma.client.$transaction([
       this.prisma.client.systemConfig.upsert({
         where: { key },
-        update: { value: value === null ? undefined : (value as object), updatedByUserId: actorUserId, updatedAt: new Date() },
+        update: { value: value === null ? Prisma.DbNull : (value as object), updatedByUserId: actorUserId, updatedAt: new Date() },
         create: {
           key,
           valueType: def.valueType,
-          value: value === null ? undefined : (value as object),
+          value: value === null ? Prisma.DbNull : (value as object),
           defaultValue: def.defaultValue === null ? undefined : (def.defaultValue as object),
           description: def.description,
           requiresValueBeforeProd: def.requiresValueBeforeProd,

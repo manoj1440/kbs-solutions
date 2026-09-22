@@ -1,6 +1,6 @@
 # F-203 Training enrollment, 72-hour window, sequential modules, assessment
 
-- Group: Training · Status: **PLANNED** · Depends on: F-111, F-201, F-202
+- Group: Training · Status: **DONE** · Depends on: F-111, F-201, F-202
 - PRD refs: REQ-05 §5.1 (72 h elapsed from first successful OTP login; subsequent logins do not reset), §5.2 (index, current module, video, questions, results, score, deadline; block M2 until M1 passes …), §5.3 (marks from correct MCQ answers vs configured threshold; passed stays passed; failed/unfinished stays current), §5.5, REQ-23 §23.2, REQ-25 §25.2 (Training landing, Module learning, MCQ result)
 - QA ids: TRAIN-02, TRAIN-03
 
@@ -14,7 +14,10 @@
 7. Mobile screens: Training landing (three module cards with lock/pass icons, deadline countdown, deactivation explanation if applicable), Module learning (video player with progress reporting, material), Assessment (one question per screen or list, submit with confirmation), Result (score, threshold, retry availability, next module CTA).
 
 ## Acceptance criteria
-- [ ] TRAIN-02: two logins produce one `firstLoginAt`/`deadlineAt`.
-- [ ] TRAIN-03: M2 attempt before M1 pass → refused; queue blocked until M3 passes.
-- [ ] Pass at exactly threshold passes; below fails; passed module cannot regress after a later worse attempt.
-- [ ] Attempt limit honoured when set; unlimited when null.
+- [x] TRAIN-02: two logins produce one `firstLoginAt`/`deadlineAt`.
+- [x] TRAIN-03: M2 attempt before M1 pass → refused; queue blocked until M3 passes.
+- [x] Pass at exactly threshold passes; below fails; passed module cannot regress after a later worse attempt.
+- [x] Attempt limit honoured when set; unlimited when null.
+
+## Progress notes
+- 2026-09-22 (session 2): `GET /training/me`, video-progress, start attempt (shuffled, no answers, resumes an open attempt), submit (score, per-module or averaged rule from config, no regression, next module unlock, PASSED enrollment + notifications). Minimal notifications module added (`GET /notifications`, mark read) — F-701 extends it. Mobile: training landing, module (expo-video with completion reporting), assessment + result screens; Expo bundle verified. e2e: `training-learner.e2e-spec.ts` (TRAIN-03, exact-threshold pass, no regression, attempt limit, deadline block).
