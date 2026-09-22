@@ -6,6 +6,7 @@ const NAV = [
   { href: '/admin/users', label: 'Users & teams' },
   { href: '/admin/training', label: 'Training content' },
   { href: '/admin/training/team', label: 'Training progress' },
+  { href: '/admin/calling-list', label: 'Calling lists' },
   { href: '/admin/compliance', label: 'Compliance & reference data' },
   { href: '/admin/config', label: 'Configuration' },
 ];

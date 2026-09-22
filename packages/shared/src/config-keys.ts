@@ -46,6 +46,7 @@ export const CONFIG_KEYS: readonly ConfigKeyDefinition[] = [
   def('allocation.algorithm', ConfigValueType.STRING, 'ROUND_ROBIN_EQUAL', 'ROUND_ROBIN_EQUAL | WEIGHTED_BY_CAPACITY | REGION_PREFERRED (REQ-06 §6.4 OPEN).'),
   def('allocation.maxActivePerTelecaller', ConfigValueType.INT, null, 'Max active records per Telecaller; null = no cap.'),
   def('allocation.businessHoursOnly', ConfigValueType.BOOL, false, 'Only allocate during business hours.'),
+  def('allocation.regionPreferences', ConfigValueType.JSON, {}, 'REGION_PREFERRED only: map of Telecaller employeeCode → preferred states[] (e.g. {"TC001":["RAJASTHAN"]}).'),
   def('allocation.dedupeKey', ConfigValueType.JSON, ['mobile'], 'Fields forming the duplicate-identity key for calling records (REQ-06 §6.3 OPEN).', true),
   // network
   def('network.enforceForTelecallers', ConfigValueType.BOOL, true, 'Enforce office-network policy for Telecallers (REQ-09 §9.1).'),

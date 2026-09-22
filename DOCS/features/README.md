@@ -43,9 +43,9 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-205-training-visibility.md](./F-205-training-visibility.md) | F-205 Training progress visibility for Manager and Admin | Training | DONE | F-203, F-204 |
 | [F-301-office-network-policy.md](./F-301-office-network-policy.md) | F-301 Office-network policy, WFH exceptions and network gate | Telecaller ops | IN_PROGRESS | F-104, F-111 |
 | [F-302-mobile-secure-screens.md](./F-302-mobile-secure-screens.md) | F-302 Android protected screens (FLAG_SECURE) and residual-risk documentation | Telecaller ops | IN_PROGRESS | F-802 |
-| [F-303-customer-list-import.md](./F-303-customer-list-import.md) | F-303 Admin customer calling-list import | Telecaller ops | PLANNED | F-108, F-110, F-104, F-306 |
+| [F-303-customer-list-import.md](./F-303-customer-list-import.md) | F-303 Admin customer calling-list import | Telecaller ops | DONE | F-108, F-110, F-104, F-306 |
 | [F-304-pincode-master.md](./F-304-pincode-master.md) | F-304 Pincode master reference and location resolution | Telecaller ops | DONE | F-108 |
-| [F-305-automatic-allocation.md](./F-305-automatic-allocation.md) | F-305 Automatic allocation of accepted records to trained Telecallers | Telecaller ops | PLANNED | F-303, F-203, F-104 |
+| [F-305-automatic-allocation.md](./F-305-automatic-allocation.md) | F-305 Automatic allocation of accepted records to trained Telecallers | Telecaller ops | IN_PROGRESS | F-303, F-203, F-104 |
 | [F-306-contact-suppression.md](./F-306-contact-suppression.md) | F-306 Contact suppression (do-not-contact) enforcement | Telecaller ops | DONE | F-005, F-103 |
 | [F-307-calling-queue.md](./F-307-calling-queue.md) | F-307 Telecaller calling queue, follow-ups, hidden history | Telecaller ops | PLANNED | F-111, F-305, F-306, F-802 |
 | [F-308-card-lookup-by-pincode.md](./F-308-card-lookup-by-pincode.md) | F-308 Card lookup by customer pincode (sourceability ∩ publication) | Telecaller ops | PLANNED | F-403, F-404, F-307 |
