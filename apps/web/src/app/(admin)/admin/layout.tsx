@@ -14,6 +14,7 @@ const NAV = [
   { href: '/admin/pincode-profiles', label: 'Bank pincode profiles' },
   { href: '/admin/mis', label: 'Bank MIS' },
   { href: '/admin/mis/integrity', label: 'MIS integrity' },
+  { href: '/admin/payouts/rules', label: 'Payout rules' },
   { href: '/admin/compliance', label: 'Compliance & reference data' },
   { href: '/admin/config', label: 'Configuration' },
 ];

@@ -31,6 +31,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { MisModule } from './modules/mis/mis.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { PayoutsModule } from './modules/payouts/payouts.module';
 import { SharingModule } from './modules/sharing/sharing.module';
 import { TrainingModule } from './modules/training/training.module';
 import { UsersModule } from './modules/users/users.module';
@@ -89,6 +90,7 @@ export const LOG_REDACT_PATHS = [
     SharingModule,
     OnboardingModule,
     LeadsModule,
+    PayoutsModule,
     MisModule,
   ],
   controllers: [HealthController],
