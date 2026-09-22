@@ -39,7 +39,7 @@ describe('F-303 customer list import + F-305 allocation', () => {
 
   async function makeTrainedTelecaller(suffix: string) {
     const s = await setupManagerAndTelecaller(app, prisma, suffix);
-    await prisma.trainingEnrollment.update({ where: { telecallerUserId: s.telecallerId }, data: { status: 'PASSED', passedAt: new Date() } });
+    await prisma.trainingEnrollment.update({ where: { telecallerUserId: s.telecallerId }, data: { status: 'PASSED', passedAt: new Date(), firstLoginAt: new Date() } });
     await prisma.user.update({ where: { id: s.telecallerId }, data: { employeeCode: `TC${suffix}` } });
     return s;
   }

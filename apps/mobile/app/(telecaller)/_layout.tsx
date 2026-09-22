@@ -11,8 +11,9 @@ export default function TelecallerLayout() {
   if (target !== '/(telecaller)') return <Redirect href={target as never} />;
   return (
     <Tabs screenOptions={{ headerShown: false }}>
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="index" options={{ title: 'Queue' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="record" options={{ href: null }} />
     </Tabs>
   );
 }

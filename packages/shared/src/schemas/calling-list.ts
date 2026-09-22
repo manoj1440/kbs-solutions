@@ -32,3 +32,39 @@ export const RowIssue = {
   SUPPRESSED: 'SUPPRESSED',
 } as const;
 export type RowIssue = (typeof RowIssue)[keyof typeof RowIssue];
+
+// ── F-305 manual reassignment ──
+export const ReassignRecordBody = z.object({ toTelecallerUserId: z.string().uuid(), reason: z.string().min(3).max(500) });
+export type ReassignRecordBody = z.infer<typeof ReassignRecordBody>;
+
+// ── F-307 calling queue ──
+export const QueueTab = z.enum(['active', 'followups', 'hidden']);
+export type QueueTab = z.infer<typeof QueueTab>;
+export const QueueQuery = z.object({
+  tab: QueueTab.default('active'),
+  search: z.string().trim().max(100).optional(),
+  telecallerId: z.string().uuid().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+});
+export type QueueQuery = z.infer<typeof QueueQuery>;
+
+/** Row of the calling queue (mobile + web). Mobile is always masked in lists (REQ-08 §8.3). */
+export interface CallingQueueRow {
+  id: string;
+  fullName: string;
+  mobileMasked: string;
+  pincode: string;
+  location: string;
+  locationResolved: boolean;
+  assignedTelecaller: { id: string; fullName: string } | null;
+  assignedAt: string | null;
+  interactionStatus: string;
+  nextFollowUpAt: string | null;
+  lastOutcome: { outcome: string; at: string; remarks: string | null } | null;
+  suppressed: boolean;
+  hiddenAt: string | null;
+  hiddenReason: string | null;
+  canCall: boolean;
+  batchRef: string;
+}

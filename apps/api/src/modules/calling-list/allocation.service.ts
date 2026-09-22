@@ -1,3 +1,4 @@
+import type { ReassignRecordBody } from '@kbs/shared';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -177,5 +178,56 @@ export class AllocationService {
       this.prisma.client.callingRecord.count({ where: { batchId, suppressed: true } }),
     ]);
     return { byReviewStatus: Object.fromEntries(byStatus.map((s) => [s.reviewStatus, s._count._all])), assigned, unassigned, hidden, suppressed };
+  }
+
+  /**
+   * Manual reassignment (REQ-15 §15.1): Manager only within own team (both current and target Telecaller), Admin anywhere.
+   * The record keeps its history and outcomes; an AllocationEvent records from/to/actor/reason.
+   */
+  async reassign(actor: Actor, recordId: string, body: ReassignRecordBody) {
+    const r = await this.prisma.client.callingRecord.findUnique({ where: { id: recordId }, select: { id: true, assignedTelecallerUserId: true, hiddenAt: true, batchId: true, fullName: true } });
+    if (!r) throw AppError.notFound('Record');
+    if (r.hiddenAt) throw new AppError('CONFLICT', 'Hidden records cannot be reassigned.');
+    if (r.assignedTelecallerUserId === body.toTelecallerUserId) throw new AppError('CONFLICT', 'The record is already assigned to that Telecaller.');
+    const target = await this.prisma.client.user.findUnique({ where: { id: body.toTelecallerUserId }, select: { id: true, role: true, status: true, fullName: true, trainingEnrollment: { select: { status: true } } } });
+    if (!target || target.role !== 'TELECALLER') throw new AppError('VALIDATION_FAILED', 'Target must be a Telecaller.');
+    if (target.status !== 'ACTIVE') throw new AppError('VALIDATION_FAILED', 'Target Telecaller is not active.');
+    if (target.trainingEnrollment?.status !== 'PASSED') throw new AppError('VALIDATION_FAILED', 'Target Telecaller has not completed training.');
+    if (actor.role === 'MANAGER') {
+      const inTeam = (id: string | null) => Boolean(id && actor.teamUserIds.includes(id));
+      if (!inTeam(target.id) || (r.assignedTelecallerUserId && !inTeam(r.assignedTelecallerUserId))) {
+        throw new AppError('RBAC_FORBIDDEN', 'Managers can only reassign within their own team; ask the Admin for cross-team moves.');
+      }
+    }
+    const now = new Date();
+    await this.prisma.client.$transaction([
+      this.prisma.client.callingRecord.update({ where: { id: recordId }, data: { assignedTelecallerUserId: target.id, assignedAt: now } }),
+      this.prisma.client.allocationEvent.create({ data: { callingRecordId: recordId, fromTelecallerUserId: r.assignedTelecallerUserId, toTelecallerUserId: target.id, batchId: r.batchId, actorUserId: actor.userId, reason: `MANUAL_REASSIGNMENT: ${body.reason}` } }),
+    ]);
+    await this.notifications.notify({ recipientUserId: target.id, kind: 'ASSIGNMENT_NEW', title: 'New customer assigned (1)', body: `${r.fullName} was moved to your calling queue.`, deepLink: { entityType: 'CallingRecord', entityId: recordId }, dedupeKey: `reassign:${recordId}:${now.getTime()}` });
+    RequestContextStore.audit({ entityId: recordId, before: { assignedTelecallerUserId: r.assignedTelecallerUserId }, after: { assignedTelecallerUserId: target.id }, reason: body.reason });
+    return { id: recordId, assignedTelecallerUserId: target.id, assignedTelecaller: { id: target.id, fullName: target.fullName }, assignedAt: now.toISOString() };
+  }
+
+  /** Distribution view: Admin = every Telecaller, Manager = own team (REQ-06 §6.4). Flags inactive Telecallers still holding records (F-305 §5). */
+  async distribution(actor: Actor) {
+    const where = actor.role === 'MANAGER' ? { id: { in: actor.teamUserIds }, role: 'TELECALLER' as const } : { role: 'TELECALLER' as const };
+    const users = await this.prisma.client.user.findMany({ where, select: { id: true, fullName: true, employeeCode: true, status: true, trainingEnrollment: { select: { status: true } } }, orderBy: { fullName: 'asc' } });
+    const groups = await this.prisma.client.callingRecord.groupBy({ by: ['assignedTelecallerUserId', 'interactionStatus'], where: { assignedTelecallerUserId: { in: users.map((u) => u.id) }, hiddenAt: null }, _count: { _all: true } });
+    const byUser = new Map<string, Record<string, number>>();
+    for (const g of groups) {
+      const m = byUser.get(g.assignedTelecallerUserId as string) ?? {};
+      m[g.interactionStatus] = g._count._all;
+      byUser.set(g.assignedTelecallerUserId as string, m);
+    }
+    const unassigned = actor.role === 'ADMIN' ? await this.prisma.client.callingRecord.count({ where: { assignedTelecallerUserId: null, reviewStatus: 'ACCEPTED', hiddenAt: null } }) : null;
+    return {
+      telecallers: users.map((u) => {
+        const s = byUser.get(u.id) ?? {};
+        const active = Object.values(s).reduce((a, b) => a + b, 0);
+        return { id: u.id, fullName: u.fullName, employeeCode: u.employeeCode, status: u.status, trained: u.trainingEnrollment?.status === 'PASSED', eligible: u.status === 'ACTIVE' && u.trainingEnrollment?.status === 'PASSED', active, byStatus: s, needsReassignment: u.status !== 'ACTIVE' && active > 0 };
+      }),
+      unassigned,
+    };
   }
 }

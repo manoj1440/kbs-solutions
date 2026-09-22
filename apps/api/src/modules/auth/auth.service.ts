@@ -111,7 +111,7 @@ export class AuthService {
     if (user.role === 'TELECALLER') {
       const hours = this.config.getInt('training.windowHours') ?? 72;
       await this.prisma.client.trainingEnrollment.updateMany({
-        where: { telecallerUserId: user.id, firstLoginAt: null },
+        where: { telecallerUserId: user.id, firstLoginAt: null, status: 'NOT_STARTED' },
         data: { firstLoginAt: new Date(), deadlineAt: new Date(Date.now() + hours * 3_600_000), status: 'IN_PROGRESS', currentModuleSequence: 1 },
       });
       if (this.config.getBool('auth.telecallerSingleSession')) {

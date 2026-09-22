@@ -1,6 +1,6 @@
 # F-307 Telecaller calling queue, follow-ups, hidden history
 
-- Group: Telecaller ops · Status: **PLANNED** · Depends on: F-111, F-305, F-306, F-802
+- Group: Telecaller ops · Status: **DONE** · Depends on: F-111, F-305, F-306, F-802
 - PRD refs: REQ-06 §6.1 (row fields), §6.5 (active vs hidden; follow-up visible with due date/note; authorised retrieval of hidden and full history), REQ-25 §25.2 (My Calling Queue, Follow-ups, History/Hidden), REQ-08 §8.3 (masked mobile as role permits)
 - QA ids: RBAC-01, CUST-04
 
@@ -12,5 +12,8 @@
 5. Mobile screens: queue tabs with search and due badges; follow-up list; history list; pull-to-refresh; offline empty/error states.
 
 ## Acceptance criteria
-- [ ] RBAC-01: Telecaller sees own rows only; Manager team; Admin all.
-- [ ] CUST-04: follow-up remains in active/follow-ups; declined/completed hidden but retrievable in history with full trail.
+- [x] RBAC-01: Telecaller sees own rows only; Manager team; Admin all.
+- [x] CUST-04: follow-up remains in active/follow-ups; declined/completed hidden but retrievable in history with full trail.
+
+## Progress notes
+- 2026-09-22 (session 2): `GET /calling/queue?tab=active|followups|hidden&search&page` (Telecaller own; `@RequireGates('training','network')`; `meta.counts {active, followups, dueNow, hidden}`), `GET /calling/records?telecallerId&tab` (Manager team / Admin all; Manager asking for a non-team Telecaller → 403), `GET /calling/records/:id` (scoped; out-of-scope → 404 so existence never leaks; full trail: outcomes, call attempts, interests, shares, allocation events, operational remarks). Mobiles always masked in lists/details; `canCall=false` when suppressed/hidden. Mobile: `(telecaller)/index.tsx` tabs Queue / Follow-ups (due-now badge) / History with search + pull-to-refresh, `(telecaller)/record.tsx` detail with history (Call button disabled until F-309). Web Manager/Admin read views share `CallingDistribution`. Auth hardening found by tests: the 72h training window now starts only for `NOT_STARTED` enrollments (a PASSED Telecaller logging in for the first time is not reset).
