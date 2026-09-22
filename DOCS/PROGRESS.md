@@ -33,6 +33,13 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 
 ## Session log
 
+### 2026-09-22 — Session 5 (mobile reskin per design mockup, F-802)
+- Applied the S01–S10 design mockup to the advisor app: `(auth)/welcome` is now a 5-slide carousel (brand hero w/ card art, discover, digital selling, card-for-every-need, earnings) with page dots + Get Started/Next/Let's Login CTAs. `(auth)/mobile` + `otp` restyled (brand header, icon field, 6-box OTP w/ countdown + Edit). `(gates)/training` landing restyled (progress bar, module state icons, Continue Learning).
+- Advisor IA changed to the mockup's tabs: **Home / Leads / Cards / Earnings / More**. `index` = S09 dashboard (greeting, unread-notification bell, Leads/Applications/Approved/Earnings stat tiles, quick actions, Recent Activity from `/notifications`). New `cards.tsx` = S10 catalogue (card-art thumbs, Apply → lead-new). `pending` removed from tab bar, linked from dashboard.
+- Deviation: mockup's password field + Google sign-in on S06 omitted — auth is OTP-only (REQ-12). Card art is drawn with Views (no image assets, no new deps).
+- Verified on emulator end to end: carousel → login → OTP → dashboard → catalogue. Earnings tile uses `totals.eligible` (cumulative bucket — do not sum buckets, they overlap).
+- Checks: mobile typecheck/lint/test green.
+
 ### 2026-09-22 — Session 4 (local e2e run on the Mac, no new features)
 - Ran the whole stack locally on the Mac. Ports differ from the runbook because `dsa-partner-portal` (sibling project) holds 3000/4000/8081/5432/6379. Used: API **:4200**, web **:3200**, Metro **:8091**, Postgres `kbs_dev` DB inside the `kbs-test-pg` container (:55432), Redis `kbs-test-redis` (:56379). Minio pull failed (Docker Hub denied `minio/mc`) → `STORAGE_PROVIDER=memory` in `apps/api/.env`.
 - The `kbs` database on 55432 is **not ours** (snake_case schema, `schema_migrations` ledger — belongs to dsa-partner-portal). Ours is `kbs_dev` with the PascalCase Prisma schema; `pnpm db:migrate` + `pnpm db:seed` run clean against it.
