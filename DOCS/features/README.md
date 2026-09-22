@@ -56,8 +56,8 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-313-manager-team-operations.md](./F-313-manager-team-operations.md) | F-313 Manager team operations views | Telecaller ops | PLANNED | F-205, F-305, F-309, F-310, F-311 |
 | [F-401-advisor-onboarding.md](./F-401-advisor-onboarding.md) | F-401 Advisor self-registration and verified onboarding | Advisor | PLANNED | F-101, F-108, F-109, F-111 |
 | [F-402-agent-code-in-onboarding-and-profile.md](./F-402-agent-code-in-onboarding-and-profile.md) | F-402 Agent Code in signup and profile (Advisor-facing) | Advisor | PLANNED | F-106, F-401 |
-| [F-403-card-catalogue-admin.md](./F-403-card-catalogue-admin.md) | F-403 Bank and credit-card catalogue administration | Advisor | PLANNED | F-108, F-104 |
-| [F-404-bank-pincode-profiles-and-import.md](./F-404-bank-pincode-profiles-and-import.md) | F-404 Bank-specific pincode profiles, import and sourceability | Advisor | PLANNED | F-108, F-110, F-403 |
+| [F-403-card-catalogue-admin.md](./F-403-card-catalogue-admin.md) | F-403 Bank and credit-card catalogue administration | Advisor | DONE | F-108, F-104 |
+| [F-404-bank-pincode-profiles-and-import.md](./F-404-bank-pincode-profiles-and-import.md) | F-404 Bank-specific pincode profiles, import and sourceability | Advisor | DONE | F-108, F-110, F-403 |
 | [F-405-advisor-catalogue-browse.md](./F-405-advisor-catalogue-browse.md) | F-405 Advisor card discovery: catalogue, categories, search, filters, detail | Advisor | PLANNED | F-403, F-404, F-802 |
 | [F-406-advisor-create-lead.md](./F-406-advisor-create-lead.md) | F-406 Advisor creates customer operational lead (multi-step) | Advisor | PLANNED | F-405, F-304, F-109, F-107 |
 | [F-407-link-initiation-and-bank-reference.md](./F-407-link-initiation-and-bank-reference.md) | F-407 Application-link initiation and bank reference linkage | Advisor | PLANNED | F-406, F-311, F-403 |

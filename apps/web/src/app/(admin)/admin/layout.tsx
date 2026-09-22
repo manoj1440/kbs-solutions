@@ -8,6 +8,8 @@ const NAV = [
   { href: '/admin/training/team', label: 'Training progress' },
   { href: '/admin/calling-list', label: 'Calling lists' },
   { href: '/admin/calling-list/distribution', label: 'Allocation' },
+  { href: '/admin/catalogue', label: 'Card catalogue' },
+  { href: '/admin/pincode-profiles', label: 'Bank pincode profiles' },
   { href: '/admin/compliance', label: 'Compliance & reference data' },
   { href: '/admin/config', label: 'Configuration' },
 ];

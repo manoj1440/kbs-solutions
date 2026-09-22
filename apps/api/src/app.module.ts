@@ -19,6 +19,7 @@ import { AuditInterceptor } from './modules/audit/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CallingListModule } from './modules/calling-list/calling-list.module';
+import { CatalogueModule } from './modules/catalogue/catalogue.module';
 import { ConfigModule } from './modules/config/config.module';
 import { FilesModule } from './modules/files/files.module';
 import { GatesModule } from './modules/gates/gates.module';
@@ -76,6 +77,7 @@ export const LOG_REDACT_PATHS = [
     NotificationsModule,
     TrainingModule,
     CallingListModule,
+    CatalogueModule,
   ],
   controllers: [HealthController],
   providers: [

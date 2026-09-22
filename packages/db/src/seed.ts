@@ -253,7 +253,7 @@ export async function seed(databaseUrl: string, env: NodeJS.ProcessEnv = process
           version: 1,
           name: p.name,
           sheetName: p.sheetName,
-          headerMapping: Object.fromEntries(p.headers.map((h) => [h, h])),
+          headerMapping: { headers: p.headers },
           pincodeColumn: p.pincodeColumn,
           semantics: p.semantics as object,
           status: 'DRAFT',
