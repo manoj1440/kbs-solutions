@@ -1,0 +1,10 @@
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
+process.env.DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://kbs:kbs@localhost:5432/kbs_test';
+process.env.REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379/1';
+process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? 'test-access-secret-test-access-secret-1234';
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'test-refresh-secret-test-refresh-secret-12';
+process.env.DATA_ENCRYPTION_KEY = process.env.DATA_ENCRYPTION_KEY ?? 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=';
+process.env.OTP_PROVIDER = 'console';
+process.env.OTP_DEV_MASTER_CODE = '000000';
+process.env.STORAGE_PROVIDER = 'memory';
+process.env.LOG_LEVEL = 'silent';

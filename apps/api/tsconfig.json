@@ -1,0 +1,30 @@
+{
+  "extends": "@kbs/config/tsconfig/node.json",
+  "compilerOptions": {
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "declaration": false,
+    "removeComments": true,
+    "sourceMap": true,
+    "incremental": true,
+    "strictPropertyInitialization": false,
+    "noUncheckedIndexedAccess": false,
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false,
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "types": [
+      "node",
+      "jest"
+    ]
+  },
+  "include": [
+    "src",
+    "test"
+  ]
+}

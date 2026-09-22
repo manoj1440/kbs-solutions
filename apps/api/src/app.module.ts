@@ -1,0 +1,89 @@
+import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { LoggerModule } from 'nestjs-pino';
+
+import { AppExceptionFilter } from './common/errors/app-exception.filter';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { PolicyGuard } from './common/guards/policy.guard';
+import { RolesGuard } from './common/guards/roles.guard';
+import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
+import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { CoreModule } from './config/core.module';
+import { loadEnv } from './config/env';
+import { PrismaModule } from './infra/prisma/prisma.module';
+import { RedisModule } from './infra/redis/redis.module';
+import { AccessPolicyModule } from './modules/access-policy/access-policy.module';
+import { AuditInterceptor } from './modules/audit/audit.interceptor';
+import { AuditModule } from './modules/audit/audit.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { ConfigModule } from './modules/config/config.module';
+import { GatesModule } from './modules/gates/gates.module';
+import { HealthController } from './modules/health/health.controller';
+import { JobsModule } from './modules/jobs/jobs.module';
+import { UsersModule } from './modules/users/users.module';
+import { ProvidersModule } from './providers/providers.module';
+
+/** Paths / keys that must never reach logs (REQ-24 §24.3, F-103). */
+export const LOG_REDACT_PATHS = [
+  'req.headers.authorization',
+  'req.headers.cookie',
+  'req.headers["idempotency-key"]',
+  'res.headers["set-cookie"]',
+  '*.mobile',
+  '*.pan',
+  '*.panEncrypted',
+  '*.aadhaar',
+  '*.accountNumber',
+  '*.bankAccountEncrypted',
+  '*.otp',
+  '*.code',
+  '*.token',
+  '*.accessToken',
+  '*.refreshToken',
+  '*.codeHash',
+];
+
+@Module({
+  imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? 'info',
+        redact: { paths: LOG_REDACT_PATHS, censor: '[redacted]' },
+        transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty', options: { singleLine: true } } : undefined,
+        autoLogging: process.env.NODE_ENV !== 'test',
+        customProps: (req) => ({ requestId: (req.headers['x-request-id'] as string | undefined) ?? undefined }),
+      },
+    }),
+    ThrottlerModule.forRoot([{ name: 'global', ttl: 60_000, limit: 300 }]),
+    CoreModule,
+    PrismaModule,
+    RedisModule,
+    ProvidersModule,
+    AuditModule,
+    ConfigModule,
+    UsersModule,
+    AccessPolicyModule,
+    GatesModule,
+    AuthModule,
+    JobsModule,
+  ],
+  controllers: [HealthController],
+  providers: [
+    { provide: APP_FILTER, useClass: AppExceptionFilter },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PolicyGuard },
+    { provide: APP_INTERCEPTOR, useClass: ResponseEnvelopeInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+  ],
+})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    const env = loadEnv();
+    consumer.apply(new RequestIdMiddleware(env.TRUST_PROXY_HOPS).use.bind(new RequestIdMiddleware(env.TRUST_PROXY_HOPS))).forRoutes('*path');
+  }
+}
