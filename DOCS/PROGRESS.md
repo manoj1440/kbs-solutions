@@ -33,6 +33,15 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 
 ## Session log
 
+### 2026-09-22 — Session 4 (local e2e run on the Mac, no new features)
+- Ran the whole stack locally on the Mac. Ports differ from the runbook because `dsa-partner-portal` (sibling project) holds 3000/4000/8081/5432/6379. Used: API **:4200**, web **:3200**, Metro **:8091**, Postgres `kbs_dev` DB inside the `kbs-test-pg` container (:55432), Redis `kbs-test-redis` (:56379). Minio pull failed (Docker Hub denied `minio/mc`) → `STORAGE_PROVIDER=memory` in `apps/api/.env`.
+- The `kbs` database on 55432 is **not ours** (snake_case schema, `schema_migrations` ledger — belongs to dsa-partner-portal). Ours is `kbs_dev` with the PascalCase Prisma schema; `pnpm db:migrate` + `pnpm db:seed` run clean against it.
+- New file: `apps/api/scripts/demo-seed.mjs` — re-runnable demo seeder driving the real HTTP API (`node apps/api/scripts/demo-seed.mjs`; resets mutable tables + base seed first, needs docker + kbs-test-pg). Creates: Manager 9876500001, Telecaller 9776500001 (+PASSED training), advisor Asha 9555999001 (full onboarding → admin APPROVE), 2 published HDFC cards + crosswalks, approved ₹1500 'V + ACTIVE' payout rule, 3 leads with bank refs, applied HDFC MIS batch (3 matched, 1 unmatched exception), pincode master + calling list allocated 4/4.
+- Verified live: admin web login (OTP cookie flow, `000000` master code) → overview gates, leads table + filters, lead detail (sections A–C + field-level MIS provenance), MIS batches, payout entitlements, allocation page. Mobile in emulator (`kbs-demo` AVD, Expo Go 57.0.9 via `exp://localhost:8091` after `adb reverse tcp:8091 tcp:8091` + `tcp:4200`; **use `EXPO_PUBLIC_API_URL=http://localhost:4200/api/v1` — `10.0.2.2` did not route on this guest**): advisor login → card catalogue → My Leads (MIS badges) → Payouts (entitlement visible) → select + review → submit.
+- Found + fixed at runtime: payout request fails closed until `payouts.designatedApproverManagerUserId` is set (launch gate, expected). Set it to the demo manager, then full chain ran: request `KBS-PR-WAJVDEBX` → MANAGER APPROVED → ADMIN APPROVED → state `APPROVED` ("Accounts payment pending", F-605 pending as designed).
+- Emulator note: original `kbs` AVD kept ANR-looping (`system_server`, 1536MB RAM, stale state). Created `kbs-demo` by cloning the AVD dir + deleting `userdata*.img` (avdmanager needs a JDK, absent). If the guest ANRs again, keep dismissing "Wait" or recreate the same way.
+- Screenshots from the run: `/tmp/emu-final.png` (advisor payouts approved), `admin-leads.png` (repo root, untracked).
+
 ### 2026-09-22 — Session 3
 - Slice 3: F-401 onboarding, F-402 review, F-405 catalogue browse, F-406 lead drafts/submit, F-407 link + bank reference.
 - Slice 4: F-501 MIS profiles, F-502 upload/parse/map, F-504 matching + resolution, F-503 preview, F-505 apply (snapshot/history/outbox), F-506 status DTO + table/row components, F-408 My Leads filters + detail sections + MIS history, F-409 pending actions/follow-ups/remarks, F-410 profile, F-507 integrity dashboard + quarantine.
