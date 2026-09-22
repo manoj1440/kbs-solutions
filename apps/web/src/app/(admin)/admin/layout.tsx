@@ -1,0 +1,17 @@
+import { AppShell } from '@/components/app-shell';
+import { requireRole } from '@/lib/require-role';
+
+const NAV = [
+  { href: '/admin', label: 'Overview' },
+  { href: '/admin/users', label: 'Users & teams' },
+  { href: '/admin/config', label: 'Configuration' },
+];
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await requireRole('ADMIN');
+  return (
+    <AppShell session={session} nav={NAV} title="Admin workspace">
+      {children}
+    </AppShell>
+  );
+}

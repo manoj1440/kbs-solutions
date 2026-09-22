@@ -1,0 +1,13 @@
+import { AppShell } from '@/components/app-shell';
+import { requireRole } from '@/lib/require-role';
+
+const NAV = [{ href: '/manager', label: 'Team' }];
+
+export default async function ManagerLayout({ children }: { children: React.ReactNode }) {
+  const session = await requireRole('MANAGER', 'ADMIN');
+  return (
+    <AppShell session={session} nav={NAV} title="Manager workspace">
+      {children}
+    </AppShell>
+  );
+}
