@@ -1,0 +1,162 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`F-506 LeadStatusRow shaping (REQ-14 §14.2–§14.4) > never matched → all three fields Awaiting MIS Update, no bank dates or references 1`] = `
+{
+  "actions": [
+    "OPEN_DETAILS",
+    "ENTER_BANK_REFERENCE",
+    "SHARE_APPLICATION_LINK",
+  ],
+  "activation": {
+    "asOf": null,
+    "batchRef": null,
+    "display": "Awaiting MIS Update",
+    "provenance": "BANK_MIS",
+    "raw": null,
+    "value": null,
+  },
+  "bank": {
+    "displayName": "HDFC Bank",
+    "id": "B",
+  },
+  "bankApplicationNo": null,
+  "bankApplicationReference": null,
+  "bankCreationDate": {
+    "provenance": "BANK_MIS",
+    "source": null,
+    "value": null,
+  },
+  "bankReference": null,
+  "card": {
+    "crosswalked": null,
+    "id": "C",
+    "name": "Millennia",
+  },
+  "customer": {
+    "mobileMasked": "+91••••••3210",
+    "name": "Ramesh Kumar",
+  },
+  "decision": {
+    "asOf": null,
+    "batchRef": null,
+    "display": "Awaiting MIS Update",
+    "provenance": "BANK_MIS",
+    "raw": null,
+    "value": null,
+  },
+  "id": "L1",
+  "kbsRef": "KBS-L-ABC123",
+  "lastMatchedAt": null,
+  "leadCreatedAt": "2026-09-01T04:00:00.000Z",
+  "matched": false,
+  "possibleCollision": false,
+  "remarksPreview": null,
+  "stage": {
+    "asOf": null,
+    "batchRef": null,
+    "display": "Awaiting MIS Update",
+    "provenance": "BANK_MIS",
+    "raw": null,
+    "value": null,
+  },
+}
+`;
+
+exports[`F-506 LeadStatusRow shaping (REQ-14 §14.2–§14.4) > §14.4: decision Approve and activation INACTIVE coexist as independent fields 1`] = `
+{
+  "actions": [
+    "OPEN_DETAILS",
+    "ENTER_BANK_REFERENCE",
+    "SHARE_APPLICATION_LINK",
+  ],
+  "activation": {
+    "asOf": "2026-09-15T05:00:00.000Z",
+    "batchRef": "KBS-M-1",
+    "display": "INACTIVE",
+    "provenance": "BANK_MIS",
+    "raw": "INACTIVE",
+    "value": "INACTIVE",
+  },
+  "bank": {
+    "displayName": "HDFC Bank",
+    "id": "B",
+  },
+  "bankApplicationNo": "0012345",
+  "bankApplicationReference": "REF-A1",
+  "bankCreationDate": {
+    "provenance": "BANK_MIS",
+    "source": "Creation Date",
+    "value": "2026-09-01T00:00:00.000Z",
+  },
+  "bankReference": null,
+  "card": {
+    "crosswalked": null,
+    "id": "C",
+    "name": "Millennia",
+  },
+  "customer": {
+    "mobileMasked": "+91••••••3210",
+    "name": "Ramesh Kumar",
+  },
+  "decision": {
+    "asOf": "2026-09-15T05:00:00.000Z",
+    "batchRef": "KBS-M-1",
+    "display": "Approve",
+    "provenance": "BANK_MIS",
+    "raw": "Approve",
+    "value": "Approve",
+  },
+  "id": "L1",
+  "kbsRef": "KBS-L-ABC123",
+  "lastMatchedAt": "2026-09-15T05:00:00.000Z",
+  "leadCreatedAt": "2026-09-01T04:00:00.000Z",
+  "matched": true,
+  "possibleCollision": false,
+  "remarksPreview": null,
+  "stage": {
+    "asOf": "2026-09-15T05:00:00.000Z",
+    "batchRef": "KBS-M-1",
+    "display": "Decisioned Cases",
+    "provenance": "BANK_MIS",
+    "raw": "Decisioned Cases",
+    "value": "Decisioned Cases",
+  },
+}
+`;
+
+exports[`F-506 LeadStatusRow shaping (REQ-14 §14.2–§14.4) > §14.4: the four activation cases stay distinct and verbatim 1`] = `
+[
+  {
+    "asOf": "2026-09-15T05:00:00.000Z",
+    "batchRef": "KBS-M-1",
+    "display": "V + ACTIVE",
+    "provenance": "BANK_MIS",
+    "raw": "V + ACTIVE",
+    "value": "V + ACTIVE",
+  },
+  {
+    "asOf": "2026-09-15T05:00:00.000Z",
+    "batchRef": "KBS-M-1",
+    "display": "TXN ACTIVE - Rs 100",
+    "provenance": "BANK_MIS",
+    "raw": "TXN ACTIVE - Rs 100",
+    "value": "TXN ACTIVE - Rs 100",
+  },
+  {
+    "asOf": "2026-09-15T05:00:00.000Z",
+    "batchRef": "KBS-M-1",
+    "display": "INACTIVE",
+    "provenance": "BANK_MIS",
+    "raw": "INACTIVE",
+    "value": "INACTIVE",
+  },
+  {
+    "asOf": "2026-09-15T05:00:00.000Z",
+    "batchRef": "KBS-M-1",
+    "display": "Not reported",
+    "provenance": "BANK_MIS",
+    "raw": "#N/A",
+    "value": null,
+  },
+]
+`;

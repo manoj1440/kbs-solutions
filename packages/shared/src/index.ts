@@ -2,6 +2,7 @@ export * from './enums';
 export * from './errors';
 export * from './permissions';
 export * from './display';
+export * from './lead-status';
 export * from './mask';
 export * from './normalize';
 export * from './refs';

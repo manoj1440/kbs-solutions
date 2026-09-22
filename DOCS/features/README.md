@@ -69,7 +69,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-503-mis-preview.md](./F-503-mis-preview.md) | F-503 MIS preview and anomaly report | MIS | DONE | F-502, F-504 |
 | [F-504-mis-matching-and-quarantine.md](./F-504-mis-matching-and-quarantine.md) | F-504 Deterministic MIS matching, quarantine and Admin resolution | MIS | DONE | F-502, F-407 |
 | [F-505-mis-apply-snapshot-history.md](./F-505-mis-apply-snapshot-history.md) | F-505 MIS apply: snapshot, change history, delta/full semantics, idempotency | MIS | DONE | F-504, F-110 |
-| [F-506-status-display-dtos-and-components.md](./F-506-status-display-dtos-and-components.md) | F-506 Status display: DTO shaping, web table, mobile row, badges | MIS | PLANNED | F-505, F-803 |
+| [F-506-status-display-dtos-and-components.md](./F-506-status-display-dtos-and-components.md) | F-506 Status display: DTO shaping, web table, mobile row, badges | MIS | DONE | F-505, F-803 |
 | [F-507-mis-integrity-dashboard.md](./F-507-mis-integrity-dashboard.md) | F-507 MIS integrity and freshness dashboard, unmatched cases | MIS | PLANNED | F-505, F-504 |
 | [F-601-payout-rules-and-rates.md](./F-601-payout-rules-and-rates.md) | F-601 Payout rules and rate tables (versioned, per bank) | Payouts | PLANNED | F-104, F-403 |
 | [F-602-entitlement-evaluation.md](./F-602-entitlement-evaluation.md) | F-602 Entitlement evaluation from applied MIS batches | Payouts | PLANNED | F-601, F-505, F-106 |

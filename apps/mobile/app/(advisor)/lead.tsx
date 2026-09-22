@@ -1,34 +1,35 @@
-import { ApiClientError, formatDateTime } from '@kbs/shared';
+import { ApiClientError, formatDateTime, type LeadStatusRow } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { ShareButtons } from '@/components/share-buttons';
+import { ActivationBadge, DecisionBadge, ProvenanceChip, StageBadge } from '@/components/status';
 import { Badge, Button, Card, ErrorText, Heading, Input, Label, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 
-interface LeadDetail {
-  id: string;
-  publicRef: string;
-  customerFullName: string;
-  customerMobileMasked: string | null;
+interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   customerPanMasked: string | null;
   panVerificationStatus: string;
-  card: string;
-  bank: string;
   cardId: string;
-  createdAt: string;
   pincode: string;
   city: string | null;
   state: string | null;
   employmentType: string;
   annualIncomeItr: number;
-  bankStatus: { matched: boolean; provenance: string; stage: string; decision: string; activation: string };
+  bankStatus: { matched: boolean; provenance: string; lastMatchedAt: string | null; lastMatchedBatchRef: string | null };
+  bankRemarks: { remarks: RemarkField[]; kyc: RemarkField[] };
   bankReference: { value: string | null; kind?: string; status?: string; label?: string; at?: string };
   referenceHistory: { id: string; value: string; status: string; at: string; supersededAt: string | null }[];
   linkActivity: { id: string; action: string; linkVersion: number; at: string; label: string }[];
   shares: { id: string; kind: string; at: string; handoffResult: string; deliveryStatus: string }[];
+}
+interface RemarkField {
+  field: string;
+  label: string;
+  raw: string | null;
+  display: string;
 }
 
 /** Lead detail (F-406/F-407 view; sections A/B — MIS history section C arrives with F-408). */
@@ -76,23 +77,25 @@ export default function LeadScreen() {
         {l ? (
           <>
             <View>
-              <Muted>{l.publicRef}</Muted>
-              <Heading>{l.customerFullName}</Heading>
+              <Muted>KBS {l.kbsRef}</Muted>
+              <Heading>{l.customer.name}</Heading>
               <Muted>
-                {l.bank} {l.card} · created {formatDateTime(l.createdAt)}
+                {l.bank.displayName} {l.card.name} · created {formatDateTime(l.leadCreatedAt)} (KBS activity)
               </Muted>
             </View>
             <Card className="gap-1">
               <Text className="font-medium">Bank status (from MIS only)</Text>
-              <Badge label={`Stage: ${l.bankStatus.stage}`} variant={l.bankStatus.matched ? 'info' : 'unknown'} />
-              <Badge label={`Decision: ${l.bankStatus.decision}`} variant={l.bankStatus.matched ? 'info' : 'unknown'} />
-              <Badge label={`Activation: ${l.bankStatus.activation}`} variant={l.bankStatus.matched ? 'info' : 'unknown'} />
-              <Muted>{l.bankStatus.matched ? 'Exact values from the latest accepted bank MIS.' : 'No MIS row has matched this lead yet.'}</Muted>
+              <StageBadge field={l.stage} />
+              <DecisionBadge field={l.decision} />
+              <ActivationBadge field={l.activation} />
+              <ProvenanceChip provenance="BANK_MIS" asOf={l.lastMatchedAt} />
+              <Muted>{l.bankStatus.matched ? `Exact values from bank MIS batch ${l.bankStatus.lastMatchedBatchRef ?? ''}.` : 'No MIS row has matched this lead yet.'}</Muted>
+              {l.remarksPreview ? <Muted>{l.remarksPreview}</Muted> : null}
             </Card>
             <Card className="gap-1">
               <Text className="font-medium">Customer</Text>
               <Muted>
-                {l.customerMobileMasked} · PAN {l.customerPanMasked} ({l.panVerificationStatus.toLowerCase()})
+                {l.customer.mobileMasked} · PAN {l.customerPanMasked} ({l.panVerificationStatus.toLowerCase()})
               </Muted>
               <Muted>
                 {l.pincode} · {l.city ?? '—'}, {l.state ?? '—'} · {l.employmentType.toLowerCase().replace(/_/g, ' ')} · ₹{l.annualIncomeItr.toLocaleString('en-IN')}

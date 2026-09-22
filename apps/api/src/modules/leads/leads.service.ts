@@ -1,4 +1,4 @@
-import { type BankReferenceBody, bankValueDisplay, type DeclarationText, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, RefPrefix, toE164India } from '@kbs/shared';
+import { type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, DEFAULT_BLANK_TOKENS, type DeclarationText, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, RefPrefix, toE164India } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -37,6 +37,19 @@ interface DraftData {
   acceptedDeclarationIds?: string[];
   declarationVersions?: Record<string, string>;
   bureauAckAt?: string;
+}
+
+interface RowSource {
+  id: string;
+  publicRef: string;
+  customerFullName: string;
+  customerMobile: string | null;
+  createdAt: Date;
+  possibleCollision: boolean;
+  card: { id: string; name: string };
+  bank: { id: string; displayName: string };
+  statusSnapshot: (Record<string, unknown> & { productCode: string | null; lastMatchedAt: Date; lastMatchedBatch: { publicRef: string } }) | null;
+  linkages: Array<{ referenceKind: string; referenceValue: string; verificationStatus: string }>;
 }
 
 /**
@@ -267,49 +280,73 @@ export class LeadsService {
     return this.detail(actor, lead.id);
   }
 
-  // ── read ──
+  // ── read (F-506 DTO shaping) ──
   private scopeWhere(actor: Actor, advisorId?: string) {
     if (actor.role === 'ADVISOR') return { advisorUserId: actor.userId };
     if (actor.role === 'MANAGER') return { advisorUserId: advisorId ? (actor.teamUserIds.includes(advisorId) ? advisorId : '__none__') : { in: actor.teamUserIds } };
     return advisorId ? { advisorUserId: advisorId } : {};
   }
 
-  async list(actor: Actor, q: LeadListQuery) {
-    const where = { ...this.scopeWhere(actor, q.advisorId), ...(q.q ? { OR: [{ customerFullName: { contains: q.q, mode: 'insensitive' as const } }, { publicRef: { contains: q.q.toUpperCase() } }] } : {}) };
-    const [rows, total] = await Promise.all([
-      this.prisma.client.lead.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: { card: { select: { name: true } }, bank: { select: { displayName: true } }, statusSnapshot: true, linkages: { where: { supersededAt: null }, take: 1 } } }),
-      this.prisma.client.lead.count({ where }),
-    ]);
-    return new Paginated(rows.map((l) => this.summary(l)), q.page, q.pageSize, total);
+  private blankTokens() {
+    return this.config.getJson<string[]>('mis.blankValueTokens') ?? DEFAULT_BLANK_TOKENS;
   }
 
-  private summary(l: { id: string; publicRef: string; customerFullName: string; customerMobile: string; createdAt: Date; card: { name: string }; bank: { displayName: string }; statusSnapshot: { currentStage: string | null; finalDecision: string | null; cardActivationStatus: string | null } | null; linkages: Array<{ referenceValue: string; verificationStatus: string }>; possibleCollision: boolean }) {
-    const matched = l.statusSnapshot !== null;
-    return {
+  private readonly rowInclude = {
+    card: { select: { id: true, name: true } },
+    bank: { select: { id: true, displayName: true } },
+    statusSnapshot: { include: { lastMatchedBatch: { select: { publicRef: true } } } },
+    linkages: { where: { supersededAt: null }, take: 1 },
+  } as const;
+
+  /** Reviewed product-code crosswalks for the banks in view (REQ-14 §14.2 row 2). */
+  private async crosswalks(rows: Array<{ bank: { id: string }; statusSnapshot: { productCode: string | null } | null }>) {
+    const bankIds = [...new Set(rows.filter((r) => r.statusSnapshot?.productCode).map((r) => r.bank.id))];
+    if (!bankIds.length) return new Map<string, { id: string; name: string }>();
+    const xs = await this.prisma.client.productCodeCrosswalk.findMany({ where: { bankId: { in: bankIds } }, include: { card: { select: { id: true, name: true } } } });
+    return new Map(xs.map((x) => [`${x.bankId}|${x.misProductCode}`, x.card]));
+  }
+
+  private toRow(l: RowSource, crosswalk: Map<string, { id: string; name: string }>, blankTokens: readonly string[]): LeadStatusRow {
+    const s = l.statusSnapshot;
+    return buildLeadStatusRow({
       id: l.id,
       publicRef: l.publicRef,
       customerFullName: l.customerFullName,
-      customerMobileMasked: maskMobile(l.customerMobile),
-      card: l.card.name,
-      bank: l.bank.displayName,
-      createdAt: l.createdAt.toISOString(),
-      stage: bankValueDisplay(l.statusSnapshot?.currentStage, matched),
-      decision: bankValueDisplay(l.statusSnapshot?.finalDecision, matched),
-      activation: bankValueDisplay(l.statusSnapshot?.cardActivationStatus, matched),
-      bankReference: l.linkages[0] ? { value: l.linkages[0].referenceValue, status: l.linkages[0].verificationStatus } : null,
+      customerMobile: l.customerMobile,
+      bank: l.bank,
+      card: l.card,
+      createdAt: l.createdAt,
+      snapshot: s ? { ...s, lastMatchedBatchRef: s.lastMatchedBatch.publicRef } : null,
+      crosswalkedCard: s?.productCode ? (crosswalk.get(`${l.bank.id}|${s.productCode.trim()}`) ?? null) : null,
+      bankReference: l.linkages[0] ? { kind: l.linkages[0].referenceKind, value: l.linkages[0].referenceValue, status: l.linkages[0].verificationStatus } : null,
       possibleCollision: l.possibleCollision,
-    };
+      blankTokens,
+    });
+  }
+
+  async list(actor: Actor, q: LeadListQuery) {
+    const where = { ...this.scopeWhere(actor, q.advisorId), ...(q.q ? { OR: [{ customerFullName: { contains: q.q, mode: 'insensitive' as const } }, { publicRef: { contains: q.q.toUpperCase() } }] } : {}) };
+    const [rows, total] = await Promise.all([
+      this.prisma.client.lead.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: this.rowInclude }),
+      this.prisma.client.lead.count({ where }),
+    ]);
+    const xw = await this.crosswalks(rows);
+    const tokens = this.blankTokens();
+    return new Paginated(rows.map((l) => this.toRow(l, xw, tokens)), q.page, q.pageSize, total);
   }
 
   async detail(actor: Actor, id: string) {
-    const l = await this.prisma.client.lead.findUnique({ where: { id }, include: { card: { select: { id: true, name: true } }, bank: { select: { id: true, displayName: true } }, statusSnapshot: true, linkages: { orderBy: { at: 'desc' } }, linkInitiations: { orderBy: { at: 'desc' }, take: 20 }, shareActions: { orderBy: { at: 'desc' }, take: 20 } } });
+    const l = await this.prisma.client.lead.findUnique({ where: { id }, include: { ...this.rowInclude, linkages: { orderBy: { at: 'desc' } }, linkInitiations: { orderBy: { at: 'desc' }, take: 20 }, shareActions: { orderBy: { at: 'desc' }, take: 20 } } });
     if (!l) throw AppError.notFound('Lead');
     const ok = actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId;
     if (!ok) throw AppError.notFound('Lead');
+    const tokens = this.blankTokens();
     const matched = l.statusSnapshot !== null;
     const current = l.linkages.find((x) => !x.supersededAt) ?? null;
+    const row = this.toRow({ ...l, linkages: current ? [current] : [] }, await this.crosswalks([l]), tokens);
+    const s = l.statusSnapshot;
     return {
-      ...this.summary({ ...l, linkages: current ? [current] : [] }),
+      ...row,
       cardId: l.card.id,
       bankId: l.bank.id,
       customerPanMasked: l.customerPanLast4 ? `••••••${l.customerPanLast4}` : null,
@@ -323,7 +360,21 @@ export class LeadsService {
       declarations: l.declarations,
       bureauAckAt: l.bureauAckAt.toISOString(),
       reportingParentUserIdSnapshot: l.reportingParentUserIdSnapshot,
-      bankStatus: { matched, provenance: matched ? 'BANK_MIS' : 'NONE', stage: bankValueDisplay(l.statusSnapshot?.currentStage, matched), decision: bankValueDisplay(l.statusSnapshot?.finalDecision, matched), activation: bankValueDisplay(l.statusSnapshot?.cardActivationStatus, matched) },
+      /** Section B: latest snapshot with raw values (REQ-11 §11.9). */
+      bankStatus: {
+        matched,
+        provenance: matched ? 'BANK_MIS' : 'NONE',
+        stage: row.stage.display,
+        decision: row.decision.display,
+        activation: row.activation.display,
+        lastMatchedAt: row.lastMatchedAt,
+        lastMatchedBatchRef: s?.lastMatchedBatch.publicRef ?? null,
+        firstMatchedAt: s?.firstMatchedAt.toISOString() ?? null,
+        finalDecisionDate: s?.finalDecisionDate?.toISOString() ?? null,
+        raw: s ? Object.fromEntries(Object.entries(s.rawLatest as Record<string, string>)) : null,
+      },
+      /** Section C: grouped bank remarks and Bank/KYC information (REQ-14 §14.5). */
+      bankRemarks: bankRemarkFields(s, tokens),
       bankReference: current ? { id: current.id, kind: current.referenceKind, value: current.referenceValue, status: current.verificationStatus, source: current.source, at: current.at.toISOString() } : { value: null, label: 'Bank application reference not yet available' },
       referenceHistory: l.linkages.map((x) => ({ id: x.id, kind: x.referenceKind, value: x.referenceValue, status: x.verificationStatus, source: x.source, at: x.at.toISOString(), supersededAt: x.supersededAt?.toISOString() ?? null })),
       linkActivity: l.linkInitiations.map((i) => ({ id: i.id, action: i.action, linkVersion: i.linkVersion, at: i.at.toISOString(), label: i.action === 'SHARED' ? 'Application link shared (KBS activity)' : 'Application link opened (KBS activity)', provenance: 'KBS_OPERATIONAL' })),

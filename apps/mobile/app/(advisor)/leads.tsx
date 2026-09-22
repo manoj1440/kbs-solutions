@@ -1,24 +1,12 @@
-import { ApiClientError, formatDateTime } from '@kbs/shared';
+import { ApiClientError, formatDateTime, type LeadStatusRow } from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 
+import { LeadRow } from '@/components/lead-row';
 import { Badge, Card, ErrorText, Heading, Input, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 
-interface LeadRow {
-  id: string;
-  publicRef: string;
-  customerFullName: string;
-  customerMobileMasked: string | null;
-  card: string;
-  bank: string;
-  createdAt: string;
-  stage: string;
-  decision: string;
-  activation: string;
-  bankReference: { value: string; status: string } | null;
-}
 interface Draft {
   id: string;
   step: string;
@@ -29,7 +17,7 @@ interface Draft {
 
 /** My Leads (basic list; filters + MIS freshness arrive with F-408 after the MIS slice). */
 export default function Leads() {
-  const [rows, setRows] = useState<LeadRow[]>([]);
+  const [rows, setRows] = useState<LeadStatusRow[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [q, setQ] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +26,7 @@ export default function Leads() {
     setLoading(true);
     setError(null);
     try {
-      const [l, d] = await Promise.all([api.get<LeadRow[]>(`/leads?pageSize=100${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`), api.get<Draft[]>('/leads/drafts')]);
+      const [l, d] = await Promise.all([api.get<LeadStatusRow[]>(`/leads?pageSize=100${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`), api.get<Draft[]>('/leads/drafts')]);
       setRows(l.data);
       setDrafts(d.data);
     } catch (e) {
@@ -89,25 +77,7 @@ export default function Leads() {
             </Card>
           )
         }
-        renderItem={({ item }) => (
-          <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(advisor)/lead', params: { id: item.id } })}>
-            <Card className="gap-1">
-              <View className="flex-row items-center justify-between">
-                <Text className="font-medium">{item.customerFullName}</Text>
-                <Muted>{item.publicRef}</Muted>
-              </View>
-              <Muted>
-                {item.bank} {item.card} · {formatDateTime(item.createdAt)}
-              </Muted>
-              <View className="flex-row flex-wrap gap-1">
-                <Badge label={`Stage: ${item.stage}`} variant={item.stage === 'Awaiting MIS Update' ? 'unknown' : 'info'} />
-                <Badge label={`Decision: ${item.decision}`} variant={item.decision === 'Awaiting MIS Update' ? 'unknown' : 'info'} />
-                <Badge label={`Activation: ${item.activation}`} variant={item.activation === 'Awaiting MIS Update' ? 'unknown' : 'info'} />
-              </View>
-              <Muted>{item.bankReference ? `Bank ref ${item.bankReference.value} · ${item.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'verified by MIS match' : 'unverified'}` : 'Bank application reference not yet available'}</Muted>
-            </Card>
-          </Pressable>
-        )}
+        renderItem={({ item }) => <LeadRow row={item} onPress={() => router.push({ pathname: '/(advisor)/lead', params: { id: item.id } })} />}
       />
     </Screen>
   );

@@ -102,8 +102,9 @@ describe('F-406 lead creation / F-407 link + bank reference (FOS-03/04/05)', () 
     expect(s2.body.data.id).toBe(s1.body.data.id);
     expect(await prisma.lead.count()).toBe(1);
     const lead = s1.body.data;
-    expect(lead.publicRef).toMatch(/^KBS-L-/);
-    expect(lead).toMatchObject({ customerFullName: 'Ramesh Customer', customerMobileMasked: '+91••••••2233', customerPanMasked: '••••••234K', panVerificationStatus: 'VERIFIED', pincode: '302001', city: 'Jaipur', state: 'Rajasthan', employmentType: 'SALARIED', annualIncomeItr: 850000.5, stage: 'Awaiting MIS Update', decision: 'Awaiting MIS Update', activation: 'Awaiting MIS Update', bankStatus: { matched: false, provenance: 'NONE' } });
+    expect(lead.kbsRef).toMatch(/^KBS-L-/);
+    lead.publicRef = lead.kbsRef;
+    expect(lead).toMatchObject({ customer: { name: 'Ramesh Customer', mobileMasked: '+91••••••2233' }, customerPanMasked: '••••••234K', panVerificationStatus: 'VERIFIED', pincode: '302001', city: 'Jaipur', state: 'Rajasthan', employmentType: 'SALARIED', annualIncomeItr: 850000.5, stage: { display: 'Awaiting MIS Update', value: null, provenance: 'BANK_MIS', asOf: null }, decision: { display: 'Awaiting MIS Update' }, activation: { display: 'Awaiting MIS Update' }, bankCreationDate: { value: null, source: null }, remarksPreview: null, lastMatchedAt: null, matched: false, actions: ['OPEN_DETAILS', 'ENTER_BANK_REFERENCE', 'SHARE_APPLICATION_LINK'], bankStatus: { matched: false, provenance: 'NONE' } });
     expect(lead.bankReference).toMatchObject({ value: null, label: 'Bank application reference not yet available' });
     expect(lead.declarations).toMatchObject({ accepted: ['D1', 'D2'], versions: { D1: '1', D2: '1' } });
     const row = await prisma.lead.findUniqueOrThrow({ where: { id: lead.id } });
@@ -141,7 +142,7 @@ describe('F-406 lead creation / F-407 link + bank reference (FOS-03/04/05)', () 
     expect(detail.body.data.linkActivity.map((a: { action: string }) => a.action)).toEqual(['OPENED', 'SHARED']);
     expect(detail.body.data.linkActivity[0].provenance).toBe('KBS_OPERATIONAL');
     expect(detail.body.data.shares).toHaveLength(1);
-    expect(detail.body.data.stage).toBe('Awaiting MIS Update'); // FOS-04
+    expect(detail.body.data.stage.display).toBe('Awaiting MIS Update'); // FOS-04
     expect(await prisma.bankStatusSnapshot.count()).toBe(0);
     expect(JSON.stringify(detail.body).toLowerCase()).not.toContain('application submitted');
   });
@@ -157,7 +158,7 @@ describe('F-406 lead creation / F-407 link + bank reference (FOS-03/04/05)', () 
     const lead2 = (await api().post(`/api/v1/leads/drafts/${id2}/submit`).set(auth(other.token)).set('idempotency-key', idem()).expect(201)).body.data;
     const clash = await api().post(`/api/v1/leads/${lead2.id}/bank-reference`).set(auth(other.token)).set('idempotency-key', idem()).send({ referenceKind: 'APPLICATION_NO', referenceValue: '0012345aB' }).expect(409);
     expect(clash.body.error.message).toContain('already linked to another lead');
-    expect(JSON.stringify(clash.body)).not.toContain(lead.publicRef);
+    expect(JSON.stringify(clash.body)).not.toContain(lead.kbsRef);
     // correction keeps history
     const r2 = await api().post(`/api/v1/leads/${lead.id}/bank-reference`).set(t).set('idempotency-key', idem()).send({ referenceKind: 'APPLICATION_NO', referenceValue: '0012346' }).expect(201);
     expect(r2.body.data.bankReference.value).toBe('0012346');
