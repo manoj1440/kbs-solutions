@@ -13,6 +13,7 @@ const NAV = [
   { href: '/admin/catalogue', label: 'Card catalogue' },
   { href: '/admin/pincode-profiles', label: 'Bank pincode profiles' },
   { href: '/admin/mis', label: 'Bank MIS' },
+  { href: '/admin/mis/integrity', label: 'MIS integrity' },
   { href: '/admin/compliance', label: 'Compliance & reference data' },
   { href: '/admin/config', label: 'Configuration' },
 ];

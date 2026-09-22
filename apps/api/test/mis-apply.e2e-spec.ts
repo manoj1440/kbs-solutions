@@ -162,4 +162,34 @@ describe('F-503 preview / F-504 matching + resolution / F-505 apply (MIS-02…MI
     expect(hist.body.data).toHaveLength(3);
     expect(hist.body.data[0].changes.find((c: { field: string }) => c.field === 'cardActivationStatus')).toMatchObject({ changeKind: 'SET', newValue: 'V + ACTIVE' });
   });
+
+  it('F-507: integrity dashboard figures reconcile with batch totals and row states; quarantine lists UNMATCHED/CONFLICT across batches', async () => {
+    const d = (await api().get(`/api/v1/dashboards/mis-integrity?bankId=${hdfcId}`).set(auth(adminToken)).expect(200)).body.data;
+    expect(d.banks).toHaveLength(1);
+    const b = d.banks[0];
+    const batches = await prisma.misImportBatch.findMany({ where: { bankId: hdfcId } });
+    const rows = await prisma.misRow.groupBy({ by: ['matchState'], where: { batch: { bankId: hdfcId } }, _count: { _all: true } });
+    const n = (st: string) => rows.find((r) => r.matchState === st)?._count._all ?? 0;
+    expect(b.rows).toEqual({ imported: rows.reduce((a, r) => a + r._count._all, 0), matched: n('MATCHED'), unmatched: n('UNMATCHED'), invalid: n('INVALID'), conflicted: n('CONFLICT'), duplicate: n('DUPLICATE_IN_BATCH'), ignored: n('IGNORED'), pending: n('PENDING') });
+    expect(b.batches.APPLIED).toBe(batches.filter((x) => x.stage === 'APPLIED').length);
+    // per-batch totals sum to the same unmatched/conflict/invalid figures
+    const sum = (k: string) => batches.reduce((a, x) => a + Number(((x.totals as Record<string, number> | null) ?? {})[k] ?? 0), 0);
+    expect(b.rows.invalid).toBe(sum('invalid'));
+    expect(b.rows.unmatched + b.rows.conflicted).toBe(sum('needsReview'));
+    expect(b.quarantine).toBe(b.rows.unmatched + b.rows.conflicted);
+    expect(b.lastUploadAt).toBe(batches.map((x) => x.uploadedAt.toISOString()).sort().at(-1));
+    expect(b.leads.total).toBe(await prisma.lead.count({ where: { bankId: hdfcId } }));
+    expect(b.leads.neverMatched).toBe(await prisma.lead.count({ where: { bankId: hdfcId, statusSnapshot: null } }));
+    expect(b.advisorReferencesNeverMatched).toBe(await prisma.bankApplicationLinkage.count({ where: { bankId: hdfcId, supersededAt: null, source: 'ADVISOR_ENTERED', verificationStatus: { not: 'VERIFIED_BY_MIS_MATCH' } } }));
+    expect(b.newValuesPending.length).toBeGreaterThan(0); // verbatim values not yet acknowledged on the profile
+    expect(b.correctionsUnderReview).toBe(0);
+    const q = (await api().get(`/api/v1/dashboards/mis-integrity/quarantine?bankId=${hdfcId}`).set(auth(adminToken)).expect(200)).body;
+    expect(q.meta.total).toBe(b.quarantine);
+    expect(q.data.every((r: { matchState: string }) => r.matchState === 'UNMATCHED' || r.matchState === 'CONFLICT')).toBe(true);
+    expect(JSON.stringify(q.data)).not.toContain('Customer A'); // masked
+    // out of range → nothing counted, but lead freshness figures are not range-bound
+    const empty = (await api().get(`/api/v1/dashboards/mis-integrity?bankId=${hdfcId}&from=2000-01-01&to=2000-01-02`).set(auth(adminToken)).expect(200)).body.data.banks[0];
+    expect(empty.rows.imported).toBe(0);
+    expect(empty.leads.total).toBe(b.leads.total);
+  });
 });
