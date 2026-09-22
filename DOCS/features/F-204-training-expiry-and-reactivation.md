@@ -1,6 +1,6 @@
 # F-204 Deadline expiry deactivation and Manager reactivation
 
-- Group: Training · Status: **PLANNED** · Depends on: F-110, F-203
+- Group: Training · Status: **DONE** · Depends on: F-110, F-203
 - PRD refs: REQ-05 §5.4 (auto-deactivate at 72 h; only assigned Manager reactivates; resume at first failed/unfinished module preserving passes; record original deadline, reactivation date, Manager, reason; new window OPEN), §5.5, REQ-15 §15.1, REQ-19 §19.1, REQ-23 §23.2
 - QA ids: TRAIN-04, TRAIN-05, TRAIN-06
 
@@ -11,6 +11,9 @@
 4. Manager screens: Telecaller detail shows deadline/expired state, "Reactivate" with reason dialog and the window that will apply; Admin sees the same read-only plus aggregate pass/fail counts.
 
 ## Acceptance criteria
-- [ ] TRAIN-04: enrollment with M1, M2 passed at deadline → deactivated; `GET /calling/queue` → blocked; customer data endpoints refuse.
-- [ ] TRAIN-05: reactivation → next screen is Module 3; M1/M2 remain PASSED; reactivation row recorded.
-- [ ] TRAIN-06: Manager B reactivating Manager A's Telecaller → NOT_FOUND-shaped refusal + audit.
+- [x] TRAIN-04: enrollment with M1, M2 passed at deadline → deactivated; `GET /calling/queue` → blocked; customer data endpoints refuse.
+- [x] TRAIN-05: reactivation → next screen is Module 3; M1/M2 remain PASSED; reactivation row recorded.
+- [x] TRAIN-06: Manager B reactivating Manager A's Telecaller → NOT_FOUND-shaped refusal + audit.
+
+## Progress notes
+- 2026-09-22 (session 2): Sweep (`POST /training/sweep` + repeatable BullMQ job every 5 min in worker/inline mode) deactivates expired enrollments (lifecycle event, sessions revoked, notifications to Telecaller + Manager), idempotent. `POST /telecallers/:id/training/reactivate` (assigned Manager only; resume at first unpassed module; new window from `training.reactivationWindowHours`, null keeps the gate closed with reason `REACTIVATION_WINDOW_NOT_CONFIGURED`). Web Manager detail page with reactivation (browser-verified) and mobile detail screen. e2e `training-expiry.e2e-spec.ts` covers TRAIN-04/05/06.

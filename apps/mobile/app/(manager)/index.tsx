@@ -1,5 +1,5 @@
 import { ApiClientError, type UserSummary } from '@kbs/shared';
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 
@@ -64,7 +64,7 @@ export default function ManagerHome() {
           )
         }
         renderItem={({ item }) => (
-          <Card className="gap-1">
+          <Card className="gap-1" onTouchEnd={() => item.role === 'TELECALLER' && router.push({ pathname: '/(manager)/telecaller', params: { id: item.id } })}>
             <View className="flex-row items-center justify-between">
               <Text className="font-medium">{item.fullName || '(onboarding)'}</Text>
               <Badge label={item.role} variant="secondary" />

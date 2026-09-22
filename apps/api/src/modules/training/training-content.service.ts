@@ -26,6 +26,19 @@ export class TrainingContentService {
     }
   }
 
+  /** Creates one result row per module for an enrollment (M1 in progress, others locked). Idempotent. */
+  async ensureResults(enrollmentId: string) {
+    await this.ensureModules();
+    const modules = await this.prisma.client.trainingModule.findMany({ orderBy: { sequence: 'asc' } });
+    for (const m of modules) {
+      await this.prisma.client.trainingModuleResult.upsert({
+        where: { enrollmentId_moduleId: { enrollmentId, moduleId: m.id } },
+        update: {},
+        create: { enrollmentId, moduleId: m.id, status: m.sequence === 1 ? 'IN_PROGRESS' : 'LOCKED' },
+      });
+    }
+  }
+
   async list(actor: Actor) {
     await this.ensureModules();
     const mods = await this.prisma.client.trainingModule.findMany({ orderBy: { sequence: 'asc' }, include: { questions: { where: { active: true }, select: { version: true } } } });

@@ -38,14 +38,7 @@ export class TrainingLearnerService {
     await this.content.ensureModules();
     const enrollment = await this.prisma.client.trainingEnrollment.findUnique({ where: { telecallerUserId: userId } });
     if (!enrollment) throw AppError.notFound('Training enrollment');
-    const modules = await this.prisma.client.trainingModule.findMany({ orderBy: { sequence: 'asc' } });
-    for (const m of modules) {
-      await this.prisma.client.trainingModuleResult.upsert({
-        where: { enrollmentId_moduleId: { enrollmentId: enrollment.id, moduleId: m.id } },
-        update: {},
-        create: { enrollmentId: enrollment.id, moduleId: m.id, status: m.sequence === 1 ? 'IN_PROGRESS' : 'LOCKED' },
-      });
-    }
+    await this.content.ensureResults(enrollment.id);
     const results = await this.prisma.client.trainingModuleResult.findMany({ where: { enrollmentId: enrollment.id }, include: { module: true }, orderBy: { module: { sequence: 'asc' } } });
     return { enrollment, results };
   }

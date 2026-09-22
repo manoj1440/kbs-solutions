@@ -14,6 +14,7 @@ export default function ManagerLayout() {
       <Tabs.Screen name="index" options={{ title: 'Team' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       <Tabs.Screen name="create-telecaller" options={{ href: null }} />
+      <Tabs.Screen name="telecaller" options={{ href: null }} />
     </Tabs>
   );
 }
