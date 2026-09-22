@@ -66,9 +66,9 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-410-advisor-profile-and-support.md](./F-410-advisor-profile-and-support.md) | F-410 Advisor profile and support | Advisor | PLANNED | F-401, F-402 |
 | [F-501-mis-import-profiles.md](./F-501-mis-import-profiles.md) | F-501 MIS import profiles (bank/version) with HDFC v1 seed | MIS | DONE | F-104, F-403 |
 | [F-502-mis-upload-parse-map.md](./F-502-mis-upload-parse-map.md) | F-502 MIS upload, parse and map stages (raw preservation) | MIS | DONE | F-501, F-108, F-110 |
-| [F-503-mis-preview.md](./F-503-mis-preview.md) | F-503 MIS preview and anomaly report | MIS | PLANNED | F-502, F-504 |
-| [F-504-mis-matching-and-quarantine.md](./F-504-mis-matching-and-quarantine.md) | F-504 Deterministic MIS matching, quarantine and Admin resolution | MIS | PLANNED | F-502, F-407 |
-| [F-505-mis-apply-snapshot-history.md](./F-505-mis-apply-snapshot-history.md) | F-505 MIS apply: snapshot, change history, delta/full semantics, idempotency | MIS | PLANNED | F-504, F-110 |
+| [F-503-mis-preview.md](./F-503-mis-preview.md) | F-503 MIS preview and anomaly report | MIS | DONE | F-502, F-504 |
+| [F-504-mis-matching-and-quarantine.md](./F-504-mis-matching-and-quarantine.md) | F-504 Deterministic MIS matching, quarantine and Admin resolution | MIS | DONE | F-502, F-407 |
+| [F-505-mis-apply-snapshot-history.md](./F-505-mis-apply-snapshot-history.md) | F-505 MIS apply: snapshot, change history, delta/full semantics, idempotency | MIS | DONE | F-504, F-110 |
 | [F-506-status-display-dtos-and-components.md](./F-506-status-display-dtos-and-components.md) | F-506 Status display: DTO shaping, web table, mobile row, badges | MIS | PLANNED | F-505, F-803 |
 | [F-507-mis-integrity-dashboard.md](./F-507-mis-integrity-dashboard.md) | F-507 MIS integrity and freshness dashboard, unmatched cases | MIS | PLANNED | F-505, F-504 |
 | [F-601-payout-rules-and-rates.md](./F-601-payout-rules-and-rates.md) | F-601 Payout rules and rate tables (versioned, per bank) | Payouts | PLANNED | F-104, F-403 |

@@ -4,8 +4,18 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiFetch } from '@/lib/api';
 
+import { PipelineActions } from './pipeline';
 import { BatchRows } from './rows';
 
+interface PreviewReport {
+  generatedAt: string;
+  totals: Record<string, number>;
+  referenceCoverage: number;
+  blankStatusCounts: Record<string, number>;
+  newValues: Record<string, string[]>;
+  duplicateReferences: { reference: string; rows: number }[];
+  samples: Record<string, { row: number; customer: string; references: { kind: string; value: string }[]; explanation: string | null }[]>;
+}
 interface Batch {
   id: string;
   publicRef: string;
@@ -13,11 +23,11 @@ interface Batch {
   uploadedAt: string;
   sheetName: string | null;
   totals: Record<string, unknown> | null;
-  preview: { headers?: string[]; resolved?: Record<string, string>; missing?: string[]; unmapped?: string[] } | null;
+  preview: { headers?: string[]; resolved?: Record<string, string>; missing?: string[]; unmapped?: string[]; report?: PreviewReport } | null;
   rejectReason: string | null;
   appliedAt: string | null;
   bank: { displayName: string };
-  profile: { name: string; version: number; snapshotMode: string };
+  profile: { id: string; name: string; version: number; snapshotMode: string };
   file: { originalName: string; sizeBytes: number };
   uploader: { fullName: string; role: string };
 }
@@ -49,6 +59,7 @@ export default async function MisBatchPage({ params }: { params: Promise<{ id: s
           {totals.unmappedColumns?.length ? <p className="text-muted-foreground">Unmapped columns kept in raw: {totals.unmappedColumns.join(', ')}</p> : null}
         </CardContent>
       </Card>
+      <PipelineActions batchId={b.id} stage={b.stage} report={b.preview?.report ?? null} totals={b.totals as Record<string, number> | null} profileId={b.profile.id} />
       <BatchRows batchId={b.id} stage={b.stage} />
     </div>
   );
