@@ -7,6 +7,7 @@ export const RefPrefix = {
   LEAD: 'KBS-L-',
   PAYOUT_REQUEST: 'KBS-PR-',
   IMPORT_BATCH: 'KBS-B-',
+  MIS_BATCH: 'KBS-M-',
 } as const;
 export type RefPrefix = (typeof RefPrefix)[keyof typeof RefPrefix];
 

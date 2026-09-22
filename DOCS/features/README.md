@@ -64,8 +64,8 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-408-my-leads-and-lead-detail.md](./F-408-my-leads-and-lead-detail.md) | F-408 My Leads list, search, filters and lead detail with MIS history | Advisor | PLANNED | F-407, F-506 |
 | [F-409-pending-actions-and-followup-tasks.md](./F-409-pending-actions-and-followup-tasks.md) | F-409 Pending Actions and operational follow-up tasks | Advisor | PLANNED | F-408, F-701 |
 | [F-410-advisor-profile-and-support.md](./F-410-advisor-profile-and-support.md) | F-410 Advisor profile and support | Advisor | PLANNED | F-401, F-402 |
-| [F-501-mis-import-profiles.md](./F-501-mis-import-profiles.md) | F-501 MIS import profiles (bank/version) with HDFC v1 seed | MIS | PLANNED | F-104, F-403 |
-| [F-502-mis-upload-parse-map.md](./F-502-mis-upload-parse-map.md) | F-502 MIS upload, parse and map stages (raw preservation) | MIS | PLANNED | F-501, F-108, F-110 |
+| [F-501-mis-import-profiles.md](./F-501-mis-import-profiles.md) | F-501 MIS import profiles (bank/version) with HDFC v1 seed | MIS | DONE | F-104, F-403 |
+| [F-502-mis-upload-parse-map.md](./F-502-mis-upload-parse-map.md) | F-502 MIS upload, parse and map stages (raw preservation) | MIS | DONE | F-501, F-108, F-110 |
 | [F-503-mis-preview.md](./F-503-mis-preview.md) | F-503 MIS preview and anomaly report | MIS | PLANNED | F-502, F-504 |
 | [F-504-mis-matching-and-quarantine.md](./F-504-mis-matching-and-quarantine.md) | F-504 Deterministic MIS matching, quarantine and Admin resolution | MIS | PLANNED | F-502, F-407 |
 | [F-505-mis-apply-snapshot-history.md](./F-505-mis-apply-snapshot-history.md) | F-505 MIS apply: snapshot, change history, delta/full semantics, idempotency | MIS | PLANNED | F-504, F-110 |

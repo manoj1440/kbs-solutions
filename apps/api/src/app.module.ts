@@ -28,6 +28,7 @@ import { HealthController } from './modules/health/health.controller';
 import { IdCardsModule } from './modules/id-cards/id-cards.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { MisModule } from './modules/mis/mis.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { SharingModule } from './modules/sharing/sharing.module';
@@ -88,6 +89,7 @@ export const LOG_REDACT_PATHS = [
     SharingModule,
     OnboardingModule,
     LeadsModule,
+    MisModule,
   ],
   controllers: [HealthController],
   providers: [
