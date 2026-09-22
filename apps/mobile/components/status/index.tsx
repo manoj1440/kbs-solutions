@@ -44,3 +44,9 @@ export function ProvenanceChip({ provenance, asOf }: { provenance: Provenance; a
     </View>
   );
 }
+
+/** F-602/F-603: payout entitlement / request state, never merged with bank status. */
+export function PayoutStateBadge({ state }: { state: string }) {
+  const tone: Tone = state === 'PAID' ? 'success' : state === 'REJECTED' || state === 'ON_HOLD' || state === 'CANCELLED' || state === 'VOID' ? 'destructive' : state === 'APPROVED' || state === 'ELIGIBLE_AVAILABLE' ? 'info' : 'warning';
+  return <Badge label={state.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())} variant={tone} />;
+}

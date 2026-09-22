@@ -15,6 +15,7 @@ const NAV = [
   { href: '/admin/mis', label: 'Bank MIS' },
   { href: '/admin/mis/integrity', label: 'MIS integrity' },
   { href: '/admin/payouts/rules', label: 'Payout rules' },
+  { href: '/admin/payouts/entitlements', label: 'Payout entitlements' },
   { href: '/admin/compliance', label: 'Compliance & reference data' },
   { href: '/admin/config', label: 'Configuration' },
 ];

@@ -72,7 +72,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-506-status-display-dtos-and-components.md](./F-506-status-display-dtos-and-components.md) | F-506 Status display: DTO shaping, web table, mobile row, badges | MIS | DONE | F-505, F-803 |
 | [F-507-mis-integrity-dashboard.md](./F-507-mis-integrity-dashboard.md) | F-507 MIS integrity and freshness dashboard, unmatched cases | MIS | DONE | F-505, F-504 |
 | [F-601-payout-rules-and-rates.md](./F-601-payout-rules-and-rates.md) | F-601 Payout rules and rate tables (versioned, per bank) | Payouts | DONE | F-104, F-403 |
-| [F-602-entitlement-evaluation.md](./F-602-entitlement-evaluation.md) | F-602 Entitlement evaluation from applied MIS batches | Payouts | PLANNED | F-601, F-505, F-106 |
+| [F-602-entitlement-evaluation.md](./F-602-entitlement-evaluation.md) | F-602 Entitlement evaluation from applied MIS batches | Payouts | DONE | F-601, F-505, F-106 |
 | [F-603-advisor-payout-request-and-reservation.md](./F-603-advisor-payout-request-and-reservation.md) | F-603 Advisor payout ledger and request creation with atomic reservation | Payouts | PLANNED | F-602, F-107 |
 | [F-604-dual-approval.md](./F-604-dual-approval.md) | F-604 Dual approval (Manager + Admin), rejection and release | Payouts | PLANNED | F-603 |
 | [F-605-accounts-payment-recording.md](./F-605-accounts-payment-recording.md) | F-605 Accounts queue, external payment record, proof and paid state | Payouts | PLANNED | F-604, F-108 |

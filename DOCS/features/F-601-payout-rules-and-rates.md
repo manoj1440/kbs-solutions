@@ -11,7 +11,7 @@
 4. Admin screens: Rules list per bank, rule editor with trigger picker showing the distinct values actually seen in MIS (from `knownValues`), rate editor, version history.
 
 ## Acceptance criteria
-- [ ] PAY-01 (asserted in F-602): with no approved rule, `FINAL_DECISION=Approve` + `Card Activation Staus=V + ACTIVE` yields zero entitlements.
+- [x] PAY-01 (asserted in F-602): with no approved rule, `FINAL_DECISION=Approve` + `Card Activation Staus=V + ACTIVE` yields zero entitlements.
 - [x] Rate change after an entitlement exists leaves its `amountInr` unchanged.
 
 ## Progress notes

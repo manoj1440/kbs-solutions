@@ -6,6 +6,7 @@ const NAV = [
   { href: '/manager/calling', label: 'Team calling' },
   { href: '/manager/leads', label: 'Team leads' },
   { href: '/manager/pending-actions', label: 'Pending actions' },
+  { href: '/manager/payouts', label: 'Team payouts' },
   { href: '/manager/telecallers/new', label: 'Create Telecaller' },
 ];
 

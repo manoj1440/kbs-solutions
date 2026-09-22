@@ -8,6 +8,7 @@ import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PayoutEligibilityService } from '../payouts/eligibility.service';
 
 type RefKind = 'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER' | 'OTHER';
 interface RefValue {
@@ -43,6 +44,7 @@ export class MisPipelineService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly notifications: NotificationsService,
+    private readonly eligibility: PayoutEligibilityService,
   ) {}
 
   private blankTokens(): string[] {
@@ -256,6 +258,9 @@ export class MisPipelineService {
         }
       }
     });
+
+    // F-602: evaluate every applied lead against the bank's payout rules (idempotent by eventKey; corrections → UNDER_REVIEW)
+    for (const row of rows) await this.eligibility.evaluateLead(row.matchedLeadId as string, batchId);
 
     // post-apply: outbox events only when something actually changed (MIS-08)
     if (changedLeads.size) {

@@ -1,8 +1,9 @@
-import { formatDateTime, type LeadStatusRow, type MisHistoryGroup, type OperationalEvent } from '@kbs/shared';
+import { formatDateTime, formatInr, type LeadStatusRow, type MisHistoryGroup, type OperationalEvent } from '@kbs/shared';
 import Link from 'next/link';
 
+import type { EntitlementDto } from '@/components/entitlements-ledger';
 import { type FollowUpDto, LeadOps, type RemarkDto } from '@/components/lead-ops';
-import { ActivationBadge, DecisionBadge, FreshnessLabel, ProvenanceChip, StageBadge } from '@/components/status';
+import { ActivationBadge, DecisionBadge, FreshnessLabel, PayoutStateBadge, ProvenanceChip, StageBadge } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +40,7 @@ const CHANGE_LABEL: Record<string, string> = { SET: 'set', CHANGED: 'changed', C
  * C grouped bank remarks and Bank/KYC information, MIS change history grouped by batch (REQ-14 §14.6). No timeline.
  */
 export async function LeadDetail({ id, backHref }: { id: string; backHref: string }) {
-  const [d, h] = await Promise.all([apiFetch<LeadDetailDto>(`/leads/${id}`), apiFetch<MisHistoryGroup[]>(`/leads/${id}/mis-history`)]);
+  const [d, h, ents] = await Promise.all([apiFetch<LeadDetailDto>(`/leads/${id}`), apiFetch<MisHistoryGroup[]>(`/leads/${id}/mis-history`), apiFetch<EntitlementDto[]>(`/payouts/entitlements?leadId=${id}`)]);
   const l = d.data;
   return (
     <div className="grid gap-4">
@@ -210,8 +211,26 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
       <Card>
         <CardHeader>
           <CardTitle>D · Payout</CardTitle>
-          <CardDescription>Payout entitlement and payment status appear here once the payouts module (F-603) is live. Nothing is implied by activation alone.</CardDescription>
+          <CardDescription>Entitlements exist only when the bank MIS evidences an approved rule’s exact trigger value. Activation alone implies nothing.</CardDescription>
         </CardHeader>
+        <CardContent>
+          {ents.data.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No payout entitlement for this lead.</p>
+          ) : (
+            <ul className="grid gap-2 text-sm">
+              {ents.data.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center gap-2">
+                  <PayoutStateBadge state={e.state} />
+                  <span>{formatInr(e.amountInr)}</span>
+                  <span className="text-muted-foreground text-xs">
+                    <code>{e.triggerField}</code> = “{e.triggerFieldValue}” · {e.rule.name} v{e.rule.version} · eligible {formatDateTime(e.eligibleAt)} · evidence {e.evidence.batchRef}
+                  </span>
+                  {e.reviewReason ? <span className="text-xs">{e.reviewReason}</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
       </Card>
     </div>
   );
