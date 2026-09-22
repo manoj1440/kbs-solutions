@@ -1,6 +1,6 @@
 # F-201 Manager creates Telecaller (name + mobile) with employee code
 
-- Group: Training · Status: **PLANNED** · Depends on: F-105, F-106
+- Group: Training · Status: **DONE** · Depends on: F-105, F-106
 - PRD refs: REQ-05 §5.1, REQ-03 §3.2 (Telecaller assigned to creating Manager), REQ-08 §8.4 (ID card generated at creation), REQ-15 §15.1, REQ-26 §26.1 step 1
 - QA ids: TRAIN-01
 
@@ -12,5 +12,8 @@
 5. Manager list: own Telecallers with training status, deadline countdown, active/deactivated.
 
 ## Acceptance criteria
-- [ ] TRAIN-01: Manager creates; record shows assigned Manager and generated employee code; Admin sees it; another Manager does not.
-- [ ] Admin `POST /telecallers` → `RBAC_FORBIDDEN`.
+- [x] TRAIN-01: Manager creates; record shows assigned Manager and generated employee code; Admin sees it; another Manager does not.
+- [x] Admin `POST /telecallers` → `RBAC_FORBIDDEN`.
+
+## Progress notes
+- 2026-09-22 (session 2): API was built in F-105 (e2e TRAIN-01). Added web Manager team page + Create Telecaller form (browser-verified) and mobile Manager team list + create screen (Expo bundle verified). Manager Telecaller detail page (`/manager/telecallers/:id`) lands with F-205.

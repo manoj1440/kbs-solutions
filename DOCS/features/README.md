@@ -36,7 +36,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-109-provider-ports.md](./F-109-provider-ports.md) | F-109 Provider ports and mock adapters | Core | DONE | F-003 |
 | [F-110-jobs-and-outbox.md](./F-110-jobs-and-outbox.md) | F-110 Background jobs (BullMQ), worker mode and outbox | Core | IN_PROGRESS | F-002, F-003 |
 | [F-111-access-gates.md](./F-111-access-gates.md) | F-111 Access gates (training / network / onboarding) in `/auth/me` and guards | Core | DONE | F-101, F-102, F-104 |
-| [F-201-manager-creates-telecaller.md](./F-201-manager-creates-telecaller.md) | F-201 Manager creates Telecaller (name + mobile) with employee code | Training | PLANNED | F-105, F-106 |
+| [F-201-manager-creates-telecaller.md](./F-201-manager-creates-telecaller.md) | F-201 Manager creates Telecaller (name + mobile) with employee code | Training | DONE | F-105, F-106 |
 | [F-202-training-content-admin.md](./F-202-training-content-admin.md) | F-202 Training content administration (modules, videos, MCQs, thresholds) | Training | PLANNED | F-104, F-108 |
 | [F-203-training-enrollment-and-gate.md](./F-203-training-enrollment-and-gate.md) | F-203 Training enrollment, 72-hour window, sequential modules, assessment | Training | PLANNED | F-111, F-201, F-202 |
 | [F-204-training-expiry-and-reactivation.md](./F-204-training-expiry-and-reactivation.md) | F-204 Deadline expiry deactivation and Manager reactivation | Training | PLANNED | F-110, F-203 |

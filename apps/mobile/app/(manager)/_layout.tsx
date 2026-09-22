@@ -11,8 +11,9 @@ export default function ManagerLayout() {
   if (target !== '/(manager)') return <Redirect href={target as never} />;
   return (
     <Tabs screenOptions={{ headerShown: false }}>
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="index" options={{ title: 'Team' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="create-telecaller" options={{ href: null }} />
     </Tabs>
   );
 }
