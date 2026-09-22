@@ -32,3 +32,4 @@ apps/mobile/android/
 apps/mobile/ios/
 # local data
 docker/data/
+dump.rdb
