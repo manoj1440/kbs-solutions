@@ -62,3 +62,40 @@ export type UpdatePincodeProfileBody = z.infer<typeof UpdatePincodeProfileBody>;
 
 export const CreatePincodeBatchBody = z.object({ fileId: z.string().uuid(), sheetName: z.string().max(100).optional() });
 export type CreatePincodeBatchBody = z.infer<typeof CreatePincodeBatchBody>;
+
+// ── F-308 publications & availability ──
+export const CreatePublicationBody = z
+  .object({
+    channel: ChannelValue,
+    scope: z.enum(['GLOBAL', 'STATE', 'PINCODE']),
+    pincode: z.string().regex(/^\d{6}$/).optional(),
+    state: z.string().trim().min(2).max(60).optional(),
+    effectiveTo: z.string().datetime().nullable().optional(),
+  })
+  .refine((b) => (b.scope === 'PINCODE' ? Boolean(b.pincode) : b.scope === 'STATE' ? Boolean(b.state) : true), { message: 'pincode/state required for that scope' });
+export type CreatePublicationBody = z.infer<typeof CreatePublicationBody>;
+
+export const AvailableCardsQuery = z.object({ pincode: z.string().regex(/^\d{6}$/), channel: z.enum(['TELECALLER', 'ADVISOR']) });
+export type AvailableCardsQuery = z.infer<typeof AvailableCardsQuery>;
+
+/** Exact empty-state wording mandated by REQ-07 §7.4 — never "ineligible". */
+export const NO_CARD_AVAILABLE_MESSAGE = 'No card available for this pincode from current uploaded data';
+
+export interface AvailableCard {
+  id: string;
+  name: string;
+  version: number;
+  bank: { id: string; code: string; displayName: string };
+  categories: { key: string; label: string }[];
+  description: string | null;
+  benefits: string[];
+  joiningFee: number | null;
+  annualFee: number | null;
+  majorCharges: { label: string; value: string }[];
+  eligibilityHighlights: string | null;
+  disclosures: string | null;
+  imageFileId: string | null;
+  benefitPdfFileId: string | null;
+  link: { id: string; version: number; channel: string } | null;
+  provenance: { sourceability: string; batchId: string; rawFlags: Record<string, string>; batchUploadedAt: string | null; publication: { scope: 'GLOBAL' | 'STATE' | 'PINCODE'; id: string } };
+}

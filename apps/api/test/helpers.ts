@@ -64,7 +64,7 @@ export async function resetDatabase(url: string) {
     await prisma.$executeRawUnsafe(`
       TRUNCATE TABLE "AuditLog","SensitiveAccessLog","IdempotencyRecord","OtpChallenge","RefreshToken","Session",
         "NetworkAccessEvent","WfhException","OfficeNetwork","TrainingReactivation","TrainingAttempt","TrainingModuleResult",
-        "TrainingEnrollment","AllocationEvent","CallingRecord","CustomerImportBatch","ContactSuppression","PincodeMaster","Notification","StoredFile","BankPincodeRow","BankPincodeBatch","BankPincodeProfile","ApplicationLink","ProductCodeCrosswalk","CreditCardCategory","OfficialIdCard","ReportingAssignment","AgentCode","UserLifecycleEvent","SystemConfigHistory","SystemConfig","Lead","LeadDraft","CreditCard","User"
+        "TrainingEnrollment","AllocationEvent","CallingRecord","CustomerImportBatch","ContactSuppression","PincodeMaster","Notification","StoredFile","BankPincodeRow","BankPincodeBatch","BankPincodeProfile","ApplicationLink","ProductCodeCrosswalk","CreditCardCategory","CardPincodePublication","OfficialIdCard","ReportingAssignment","AgentCode","UserLifecycleEvent","SystemConfigHistory","SystemConfig","Lead","LeadDraft","CreditCard","User"
       CASCADE`);
   } finally {
     await prisma.$disconnect();

@@ -48,7 +48,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-305-automatic-allocation.md](./F-305-automatic-allocation.md) | F-305 Automatic allocation of accepted records to trained Telecallers | Telecaller ops | DONE | F-303, F-203, F-104 |
 | [F-306-contact-suppression.md](./F-306-contact-suppression.md) | F-306 Contact suppression (do-not-contact) enforcement | Telecaller ops | DONE | F-005, F-103 |
 | [F-307-calling-queue.md](./F-307-calling-queue.md) | F-307 Telecaller calling queue, follow-ups, hidden history | Telecaller ops | DONE | F-111, F-305, F-306, F-802 |
-| [F-308-card-lookup-by-pincode.md](./F-308-card-lookup-by-pincode.md) | F-308 Card lookup by customer pincode (sourceability ∩ publication) | Telecaller ops | PLANNED | F-403, F-404, F-307 |
+| [F-308-card-lookup-by-pincode.md](./F-308-card-lookup-by-pincode.md) | F-308 Card lookup by customer pincode (sourceability ∩ publication) | Telecaller ops | DONE | F-403, F-404, F-307 |
 | [F-309-call-initiation-and-recording.md](./F-309-call-initiation-and-recording.md) | F-309 In-app call initiation via telephony port, provider events, recordings | Telecaller ops | PLANNED | F-109, F-307, F-108 |
 | [F-310-call-outcomes-and-interest.md](./F-310-call-outcomes-and-interest.md) | F-310 Call outcomes, operational remarks, follow-up/hide, calling interest | Telecaller ops | PLANNED | F-309, F-306 |
 | [F-311-whatsapp-sharing.md](./F-311-whatsapp-sharing.md) | F-311 WhatsApp sharing: benefit PDF, official ID, application link | Telecaller ops | PLANNED | F-109, F-308, F-312, F-403 |

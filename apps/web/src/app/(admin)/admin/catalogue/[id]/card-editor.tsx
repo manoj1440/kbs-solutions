@@ -34,9 +34,21 @@ export interface CardDetail {
   effectiveChannels: string[];
 }
 
-export function CardEditor({ initial, categories }: { initial: CardDetail; categories: { key: string; label: string }[] }) {
+export interface Publication {
+  id: string;
+  channel: string;
+  pincode: string | null;
+  state: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+}
+
+export function CardEditor({ initial, categories, initialPublications }: { initial: CardDetail; categories: { key: string; label: string }[]; initialPublications: Publication[] }) {
   const router = useRouter();
   const [c, setC] = useState(initial);
+  const [pubs, setPubs] = useState(initialPublications);
+  const [pub, setPub] = useState({ channel: 'BOTH', scope: 'GLOBAL', pincode: '', state: '' });
+  const reloadPubs = async () => setPubs((await clientApi.get<Publication[]>(`/catalogue/cards/${c.id}/publications`)).data);
   const [form, setForm] = useState({
     name: initial.name,
     productCode: initial.productCode ?? '',
@@ -258,6 +270,75 @@ export function CardEditor({ initial, categories }: { initial: CardDetail; categ
                     }}
                   >
                     Add link
+                  </Button>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Where this card is offered (F-308)</CardTitle>
+              <CardDescription>A published card is offered for a customer pincode only when the bank is sourceable there AND a publication covers it: globally, by state (via pincode master), or by exact pincode.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <ul className="grid gap-1 text-xs">
+                {pubs.map((x) => (
+                  <li key={x.id} className="flex flex-wrap items-center gap-2 border-b py-1">
+                    <Badge variant={x.effectiveTo && new Date(x.effectiveTo) <= new Date(x.effectiveFrom) ? 'unknown' : x.effectiveTo ? 'warning' : 'success'}>{x.channel}</Badge>
+                    <span>{x.pincode ? `pincode ${x.pincode}` : x.state ? `state ${x.state}` : 'global'}</span>
+                    <span className="text-muted-foreground">
+                      {formatDateTime(x.effectiveFrom)} → {x.effectiveTo ? formatDateTime(x.effectiveTo) : 'open'}
+                    </span>
+                    {!x.effectiveTo ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          const reason = window.prompt('Reason for ending this publication?');
+                          if (!reason) return;
+                          try {
+                            await clientApi.post(`/catalogue/publications/${x.id}/end`, { reason });
+                            await reloadPubs();
+                          } catch (e) {
+                            fail(e, 'Could not end the publication.');
+                          }
+                        }}
+                      >
+                        End
+                      </Button>
+                    ) : null}
+                  </li>
+                ))}
+                {pubs.length === 0 ? <li className="text-muted-foreground">Not offered anywhere yet.</li> : null}
+              </ul>
+              {!readOnly ? (
+                <div className="grid gap-2 md:grid-cols-[7rem_7rem_1fr_auto]">
+                  <select aria-label="publication channel" className="border-input bg-background h-9 rounded-md border px-2 text-sm" value={pub.channel} onChange={(e) => setPub({ ...pub, channel: e.target.value })}>
+                    <option value="BOTH">BOTH</option>
+                    <option value="TELECALLER">TELECALLER</option>
+                    <option value="ADVISOR">ADVISOR</option>
+                  </select>
+                  <select aria-label="publication scope" className="border-input bg-background h-9 rounded-md border px-2 text-sm" value={pub.scope} onChange={(e) => setPub({ ...pub, scope: e.target.value })}>
+                    <option value="GLOBAL">Global</option>
+                    <option value="STATE">State</option>
+                    <option value="PINCODE">Pincode</option>
+                  </select>
+                  {pub.scope === 'PINCODE' ? <Input id="pub-pincode" placeholder="302001" value={pub.pincode} onChange={(e) => setPub({ ...pub, pincode: e.target.value })} /> : pub.scope === 'STATE' ? <Input id="pub-state" placeholder="Rajasthan" value={pub.state} onChange={(e) => setPub({ ...pub, state: e.target.value })} /> : <span />}
+                  <Button
+                    id="pub-add"
+                    variant="outline"
+                    disabled={(pub.scope === 'PINCODE' && !/^\d{6}$/.test(pub.pincode)) || (pub.scope === 'STATE' && pub.state.trim().length < 2)}
+                    onClick={async () => {
+                      try {
+                        await clientApi.post(`/catalogue/cards/${c.id}/publications`, { channel: pub.channel, scope: pub.scope, pincode: pub.scope === 'PINCODE' ? pub.pincode : undefined, state: pub.scope === 'STATE' ? pub.state : undefined });
+                        await reloadPubs();
+                        setMsg('Publication added.');
+                      } catch (e) {
+                        fail(e, 'Could not add the publication.');
+                      }
+                    }}
+                  >
+                    Offer
                   </Button>
                 </div>
               ) : null}

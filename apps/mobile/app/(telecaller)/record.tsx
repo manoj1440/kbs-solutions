@@ -1,11 +1,12 @@
 import { ApiClientError, type CallingQueueRow, formatDateTime } from '@kbs/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { SecureScreen } from '@/components/secure-screen';
 import { Badge, Button, Card, ErrorText, Heading, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
+import { type AvailableCardsResponse, fetchCardsForRecord, money } from '@/lib/cards';
 
 interface RecordDetail extends CallingQueueRow {
   panLast4: string | null;
@@ -22,6 +23,7 @@ interface RecordDetail extends CallingQueueRow {
 export default function RecordScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [rec, setRec] = useState<RecordDetail | null>(null);
+  const [cards, setCards] = useState<AvailableCardsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -29,6 +31,7 @@ export default function RecordScreen() {
     try {
       const r = await api.get<RecordDetail>(`/calling/records/${id}`);
       setRec(r.data);
+      if (!r.data.hiddenAt) setCards((await fetchCardsForRecord(id)).data);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load this customer.');
     }
@@ -66,6 +69,23 @@ export default function RecordScreen() {
                 <Button title={rec.canCall ? 'Call customer' : 'Calling not available'} disabled />
                 <Muted>{rec.canCall ? 'Calling, outcomes and card sharing are enabled in the next release of this app.' : rec.suppressed ? 'This customer asked not to be contacted.' : 'This record is hidden (read-only history).'}</Muted>
               </Card>
+              {!rec.hiddenAt ? (
+                <Card className="gap-2">
+                  <Text className="font-medium">Cards for pincode {rec.pincode}</Text>
+                  {cards === null ? <Muted>Loading…</Muted> : null}
+                  {cards?.message ? <Muted>{cards.message}</Muted> : null}
+                  {cards?.cards.map((c) => (
+                    <Pressable key={c.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/(telecaller)/card', params: { card: JSON.stringify(c), recordId: rec.id } })} className="rounded-md border border-border p-2">
+                      <Text className="font-medium">{c.name}</Text>
+                      <Muted>
+                        {c.bank.displayName} · {c.categories.map((x) => x.label).join(', ') || 'uncategorised'} · joining {money(c.joiningFee)} · annual {money(c.annualFee)}
+                      </Muted>
+                      {c.benefits[0] ? <Muted>• {c.benefits[0]}</Muted> : null}
+                    </Pressable>
+                  ))}
+                  {cards ? <Muted>As of {formatDateTime(cards.asOf)} · from current uploaded bank data</Muted> : null}
+                </Card>
+              ) : null}
               <Card className="gap-1">
                 <Text className="font-medium">Outcomes</Text>
                 {rec.outcomes.length === 0 ? <Muted>No calls logged yet.</Muted> : null}

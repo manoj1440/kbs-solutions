@@ -14,6 +14,7 @@ export default function TelecallerLayout() {
       <Tabs.Screen name="index" options={{ title: 'Queue' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       <Tabs.Screen name="record" options={{ href: null }} />
+      <Tabs.Screen name="card" options={{ href: null }} />
     </Tabs>
   );
 }
