@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Image, ScrollView, View } from 'react-native';
 
 import { SecureScreen } from '@/components/secure-screen';
+import { ShareButtons } from '@/components/share-buttons';
 import { Badge, Button, Card, ErrorText, Heading, Muted, Screen, Text } from '@/components/ui';
 import { fileUrl, money } from '@/lib/cards';
 
@@ -80,8 +81,8 @@ export default function CardDetailScreen() {
             ) : (
               <Muted>No benefit PDF uploaded for this card.</Muted>
             )}
-            <Button title="Share on WhatsApp" disabled />
-            <Muted>WhatsApp hand-off for the PDF, your official ID and the application link (v{card.link?.version ?? '—'}) arrives with the sharing feature.</Muted>
+            {recordId ? <ShareButtons target={{ type: 'CALLING_RECORD', id: recordId }} cardId={card.id} kinds={card.benefitPdfFileId ? ['APPLICATION_LINK', 'BENEFIT_PDF', 'OFFICE_ID'] : ['APPLICATION_LINK', 'OFFICE_ID']} /> : null}
+            <Muted>Opens WhatsApp with the approved content (link v{card.link?.version ?? '—'}, sent exactly as configured). “Share sheet opened” is not a delivery confirmation.</Muted>
           </Card>
           <Card className="gap-1">
             <Text className="font-medium">Why this card is offered</Text>

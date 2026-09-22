@@ -103,6 +103,11 @@ export class FilesService {
     return { url, expiresInSec, contentType: file.contentType, fileName: file.originalName, scanStatus: file.scanStatus };
   }
 
+  /** Presigned URL for a file already authorised by the caller (share redirects). */
+  presign(file: { bucket: string; key: string; originalName: string }, expiresInSec: number): Promise<string> {
+    return this.storage.presignGet({ bucket: file.bucket, key: file.key, expiresInSec, fileName: file.originalName });
+  }
+
   /** Raw bytes for server-side processing (imports). Never exposed over HTTP. */
   async readBytes(id: string): Promise<{ file: { id: string; purpose: string; originalName: string; contentType: string }; body: Buffer }> {
     const file = await this.prisma.client.storedFile.findUniqueOrThrow({ where: { id } });

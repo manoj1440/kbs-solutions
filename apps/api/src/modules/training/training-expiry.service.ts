@@ -6,6 +6,7 @@ import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ConfigService } from '../config/config.service';
+import { reissueIdCard } from '../id-cards/reissue';
 import { NotificationsService } from '../notifications/notifications.service';
 import { HierarchyService } from '../users/hierarchy.service';
 
@@ -50,6 +51,7 @@ export class TrainingExpiryService {
       await tx.user.update({ where: { id: e.telecallerUserId }, data: { status: 'DEACTIVATED' } });
       await tx.userLifecycleEvent.create({ data: { userId: e.telecallerUserId, eventType: 'DEACTIVATED', reason: 'TRAINING_DEADLINE', metadata: { deadlineAt: e.deadlineAt?.toISOString() } } });
       await tx.session.updateMany({ where: { userId: e.telecallerUserId, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: 'TRAINING_DEADLINE' } });
+      await tx.officialIdCard.updateMany({ where: { userId: e.telecallerUserId, revokedAt: null }, data: { revokedAt: new Date() } }); // F-312
     });
     await this.audit.record({ action: 'training.expire', entityType: 'User', entityId: e.telecallerUserId, actor: { userId: null, role: null }, metadata: { enrollmentId: e.id, deadlineAt: e.deadlineAt?.toISOString() } });
     const managerId = await this.hierarchy.currentParentId(e.telecallerUserId);
@@ -85,6 +87,7 @@ export class TrainingExpiryService {
     const newDeadlineAt = windowHours === null ? null : new Date(Date.now() + windowHours * 3_600_000);
     const result = await this.prisma.client.$transaction(async (tx) => {
       await tx.user.update({ where: { id: telecallerUserId }, data: { status: 'ACTIVE' } });
+      await reissueIdCard(tx, telecallerUserId); // F-312: fresh card version after reactivation
       await tx.userLifecycleEvent.create({ data: { userId: telecallerUserId, eventType: 'REACTIVATED', actorUserId: actor.userId, reason } });
       const r = await tx.trainingReactivation.create({
         data: { enrollmentId: enrollment.id, byManagerUserId: actor.userId, reason, originalDeadlineAt: enrollment.deadlineAt, newDeadlineAt, resumedAtModuleSequence: firstUnpassed },

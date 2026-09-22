@@ -51,8 +51,8 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-308-card-lookup-by-pincode.md](./F-308-card-lookup-by-pincode.md) | F-308 Card lookup by customer pincode (sourceability ∩ publication) | Telecaller ops | DONE | F-403, F-404, F-307 |
 | [F-309-call-initiation-and-recording.md](./F-309-call-initiation-and-recording.md) | F-309 In-app call initiation via telephony port, provider events, recordings | Telecaller ops | DONE | F-109, F-307, F-108 |
 | [F-310-call-outcomes-and-interest.md](./F-310-call-outcomes-and-interest.md) | F-310 Call outcomes, operational remarks, follow-up/hide, calling interest | Telecaller ops | DONE | F-309, F-306 |
-| [F-311-whatsapp-sharing.md](./F-311-whatsapp-sharing.md) | F-311 WhatsApp sharing: benefit PDF, official ID, application link | Telecaller ops | PLANNED | F-109, F-308, F-312, F-403 |
-| [F-312-official-id-card.md](./F-312-official-id-card.md) | F-312 Official Telecaller ID card | Telecaller ops | PLANNED | F-201, F-108 |
+| [F-311-whatsapp-sharing.md](./F-311-whatsapp-sharing.md) | F-311 WhatsApp sharing: benefit PDF, official ID, application link | Telecaller ops | DONE | F-109, F-308, F-312, F-403 |
+| [F-312-official-id-card.md](./F-312-official-id-card.md) | F-312 Official Telecaller ID card | Telecaller ops | DONE | F-201, F-108 |
 | [F-313-manager-team-operations.md](./F-313-manager-team-operations.md) | F-313 Manager team operations views | Telecaller ops | PLANNED | F-205, F-305, F-309, F-310, F-311 |
 | [F-401-advisor-onboarding.md](./F-401-advisor-onboarding.md) | F-401 Advisor self-registration and verified onboarding | Advisor | PLANNED | F-101, F-108, F-109, F-111 |
 | [F-402-agent-code-in-onboarding-and-profile.md](./F-402-agent-code-in-onboarding-and-profile.md) | F-402 Agent Code in signup and profile (Advisor-facing) | Advisor | PLANNED | F-106, F-401 |

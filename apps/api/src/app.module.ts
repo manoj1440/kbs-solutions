@@ -25,8 +25,10 @@ import { ConfigModule } from './modules/config/config.module';
 import { FilesModule } from './modules/files/files.module';
 import { GatesModule } from './modules/gates/gates.module';
 import { HealthController } from './modules/health/health.controller';
+import { IdCardsModule } from './modules/id-cards/id-cards.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SharingModule } from './modules/sharing/sharing.module';
 import { TrainingModule } from './modules/training/training.module';
 import { UsersModule } from './modules/users/users.module';
 import { ProvidersModule } from './providers/providers.module';
@@ -80,6 +82,8 @@ export const LOG_REDACT_PATHS = [
     CallingListModule,
     CatalogueModule,
     CallsModule,
+    IdCardsModule,
+    SharingModule,
   ],
   controllers: [HealthController],
   providers: [

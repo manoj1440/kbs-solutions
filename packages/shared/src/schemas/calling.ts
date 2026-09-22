@@ -60,3 +60,35 @@ export const OUTCOME_LABELS: Record<CallOutcome, string> = {
   DECLINED: 'Declined',
   COMPLETED_NO_FURTHER: 'Completed — no further action',
 };
+
+// ── F-311 sharing ──
+export const ShareBody = z.object({
+  targetType: z.enum(['CALLING_RECORD', 'LEAD']),
+  targetId: z.string().uuid(),
+  kind: z.enum(['BENEFIT_PDF', 'OFFICE_ID', 'APPLICATION_LINK']),
+  cardId: z.string().uuid().optional(),
+});
+export type ShareBody = z.infer<typeof ShareBody>;
+
+export interface ShareResult {
+  shareActionId: string;
+  kind: ShareBody['kind'];
+  channel: 'WHATSAPP_HANDOFF' | 'WHATSAPP_BUSINESS_API';
+  handoffResult: 'OPENED' | 'FAILED';
+  /** Strictly from the provider; HANDOFF is always UNKNOWN (WA-01). */
+  deliveryStatus: 'UNKNOWN' | 'SENT' | 'DELIVERED' | 'FAILED';
+  handoffUrl: string | null;
+  providerMessageId: string | null;
+  /** What the customer receives (link verbatim; PDF/ID via KBS redirect). */
+  message: string;
+  consentPolicyConfigured: boolean;
+  callingInterestId: string | null;
+  linkVersion: number | null;
+}
+
+export function shareStatusLabel(r: Pick<ShareResult, 'channel' | 'handoffResult' | 'deliveryStatus'>): string {
+  if (r.deliveryStatus === 'DELIVERED') return 'Delivered';
+  if (r.deliveryStatus === 'SENT') return 'Sent';
+  if (r.deliveryStatus === 'FAILED') return 'Delivery failed';
+  return r.handoffResult === 'OPENED' ? 'Share sheet opened' : 'Could not open share sheet';
+}

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { Badge, Button, Card, Heading, Muted, Screen, Text } from '@/components/ui';
@@ -16,6 +17,7 @@ export default function Profile() {
           {user?.employeeCode ? <Muted>Employee code: {user.employeeCode}</Muted> : null}
           {user?.reportingParent ? <Muted>Reports to: {user.reportingParent.fullName}</Muted> : null}
         </Card>
+        <Button title="My official ID" onPress={() => router.push('/(telecaller)/id-card')} />
         <Button title="Sign out" variant="outline" onPress={() => void signOut()} />
       </View>
     </Screen>

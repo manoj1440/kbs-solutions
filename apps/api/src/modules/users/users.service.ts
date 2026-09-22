@@ -6,6 +6,7 @@ import { AppError } from '../../common/errors/app-error';
 import { Paginated } from '../../common/interceptors/response-envelope.interceptor';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { reissueIdCard } from '../id-cards/reissue';
 
 import { HierarchyService } from './hierarchy.service';
 
@@ -131,6 +132,7 @@ export class UsersService {
       const r = await tx.user.update({ where: { id }, data: { status: 'DEACTIVATED' } });
       await tx.userLifecycleEvent.create({ data: { userId: id, eventType: 'DEACTIVATED', actorUserId: actor.userId, reason } });
       await tx.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: 'USER_DEACTIVATED' } });
+      await tx.officialIdCard.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } }); // F-312: ID verifies as revoked
       return r;
     });
     RequestContextStore.audit({ entityId: id, before: { status: u.status }, after: { status: 'DEACTIVATED' }, reason });
@@ -148,6 +150,7 @@ export class UsersService {
     const updated = await this.prisma.client.$transaction(async (tx) => {
       const r = await tx.user.update({ where: { id }, data: { status: 'ACTIVE' } });
       await tx.userLifecycleEvent.create({ data: { userId: id, eventType: 'REACTIVATED', actorUserId: actor.userId, reason } });
+      if (r.role === 'TELECALLER') await reissueIdCard(tx, id); // F-312
       return r;
     });
     RequestContextStore.audit({ entityId: id, before: { status: u.status }, after: { status: 'ACTIVE' }, reason });
