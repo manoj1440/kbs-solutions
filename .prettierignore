@@ -1,0 +1,10 @@
+node_modules
+dist
+.next
+.expo
+.turbo
+coverage
+pnpm-lock.yaml
+DOCS/requirements/SOURCE_PRD_full.md
+packages/db/generated
+apps/mobile/android
