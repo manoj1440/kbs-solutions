@@ -52,5 +52,7 @@ DOCS/ (everything above)  docker/ (postgres, redis, minio)
 ## 6. Commands
 `pnpm dev` · `pnpm typecheck` · `pnpm lint` · `pnpm test` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm infra:up`
 
+`pnpm test` includes DB invariants that expect a baseline-seeded disposable database (zero payout rules, draft HDFC profile). A populated demo database violates those fixture assumptions. Use an isolated test database; never reset demo data merely to make these assertions pass.
+
 ## 7. Feature numbering
 - F-0xx foundation/tooling · F-1xx auth/users/config/audit · F-2xx training · F-3xx telecaller ops (network, calling list, calling, sharing) · F-4xx advisor (onboarding, catalogue, leads) · F-5xx MIS · F-6xx payouts/accounts · F-7xx dashboards/notifications · F-8xx web/mobile UX shells & screens · F-9xx hardening/compliance.

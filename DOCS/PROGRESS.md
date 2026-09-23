@@ -2,7 +2,10 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-09-22, end of session 3)
+## Current state (as of 2026-09-23, end of session 6)
+
+- **Current user focus:** Web Admin UI first. F-801 Admin shell + business overview and shared login redesigned (session 6 below). Mobile unchanged this session. Continue detailed web workflows/analytics next; do not resume the old payout queue below without checking current feature statuses (F-601–604 are already done).
+- **Latest verification:** Workspace typecheck/lint pass (existing TanStack lint warning); web build and 5 tests pass, API unit 13 pass. Full `pnpm test` fails 2 DB baseline-fixture assertions because `kbs_dev` contains demo payout rules and an APPROVED HDFC profile. Do not reset it. Browser smoke covers login/logout, navigation/search/drill-down, 1440–390px overview and responsive tables.
 
 - **Phase:** Slices 1–4 **done** (Telecaller lifecycle; calling desk; Advisor F-401/402/405/406/407; MIS F-501–F-507 + F-408/409/410). Next: **slice 5 payouts** (F-601 rules → F-602 entitlement evaluation (consume `mis.lead.changed` / `payouts.review` outbox events) → F-603 ledger + request/reservation → F-604 dual approval → F-605 Accounts payment → F-606 reconciliation), then F-701 notifications (outbox fan-out/push), F-702/F-703/F-704 dashboards, hardening F-9xx.
 - **Green checks:** `pnpm turbo run typecheck lint test` → 21/21 tasks (shared vitest 25, web vitest 1 = VIEW-02 grep guard, api unit 13); API e2e **79/79** across 19 suites; web pages browser-checked after every feature (MIS batch preview/apply/resolve, leads table + filters + detail, lead ops, MIS integrity); mobile typechecks/lints.
@@ -32,6 +35,14 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 ```
 
 ## Session log
+
+### 2026-09-23 — Session 6 (web Admin experience, F-801)
+- Replaced launch-gates-only Admin home with an all-time operational business overview: leads/MIS matches, eligible card events, reserved payout value, prominent exceptions/approvals/onboarding/unassigned queues, bank coverage with upload/apply timestamps, distinct payout positions, recent leads with MIS provenance, staffing/allocation counts and expandable launch readiness.
+- Totals use complete MIS summaries and payout metadata, never the 5-row recent sample. No invented trends, inferred approvals, global bank freshness or double-counted payout buckets. Partial API failures show unavailable. Dates/amounts retain India formatting.
+- New Admin-only shell: grouped navy sidebar, exact active route, responsive navigation dialog, Ctrl/Cmd+K workspace search, account/logout and refresh. Shared web login now split-panel navy/teal branding. Admin-scoped card/table styles extend to existing pages; no mobile, backend, permission or dependency changes.
+- Playwright verified OTP login/logout, dashboard numbers (3 leads, 3 matched, 1 eligible event, ₹1,500 reserved, 1 quarantined row), search/no results/Escape/focus restoration, active nested routes, lead-detail and pending-approval links, mobile menu and configuration checklist. Overview has no viewport overflow at 1440/1024/768/390px; leads/MIS/payout/users checked at 390px. Long bank-stage badges wrap; table overflow remains local.
+- Checks: `pnpm install && pnpm typecheck` baseline passed; workspace typecheck/lint passed. Web tests 5/5 and production build pass, API unit 13/13. Full `pnpm test` fails `packages/db/test/invariants.test.ts`: expected payoutRule count 0 (demo has 1); expected HDFC profile DRAFT (demo is APPROVED). Existing TanStack React Compiler lint warning and Node 24 vs required 22 engine warning remain. No database reset or assertion weakening.
+- Review at `http://localhost:3200/admin`. Screenshots: `.playwright-mcp/admin-overview-desktop.png`, `admin-overview-mobile.png`, `admin-login-desktop.png` (untracked). F-801 remains IN_PROGRESS; F-703 advanced reports/date ranges, notification drawer, dedicated screen refinements and CI browser tests remain follow-ups.
 
 ### 2026-09-22 — Session 5 (mobile reskin per design mockup, F-802)
 - Applied the S01–S10 design mockup to the advisor app: `(auth)/welcome` is now a 5-slide carousel (brand hero w/ card art, discover, digital selling, card-for-every-need, earnings) with page dots + Get Started/Next/Let's Login CTAs. `(auth)/mobile` + `otp` restyled (brand header, icon field, 6-box OTP w/ countdown + Edit). `(gates)/training` landing restyled (progress bar, module state icons, Continue Learning).

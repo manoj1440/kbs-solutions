@@ -12,8 +12,12 @@
 
 ## Acceptance criteria
 - [ ] Admin logs in on web and lands on `/admin`; Advisor login on web → access denied screen.
-- [ ] Playwright smoke: login + role redirect + logout.
+- [x] Playwright smoke: login + role redirect + logout.
 
 ## Progress notes
-- 2026-09-23: Admin web redesign in progress: grouped responsive navigation, workspace search, business overview using existing scoped API summaries, actionable exceptions, payout positions and per-bank MIS freshness. Mobile and backend contracts remain unchanged; full F-703 analytics are separate.
+- 2026-09-23: Admin web redesign implemented: navy/teal Admin-only shell, grouped responsive navigation with longest-route active state, keyboard workspace search (Ctrl/Cmd+K, native modal focus/Escape), account/logout menu, refresh, redesigned shared web login. Existing shadcn primitives and Lucide; no new dependencies. Manager/Accounts shells and mobile unchanged.
+- Admin overview composes existing authorized APIs: all-bank lead/MIS totals, payout metadata (not paginated-row sums), exceptions, awaiting-Admin approvals, advisor onboarding, calling allocation, recent 5 leads with independent stage/decision/activation, staffing and expandable launch gates. All-time basis and per-bank upload/applied times explicit; partial failures show unavailable, never fabricated zero. Eligibility/reservation buckets are not double-counted.
+- Verification: Playwright MCP Admin OTP login → `/admin` → logout; search/filter/no-result/Escape/focus-return, nested active navigation, lead detail, approval drill-down, configuration disclosure and mobile menu. Overview tested at 1440/1024/768/390px; leads/MIS/payout/users pages checked for page-level overflow at 390px. Fixed long stage wrapping, grid min-width and profile select overflow. Screenshots in untracked `.playwright-mcp/admin-overview-desktop.png`, `admin-overview-mobile.png`, `admin-login-desktop.png`.
+- Web typecheck/lint/tests (5) and production build pass; existing TanStack React Compiler lint warning remains. Workspace typecheck/lint pass; full tests fail only on two DB baseline-fixture expectations against demo data (payout rules expected empty; HDFC profile expected DRAFT). API unit tests separately pass (13). Demo database not reset.
+- Still IN_PROGRESS: Advisor-web access-denied verification, notification drawer, dedicated shadcn Sidebar/Command primitives and automated browser smoke in CI. Full F-703 analytics/date ranges/trends are not implemented by this overview; no synthetic growth/conversion charts.
 - 2026-09-22 (session 1): Login (OTP, cookies), proxy redirect, role-gated route groups, AppShell sidebar, admin overview (launch gates), config + users tables, access-denied. Pending: shadcn Sidebar/DataTable/date-range/command components, notification drawer, `/verify/[ref]`, Playwright smoke in CI.
