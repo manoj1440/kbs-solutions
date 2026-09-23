@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Users,
   Wallet,
+  Wifi,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -82,6 +83,7 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
     label: 'Administration',
     items: [
       { href: '/admin/compliance', label: 'Compliance', icon: ShieldCheck },
+      { href: '/admin/network', label: 'Office network', icon: Wifi },
       { href: '/admin/config', label: 'Configuration', icon: Settings2 },
       { href: '/admin/retention', label: 'Retention & legal hold', icon: Archive },
     ],
