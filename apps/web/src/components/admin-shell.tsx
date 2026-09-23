@@ -62,6 +62,7 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
       { href: '/admin/dashboards', label: 'Executive dashboard', icon: LayoutDashboard },
       { href: '/admin/dashboards/telecallers', label: 'Team performance', icon: Users },
       { href: '/admin/dashboards/bank-card-mix', label: 'Bank / card mix', icon: CreditCard },
+      { href: '/admin/audit', label: 'Audit trail', icon: ShieldCheck },
     ],
   },
   {
