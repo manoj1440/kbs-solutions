@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, Text as RNText, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Text } from '@/components/ui';
+import { Icon } from '@/components/ui';
 import { useSession } from '@/lib/session';
+import { colors } from '@/lib/theme';
 
 /** F-302: non-blocking warning for rooted / compromised devices (REQ-09 §9.3). Dismissible for this app session. */
 export function DeviceWarningBanner() {
@@ -14,17 +15,22 @@ export function DeviceWarningBanner() {
   return (
     <View
       accessibilityRole="alert"
-      className="bg-warning flex-row items-start gap-3 px-4 pb-3"
-      style={{ paddingTop: insets.top + 8 }}
+      className="flex-row items-center gap-2.5 border-b border-[#F3D9A4] bg-[#FFF3DC] pb-2 pl-4 pr-2"
+      style={{ paddingTop: insets.top + 6 }}
     >
-      <Text className="text-warning-foreground flex-1 text-sm">{deviceWarning}</Text>
+      <Icon name="warning" size={16} color={colors.warning} />
+      <RNText className="flex-1 font-medium text-[12px] leading-[17px] text-[#7A4A05]">
+        {deviceWarning}
+      </RNText>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Dismiss device warning"
         onPress={() => setHidden(true)}
         hitSlop={12}
+        className="min-h-[36px] flex-row items-center gap-1 rounded-full px-2.5"
       >
-        <Text className="text-warning-foreground font-semibold">Dismiss</Text>
+        <RNText className="font-semibold text-[12px] text-[#7A4A05]">Dismiss</RNText>
+        <Icon name="close" size={14} color={colors.warning} />
       </Pressable>
     </View>
   );
