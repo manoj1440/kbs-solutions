@@ -56,6 +56,20 @@
   }
 }
 
+@keyframes login-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.admin-login .login-float {
+  animation: login-float 7s ease-in-out infinite;
+}
+
 .admin-workspace,
 .admin-login {
   --primary: 175 77% 26%;
