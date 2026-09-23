@@ -2,6 +2,7 @@ import type { MeResponse } from '@kbs/shared';
 import Link from 'next/link';
 
 import { LogoutButton } from '@/components/logout-button';
+import { NotificationBell } from '@/components/notification-bell';
 import { Badge } from '@/components/ui/badge';
 
 export interface NavItem {
@@ -14,9 +15,12 @@ export function AppShell({ session, nav, title, children }: { session: MeRespons
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]">
       <aside className="bg-card flex flex-col gap-3 border-b p-4 md:gap-4 md:border-r md:border-b-0">
-        <div>
-          <div className="text-lg font-semibold">KBS Solutions</div>
-          <div className="text-muted-foreground text-xs">{title}</div>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="text-lg font-semibold">KBS Solutions</div>
+            <div className="text-muted-foreground text-xs">{title}</div>
+          </div>
+          <NotificationBell area={session.user.role === 'ACCOUNTS' ? 'accounts' : session.user.role === 'ADMIN' ? 'admin' : 'manager'} />
         </div>
         <nav className="flex flex-wrap gap-1 md:flex-col">
           {nav.map((n) => (

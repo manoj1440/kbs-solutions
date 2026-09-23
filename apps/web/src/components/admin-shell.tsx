@@ -25,6 +25,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
+
+import { NotificationBell } from '@/components/notification-bell';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
@@ -210,6 +212,7 @@ export function AdminShell({
                 ⌘ / Ctrl K
               </kbd>
             </Button>
+            <NotificationBell area="admin" />
             <Button
               variant="ghost"
               size="icon"
