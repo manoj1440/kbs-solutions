@@ -1,4 +1,4 @@
-import { type CreateTelecallerBody, type CreateUserBody, makePublicRef, maskMobile, RefPrefix, toE164India, type UserListQuery } from '@kbs/shared';
+import { type ChangeMobileBody, type CreateTelecallerBody, type CreateUserBody, makePublicRef, maskMobile, RefPrefix, toE164India, type UserListQuery } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -6,6 +6,7 @@ import { AppError } from '../../common/errors/app-error';
 import { Paginated } from '../../common/interceptors/response-envelope.interceptor';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { ConfigService } from '../config/config.service';
 import { reissueIdCard } from '../id-cards/reissue';
 
 import { HierarchyService } from './hierarchy.service';
@@ -29,6 +30,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly hierarchy: HierarchyService,
+    private readonly config: ConfigService,
   ) {}
 
   async toSummary(u: UserRow) {
@@ -116,7 +118,7 @@ export class UsersService {
     if (!u || !this.canSee(actor, u.id)) throw AppError.notFound('User');
     const [summary, lifecycle, sessions] = await Promise.all([
       this.toSummary(u),
-      this.prisma.client.userLifecycleEvent.findMany({ where: { userId: id }, orderBy: { at: 'desc' }, take: 50 }),
+      this.prisma.client.userLifecycleEvent.findMany({ where: { userId: id }, orderBy: { at: 'desc' }, take: 50, include: { actor: { select: { id: true, fullName: true, role: true } } } }),
       this.prisma.client.session.findMany({ where: { userId: id, revokedAt: null }, select: { id: true, platform: true, createdAt: true, lastSeenAt: true } }),
     ]);
     return { ...summary, lifecycle, sessions };
@@ -145,6 +147,8 @@ export class UsersService {
     if (actor.role !== 'ADMIN') throw new AppError('RBAC_FORBIDDEN', 'Only the Admin can reactivate accounts here.');
     const u = await this.prisma.client.user.findUnique({ where: { id }, include: { trainingEnrollment: true } });
     if (!u) throw AppError.notFound('User');
+    if (u.status === 'ACTIVE') return this.toSummary(u);
+    if (u.status === 'PENDING_ONBOARDING') throw new AppError('CONFLICT', 'This account has not finished onboarding; approve it from Advisor approvals.');
     if (u.role === 'TELECALLER' && u.trainingEnrollment?.status === 'EXPIRED_DEACTIVATED') {
       throw new AppError('CONFLICT', 'This Telecaller was deactivated by the training deadline; the assigned Manager must reactivate training (F-204).');
     }
@@ -162,8 +166,33 @@ export class UsersService {
     const u = await this.prisma.client.user.findUnique({ where: { id } });
     if (!u) throw AppError.notFound('User');
     const r = await this.prisma.client.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: `ADMIN:${reason}` } });
+    await this.prisma.client.pushDevice.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
     RequestContextStore.audit({ entityId: id, metadata: { revoked: r.count, by: actor.userId }, reason });
     return { revoked: r.count };
+  }
+
+  /**
+   * F-105 §5 account recovery: Admin changes a user's login mobile. Policy is OPEN (REQ-04), so this fails closed while
+   * `auth.recoveryEnabled` is false. Records MOBILE_CHANGED (masked old/new only), revokes sessions and push devices.
+   */
+  async changeMobile(actor: Actor, id: string, body: ChangeMobileBody) {
+    if (actor.role !== 'ADMIN') throw new AppError('RBAC_FORBIDDEN', 'Only the Admin can change a login mobile.');
+    if (!this.config.getBool('auth.recoveryEnabled')) throw new AppError('CONFIG_MISSING', 'Account recovery is disabled (auth.recoveryEnabled). KBS has not approved a recovery policy.', { key: 'auth.recoveryEnabled' });
+    const u = await this.prisma.client.user.findUnique({ where: { id } });
+    if (!u) throw AppError.notFound('User');
+    const mobile = toE164India(body.mobile);
+    if (mobile === u.mobile) throw new AppError('VALIDATION_FAILED', 'That is already the account mobile.');
+    await this.assertMobileFree(mobile);
+    const masked = { before: maskMobile(u.mobile), after: maskMobile(mobile) };
+    const updated = await this.prisma.client.$transaction(async (tx) => {
+      const r = await tx.user.update({ where: { id }, data: { mobile } });
+      await tx.userLifecycleEvent.create({ data: { userId: id, eventType: 'MOBILE_CHANGED', actorUserId: actor.userId, reason: body.reason } });
+      await tx.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: 'MOBILE_CHANGED' } });
+      await tx.pushDevice.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
+      return r;
+    });
+    RequestContextStore.audit({ entityId: id, before: { mobile: masked.before }, after: { mobile: masked.after }, reason: body.reason });
+    return this.toSummary(updated);
   }
 
   private canSee(actor: Actor, userId: string): boolean {

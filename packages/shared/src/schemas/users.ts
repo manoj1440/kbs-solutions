@@ -28,6 +28,9 @@ export const UserListQuery = PaginationQuery.extend({
 export type UserListQuery = z.infer<typeof UserListQuery>;
 
 export const LifecycleBody = z.object({ reason: z.string().min(3).max(500) });
+/** F-105 §5: account recovery (policy OPEN) — only when `auth.recoveryEnabled` is on. */
+export const ChangeMobileBody = z.object({ mobile: MobileSchema, reason: z.string().trim().min(10).max(500) });
+export type ChangeMobileBody = z.infer<typeof ChangeMobileBody>;
 
 // ── F-106 Agent Codes & reporting hierarchy ──
 export const CreateAgentCodeBody = z.object({

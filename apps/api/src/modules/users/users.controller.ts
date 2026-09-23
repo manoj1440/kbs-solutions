@@ -1,4 +1,4 @@
-import { CreateTelecallerBody, CreateUserBody, LifecycleBody, UserListQuery } from '@kbs/shared';
+import { ChangeMobileBody, CreateTelecallerBody, CreateUserBody, LifecycleBody, UserListQuery } from '@kbs/shared';
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -57,5 +57,12 @@ export class UsersController {
   @Audited({ action: 'users.sessions.revoke', entityType: 'User', entityIdFrom: 'params.id' })
   revoke(@CurrentActor() actor: Actor, @Param('id') id: string, @Body() raw: unknown) {
     return this.users.revokeSessions(actor, id, LifecycleBody.parse(raw).reason);
+  }
+
+  @Post('users/:id/change-mobile')
+  @RequirePermission('USER_CHANGE_MOBILE')
+  @Audited({ action: 'users.changeMobile', entityType: 'User', entityIdFrom: 'params.id' })
+  changeMobile(@CurrentActor() actor: Actor, @Param('id') id: string, @Body() raw: unknown) {
+    return this.users.changeMobile(actor, id, ChangeMobileBody.parse(raw));
   }
 }
