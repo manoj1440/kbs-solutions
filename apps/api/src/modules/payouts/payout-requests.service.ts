@@ -12,6 +12,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { HierarchyService } from '../users/hierarchy.service';
 
 import { PayoutEligibilityService } from './eligibility.service';
+import { bucketOf, totalsOf } from './ledger-buckets';
 import { PAYMENT_QUEUE_WHERE } from './payment-queues';
 
 const requestInclude = {
@@ -110,16 +111,9 @@ export class PayoutRequestsService {
         reviewReason: e.reviewReason,
       };
     });
-    const sum = (f: (r: (typeof rows)[number]) => boolean) => rows.filter(f).reduce((a, r) => ({ count: a.count + 1, amountInr: a.amountInr + r.amountInr }), { count: 0, amountInr: 0 });
-    const totals = {
-      eligible: sum((r) => ['PENDING_HOLD', 'ELIGIBLE_AVAILABLE', 'RESERVED', 'PAID'].includes(r.state)),
-      available: sum((r) => r.state === 'ELIGIBLE_AVAILABLE'),
-      requested: sum((r) => r.state === 'RESERVED' && r.request?.state === 'PENDING_APPROVALS'),
-      approvedUnpaid: sum((r) => r.state === 'RESERVED' && (r.request?.state === 'APPROVED' || r.request?.state === 'PAYMENT_RECORDED_PENDING_PROOF')),
-      paid: sum((r) => r.state === 'PAID'),
-      underReview: sum((r) => r.state === 'UNDER_REVIEW'),
-      pendingHold: sum((r) => r.state === 'PENDING_HOLD'),
-    };
+    // F-606: same classifier as the payout dashboard so every role's totals reconcile
+    const t = totalsOf(rows.map((r) => ({ bucket: bucketOf(r.state, r.request?.state), amountInr: r.amountInr })));
+    const totals = { eligible: t.eligible, available: t.available, requested: t.requested, approvedUnpaid: t.approvedUnpaid, onHold: t.onHold, paid: t.paid, underReview: t.underReview, pendingHold: t.pendingHold };
     return { advisorUserId, rows, totals, asOf: new Date().toISOString() };
   }
 
