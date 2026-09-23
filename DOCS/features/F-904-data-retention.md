@@ -27,3 +27,4 @@ Retention jobs for recordings/documents/calling records driven by `retention.*` 
 - [x] MIS/payout audit never removed.
 - [ ] KBS-approved durations set (OPEN, REQ-21 §21.5).
 - Session 8 (resume): adding a scheduled nightly run behind its own flag `retention.scheduleEnabled` (default false), still BLOCKED on durations.
+- Session 8 (scheduled run): `retention.nightly` on the maintenance queue at 02:00 IST (worker mode). Runs only when **both** `retention.scheduleEnabled` (new, default false) and `retention.executionEnabled` are on, only for categories whose duration is set, as the system actor; audit `retention.scheduledRun` per run + per-item rows; Admin SECURITY_EVENT when anything was purged/restricted or failed. `MaintenanceProcessor.schedule()` lets modules contribute repeatable jobs. `/admin/retention` shows the nightly state. Test added to `retention.e2e-spec.ts`. Status stays **BLOCKED** on KBS durations.

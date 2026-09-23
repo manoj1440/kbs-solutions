@@ -12,6 +12,7 @@
   1. On the Mac: push to GitHub, then build the preview APK (`cd apps/mobile && npx eas init && eas build -p android --profile preview`, see `DOCS/runbooks/04-android-release.md`), run the Maestro flows and the SEC-02 checklist → close F-302.
   2. Collect KBS decisions for the open launch gates (Admin → Configuration shows them; `pnpm release:check` lists everything that still fails): retention durations (F-904), office egress CIDRs (F-301), payout designated approver, training thresholds / reactivation window, compliance confirmations and texts, recovery policy (`auth.recoveryEnabled`), audit export policy, perf thresholds.
   3. Production needs a worker process (`WORKER_MODE=1`): it runs the outbox relay and MIS background jobs (F-110, F-508 / ADR-013).
+- F-904 now also has a nightly run behind `retention.scheduleEnabled` (off); it runs only once KBS sets durations and both retention flags are on.
 - **Things to know before touching the code:**
   - BullMQ refuses `:` in custom job ids; `safeJobId()` (jobs.service.ts) maps it to `|`. Any environment that ran the old relay can requeue with the SQL in F-110's notes.
   - Screen protection is route-driven: add a new sensitive mobile screen to `PROTECTED_ROUTES` in `apps/mobile/lib/secure-routes.ts` (unit-tested) — do not wrap screens individually.
