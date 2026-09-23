@@ -1,9 +1,31 @@
-import { ApiClientError, type AvailableCard, type CallAttemptView, type CallOutcome, formatDateTime, OUTCOME_LABELS, recordingChip } from '@kbs/shared';
+import {
+  ApiClientError,
+  type AvailableCard,
+  type CallAttemptView,
+  type CallOutcome,
+  formatDateTime,
+  OUTCOME_LABELS,
+  recordingChip,
+} from '@kbs/shared';
 import { useEffect, useState } from 'react';
-import { Pressable, Switch, View } from 'react-native';
+import { Switch, Text as RNText, View } from 'react-native';
 
-import { Badge, Button, Card, ErrorText, Input, Label, Muted, Text } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Callout,
+  Card,
+  Chip,
+  ChoiceRow,
+  ErrorText,
+  Icon,
+  IconCircle,
+  Input,
+  Muted,
+  Text,
+} from '@/components/ui';
 import { api } from '@/lib/api';
+import { colors } from '@/lib/theme';
 
 const LIVE = new Set(['REQUESTED', 'RINGING', 'CONNECTED']);
 const STATE_LABEL: Record<CallAttemptView['providerState'], string> = {
@@ -29,7 +51,17 @@ function newKey() {
  * F-309 §7 / F-310: persistent call control bar + outcome editor on the record screen.
  * One idempotency key per tap; the key is kept until the server answers so a double-tap can never create two attempts.
  */
-export function CallDesk({ recordId, canCall, cards, onChanged }: { recordId: string; canCall: boolean; cards: AvailableCard[]; onChanged: () => Promise<void> }) {
+export function CallDesk({
+  recordId,
+  canCall,
+  cards,
+  onChanged,
+}: {
+  recordId: string;
+  canCall: boolean;
+  cards: AvailableCard[];
+  onChanged: () => Promise<void>;
+}) {
   const [call, setCall] = useState<CallAttemptView | null>(null);
   const [key, setKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +106,16 @@ export function CallDesk({ recordId, canCall, cards, onChanged }: { recordId: st
     }
   };
 
-  const elapsed = call?.connectedAt ? Math.max(0, Math.round(((call.endedAt ? new Date(call.endedAt).getTime() : now) - new Date(call.connectedAt).getTime()) / 1000)) : null;
+  const elapsed = call?.connectedAt
+    ? Math.max(
+        0,
+        Math.round(
+          ((call.endedAt ? new Date(call.endedAt).getTime() : now) -
+            new Date(call.connectedAt).getTime()) /
+            1000,
+        ),
+      )
+    : null;
 
   const submit = async () => {
     if (!outcome) return;
@@ -82,10 +123,23 @@ export function CallDesk({ recordId, canCall, cards, onChanged }: { recordId: st
     setError(null);
     setSaved(null);
     try {
-      const body: Record<string, unknown> = { outcome, remarks: remarks || undefined, selectedCardId: cardId ?? undefined, doNotContact: dnc || undefined, callAttemptId: call?.id };
+      const body: Record<string, unknown> = {
+        outcome,
+        remarks: remarks || undefined,
+        selectedCardId: cardId ?? undefined,
+        doNotContact: dnc || undefined,
+        callAttemptId: call?.id,
+      };
       if (outcome === 'FOLLOW_UP') body.followUpAt = new Date(followUpAt).toISOString();
-      const r = await api.post<{ hidden: boolean; interactionStatus: string }>(`/calling/records/${recordId}/outcomes`, body);
-      setSaved(r.data.hidden ? 'Outcome saved — this customer moved to History.' : `Outcome saved (${r.data.interactionStatus.replace('_', ' ').toLowerCase()}).`);
+      const r = await api.post<{ hidden: boolean; interactionStatus: string }>(
+        `/calling/records/${recordId}/outcomes`,
+        body,
+      );
+      setSaved(
+        r.data.hidden
+          ? 'Outcome saved — this customer moved to History.'
+          : `Outcome saved (${r.data.interactionStatus.replace('_', ' ').toLowerCase()}).`,
+      );
       setOutcome(null);
       setRemarks('');
       setFollowUpAt('');
@@ -99,71 +153,187 @@ export function CallDesk({ recordId, canCall, cards, onChanged }: { recordId: st
     }
   };
 
+  const stateTone = call
+    ? call.providerState === 'CONNECTED'
+      ? 'success'
+      : call.providerState === 'FAILED' || call.providerState === 'NO_ANSWER'
+        ? 'destructive'
+        : 'info'
+    : 'secondary';
+  const timer =
+    elapsed !== null
+      ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`
+      : null;
+
   return (
-    <View className="gap-3">
-      <Card className="gap-2">
-        <View className="flex-row items-center justify-between">
-          <Text className="font-medium">Call</Text>
-          {call ? <Badge label={STATE_LABEL[call.providerState]} variant={call.providerState === 'CONNECTED' ? 'success' : call.providerState === 'FAILED' || call.providerState === 'NO_ANSWER' ? 'destructive' : 'info'} /> : null}
+    <View className="gap-4">
+      <Card className="gap-3">
+        <View className="flex-row items-center gap-3">
+          <IconCircle
+            icon={live ? 'radio' : 'call'}
+            tone={call ? stateTone : 'default'}
+            size={40}
+          />
+          <View className="flex-1">
+            <Text className="font-bold text-[16px]">Call</Text>
+            <Muted className="text-[12px]">
+              {call ? `To ${call.targetMobileMasked}` : 'No call started yet'}
+            </Muted>
+          </View>
+          {call ? <Badge label={STATE_LABEL[call.providerState]} variant={stateTone} dot /> : null}
         </View>
-        {call?.disclosureText ? <Muted>Say before dialing: “{call.disclosureText}”</Muted> : null}
-        {call ? (
-          <Muted>
-            To {call.targetMobileMasked} · started {formatDateTime(call.initiatedAt)}
-            {elapsed !== null ? ` · ${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}` : ''}
-            {call.durationSec !== null ? ` · ${call.durationSec}s` : ''}
-          </Muted>
+        {call?.disclosureText ? (
+          <Callout kind="warning" title="Say before dialing" icon="megaphone-outline">
+            {`“${call.disclosureText}”`}
+          </Callout>
         ) : null}
-        {call?.failureReason ? <Muted>Reason: {call.failureReason}</Muted> : null}
-        {call && !live ? <Badge label={recordingChip(call.recording?.status)} variant={call.recording?.status === 'AVAILABLE' ? 'success' : 'secondary'} /> : null}
+        {call ? (
+          <View className="flex-row items-center justify-between rounded-2xl bg-[#F6F8FC] px-4 py-3">
+            <View className="flex-1">
+              <Muted className="text-[12px]">started {formatDateTime(call.initiatedAt)}</Muted>
+              {call.durationSec !== null ? (
+                <Muted className="text-[12px]">{call.durationSec}s</Muted>
+              ) : null}
+              {call.failureReason ? (
+                <Muted className="text-[12px]">Reason: {call.failureReason}</Muted>
+              ) : null}
+            </View>
+            {timer ? (
+              <RNText className="font-extrabold text-[26px] tracking-tight text-ink">
+                {timer}
+              </RNText>
+            ) : null}
+          </View>
+        ) : null}
+        {call && !live ? (
+          <Badge
+            label={recordingChip(call.recording?.status)}
+            variant={call.recording?.status === 'AVAILABLE' ? 'success' : 'secondary'}
+            icon="mic-outline"
+          />
+        ) : null}
         <ErrorText>{error}</ErrorText>
         {!canCall ? (
-          <Muted>Calling is not available for this customer.</Muted>
+          <Callout kind="neutral" icon="call-outline">
+            Calling is not available for this customer.
+          </Callout>
         ) : live ? (
-          <Muted>Call in progress on your phone. Record the outcome once it ends.</Muted>
+          <View className="flex-row items-center gap-3 rounded-2xl bg-[#E6F4EC] px-4 py-3">
+            <View className="h-2.5 w-2.5 rounded-full bg-[#1F7A4D]" />
+            <RNText className="flex-1 font-medium text-[13px] text-[#1F6B45]">
+              Call in progress on your phone. Record the outcome once it ends.
+            </RNText>
+          </View>
         ) : (
-          <Button title={call ? (call.providerState === 'FAILED' ? 'Retry call' : 'Call again') : 'Call customer'} disabled={key !== null} onPress={() => void dial()} />
+          <Button
+            title={
+              call
+                ? call.providerState === 'FAILED'
+                  ? 'Retry call'
+                  : 'Call again'
+                : 'Call customer'
+            }
+            icon="call"
+            size="lg"
+            loading={key !== null}
+            disabled={key !== null}
+            onPress={() => void dial()}
+          />
         )}
       </Card>
 
-      <Card className="gap-2">
-        <Text className="font-medium">Outcome</Text>
-        {saved ? <Muted>{saved}</Muted> : null}
-        <View className="flex-row flex-wrap gap-2">
+      <Card className="gap-4">
+        <View className="flex-row items-center gap-3">
+          <IconCircle icon="create-outline" tone="info" size={40} />
+          <View className="flex-1">
+            <Text className="font-bold text-[16px]">Outcome</Text>
+            <Muted className="text-[12px]">What happened on this call?</Muted>
+          </View>
+        </View>
+        {saved ? (
+          <View className="flex-row items-center gap-2 rounded-xl bg-[#E6F4EC] px-3 py-2.5">
+            <Icon name="checkmark-circle" size={16} color={colors.success} />
+            <RNText className="flex-1 font-medium text-[13px] text-[#1F6B45]">{saved}</RNText>
+          </View>
+        ) : null}
+        <View accessibilityRole="radiogroup" className="gap-2">
           {(Object.keys(OUTCOME_LABELS) as CallOutcome[]).map((k) => (
-            <Pressable key={k} accessibilityRole="radio" accessibilityState={{ selected: outcome === k }} onPress={() => setOutcome(k)} className={`rounded-full px-3 py-1.5 ${outcome === k ? 'bg-primary' : 'bg-secondary'}`}>
-              <Text className={`text-xs ${outcome === k ? 'text-primary-foreground' : 'text-secondary-foreground'}`}>{OUTCOME_LABELS[k]}</Text>
-            </Pressable>
+            <ChoiceRow
+              key={k}
+              label={OUTCOME_LABELS[k]}
+              selected={outcome === k}
+              onPress={() => setOutcome(k)}
+            />
           ))}
         </View>
         {outcome === 'FOLLOW_UP' ? (
-          <View className="gap-1">
-            <Label>Follow-up at (YYYY-MM-DD HH:mm)</Label>
-            <Input placeholder="2026-09-23 11:00" value={followUpAt} onChangeText={setFollowUpAt} />
-          </View>
+          <Input
+            label="Follow-up at (YYYY-MM-DD HH:mm)"
+            icon="calendar-outline"
+            placeholder="2026-09-23 11:00"
+            value={followUpAt}
+            onChangeText={setFollowUpAt}
+          />
         ) : null}
-        {(outcome === 'CONNECTED_INTERESTED' || outcome === 'CONNECTED_LINK_OR_PDF_SHARED') && cards.length ? (
-          <View className="gap-1">
-            <Label>Card discussed</Label>
+        {(outcome === 'CONNECTED_INTERESTED' || outcome === 'CONNECTED_LINK_OR_PDF_SHARED') &&
+        cards.length ? (
+          <View className="gap-2">
+            <RNText className="font-semibold text-[13px] text-ink">Card discussed</RNText>
             <View className="flex-row flex-wrap gap-2">
               {cards.map((c) => (
-                <Pressable key={c.id} accessibilityRole="radio" accessibilityState={{ selected: cardId === c.id }} onPress={() => setCardId(cardId === c.id ? null : c.id)} className={`rounded-md border border-border px-2 py-1 ${cardId === c.id ? 'bg-primary' : ''}`}>
-                  <Text className={`text-xs ${cardId === c.id ? 'text-primary-foreground' : ''}`}>{c.name}</Text>
-                </Pressable>
+                <Chip
+                  key={c.id}
+                  label={c.name}
+                  icon="card-outline"
+                  active={cardId === c.id}
+                  onPress={() => setCardId(cardId === c.id ? null : c.id)}
+                />
               ))}
             </View>
           </View>
         ) : null}
-        <View className="gap-1">
-          <Label>Notes {outcome === 'FOLLOW_UP' || outcome === 'DECLINED' ? '(required)' : '(optional)'}</Label>
-          <Input placeholder="What happened on the call" value={remarks} onChangeText={setRemarks} multiline />
+        <Input
+          label={`Notes ${outcome === 'FOLLOW_UP' || outcome === 'DECLINED' ? '(required)' : '(optional)'}`}
+          placeholder="What happened on the call"
+          value={remarks}
+          onChangeText={setRemarks}
+          multiline
+        />
+        <View
+          className={`flex-row items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3 ${dnc ? 'border-[#F5C2BE] bg-[#FDECEA]' : 'border-line bg-white'}`}
+        >
+          <Icon name="hand-left-outline" size={18} color={dnc ? colors.danger : colors.subtle} />
+          <Text className="flex-1 text-[14px]">Customer asked not to be contacted again</Text>
+          <Switch
+            value={dnc}
+            onValueChange={setDnc}
+            accessibilityLabel="do not contact"
+            trackColor={{ true: colors.danger, false: '#D5DAE6' }}
+          />
         </View>
-        <View className="flex-row items-center justify-between">
-          <Text>Customer asked not to be contacted again</Text>
-          <Switch value={dnc} onValueChange={setDnc} accessibilityLabel="do not contact" />
+        <Button
+          title={saving ? 'Saving…' : 'Save outcome'}
+          icon="checkmark"
+          size="lg"
+          loading={saving}
+          disabled={
+            !outcome ||
+            saving ||
+            (outcome === 'FOLLOW_UP' && Number.isNaN(new Date(followUpAt).getTime()))
+          }
+          onPress={() => void submit()}
+        />
+        <View className="flex-row items-start gap-2">
+          <Icon
+            name="shield-checkmark-outline"
+            size={14}
+            color={colors.subtle}
+            style={{ marginTop: 2 }}
+          />
+          <Muted className="flex-1 text-[12px]">
+            Outcomes are operational only — bank status comes from the MIS, never from here.
+          </Muted>
         </View>
-        <Button title={saving ? 'Saving…' : 'Save outcome'} disabled={!outcome || saving || (outcome === 'FOLLOW_UP' && Number.isNaN(new Date(followUpAt).getTime()))} onPress={() => void submit()} />
-        <Muted>Outcomes are operational only — bank status comes from the MIS, never from here.</Muted>
       </Card>
     </View>
   );

@@ -1,17 +1,17 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { ScrollView } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 
 import { PayoutRequestDetail } from '@/components/payout-request-detail';
-import { Button, Screen } from '@/components/ui';
+import { AppBar, Screen } from '@/components/ui';
 
+/** F-604: one payout request — evidence, the two approval rows and the Manager's approve / reject actions. */
 export default function ManagerPayoutRequestScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   return (
-    <Screen>
-      <ScrollView contentContainerClassName="gap-3 pb-8">
-        <Button title="← Back" variant="ghost" onPress={() => router.back()} />
-        <PayoutRequestDetail id={id} />
-      </ScrollView>
+    <Screen
+      scroll
+      header={<AppBar title="Payout request" subtitle="Review the evidence before you decide" />}
+    >
+      <PayoutRequestDetail id={id} />
     </Screen>
   );
 }

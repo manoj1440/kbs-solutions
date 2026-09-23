@@ -1,26 +1,25 @@
 import { router } from 'expo-router';
-import { View } from 'react-native';
 
-import { Badge, Button, Card, Heading, Muted, Screen, Text } from '@/components/ui';
-import { useSession } from '@/lib/session';
+import { ProfileView } from '@/components/team/profile-view';
 
+/** Telecaller profile (F-805): identity header, account facts, shortcuts, sign out. */
 export default function Profile() {
-  const { user, signOut } = useSession();
   return (
-    <Screen>
-      <View className="gap-4">
-        <Heading>Profile</Heading>
-        <Card className="gap-2">
-          <Text className="font-medium">{user?.fullName || '(name pending)'}</Text>
-          <Muted>{user?.mobileMasked}</Muted>
-          <Badge label={user?.role ?? ''} variant="secondary" />
-          {user?.employeeCode ? <Muted>Employee code: {user.employeeCode}</Muted> : null}
-          {user?.reportingParent ? <Muted>Reports to: {user.reportingParent.fullName}</Muted> : null}
-        </Card>
-        <Button title="My official ID" onPress={() => router.push('/(telecaller)/id-card')} />
-        <Button title="Notifications" variant="outline" onPress={() => router.push('/(telecaller)/notifications' as never)} />
-        <Button title="Sign out" variant="outline" onPress={() => void signOut()} />
-      </View>
-    </Screen>
+    <ProfileView
+      actions={[
+        {
+          icon: 'id-card-outline',
+          title: 'My official ID',
+          subtitle: 'Your KBS Solutions ID card',
+          tone: 'gold',
+          onPress: () => router.push('/(telecaller)/id-card'),
+        },
+        {
+          icon: 'notifications-outline',
+          title: 'Notifications',
+          onPress: () => router.push('/(telecaller)/notifications' as never),
+        },
+      ]}
+    />
   );
 }

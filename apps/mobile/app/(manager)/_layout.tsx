@@ -1,6 +1,19 @@
 import { Redirect, Tabs } from 'expo-router';
 
+import { TabBar, type TabSpec } from '@/components/tab-bar';
 import { routeFor, useSession } from '@/lib/session';
+
+const TABS: TabSpec[] = [
+  { name: 'index', label: 'Team', icon: 'people-outline', iconActive: 'people' },
+  { name: 'advisors', label: 'Advisors', icon: 'briefcase-outline', iconActive: 'briefcase' },
+  {
+    name: 'approvals',
+    label: 'Approvals',
+    icon: 'checkmark-done-circle-outline',
+    iconActive: 'checkmark-done-circle',
+  },
+  { name: 'profile', label: 'Profile', icon: 'person-circle-outline', iconActive: 'person-circle' },
+];
 
 /** Role area: re-checks gates on every render so a revoked gate bounces the user out (F-111). */
 export default function ManagerLayout() {
@@ -10,7 +23,11 @@ export default function ManagerLayout() {
   const target = routeFor(user, gates);
   if (target !== '/(manager)') return <Redirect href={target as never} />;
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+      backBehavior="history"
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: '#F4F6FB' } }}
+      tabBar={(props) => <TabBar {...props} tabs={TABS} />}
+    >
       <Tabs.Screen name="index" options={{ title: 'Team' }} />
       <Tabs.Screen name="advisors" options={{ title: 'Advisors' }} />
       <Tabs.Screen name="approvals" options={{ title: 'Approvals' }} />
