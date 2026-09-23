@@ -3,7 +3,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 
-import { SecureScreen } from '@/components/secure-screen';
 import { Badge, Card, ErrorText, Heading, Input, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 
@@ -24,7 +23,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'success' | 'warn
   UNREACHABLE: 'unknown',
 };
 
-/** F-307: My Calling Queue — active / follow-ups / history(hidden). Mobiles are masked; SecureScreen blocks capture (F-302). */
+/** F-307: My Calling Queue — active / follow-ups / history(hidden). Mobiles are masked; capture is blocked by the route policy (F-302). */
 export default function TelecallerHome() {
   const [tab, setTab] = useState<QueueTab>('active');
   const [search, setSearch] = useState('');
@@ -59,7 +58,7 @@ export default function TelecallerHome() {
   );
 
   return (
-    <SecureScreen>
+    <>
       <Screen>
         <View className="mb-3 gap-3">
           <View>
@@ -114,6 +113,6 @@ export default function TelecallerHome() {
           }}
         />
       </Screen>
-    </SecureScreen>
+    </>
   );
 }

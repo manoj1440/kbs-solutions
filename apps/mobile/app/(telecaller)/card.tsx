@@ -5,7 +5,6 @@ import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { Image, ScrollView, View } from 'react-native';
 
-import { SecureScreen } from '@/components/secure-screen';
 import { ShareButtons } from '@/components/share-buttons';
 import { Badge, Button, Card, ErrorText, Heading, Muted, Screen, Text } from '@/components/ui';
 import { fileUrl, money } from '@/lib/cards';
@@ -21,7 +20,7 @@ export default function CardDetailScreen() {
   }
   if (!card) return null;
   return (
-    <SecureScreen>
+    <>
       <Screen>
         <ScrollView contentContainerClassName="gap-3 pb-8">
           <Button title="← Back" variant="ghost" onPress={() => router.back()} />
@@ -100,6 +99,6 @@ export default function CardDetailScreen() {
           </Card>
         </ScrollView>
       </Screen>
-    </SecureScreen>
+    </>
   );
 }

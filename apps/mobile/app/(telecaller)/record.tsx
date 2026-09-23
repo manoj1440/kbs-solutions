@@ -4,7 +4,6 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { CallDesk } from '@/components/call-desk';
-import { SecureScreen } from '@/components/secure-screen';
 import { Badge, Button, Card, ErrorText, Heading, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 import { type AvailableCardsResponse, fetchCardsForRecord, money } from '@/lib/cards';
@@ -45,7 +44,7 @@ export default function RecordScreen() {
   );
 
   return (
-    <SecureScreen>
+    <>
       <Screen>
         <ScrollView contentContainerClassName="gap-3 pb-8">
           <Button title="← Back to queue" variant="ghost" onPress={() => router.back()} />
@@ -136,6 +135,6 @@ export default function RecordScreen() {
           ) : null}
         </ScrollView>
       </Screen>
-    </SecureScreen>
+    </>
   );
 }

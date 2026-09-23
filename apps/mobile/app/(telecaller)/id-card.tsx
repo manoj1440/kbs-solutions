@@ -3,7 +3,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
-import { SecureScreen } from '@/components/secure-screen';
 import { Badge, Button, Card, ErrorText, Heading, Muted, Screen, Text } from '@/components/ui';
 import { api } from '@/lib/api';
 
@@ -33,7 +32,7 @@ export default function IdCardScreen() {
     }, [load]),
   );
   return (
-    <SecureScreen>
+    <>
       <Screen>
         <View className="gap-3">
           <Button title="← Back" variant="ghost" onPress={() => router.back()} />
@@ -55,6 +54,6 @@ export default function IdCardScreen() {
           ) : null}
         </View>
       </Screen>
-    </SecureScreen>
+    </>
   );
 }

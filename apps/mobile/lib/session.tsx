@@ -2,6 +2,7 @@ import type { Gates, MeResponse, UserSummary } from '@kbs/shared';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 
+import { checkDeviceIntegrity } from '@/lib/device-integrity';
 import { onPushTap, registerForPush } from '@/lib/push';
 
 import { api, tokenStore } from './api';
@@ -11,6 +12,8 @@ interface SessionState {
   user: UserSummary | null;
   gates: Gates | null;
   permissions: string[];
+  /** F-302: warning shown when the device looks rooted (never blocks). */
+  deviceWarning: string | null;
   refresh: () => Promise<void>;
   signIn: (access: string, refresh: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -22,6 +25,7 @@ const Ctx = createContext<SessionState | null>(null);
 export function SessionProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<SessionState['status']>('loading');
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [deviceWarning, setDeviceWarning] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const access = await tokenStore.getAccess();
@@ -56,6 +60,19 @@ export function SessionProvider({ children }: PropsWithChildren) {
     };
   }, [refresh]);
 
+  // F-302: one integrity report per signed-in app session
+  const userId = me?.user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    let live = true;
+    void checkDeviceIntegrity().then((w) => {
+      if (live) setDeviceWarning(w);
+    });
+    return () => {
+      live = false;
+    };
+  }, [userId]);
+
   // F-701: tapping a push opens this role's notification centre
   const role = me?.user?.role;
   useEffect(() => onPushTap(role), [role]);
@@ -66,6 +83,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       user: me?.user ?? null,
       gates: me?.gates ?? null,
       permissions: me?.permissions ?? [],
+      deviceWarning,
       refresh,
       signIn: async (access, refreshToken) => {
         await tokenStore.set(access, refreshToken);
@@ -76,10 +94,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
         await api.post('/auth/logout').catch(() => undefined);
         await tokenStore.clear();
         setMe(null);
+        setDeviceWarning(null);
         setStatus('signed-out');
       },
     }),
-    [status, me, refresh],
+    [status, me, refresh, deviceWarning],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
