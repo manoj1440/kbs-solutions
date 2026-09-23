@@ -88,6 +88,7 @@ export const CONFIG_KEYS: readonly ConfigKeyDefinition[] = [
   def('retention.recordingsDays', ConfigValueType.INT, null, 'Retention for call recordings (OPEN).', true),
   def('retention.misFilesDays', ConfigValueType.INT, null, 'Retention for MIS source files (OPEN).', true),
   def('retention.documentsDays', ConfigValueType.INT, null, 'Retention for cheques/proofs/ID cards (OPEN).', true),
+  def('retention.executionEnabled', ConfigValueType.BOOL, false, 'Allow authorised retention runs to purge files / restrict calling records (F-904). Off until KBS approves the durations.'),
   // idcard, ux, support, audit
   def('idcard.fields', ConfigValueType.JSON, ['fullName', 'employeeCode', 'role', 'issuedAt', 'verifyUrl'], 'Fields rendered on the official ID card (REQ-08 §8.4 OPEN).'),
   def('ux.timezone', ConfigValueType.STRING, 'Asia/Kolkata', 'Display timezone.'),

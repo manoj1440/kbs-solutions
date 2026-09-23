@@ -844,6 +844,11 @@ model CallingRecord {
   reviewStatus             RecordReviewStatus @default(ACCEPTED)
   reviewReason             String?
   possibleCollision        Boolean            @default(false)
+  /// F-904: legal hold blocks retention restriction
+  legalHold                Boolean            @default(false)
+  legalHoldReason          String?
+  /// F-904: PII redacted by an authorised retention run (restriction, never deletion — INV-07)
+  restrictedAt             DateTime?
   createdAt                DateTime           @default(now())
   updatedAt                DateTime           @updatedAt
 
@@ -1741,6 +1746,11 @@ model StoredFile {
   scanStatus       FileScanStatus @default(PENDING)
   scannedAt        DateTime?
   createdAt        DateTime       @default(now())
+  /// F-904: legal hold blocks retention purge (REQ-21 §21.5)
+  legalHold        Boolean        @default(false)
+  legalHoldReason  String?
+  /// F-904: object removed from storage by an authorised retention run; the row stays as the trace
+  purgedAt         DateTime?
 
   uploadedBy       User                  @relation(fields: [uploadedByUserId], references: [id])
   trainingModules  TrainingModule[]
@@ -1756,6 +1766,7 @@ model StoredFile {
 
   @@unique([bucket, key])
   @@index([purpose, createdAt])
+  @@index([purgedAt, legalHold])
 }
 
 model Notification {
