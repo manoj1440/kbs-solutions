@@ -29,3 +29,4 @@
 
 ## Progress notes
 - 2026-09-22 (session 1): API complete (typed access, history, reason required, launch gates, Redis invalidation) with e2e. Web page is read-only; edit dialog + history drawer pending.
+- Session 8: resuming — Admin edit-with-reason + history drawer on web, two-instance cache invalidation test, full ★ launch-gate check.
