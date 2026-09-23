@@ -63,6 +63,34 @@ export function normalizeBankReference(input: string): string {
   return t;
 }
 
+// ── Typing-time input masks ─────────────────────────────────────────────
+// Invalid characters never reach field state; the Zod schemas still validate on submit.
+
+/** Digits only, optionally capped. */
+export const digitsOnly = (v: string, max?: number): string => {
+  const d = v.replace(/\D/g, '');
+  return max ? d.slice(0, max) : d;
+};
+
+/** Mobile field: ≤12 digits so a pasted 91- or 0-prefix still normalises via toE164India. */
+export const mobileInput = (v: string): string => digitsOnly(v, 12);
+
+/** PAN field: uppercase alphanumerics, ≤10 (ABCDE1234F). */
+export const panInput = (v: string): string => v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+
+/** IFSC field: uppercase alphanumerics, ≤11. */
+export const ifscInput = (v: string): string => v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+
+/** Agent code field: uppercase alphanumerics, ≤12. */
+export const agentCodeInput = (v: string): string => v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+
+/** Amount field: digits with at most one decimal point. */
+export const amountInput = (v: string): string => {
+  const d = v.replace(/[^\d.]/g, '');
+  const dot = d.indexOf('.');
+  return dot === -1 ? d : `${d.slice(0, dot + 1)}${d.slice(dot + 1).replace(/\./g, '')}`;
+};
+
 /** Tolerant header comparison for import mapping (raw header itself is always stored as seen). */
 export function headerKey(header: string): string {
   return header.replace(/\s+/g, ' ').trim().toLowerCase();
