@@ -76,7 +76,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-603-advisor-payout-request-and-reservation.md](./F-603-advisor-payout-request-and-reservation.md) | F-603 Advisor payout ledger and request creation with atomic reservation | Payouts | DONE | F-602, F-107 |
 | [F-604-dual-approval.md](./F-604-dual-approval.md) | F-604 Dual approval (Manager + Admin), rejection and release | Payouts | DONE | F-603 |
 | [F-605-accounts-payment-recording.md](./F-605-accounts-payment-recording.md) | F-605 Accounts queue, external payment record, proof and paid state | Payouts | DONE | F-604, F-108 |
-| [F-606-payout-reconciliation-and-exceptions.md](./F-606-payout-reconciliation-and-exceptions.md) | F-606 Payout reconciliation views and exception handling | Payouts | IN_PROGRESS | F-605, F-602 |
+| [F-606-payout-reconciliation-and-exceptions.md](./F-606-payout-reconciliation-and-exceptions.md) | F-606 Payout reconciliation views and exception handling | Payouts | DONE | F-605, F-602 |
 | [F-701-notifications.md](./F-701-notifications.md) | F-701 Notifications: outbox fan-out, in-app centre, push, dedupe, deep links | Dashboards & notifications | PLANNED | F-110, F-109, F-102 |
 | [F-702-manager-dashboard.md](./F-702-manager-dashboard.md) | F-702 Manager dashboard | Dashboards & notifications | PLANNED | F-313, F-408, F-602, F-604 |
 | [F-703-admin-dashboards.md](./F-703-admin-dashboards.md) | F-703 Admin dashboards (executive, telecaller, manager, advisor, bank/card mix, payouts) | Dashboards & notifications | PLANNED | F-702, F-507, F-606 |
