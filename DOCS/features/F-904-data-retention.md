@@ -26,3 +26,4 @@ Retention jobs for recordings/documents/calling records driven by `retention.*` 
 - [x] Calling records restricted, not deleted (INV-07).
 - [x] MIS/payout audit never removed.
 - [ ] KBS-approved durations set (OPEN, REQ-21 §21.5).
+- Session 8 (resume): adding a scheduled nightly run behind its own flag `retention.scheduleEnabled` (default false), still BLOCKED on durations.
