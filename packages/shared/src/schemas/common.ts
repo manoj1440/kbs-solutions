@@ -46,3 +46,16 @@ export const StatusFieldSchema = z.object({
 
 export const IdParam = z.object({ id: z.string().uuid() });
 export const ReasonBody = z.object({ reason: z.string().min(3).max(500) });
+
+// ── F-701 notifications ──
+export const NotificationListQuery = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  unreadOnly: z.preprocess((v) => v === 'true' || v === '1', z.boolean()).default(false),
+});
+export type NotificationListQuery = z.infer<typeof NotificationListQuery>;
+
+export const RegisterPushDeviceBody = z
+  .object({ token: z.string().trim().regex(/^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]{10,}\]$/, 'Expected an Expo push token'), platform: z.enum(['ANDROID', 'WEB']).default('ANDROID') })
+  .strict();
+export type RegisterPushDeviceBody = z.infer<typeof RegisterPushDeviceBody>;

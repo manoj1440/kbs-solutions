@@ -4,6 +4,7 @@ export * from './permissions';
 export * from './display';
 export * from './lead-status';
 export * from './mask';
+export * from './notification-text';
 export * from './normalize';
 export * from './refs';
 export * from './money';
