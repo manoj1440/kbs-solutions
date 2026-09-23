@@ -1,6 +1,6 @@
 # F-301 Office-network policy, WFH exceptions and network gate
 
-- Group: Telecaller ops · Status: **IN_PROGRESS** · Depends on: F-104, F-111
+- Group: Telecaller ops · Status: **DONE** · Depends on: F-104, F-111
 - PRD refs: REQ-09 §9.1 (server-side checks not relying on SSID; Admin allowlist; Manager WFH grant/remove; record actor/scope/start/end/revocation/outcome), §9.2 (never Advisors), REQ-15 §15.1, REQ-16 §16.2, REQ-19 §19.1, REQ-28 P1 (egress IPs OPEN), gap analysis B8
 - QA ids: SEC-01
 
@@ -13,10 +13,12 @@
 6. Screens: Admin → Network policy (allowlist table, add CIDR dialog), Exceptions overview; Manager → Telecaller detail → WFH toggle with dates/reason; Telecaller → blocked screen with reason and "contact your Manager".
 
 ## Acceptance criteria
-- [ ] SEC-01: denied outside allowlist without exception; allowed with active exception; Advisor never evaluated.
-- [ ] Revoking an exception blocks the next request immediately (no cache longer than 5 s).
-- [ ] Access events show actor/IP/outcome; denials always recorded.
+- [x] SEC-01: denied outside allowlist without exception; allowed with active exception; Advisor never evaluated.
+- [x] Revoking an exception blocks the next request immediately (no cache longer than 5 s).
+- [x] Access events show actor/IP/outcome; denials always recorded.
 
 ## Progress notes
 - 2026-09-22 (session 1): API complete: CIDR allowlist CRUD, WFH grant/revoke (team-scoped), evaluation order, access events (denials always), SSID hint header; e2e SEC-01. Pending: Admin/Manager screens.
 - Session 8: resuming — access-event listing API, HTTP-level SEC-01 tests (denials recorded, immediate revocation, XFF not trusted without proxy hops), Admin network policy page and Manager WFH controls.
+- Session 8 (done): `GET /access-policy/events` (Admin all, Manager own team; filter user/outcome); WFH list includes Telecaller + grantor. Screens: Admin `/admin/network` (allowlist, WFH overview/grant/revoke, access events), Manager web Telecaller page WFH panel, mobile Manager Telecaller WFH card. `apps/api/test/network-policy.e2e-spec.ts` exercises a real gated route: fail-closed empty allowlist, denials always recorded (SSID hint stored as data), spoofed `X-Forwarded-For` ignored with `TRUST_PROXY_HOPS=0`, WFH allow + immediate revocation (no cache — evaluated per request), office CIDR, non-Telecallers never evaluated, Manager scoping of events.
+- Still OPEN (REQ-28 P1): KBS's real office egress IPs — until entered, Telecallers are blocked (fail closed).

@@ -41,7 +41,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-203-training-enrollment-and-gate.md](./F-203-training-enrollment-and-gate.md) | F-203 Training enrollment, 72-hour window, sequential modules, assessment | Training | DONE | F-111, F-201, F-202 |
 | [F-204-training-expiry-and-reactivation.md](./F-204-training-expiry-and-reactivation.md) | F-204 Deadline expiry deactivation and Manager reactivation | Training | DONE | F-110, F-203 |
 | [F-205-training-visibility.md](./F-205-training-visibility.md) | F-205 Training progress visibility for Manager and Admin | Training | DONE | F-203, F-204 |
-| [F-301-office-network-policy.md](./F-301-office-network-policy.md) | F-301 Office-network policy, WFH exceptions and network gate | Telecaller ops | IN_PROGRESS | F-104, F-111 |
+| [F-301-office-network-policy.md](./F-301-office-network-policy.md) | F-301 Office-network policy, WFH exceptions and network gate | Telecaller ops | DONE | F-104, F-111 |
 | [F-302-mobile-secure-screens.md](./F-302-mobile-secure-screens.md) | F-302 Android protected screens (FLAG_SECURE) and residual-risk documentation | Telecaller ops | IN_PROGRESS | F-802 |
 | [F-303-customer-list-import.md](./F-303-customer-list-import.md) | F-303 Admin customer calling-list import | Telecaller ops | DONE | F-108, F-110, F-104, F-306 |
 | [F-304-pincode-master.md](./F-304-pincode-master.md) | F-304 Pincode master reference and location resolution | Telecaller ops | DONE | F-108 |
