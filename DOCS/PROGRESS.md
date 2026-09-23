@@ -2,15 +2,16 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-09-23, end of session 11)
+## Current state (as of 2026-09-23, end of session 12)
 
-- **Feature status:** 73 of 75 features **DONE** (sessions 9–11 added and finished F-314 Admin calls & delivery oversight, F-315 Manager Advisor drill-down and F-804 web session continuity + account screens, all found by REQ-15/REQ-25 gap checks) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
+- **Feature status:** 74 of 76 features **DONE** (session 12 added and finished **F-805 mobile UI revamp** — premium design system + every mobile screen; guide in `apps/mobile/components/ui/README.md`)
+- Earlier: 73 of 75 features **DONE** (sessions 9–11 added and finished F-314 Admin calls & delivery oversight, F-315 Manager Advisor drill-down and F-804 web session continuity + account screens, all found by REQ-15/REQ-25 gap checks) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
   - **F-302** Android protected screens — code complete; stays IN_PROGRESS only for the **SEC-02 manual run on a physical Android 12+ device** (checklist in `DOCS/runbooks/02-mobile-security-limits.md`).
   - **F-904** Data retention — **BLOCKED** on KBS durations (REQ-21 §21.5 OPEN). Structure is built and fails closed (`/retention/plan` dry run, legal holds, `/retention/execute` → `CONFIG_MISSING` until `retention.*Days` and `retention.executionEnabled` are set).
 - **Latest verification (session 11, cloud sandbox):** typecheck + lint green (existing TanStack warning only); `pnpm test` on `kbs_base` (shared 44, web 11, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **146/146 across 36 suites**; web Playwright **72/72** (desktop + phone, run twice); QA matrix regenerated.
 - **Previous verification (session 8, cloud sandbox):** workspace typecheck + lint (only the existing TanStack warning); `pnpm test` against baseline-seeded `kbs_base` (shared 39, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **136/136 across 35 suites** on `kbs_test`; web Playwright smoke + role routing **54/54** (desktop 1280 + phone 390); REQ-27 QA matrix **58/58** ids named by automated tests (CI ratchet 58).
 - **Next steps for a new session (in order):**
-  1. On the Mac: push to GitHub, then build the preview APK (`cd apps/mobile && npx eas init && eas build -p android --profile preview`, see `DOCS/runbooks/04-android-release.md`), run the Maestro flows and the SEC-02 checklist → close F-302.
+  1. On the Mac: push to GitHub, then build the preview APK (F-805 added only JS/asset packages — `pnpm install` then rebuild/reload; also eyeball gradients, shadows and Inter fonts on the device) (`cd apps/mobile && npx eas init && eas build -p android --profile preview`, see `DOCS/runbooks/04-android-release.md`), run the Maestro flows and the SEC-02 checklist → close F-302.
   2. Collect KBS decisions for the open launch gates (Admin → Configuration shows them; `pnpm release:check` lists everything that still fails): retention durations (F-904), office egress CIDRs (F-301), payout designated approver, training thresholds / reactivation window, compliance confirmations and texts, recovery policy (`auth.recoveryEnabled`), audit export policy, perf thresholds.
   3. Production needs a worker process (`WORKER_MODE=1`): it runs the outbox relay and MIS background jobs (F-110, F-508 / ADR-013).
 - F-904 now also has a nightly run behind `retention.scheduleEnabled` (off); it runs only once KBS sets durations and both retention flags are on.
@@ -37,6 +38,11 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 ```
 
 ## Session log
+
+### 2026-09-23 — Session 12 (F-805 mobile UI revamp)
+- User asked for a complete, impressive mobile UI revamp; chose "premium fintech" and "every screen, all roles". Audited all 45 screens first (DOCS/features/F-805: 6 real defects — no safe areas, Manager rows opening on scroll, icon-less tabs, status bar, scrolling back buttons, no loading states — plus hierarchy/emoji/filter-UX problems).
+- Built a design system (tokens, Inter, Ionicons, gradients via RN `experimental_backgroundImage`, Reanimated motion, Screen/AppBar/HeroHeader/StickyFooter/BottomSheet, soft status chips + `StatusTrio`, card art, custom tab bar) and rebuilt every auth, gate, Advisor, Manager and Telecaller screen on it. Presentation-only: endpoints, payloads, masks, routes, gates, secure routes and compliance copy unchanged (verified by a separate diff review).
+- Verified by rendering every screen with Expo web at 390×844 against a local API with demo data; mobile typecheck/lint/tests green. Native Android look still to be checked on device.
 
 ### 2026-09-23 — Session 11 (gap analysis → F-804, web session bug)
 - Checked the REQ-25 §25.1 shared screens on the web and found a real defect. Because the refresh cookie is scoped to the API path, the web never refreshed, so **every web user was logged out 15 minutes after sign-in without explanation** (reproduced in a browser). The login `next` check also allowed `//other-host` (open redirect). Profile/support, a full notification list and error/retry screens were missing.

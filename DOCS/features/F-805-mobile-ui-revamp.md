@@ -1,6 +1,6 @@
 # F-805 Mobile UI revamp — premium fintech design system and every screen
 
-- Group: UX shells · Status: **IN_PROGRESS** · Depends on: F-802, F-803
+- Group: UX shells · Status: **DONE** · Depends on: F-802, F-803
 - PRD refs: REQ-20 (shared tokens §20.1, text never colour-only §20.2, adaptive states §20.3, large touch targets / accessibility §20.5), REQ-25 (role screen inventory), REQ-12 (OTP-only auth)
 - Origin: user request (2026-09-23) — "completely revamp the mobile UI in a very impressive and intuitive way". Direction chosen by the user: **premium fintech** (deep navy/indigo gradient headers, gold accents, real vector icons, motion), **every screen, all roles**.
 
@@ -58,11 +58,19 @@ Read every file under `apps/mobile/app`, `components`, `lib` (~5.6k lines, 45 sc
 - Tests in `apps/mobile/lib/*.test.ts` stay green.
 
 ## Acceptance criteria
-- [ ] Design system components exist and every screen uses them; no emoji used as an icon.
-- [ ] Safe areas respected on every screen (D1); Manager list bug fixed (D2); every tab has an icon and label (D3); status bar is dark-on-light / light-on-navy (D4); consistent `AppBar` back navigation (D5); skeletons or spinners on first load (D6).
-- [ ] Bank status still shown as three labelled chips with provenance; no bank-value semantics changed.
-- [ ] `pnpm --filter mobile typecheck`, `lint`, `test` pass.
-- [ ] Screens rendered and visually checked at 390×844.
+- [x] Design system components exist and every screen uses them; no emoji used as an icon.
+- [x] Safe areas respected on every screen (D1); Manager list bug fixed (D2); every tab has an icon and label (D3); status bar is dark-on-light / light-on-navy (D4); consistent `AppBar` back navigation (D5); skeletons or spinners on first load (D6).
+- [x] Bank status still shown as three labelled chips with provenance; no bank-value semantics changed.
+- [x] `pnpm --filter mobile typecheck`, `lint`, `test` pass.
+- [x] Screens rendered and visually checked at 390×844.
 
 ## Progress notes
-- Session 12: analysis (this file) → design system → screens → verification.
+- Session 12 (done). Commits: `docs(F-805): start` → `chore(mobile)` Ionicons + Inter (JS/asset packages; `expo-font` is already linked by `expo`, so **no native rebuild**) → `feat(mobile)` design system (`lib/theme.ts`, `components/ui`, `components/brand/credit-card-art.tsx`, `components/tab-bar.tsx`, restyled status chips + `StatusTrio`, `LeadRow`, root font loading) → Advisor home + tab bar → auth/gates → Advisor screens → Manager/Telecaller screens.
+- Design-system guide for future screens: `apps/mobile/components/ui/README.md` (rules + component list). Role-local helpers: `components/auth`, `components/advisor/parts.tsx`, `components/team` (metric tiles with source labels, profile view, QR drawn from the `/id-cards/me` SVG with Views — `react-native-svg` is not installed).
+- Tailwind: weight utilities select Inter faces (`corePlugins.fontWeight` off + plugin); `darkMode: 'class'` (the app is light-only — with `media`, a dark system theme broke NativeWind on web and could half-apply).
+- Gradients/shadows use RN's built-in `experimental_backgroundImage` / `boxShadow` (new architecture), so they need no module; verify on the physical Android device together with the F-302 SEC-02 run.
+- Defects fixed: D1 safe areas (`Screen`/`HeroHeader`/`StickyFooter`/`BottomSheet` use insets), D2 Manager team rows used `onTouchEnd` and the list sat under the summary (now `onPress` + one virtualised `FlatList` with the dashboard as header), D3 icons on every tab, D4 status bar set per screen (`Screen statusBar`), D5 `AppBar` back everywhere (tabs use `backBehavior="history"`), D6 skeletons/empty/error states.
+- Deliberate UX changes (presentation, not data): Advisor tab bar is Home / Leads / **New lead** (centre action → catalogue) / Cards / Earnings; profile opens from the home avatar. Leads filters live in a bottom sheet and apply on **Apply** (closing the sheet discards unapplied choices); quick chips above the list set the same `actionable` / `misFreshness` fields. Lead detail is split into Overview / Bank data / Activity tabs (all sections kept). Payout confirmation opens as a bottom sheet (same submit + idempotency key). Telecaller `id-card` is now a visible tab (still in `PROTECTED_ROUTES`). Manager profile gained a Create Telecaller shortcut.
+- Behaviour review (separate reviewer pass over the whole diff): every endpoint/payload/mask/route/testID preserved; follow-ups applied — no invented approval total on Manager approvals, payout amounts keep paise, stale error cleared after retry in `PayoutRequestDetail`, neutral notification empty text, Manager advisor tiles show ₹0 when the amount is absent.
+- Verification: `pnpm --filter mobile typecheck`, `lint`, `test` (11) green. Every screen rendered with Expo web at 390×844 against a local API seeded by `apps/api/scripts/demo-seed.mjs` (web preview needs `react-native-web`, `react-dom`, `@expo/metro-runtime` and a web shim for `expo-secure-store` — kept out of the repo on purpose). Not verified: native Android rendering (gradients, shadows, fonts), live-call states, onboarding with a real in-progress advisor.
+- Known, not changed: shared `statusTone` maps decision `DECLINE` only, so a bank value like "Declined" renders neutral (same on web) — candidate for a shared-vocabulary review, not a UI change.
