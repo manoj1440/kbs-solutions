@@ -1,6 +1,6 @@
 # F-605 Accounts queue, external payment record, proof and paid state
 
-- Group: Payouts · Status: **IN_PROGRESS** · Depends on: F-604, F-108
+- Group: Payouts · Status: **DONE** · Depends on: F-604, F-108
 - PRD refs: REQ-17 §17.6 (ready row content; manual transfer outside KBS; record date/amount/reference/method + proof; no in-app disbursement), §17.7 (Paid; entitlements 'Paid for this event'; counts; traceability; reject duplicate references; exceptions for partial/reversal/correction), REQ-18 §18.1–18.3, REQ-25 §25.5, REQ-26 §26.3 steps 4–5
 - QA ids: PAY-05, PAY-06, PAY-07
 
@@ -12,6 +12,19 @@
 5. Advisor sees paid confirmation + receipt summary (date, amount, masked reference); Manager/Admin see full trace.
 
 ## Acceptance criteria
-- [ ] PAY-05: payment recorded with proof → PAID; DB has no funds-transfer integration.
-- [ ] PAY-06: paid entitlement excluded from available; MIS snapshot unchanged; trace request→approvals→payment.
-- [ ] PAY-07: wrong amount → exception + ON_HOLD; duplicate reference refused; missing proof → pending proof queue.
+- [x] PAY-05: payment recorded with proof → PAID; DB has no funds-transfer integration.
+- [x] PAY-06: paid entitlement excluded from available; MIS snapshot unchanged; trace request→approvals→payment.
+- [x] PAY-07: wrong amount → exception + ON_HOLD; duplicate reference refused; missing proof → pending proof queue.
+
+## Progress notes
+- **Data model** (migrations `20260923090000_accounts_payment` + `…090100_accounts_payment_constraints`): `ExternalPayment` is append-only — `requestId` is no longer unique; states add `CORRECTION_PENDING`, `SUPERSEDED`, `CORRECTION_REJECTED`; `transferReferenceKey` (upper-cased, whitespace removed) drives duplicate detection. Partial unique indexes: one *live* entry (RECORDED/PROOF_PENDING/VERIFIED/EXCEPTION) per request, one live entry per reference key, one pending correction per request. `PayoutRequest` gains `holdReason/heldAt/heldByUserId/paidAt`.
+- **Endpoints** (`PaymentsController`, all idempotent + audited): `POST /payouts/requests/:id/payment` (Accounts, `PAYMENT_RECORD`), `…/payment/proof`, `…/payment/correct` (Accounts proposes), `…/payment/correction-decision` (Admin only; proposer can never decide), `…/payment/flag` (Accounts/Admin), `…/payment/resolve` (Admin), `GET /payouts/payments/queues`, `GET /payouts/requests/:id/payee[?reveal=bank]` (masked; reveal logged as `BANK_ACCOUNT`/`PAYOUT_PAYMENT`). `GET /payouts/requests?queue=awaiting|paid|exceptions`.
+- **Evaluation rule** (same for first record and approved corrections): amount ≠ approved (paise) → entry `EXCEPTION`, request `ON_HOLD`, Admin notified (REQ-18 §18.3: never partially paid); amount = approved and proof missing while `payouts.proofRequiredForPaid` → `PROOF_PENDING` / `PAYMENT_RECORDED_PENDING_PROOF`; else `VERIFIED` → request `PAID` + `paidAt`, entitlements RESERVED→PAID with events, outbox `payouts.request.paid`, `PAYOUT_PAID` to Advisor + Manager approver.
+- **Proof**: must be a `PAYMENT_PROOF` file uploaded by Accounts/Admin, not INFECTED, and not attached to a different request. File read: Accounts, Admin, and the Manager approver/team Manager of the linked request; never the Advisor.
+- **Exceptions**: Accounts can return an APPROVED request to Admin (`flag` → ON_HOLD with reason; Admin `resolve` → APPROVED; Admin can still cancel since no payment exists). A post-payment issue on a PAID request (reversal/partial/excess) flags the live entry `EXCEPTION` without un-paying anything (no clawback module, REQ-17 §17.7); Admin resolves with a note. An unpaid request with a mismatched entry can only be cleared by an approved correction — Admin cannot "accept" a different amount and cannot cancel while a payment is on file.
+- **Corrections**: new entry with `correctionOfId` + reason; may reuse the reference of the entry it corrects; on Admin approval the prior entry becomes `SUPERSEDED` first (index-safe) and the new one is evaluated. A PAID request can only be corrected to the approved amount with proof.
+- **Views**: request DTO adds `receipt` (every viewer; masked reference, no proof/operator — the Advisor gets only this), `payment`/`pendingCorrection`/`paymentHistory` (Manager/Admin/Accounts), `hold`, `payee` (Accounts/Admin), `payments.{canRecord,canAttachProof,canCorrect,canDecideCorrection,canFlag,canResolve,proofRequired}`. Accounts can open only APPROVED/PAYMENT_RECORDED_PENDING_PROOF/PAID/ON_HOLD requests.
+- **Web**: `/accounts` queues (Awaiting payment / Paid / Exceptions with counts; paid shows confirmed transfer total), `/accounts/requests/[id]`; shared `PaymentActions` (record form with IST date, amount mask, UTR, method, proof upload; attach proof; correction propose/decide; flag; resolve) and `PaymentTrace` (payee + reveal, hold banner, every entry incl. superseded). Admin sidebar “Payment exceptions”. Shared `AppShell` now stacks on phones; payout tables use responsive labelled rows.
+- **Mobile**: Advisor/Manager request screen shows the receipt card (Paid / recorded / under review).
+- **Tests**: `apps/api/test/payout-payments.e2e-spec.ts` (PAY-05, PAY-06, PAY-07 + no-money-movement grep guard over api/web/mobile sources), `packages/shared/test/payouts-payment.test.ts`. Browser-checked Accounts OTP login → queue → detail → reveal → record with proof → Paid at 1280px and 390px (no overflow), and the Admin detail.
+- **Follow-ups**: F-606 reconciliation views (stale requests, cross-view count/amount reconciliation); F-701 push fan-out of `payouts.request.paid`; F-902 real malware scan for proofs (proofs currently refused only when INFECTED).

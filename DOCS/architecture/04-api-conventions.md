@@ -36,7 +36,7 @@ Error codes are an enum in `@kbs/shared` (`ErrorCode`). Messages are role-approp
 `display` is computed server-side by one function in `@kbs/shared` so web and mobile never disagree (REQ-13 §13.6).
 
 ## Masking
-Default responses mask `mobile` (`+91••••••1234`), `pan` (`•••••1234F`), bank account (last 4). A `?reveal=pan` query needs the `SENSITIVE_REVEAL` permission for that entity and writes `SensitiveAccessLog`.
+Default responses mask `mobile` (`+91••••••1234`), `pan` (`•••••1234F`), bank account (last 4). A `?reveal=pan` query needs the `SENSITIVE_REVEAL` permission for that entity and writes `SensitiveAccessLog`. Payee bank for payment: `GET /payouts/requests/:id/payee?reveal=bank` (Accounts/Admin, dual-approved requests only; logged as `BANK_ACCOUNT` / `PAYOUT_PAYMENT`). Bank transfer references are masked to the last 4 in the Advisor receipt (`maskTransferReference`).
 
 ## Pagination & filtering
 `?page=&pageSize=(≤200)&sort=field:asc|desc&filter[field]=value`. Filters are whitelisted per endpoint via Zod.
