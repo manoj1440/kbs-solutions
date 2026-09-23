@@ -3,6 +3,7 @@ import { CONFIG_KEY_MAP, CONFIG_KEYS } from '@kbs/shared';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 
 import { AppError } from '../../common/errors/app-error';
+import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { RedisService } from '../../infra/redis/redis.service';
 import { AuditService } from '../audit/audit.service';
@@ -115,7 +116,9 @@ export class ConfigService implements OnModuleInit {
         data: { key, oldValue: before?.value ?? undefined, newValue: value === null ? undefined : (value as object), reason, changedByUserId: actorUserId },
       }),
     ]);
-    await this.audit.record({ action: 'config.update', entityType: 'SystemConfig', entityId: key, before: before?.value ?? null, after: value, reason });
+    // inside an HTTP request the @Audited interceptor writes the single audit row; this adds before/after to it (F-704 diff)
+    if (RequestContextStore.get()?.actor) RequestContextStore.audit({ entityId: key, before: { value: before?.value ?? null }, after: { value }, reason });
+    else await this.audit.record({ action: 'config.update', entityType: 'SystemConfig', entityId: key, before: { value: before?.value ?? null }, after: { value }, reason });
     await this.reload();
     await this.redis.client.publish(CHANNEL, key).catch(() => undefined);
   }
