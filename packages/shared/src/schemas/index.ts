@@ -11,3 +11,4 @@ export * from './leads';
 export * from './mis';
 export * from './pending-actions';
 export * from './payouts';
+export * from './dashboards';
