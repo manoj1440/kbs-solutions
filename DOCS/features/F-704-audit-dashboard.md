@@ -1,6 +1,6 @@
 # F-704 Data and permissions audit dashboard
 
-- Group: Dashboards & notifications · Status: **PLANNED** · Depends on: F-103, F-104
+- Group: Dashboards & notifications · Status: **IN_PROGRESS** · Depends on: F-103, F-104
 - PRD refs: REQ-16 §16.2 (user management, training/WFH, sensitive access, catalogue/link versions, MIS corrections, payout changes), REQ-24 §24.3
 
 ## Detailed requirements
