@@ -13,10 +13,18 @@ import { colors } from '@/lib/theme';
  * Never a single overloaded success/failed chip.
  */
 export function LeadRow({ row, onPress }: { row: LeadStatusRow; onPress: () => void }) {
-  const ref = row.bankApplicationNo ?? row.bankApplicationReference ?? row.bankReference?.value ?? null;
-  const refVerified = row.bankApplicationNo !== null || row.bankApplicationReference !== null || row.bankReference?.status === 'VERIFIED_BY_MIS_MATCH';
+  const ref =
+    row.bankApplicationNo ?? row.bankApplicationReference ?? row.bankReference?.value ?? null;
+  const refVerified =
+    row.bankApplicationNo !== null ||
+    row.bankApplicationReference !== null ||
+    row.bankReference?.status === 'VERIFIED_BY_MIS_MATCH';
   return (
-    <Card onPress={onPress} accessibilityLabel={`Open lead ${row.kbsRef}, ${row.customer.name}`} className="gap-3">
+    <Card
+      onPress={onPress}
+      accessibilityLabel={`Open lead ${row.kbsRef}, ${row.customer.name}`}
+      className="gap-3"
+    >
       <View className="flex-row items-center gap-3">
         <Avatar name={row.customer.name} size={42} />
         <View className="flex-1">
@@ -43,13 +51,21 @@ export function LeadRow({ row, onPress }: { row: LeadStatusRow; onPress: () => v
         ) : (
           <Muted className="text-[12px]">Bank reference not yet available</Muted>
         )}
-        {row.possibleCollision ? <Badge label="possible duplicate" variant="warning" size="sm" icon="copy-outline" /> : null}
+        {row.possibleCollision ? (
+          <Badge label="possible duplicate" variant="warning" size="sm" icon="copy-outline" />
+        ) : null}
       </View>
       <StatusTrio stage={row.stage} decision={row.decision} activation={row.activation} />
       <View className="flex-row items-center gap-1.5">
-        <Ionicons name={row.lastMatchedAt ? 'sync-outline' : 'time-outline'} size={12} color={colors.subtle} />
+        <Ionicons
+          name={row.lastMatchedAt ? 'sync-outline' : 'time-outline'}
+          size={12}
+          color={colors.subtle}
+        />
         <Muted className="flex-1 text-[12px]" numberOfLines={1}>
-          {row.lastMatchedAt ? `Last matched MIS: ${formatDateTime(row.lastMatchedAt)}` : 'Never matched to a bank MIS row'}
+          {row.lastMatchedAt
+            ? `Last matched MIS: ${formatDateTime(row.lastMatchedAt)}`
+            : 'Never matched to a bank MIS row'}
         </Muted>
       </View>
       {row.remarksPreview ? (

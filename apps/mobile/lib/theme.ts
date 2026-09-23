@@ -69,14 +69,17 @@ export function gradientStyle(stops: readonly string[], angle = 135): ViewStyle 
 }
 
 export const shadow = {
-  sm: { boxShadow: '0px 1px 2px rgba(11, 21, 51, 0.06), 0px 1px 3px rgba(11, 21, 51, 0.06)' } as ViewStyle,
+  sm: {
+    boxShadow: '0px 1px 2px rgba(11, 21, 51, 0.06), 0px 1px 3px rgba(11, 21, 51, 0.06)',
+  } as ViewStyle,
   md: { boxShadow: '0px 4px 14px rgba(11, 21, 51, 0.08)' } as ViewStyle,
   lg: { boxShadow: '0px 12px 32px rgba(11, 21, 51, 0.14)' } as ViewStyle,
   glow: { boxShadow: '0px 10px 24px rgba(22, 50, 158, 0.35)' } as ViewStyle,
   gold: { boxShadow: '0px 10px 24px rgba(227, 155, 27, 0.35)' } as ViewStyle,
 };
 
-export type Tone = 'default' | 'secondary' | 'success' | 'warning' | 'destructive' | 'info' | 'unknown';
+export type Tone =
+  'default' | 'secondary' | 'success' | 'warning' | 'destructive' | 'info' | 'unknown';
 export const toneColors: Record<Tone, { fg: string; bg: string }> = {
   default: { fg: colors.brand, bg: '#E8EDFF' },
   secondary: { fg: '#374151', bg: '#EEF0F4' },

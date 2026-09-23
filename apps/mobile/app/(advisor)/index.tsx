@@ -3,13 +3,39 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
 
-import { Appear, Avatar, Icon, Card, ErrorState, HeroHeader, IconButton, IconCircle, type IconName, ListItem, Muted, PressableScale, Screen, SectionHeader, Skeleton, Text } from '@/components/ui';
+import {
+  Appear,
+  Avatar,
+  Icon,
+  Card,
+  ErrorState,
+  HeroHeader,
+  IconButton,
+  IconCircle,
+  type IconName,
+  ListItem,
+  Muted,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  Skeleton,
+  Text,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
 
 interface LedgerTotals {
-  totals: Record<'eligible' | 'available' | 'requested' | 'approvedUnpaid' | 'paid' | 'underReview' | 'pendingHold', { count: number; amountInr: number }>;
+  totals: Record<
+    | 'eligible'
+    | 'available'
+    | 'requested'
+    | 'approvedUnpaid'
+    | 'paid'
+    | 'underReview'
+    | 'pendingHold',
+    { count: number; amountInr: number }
+  >;
 }
 
 interface NotificationRow {
@@ -33,12 +59,19 @@ function greeting() {
 }
 
 /** Icon for an activity row — picked from the notification title only (display hint, no business meaning). */
-function activityIcon(title: string): { icon: IconName; tone: 'success' | 'info' | 'warning' | 'default' | 'gold' } {
+function activityIcon(title: string): {
+  icon: IconName;
+  tone: 'success' | 'info' | 'warning' | 'default' | 'gold';
+} {
   const t = title.toLowerCase();
-  if (t.includes('payout') || t.includes('paid') || t.includes('payment')) return { icon: 'wallet', tone: 'gold' };
-  if (t.includes('approv') || t.includes('activ')) return { icon: 'checkmark-circle', tone: 'success' };
-  if (t.includes('mis') || t.includes('status') || t.includes('bank')) return { icon: 'sync', tone: 'info' };
-  if (t.includes('follow') || t.includes('remind') || t.includes('pending')) return { icon: 'alarm', tone: 'warning' };
+  if (t.includes('payout') || t.includes('paid') || t.includes('payment'))
+    return { icon: 'wallet', tone: 'gold' };
+  if (t.includes('approv') || t.includes('activ'))
+    return { icon: 'checkmark-circle', tone: 'success' };
+  if (t.includes('mis') || t.includes('status') || t.includes('bank'))
+    return { icon: 'sync', tone: 'info' };
+  if (t.includes('follow') || t.includes('remind') || t.includes('pending'))
+    return { icon: 'alarm', tone: 'warning' };
   return { icon: 'notifications', tone: 'default' };
 }
 
@@ -64,7 +97,11 @@ export default function AdvisorHome() {
     setLoading(true);
     setError(null);
     try {
-      const [l, p, n] = await Promise.all([api.get<LeadStatusRow[]>('/leads?pageSize=100'), api.get<LedgerTotals>('/payouts/me/ledger'), api.get<NotificationRow[]>('/notifications?pageSize=10')]);
+      const [l, p, n] = await Promise.all([
+        api.get<LeadStatusRow[]>('/leads?pageSize=100'),
+        api.get<LedgerTotals>('/payouts/me/ledger'),
+        api.get<NotificationRow[]>('/notifications?pageSize=10'),
+      ]);
       setLeads(l.data);
       setTotals(p.data.totals);
       setNotes(n.data);
@@ -85,7 +122,9 @@ export default function AdvisorHome() {
   );
 
   const approved = leads.filter((l) => l.decision.display === 'Approved').length;
-  const applications = leads.filter((l) => l.matched || l.bankApplicationNo || l.bankApplicationReference).length;
+  const applications = leads.filter(
+    (l) => l.matched || l.bankApplicationNo || l.bankApplicationReference,
+  ).length;
   const earnings = totals?.eligible.amountInr ?? 0;
   const available = totals?.available.amountInr ?? 0;
   const paid = totals?.paid.amountInr ?? 0;
@@ -98,23 +137,46 @@ export default function AdvisorHome() {
   ];
 
   return (
-    <Screen inset="none" statusBar="light" scroll padded={false} refreshing={loading && loaded} onRefresh={() => void load()} contentClassName="pt-0">
+    <Screen
+      inset="none"
+      statusBar="light"
+      scroll
+      padded={false}
+      refreshing={loading && loaded}
+      onRefresh={() => void load()}
+      contentClassName="pt-0"
+    >
       <HeroHeader className="pb-16">
         <View className="flex-row items-center justify-between">
-          <PressableScale accessibilityLabel="Open profile" onPress={() => router.push('/(advisor)/profile' as never)} className="flex-row items-center gap-3">
+          <PressableScale
+            accessibilityLabel="Open profile"
+            onPress={() => router.push('/(advisor)/profile' as never)}
+            className="flex-row items-center gap-3"
+          >
             <Avatar name={name || 'Advisor'} size={46} light />
             <View>
               <RNText className="font-medium text-[13px] text-white/70">{greeting()},</RNText>
               <RNText className="font-bold text-[20px] text-white">{first}</RNText>
             </View>
           </PressableScale>
-          <IconButton icon="notifications-outline" label="Notifications" tone="light" badge={unread} onPress={() => router.push('/(advisor)/notifications' as never)} />
+          <IconButton
+            icon="notifications-outline"
+            label="Notifications"
+            tone="light"
+            badge={unread}
+            onPress={() => router.push('/(advisor)/notifications' as never)}
+          />
         </View>
         <View className="mt-7">
-          <RNText className="font-semibold text-[12px] uppercase tracking-[1.4px] text-white/60">Total eligible earnings</RNText>
+          <RNText className="font-semibold text-[12px] uppercase tracking-[1.4px] text-white/60">
+            Total eligible earnings
+          </RNText>
           {loaded ? (
             <Appear>
-              <RNText accessibilityLabel={`Total eligible earnings ${formatInr(earnings, { decimals: 0 })}`} className="mt-1 font-extrabold text-[40px] tracking-tight text-white">
+              <RNText
+                accessibilityLabel={`Total eligible earnings ${formatInr(earnings, { decimals: 0 })}`}
+                className="mt-1 font-extrabold text-[40px] tracking-tight text-white"
+              >
                 {formatInr(earnings, { decimals: 0 })}
               </RNText>
             </Appear>
@@ -124,11 +186,15 @@ export default function AdvisorHome() {
           <View className="mt-3 flex-row gap-2">
             <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
               <View className="h-1.5 w-1.5 rounded-full bg-gold" />
-              <RNText className="font-semibold text-[12px] text-white">Available {formatInr(available, { decimals: 0 })}</RNText>
+              <RNText className="font-semibold text-[12px] text-white">
+                Available {formatInr(available, { decimals: 0 })}
+              </RNText>
             </View>
             <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
               <View className="h-1.5 w-1.5 rounded-full bg-[#4ADE80]" />
-              <RNText className="font-semibold text-[12px] text-white">Paid {formatInr(paid, { decimals: 0 })}</RNText>
+              <RNText className="font-semibold text-[12px] text-white">
+                Paid {formatInr(paid, { decimals: 0 })}
+              </RNText>
             </View>
           </View>
         </View>
@@ -138,9 +204,18 @@ export default function AdvisorHome() {
         <Appear index={1}>
           <View className="flex-row rounded-3xl bg-white p-4" style={shadow.lg}>
             {funnel.map((f, i) => (
-              <PressableScale key={f.label} accessibilityLabel={`${f.label}: ${f.value}`} onPress={() => router.push('/(advisor)/leads' as never)} className={`flex-1 items-center gap-1 ${i ? 'border-l border-line' : ''}`}>
+              <PressableScale
+                key={f.label}
+                accessibilityLabel={`${f.label}: ${f.value}`}
+                onPress={() => router.push('/(advisor)/leads' as never)}
+                className={`flex-1 items-center gap-1 ${i ? 'border-l border-line' : ''}`}
+              >
                 <IconCircle icon={f.icon} tone={i === 2 ? 'success' : 'default'} size={34} />
-                {loaded ? <RNText className="mt-1 font-extrabold text-[22px] text-ink">{f.value}</RNText> : <Skeleton className="mt-1 h-6 w-8" />}
+                {loaded ? (
+                  <RNText className="mt-1 font-extrabold text-[22px] text-ink">{f.value}</RNText>
+                ) : (
+                  <Skeleton className="mt-1 h-6 w-8" />
+                )}
                 <Muted className="text-[12px]">{f.label}</Muted>
               </PressableScale>
             ))}
@@ -152,23 +227,43 @@ export default function AdvisorHome() {
         <Appear index={2}>
           <View className="flex-row justify-between">
             {QUICK.map((q) => (
-              <PressableScale key={q.label} accessibilityLabel={q.label} onPress={() => router.push(q.href as never)} className="w-[23%] items-center gap-2">
-                <View className="h-[60px] w-[60px] items-center justify-center rounded-[20px]" style={[gradientStyle(q.tone, 135), shadow.md]}>
+              <PressableScale
+                key={q.label}
+                accessibilityLabel={q.label}
+                onPress={() => router.push(q.href as never)}
+                className="w-[23%] items-center gap-2"
+              >
+                <View
+                  className="h-[60px] w-[60px] items-center justify-center rounded-[20px]"
+                  style={[gradientStyle(q.tone, 135), shadow.md]}
+                >
                   <Icon name={q.icon} size={26} color={colors.white} />
                 </View>
-                <RNText className="text-center font-semibold text-[12px] text-ink">{q.label}</RNText>
+                <RNText className="text-center font-semibold text-[12px] text-ink">
+                  {q.label}
+                </RNText>
               </PressableScale>
             ))}
           </View>
         </Appear>
 
         <Appear index={3}>
-          <PressableScale onPress={() => router.push('/(advisor)/cards' as never)} className="overflow-hidden rounded-3xl p-5" style={[gradientStyle(gradients.gold, 125), shadow.gold]}>
-            <View pointerEvents="none" className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/20" />
+          <PressableScale
+            onPress={() => router.push('/(advisor)/cards' as never)}
+            className="overflow-hidden rounded-3xl p-5"
+            style={[gradientStyle(gradients.gold, 125), shadow.gold]}
+          >
+            <View
+              pointerEvents="none"
+              className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/20"
+            />
             <View className="flex-row items-center gap-4">
               <View className="flex-1">
                 <RNText className="font-extrabold text-[17px] text-ink">Grow your earnings</RNText>
-                <RNText className="mt-1 font-medium text-[13px] leading-[19px] text-ink/75">Pick the right card for your next customer and share the application link in seconds.</RNText>
+                <RNText className="mt-1 font-medium text-[13px] leading-[19px] text-ink/75">
+                  Pick the right card for your next customer and share the application link in
+                  seconds.
+                </RNText>
               </View>
               <View className="h-12 w-12 items-center justify-center rounded-full bg-ink">
                 <Icon name="arrow-forward" size={22} color={colors.gold} />
@@ -178,7 +273,11 @@ export default function AdvisorHome() {
         </Appear>
 
         <Appear index={4} className="gap-3">
-          <SectionHeader title="Recent activity" action="See all" onAction={() => router.push('/(advisor)/notifications' as never)} />
+          <SectionHeader
+            title="Recent activity"
+            action="See all"
+            onAction={() => router.push('/(advisor)/notifications' as never)}
+          />
           <Card className="px-4 py-1">
             {!loaded ? (
               <View className="gap-3 py-3">
@@ -195,12 +294,25 @@ export default function AdvisorHome() {
             ) : notes.length === 0 ? (
               <View className="items-center py-6">
                 <Text className="font-semibold">No activity yet</Text>
-                <Muted className="mt-1 text-center">Create your first lead from Card Search — updates show up here.</Muted>
+                <Muted className="mt-1 text-center">
+                  Create your first lead from Card Search — updates show up here.
+                </Muted>
               </View>
             ) : (
               notes.slice(0, 5).map((n, i, arr) => {
                 const a = activityIcon(n.title);
-                return <ListItem key={n.id} icon={a.icon} iconTone={a.tone} title={n.title} subtitle={n.body} last={i === arr.length - 1} right={<Muted className="text-[11px]">{ago(n.createdAt)}</Muted>} chevron={false} />;
+                return (
+                  <ListItem
+                    key={n.id}
+                    icon={a.icon}
+                    iconTone={a.tone}
+                    title={n.title}
+                    subtitle={n.body}
+                    last={i === arr.length - 1}
+                    right={<Muted className="text-[11px]">{ago(n.createdAt)}</Muted>}
+                    chevron={false}
+                  />
+                );
               })
             )}
           </Card>

@@ -21,7 +21,17 @@ export default function AdvisorLayout() {
     <Tabs
       backBehavior="history"
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: '#F4F6FB' } }}
-      tabBar={(props) => <TabBar {...props} tabs={TABS} center={{ icon: 'add', label: 'New lead', onPress: () => router.push('/(advisor)/cards' as never) }} />}
+      tabBar={(props) => (
+        <TabBar
+          {...props}
+          tabs={TABS}
+          center={{
+            icon: 'add',
+            label: 'New lead',
+            onPress: () => router.push('/(advisor)/cards' as never),
+          }}
+        />
+      )}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="leads" options={{ title: 'Leads' }} />
