@@ -11,7 +11,7 @@ import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase, setupMan
  * F-702 / F-703 (DASH-01, DASH-02). Fixture: two teams, each with a Telecaller (calls, outcomes, shares, callbacks)
  * and an Advisor (leads with MIS values incl. blank and unmatched). Figures are checked against raw table counts.
  */
-describe('F-702 Manager dashboard (DASH-01, DASH-02)', () => {
+describe('F-702 Manager dashboard / F-703 Admin dashboards (DASH-01, DASH-02)', () => {
   let app: INestApplication;
   let prisma: PrismaService['client'];
   let admin: string;
@@ -128,4 +128,29 @@ describe('F-702 Manager dashboard (DASH-01, DASH-02)', () => {
     expect((await get(`/dashboards/manager?bankId=${hdfcId}&state=rajasthan`, team[0].managerToken)).advisors.leads.created.value).toBe(4);
   });
 
+  it('F-703 (DASH-02 across dashboards): per-telecaller / per-manager / per-advisor rows and bank-card mix reconcile with the executive totals; conflicts are never hidden', async () => {
+    const org = await get('/dashboards/admin/executive', admin);
+    const tcs = await get('/dashboards/admin/telecallers', admin);
+    expect(tcs.rows.reduce((s: number, r: { calls: { attempts: { value: number } } }) => s + r.calls.attempts.value, 0)).toBe(org.calling.calls.attempts.value);
+    const mgrs = await get('/dashboards/admin/managers', admin);
+    expect(mgrs.rows).toHaveLength(2);
+    expect(mgrs.rows.reduce((s: number, r: { leads: { created: { value: number } } }) => s + r.leads.created.value, 0)).toBe(org.advisors.leads.created.value);
+    const advs = await get('/dashboards/admin/advisors', admin);
+    expect(advs.rows.find((r: { user: { id: string } }) => r.user.id === team[0].advisorId).leads).toMatchObject({ created: { value: 4 }, misMatched: { value: 3 } });
+    const mix = await get('/dashboards/admin/bank-card-mix', admin);
+    expect(mix.rows).toEqual([expect.objectContaining({ bank: expect.objectContaining({ code: 'HDFC' }), card: expect.objectContaining({ id: cardId }), leads: 5, misMatched: 4, awaitingMis: 1 })]);
+    expect(org.alerts.map((x: { kind: string }) => x.kind)).not.toContain('MIS_UNMATCHED');
+    expect(org.alerts.map((x: { kind: string }) => x.kind)).toContain('LAUNCH_GATES_OPEN'); // baseline gates are open
+    // an unmatched MIS row must raise the executive banner (REQ-20 §20.4)
+    await prisma.misRow.create({ data: { batchId: misBatchId, sourceRowNumber: 99, rowHash: 'h99', raw: {}, matchState: 'UNMATCHED' } });
+    const again = await get('/dashboards/admin/executive', admin);
+    expect(again.alerts).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'MIS_UNMATCHED', count: 1 })]));
+    await get('/dashboards/admin/telecallers', team[0].managerToken, 403);
+  });
+
+  it('F-703 executive = Manager dashboard filtered to that team (same engine)', async () => {
+    const strip = (x: { calling: unknown; advisors: unknown }) => JSON.parse(JSON.stringify({ calling: x.calling, advisors: x.advisors }));
+    for (const t of team) expect(strip(await get(`/dashboards/admin/executive?managerId=${t.managerId}`, admin))).toEqual(strip(await get('/dashboards/manager', t.managerToken)));
+    await get('/dashboards/admin/executive', team[0].managerToken, 403);
+  });
 });
