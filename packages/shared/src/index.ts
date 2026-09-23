@@ -2,6 +2,7 @@ export * from './enums';
 export * from './errors';
 export * from './permissions';
 export * from './display';
+export * from './status-tone';
 export * from './lead-status';
 export * from './mask';
 export * from './notification-text';

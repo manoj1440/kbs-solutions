@@ -1,24 +1,14 @@
-import { AWAITING_MIS_UPDATE, NOT_REPORTED, formatDateTime, type Provenance, type StatusField } from '@kbs/shared';
+import { formatDateTime, payoutStateLabel, payoutStateTone, type Provenance, PROVENANCE_LABEL, type StatusField, type StatusKind, statusTone } from '@kbs/shared';
 import { Text as RNText, View } from 'react-native';
 
 import { Badge } from '@/components/ui';
 
 /** F-803 (mobile): distinct Stage / Decision / Activation badges; text always present (REQ-20 §20.2). */
-type Tone = 'success' | 'destructive' | 'warning' | 'info' | 'unknown' | 'secondary';
-
-function toneFor(kind: 'stage' | 'decision' | 'activation', field: StatusField): Tone {
-  if (!field.value || field.display === AWAITING_MIS_UPDATE || field.display === NOT_REPORTED) return 'unknown';
-  const v = field.value.toUpperCase();
-  if (kind === 'decision') return v === 'APPROVE' ? 'success' : v === 'DECLINE' ? 'destructive' : v === 'INPROCESS' ? 'warning' : 'secondary';
-  if (kind === 'activation') return v.includes('ACTIVE') && !v.startsWith('INACTIVE') ? 'success' : v === 'INACTIVE' ? 'warning' : 'secondary';
-  return 'info';
-}
-
-function StatusBadge({ kind, label, field }: { kind: 'stage' | 'decision' | 'activation'; label: string; field: StatusField }) {
+function StatusBadge({ kind, label, field }: { kind: StatusKind; label: string; field: StatusField }) {
   return (
     <View className="flex-row items-center gap-1">
       <RNText className="text-xs text-muted-foreground">{label}:</RNText>
-      <Badge label={field.display} variant={toneFor(kind, field)} />
+      <Badge label={field.display} variant={statusTone(kind, field)} />
     </View>
   );
 }
@@ -26,7 +16,6 @@ export const StageBadge = (p: { field: StatusField }) => <StatusBadge kind="stag
 export const DecisionBadge = (p: { field: StatusField }) => <StatusBadge kind="decision" label="Decision" field={p.field} />;
 export const ActivationBadge = (p: { field: StatusField }) => <StatusBadge kind="activation" label="Activation" field={p.field} />;
 
-const LABEL: Record<Provenance, string> = { BANK_MIS: 'Bank MIS', KBS_OPERATIONAL: 'KBS activity', KBS_PAYMENT: 'Accounts payment' };
 const BG: Record<Provenance, string> = { BANK_MIS: 'bg-provenance-bank-mis', KBS_OPERATIONAL: 'bg-provenance-kbs-operational', KBS_PAYMENT: 'bg-provenance-kbs-payment' };
 const FG: Record<Provenance, string> = {
   BANK_MIS: 'text-provenance-bank-mis-foreground',
@@ -38,7 +27,7 @@ export function ProvenanceChip({ provenance, asOf }: { provenance: Provenance; a
   return (
     <View className={`self-start rounded-full px-2 py-0.5 ${BG[provenance]}`}>
       <RNText className={`text-[11px] font-medium ${FG[provenance]}`}>
-        {LABEL[provenance]}
+        {PROVENANCE_LABEL[provenance]}
         {asOf ? ` · as of ${formatDateTime(asOf)}` : ''}
       </RNText>
     </View>
@@ -47,6 +36,5 @@ export function ProvenanceChip({ provenance, asOf }: { provenance: Provenance; a
 
 /** F-602/F-603: payout entitlement / request state, never merged with bank status. */
 export function PayoutStateBadge({ state }: { state: string }) {
-  const tone: Tone = state === 'PAID' ? 'success' : state === 'REJECTED' || state === 'ON_HOLD' || state === 'CANCELLED' || state === 'VOID' ? 'destructive' : state === 'APPROVED' || state === 'ELIGIBLE_AVAILABLE' ? 'info' : 'warning';
-  return <Badge label={state.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())} variant={tone} />;
+  return <Badge label={payoutStateLabel(state)} variant={payoutStateTone(state)} />;
 }

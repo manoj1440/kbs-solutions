@@ -1,5 +1,5 @@
-import type { Provenance, StatusField } from '@kbs/shared';
-import { AWAITING_MIS_UPDATE, NOT_REPORTED, formatDateTime } from '@kbs/shared';
+import type { Provenance, StatusField, StatusKind } from '@kbs/shared';
+import { formatDateTime, payoutStateLabel, payoutStateTone, PROVENANCE_LABEL, statusTone } from '@kbs/shared';
 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -9,22 +9,11 @@ import { cn } from '@/lib/utils';
  * Stage, Decision, Activation and Payout state are deliberately separate components (REQ-14 §14.3).
  */
 
-type Tone = 'success' | 'destructive' | 'warning' | 'info' | 'unknown' | 'secondary';
-
-function toneFor(kind: 'stage' | 'decision' | 'activation', field: StatusField): Tone {
-  if (!field.value) return 'unknown';
-  const v = field.value.toUpperCase();
-  if (kind === 'decision') return v === 'APPROVE' ? 'success' : v === 'DECLINE' ? 'destructive' : v === 'INPROCESS' ? 'warning' : 'secondary';
-  if (kind === 'activation') return v.includes('ACTIVE') && !v.startsWith('INACTIVE') ? 'success' : v === 'INACTIVE' ? 'warning' : 'secondary';
-  return 'info';
-}
-
-function StatusBadge({ kind, field, label }: { kind: 'stage' | 'decision' | 'activation'; field: StatusField; label: string }) {
-  const unknown = field.display === AWAITING_MIS_UPDATE || field.display === NOT_REPORTED;
+function StatusBadge({ kind, field, label }: { kind: StatusKind; field: StatusField; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className="text-muted-foreground text-xs">{label}:</span>
-      <Badge variant={unknown ? 'unknown' : toneFor(kind, field)} title={field.raw ?? undefined}>
+      <Badge variant={statusTone(kind, field)} title={field.raw ?? undefined}>
         {field.display}
       </Badge>
     </span>
@@ -35,7 +24,6 @@ export const StageBadge = (p: { field: StatusField }) => <StatusBadge kind="stag
 export const DecisionBadge = (p: { field: StatusField }) => <StatusBadge kind="decision" label="Decision" field={p.field} />;
 export const ActivationBadge = (p: { field: StatusField }) => <StatusBadge kind="activation" label="Activation" field={p.field} />;
 
-const PROVENANCE_LABEL: Record<Provenance, string> = { BANK_MIS: 'Bank MIS', KBS_OPERATIONAL: 'KBS activity', KBS_PAYMENT: 'Accounts payment' };
 const PROVENANCE_CLASS: Record<Provenance, string> = {
   BANK_MIS: 'bg-provenance-bank-mis text-provenance-bank-mis-foreground',
   KBS_OPERATIONAL: 'bg-provenance-kbs-operational text-provenance-kbs-operational-foreground',
@@ -57,8 +45,5 @@ export function FreshnessLabel({ lastMatchedAt }: { lastMatchedAt: string | null
 }
 
 export function PayoutStateBadge({ state }: { state: string }) {
-  const tone: Tone =
-    state === 'PAID' ? 'success' : state === 'REJECTED' || state === 'ON_HOLD' || state === 'CANCELLED' ? 'destructive' : state === 'APPROVED' ? 'info' : state === 'ELIGIBLE_AVAILABLE' ? 'info' : 'warning';
-  const label = state.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
-  return <Badge variant={tone}>{label}</Badge>;
+  return <Badge variant={payoutStateTone(state)}>{payoutStateLabel(state)}</Badge>;
 }
