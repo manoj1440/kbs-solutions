@@ -1,4 +1,4 @@
-import { ApiClientError, isValidE164India, type OtpRequestResponse } from '@kbs/shared';
+import { ApiClientError, isValidE164India, mobileInput, type OtpRequestResponse } from '@kbs/shared';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -41,10 +41,10 @@ export default function MobileScreen() {
         </View>
         <View>
           <Label>📱 Mobile Number</Label>
-          <Input keyboardType="phone-pad" autoComplete="tel" placeholder="98765 43210" value={mobile} onChangeText={setMobile} autoFocus className="rounded-xl" />
+          <Input keyboardType="phone-pad" autoComplete="tel" placeholder="98765 43210" value={mobile} onChangeText={(t) => setMobile(mobileInput(t))} autoFocus className="rounded-xl" />
         </View>
         <ErrorText>{error}</ErrorText>
-        <Button title={busy ? 'Sending…' : signup ? 'Send OTP' : 'Login'} disabled={busy} onPress={submit} className="rounded-xl" />
+        <Button title={busy ? 'Sending…' : signup ? 'Send OTP' : 'Login'} disabled={busy || !isValidE164India(mobile)} onPress={submit} className="rounded-xl" />
         <Muted className="text-center text-xs">We will send a one-time code — passwords are never used.</Muted>
         <View className="items-center">
           {signup ? (

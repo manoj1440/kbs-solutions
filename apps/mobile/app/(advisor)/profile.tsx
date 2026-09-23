@@ -1,4 +1,4 @@
-import { type AdvisorProfileView, ApiClientError, formatDateTime } from '@kbs/shared';
+import { type AdvisorProfileView, agentCodeInput, ApiClientError, formatDateTime } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -86,7 +86,7 @@ export default function Profile() {
           <Text className="font-medium">Change Agent Code</Text>
           <Muted>Applies from today under KBS policy; if you already have leads the change waits for Admin approval. Earlier leads and payouts keep their original attribution.</Muted>
           <Label>Agent Code</Label>
-          <Input value={code} autoCapitalize="characters" onChangeText={(t) => setCode(t.toUpperCase())} />
+          <Input value={code} autoCapitalize="characters" onChangeText={(t) => setCode(agentCodeInput(t))} />
           <Button
             title="Apply code"
             disabled={code.length < 4}

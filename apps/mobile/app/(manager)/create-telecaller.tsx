@@ -1,4 +1,4 @@
-import { ApiClientError, CreateTelecallerBody, type UserSummary } from '@kbs/shared';
+import { ApiClientError, CreateTelecallerBody, mobileInput, type UserSummary } from '@kbs/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -69,7 +69,7 @@ export default function CreateTelecaller() {
         </View>
         <View>
           <Label>Mobile number</Label>
-          <Input keyboardType="phone-pad" placeholder="98765 43210" value={mobile} onChangeText={setMobile} />
+          <Input keyboardType="phone-pad" placeholder="98765 43210" value={mobile} onChangeText={(t) => setMobile(mobileInput(t))} />
         </View>
         <ErrorText>{error}</ErrorText>
         <Button title={busy ? 'Creating…' : 'Create Telecaller'} disabled={busy} onPress={submit} />

@@ -1,4 +1,4 @@
-import { ApiClientError, formatDateTime, type OnboardingView } from '@kbs/shared';
+import { agentCodeInput, ApiClientError, digitsOnly, formatDateTime, ifscInput, type OnboardingView } from '@kbs/shared';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -132,9 +132,9 @@ export default function OnboardingGate() {
             <Label>Account holder name</Label>
             <Input value={form.accountHolderName} onChangeText={(t) => setForm({ ...form, accountHolderName: t })} />
             <Label>Account number</Label>
-            <Input value={form.accountNumber} onChangeText={(t) => setForm({ ...form, accountNumber: t.replace(/\D/g, '') })} keyboardType="number-pad" placeholder={v.bank ? `•••• ${v.bank.accountLast4} (enter again to change)` : ''} />
+            <Input value={form.accountNumber} onChangeText={(t) => setForm({ ...form, accountNumber: digitsOnly(t, 18) })} keyboardType="number-pad" placeholder={v.bank ? `•••• ${v.bank.accountLast4} (enter again to change)` : ''} />
             <Label>IFSC</Label>
-            <Input value={form.ifsc} onChangeText={(t) => setForm({ ...form, ifsc: t.toUpperCase() })} autoCapitalize="characters" />
+            <Input value={form.ifsc} onChangeText={(t) => setForm({ ...form, ifsc: ifscInput(t) })} autoCapitalize="characters" maxLength={11} />
             <Label>Bank name</Label>
             <Input value={form.bankName} onChangeText={(t) => setForm({ ...form, bankName: t })} />
             <Button title="Save bank details" disabled={busy || form.accountNumber.length < 9 || form.ifsc.length !== 11 || form.accountHolderName.trim().length < 2 || form.bankName.trim().length < 2} onPress={() => void run(() => api.put('/onboarding/me/bank', { accountHolderName: form.accountHolderName.trim(), accountNumber: form.accountNumber, ifsc: form.ifsc, bankName: form.bankName.trim() }))} />
@@ -172,7 +172,7 @@ export default function OnboardingGate() {
               value={form.code}
               autoCapitalize="characters"
               onChangeText={(t) => {
-                setForm({ ...form, code: t.toUpperCase() });
+                setForm({ ...form, code: agentCodeInput(t) });
                 setCodeCheck(null);
               }}
               onBlur={() => {

@@ -1,4 +1,4 @@
-import { ApiClientError, type BrowseCard } from '@kbs/shared';
+import { ApiClientError, type BrowseCard, digitsOnly } from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
@@ -70,7 +70,7 @@ export default function CardCatalogue() {
       <View className="mb-3 gap-3">
         <Heading>Card Catalogue</Heading>
         <Input placeholder="🔍 Search cards, banks…" value={q} onChangeText={setQ} onSubmitEditing={() => void load()} returnKeyType="search" className="rounded-xl" />
-        <Input placeholder="Customer pincode (optional) — checks bank sourcing" value={pincode} keyboardType="number-pad" maxLength={6} onChangeText={setPincode} onSubmitEditing={() => void load()} className="rounded-xl" />
+        <Input placeholder="Customer pincode (optional) — checks bank sourcing" value={pincode} keyboardType="number-pad" maxLength={6} onChangeText={(t) => setPincode(digitsOnly(t, 6))} onSubmitEditing={() => void load()} className="rounded-xl" />
         <View className="flex-row flex-wrap gap-2">
           {[{ key: null, label: 'All' } as { key: string | null; label: string }, ...cats].map((c) => (
             <Pressable key={c.key ?? 'all'} accessibilityRole="tab" accessibilityState={{ selected: category === c.key }} onPress={() => setCategory(category === c.key ? null : c.key)} className={`rounded-full px-3 py-1.5 ${category === c.key || (c.key === null && category === null) ? 'bg-primary' : 'bg-secondary'}`}>

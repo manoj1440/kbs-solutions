@@ -1,4 +1,4 @@
-import { ApiClientError, type BrowseCard, formatDateTime } from '@kbs/shared';
+import { ApiClientError, type BrowseCard, digitsOnly, formatDateTime } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -74,7 +74,7 @@ export default function AdvisorCardDetail() {
         ) : null}
         <Card className="gap-2">
           <Text className="font-medium">Sourcing availability</Text>
-          <Input placeholder="Customer pincode" value={pincode} keyboardType="number-pad" maxLength={6} onChangeText={setPincode} onSubmitEditing={() => void check()} />
+          <Input placeholder="Customer pincode" value={pincode} keyboardType="number-pad" maxLength={6} onChangeText={(t) => setPincode(digitsOnly(t, 6))} onSubmitEditing={() => void check()} />
           <Button title="Check" variant="outline" disabled={!/^\d{6}$/.test(pincode)} onPress={() => void check()} />
           {sourcing !== null ? <Badge label={sourcing === true ? 'Bank sources this pincode' : sourcing === false ? 'Bank does not source this pincode' : 'No sourcing data from this bank yet'} variant={sourcing === true ? 'success' : sourcing === false ? 'destructive' : 'warning'} /> : null}
           {prov?.batchUploadedAt ? <Muted>From the bank pincode upload of {formatDateTime(prov.batchUploadedAt)}. Sourceable is not a promise of approval.</Muted> : null}

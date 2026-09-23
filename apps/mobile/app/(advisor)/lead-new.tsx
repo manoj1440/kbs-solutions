@@ -1,4 +1,4 @@
-import { ApiClientError, type LeadDraftView, type LeadStep } from '@kbs/shared';
+import { amountInput, ApiClientError, digitsOnly, mobileInput, panInput, type LeadDraftView, type LeadStep } from '@kbs/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Switch, View } from 'react-native';
@@ -84,7 +84,7 @@ export default function LeadNew() {
         return (
           <>
             <Label>Customer mobile</Label>
-            <Input value={f.mobile} keyboardType="phone-pad" onChangeText={(t) => setF({ ...f, mobile: t })} placeholder="10-digit mobile" />
+            <Input value={f.mobile} keyboardType="phone-pad" onChangeText={(t) => setF({ ...f, mobile: mobileInput(t) })} placeholder="10-digit mobile" />
             {dup ? (
               <>
                 <Badge label="Possible duplicate" variant="warning" />
@@ -110,7 +110,7 @@ export default function LeadNew() {
         return (
           <>
             <Label>Customer PAN</Label>
-            <Input value={f.pan} autoCapitalize="characters" maxLength={10} onChangeText={(t) => setF({ ...f, pan: t.toUpperCase() })} placeholder="ABCDE1234F" />
+            <Input value={f.pan} autoCapitalize="characters" maxLength={10} onChangeText={(t) => setF({ ...f, pan: panInput(t) })} placeholder="ABCDE1234F" />
             {d.data.panVerification ? <Badge label={`Verification: ${d.data.panVerification.status.toLowerCase()}`} variant={d.data.panVerification.status === 'VERIFIED' ? 'success' : 'destructive'} /> : null}
             <Muted>PAN is verified with the provider and stored encrypted; only the last four characters are shown afterwards.</Muted>
             <Button title="Verify and continue" disabled={busy || f.pan.length !== 10} onPress={() => void patch('pan', { pan: f.pan })} />
@@ -125,7 +125,7 @@ export default function LeadNew() {
               keyboardType="number-pad"
               maxLength={6}
               onChangeText={(t) => {
-                setF({ ...f, pincode: t });
+                setF({ ...f, pincode: digitsOnly(t, 6) });
                 setLookup(null);
                 if (/^\d{6}$/.test(t)) void api.get<{ district: string | null; state: string | null }>(`/pincodes/${t}`).then((r) => setLookup(r.data)).catch(() => setLookup({ district: null, state: null }));
               }}
@@ -161,7 +161,7 @@ export default function LeadNew() {
         return (
           <>
             <Label>Annual income as per ITR (₹)</Label>
-            <Input value={f.income} keyboardType="decimal-pad" onChangeText={(t) => setF({ ...f, income: t.replace(/[^\d.]/g, '') })} />
+            <Input value={f.income} keyboardType="decimal-pad" onChangeText={(t) => setF({ ...f, income: amountInput(t) })} />
             <Button title="Continue" disabled={busy || !f.income || Number.isNaN(Number(f.income))} onPress={() => void patch('income', { annualIncomeItr: Number(f.income) })} />
           </>
         );
