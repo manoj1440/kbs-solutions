@@ -1,6 +1,6 @@
 # F-905 Performance acceptance harness
 
-- Group: Hardening · Status: **PLANNED** · Depends on: F-505, F-307
+- Group: Hardening · Status: **IN_PROGRESS** · Depends on: F-505, F-307
 - PRD refs: REQ-24 §24.2 (measured thresholds approved by KBS; no invented SLA)
 
 ## Scope
