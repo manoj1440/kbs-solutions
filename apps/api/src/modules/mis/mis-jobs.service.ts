@@ -18,6 +18,7 @@ export const MIS_JOB_NAME = 'mis.job.run';
 /** A RUNNING job without a heartbeat for this long is treated as dead (worker crash) and may be re-triggered. */
 export const STALE_AFTER_MS = 10 * 60_000;
 const PROGRESS_EVERY_MS = 1_000;
+const COMPLETED = { PREVIEW: { action: 'misBatch.previewCompleted' }, APPLY: { action: 'misBatch.applyCompleted' } } as const;
 
 type JobView = { kind: MisJobKind | null; status: string | null; progress: unknown; error: string | null; queuedAt: string | null; startedAt: string | null; heartbeatAt: string | null; finishedAt: string | null };
 
@@ -112,7 +113,7 @@ export class MisJobsService implements OnModuleInit {
       const result = kind === 'PREVIEW' ? await this.pipeline.preview(batchId, { onProgress }) : await this.pipeline.apply(actor, batchId, { onProgress });
       const totals = kind === 'PREVIEW' ? (result as { totals: unknown }).totals : result;
       await this.prisma.client.misImportBatch.update({ where: { id: batchId }, data: { jobStatus: 'SUCCEEDED', jobFinishedAt: new Date(), jobHeartbeatAt: new Date() } });
-      await this.audit.record({ action: kind === 'PREVIEW' ? 'misBatch.previewCompleted' : 'misBatch.applyCompleted', entityType: 'MisImportBatch', entityId: batchId, actor: { userId: requester, role }, after: { totals, durationMs: Date.now() - start.getTime() } });
+      await this.audit.record({ action: COMPLETED[kind].action, entityType: 'MisImportBatch', entityId: batchId, actor: { userId: requester, role }, after: { totals, durationMs: Date.now() - start.getTime() } });
       // apply already sends MIS_IMPORT_RESULT; tell the requester the preview is ready
       if (kind === 'PREVIEW') await this.notifications.notify({ recipientUserId: requester, kind: 'MIS_IMPORT_RESULT', title: `MIS batch ${batch.publicRef} preview ready`, body: 'The match preview finished. Review unmatched and conflicting rows before applying.', deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:preview:${batchId}:${start.getTime()}` });
       return totals;
