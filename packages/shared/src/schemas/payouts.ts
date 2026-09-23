@@ -189,3 +189,27 @@ export interface PaymentReceiptView {
   transferReferenceMasked: string | null;
   method: string | null;
 }
+
+// ── F-606 payout reconciliation dashboard + exceptions ──
+const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
+export const PAYOUT_DATE_BASES = ['eligibleAt', 'submittedAt', 'paidAt'] as const;
+export const PayoutDashboardQuery = z.object({
+  from: day.optional(),
+  to: day.optional(),
+  /** Which date the range filters on; always echoed in `meta.dateBasis` (REQ-16 §16.3). */
+  dateBasis: z.enum(PAYOUT_DATE_BASES).default('eligibleAt'),
+  bankId: z.string().uuid().optional(),
+  managerId: z.string().uuid().optional(),
+  advisorId: z.string().uuid().optional(),
+});
+export type PayoutDashboardQuery = z.infer<typeof PayoutDashboardQuery>;
+
+/** Derived payout exception kinds. Only the acknowledgeable ones can be resolved here; payment ones use the F-605 flows. */
+export const PAYOUT_EXCEPTION_KINDS = ['PAYMENT_EXCEPTION', 'DISCREPANCY_HOLD', 'MISSING_PROOF', 'CORRECTION_PENDING', 'STALE_REQUEST', 'MIS_CORRECTION_AFTER_PAYMENT', 'UNDER_REVIEW_IN_REQUEST'] as const;
+export type PayoutExceptionKind = (typeof PAYOUT_EXCEPTION_KINDS)[number];
+export const ACKNOWLEDGEABLE_PAYOUT_EXCEPTIONS = ['STALE_REQUEST', 'MIS_CORRECTION_AFTER_PAYMENT'] as const;
+
+export const ResolvePayoutExceptionBody = z
+  .object({ kind: z.enum(ACKNOWLEDGEABLE_PAYOUT_EXCEPTIONS), subjectId: z.string().uuid(), reason: z.string().trim().min(5).max(500) })
+  .strict();
+export type ResolvePayoutExceptionBody = z.infer<typeof ResolvePayoutExceptionBody>;
