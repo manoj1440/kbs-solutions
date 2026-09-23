@@ -130,6 +130,60 @@
   backdrop-filter: blur(3px);
 }
 
+html:has(.admin-workspace) {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+.admin-workspace nav,
+.admin-workspace dialog,
+.admin-workspace [data-slot='table-container'] {
+  scrollbar-gutter: stable;
+}
+
+html:has(.admin-workspace)::-webkit-scrollbar,
+.admin-workspace ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+html:has(.admin-workspace)::-webkit-scrollbar-track,
+.admin-workspace ::-webkit-scrollbar-track,
+.admin-workspace ::-webkit-scrollbar-corner {
+  background: #e2e8f0;
+}
+
+html:has(.admin-workspace)::-webkit-scrollbar-thumb,
+.admin-workspace ::-webkit-scrollbar-thumb {
+  border: 3px solid #e2e8f0;
+  border-radius: 8px;
+  background: #64748b;
+}
+
+html:has(.admin-workspace)::-webkit-scrollbar-thumb:hover,
+.admin-workspace ::-webkit-scrollbar-thumb:hover {
+  background: #0f766e;
+}
+
+.admin-workspace aside ::-webkit-scrollbar-track,
+.admin-workspace dialog[aria-label='Admin navigation menu']::-webkit-scrollbar-track {
+  background: #111e30;
+}
+
+.admin-workspace aside ::-webkit-scrollbar-thumb,
+.admin-workspace dialog[aria-label='Admin navigation menu']::-webkit-scrollbar-thumb {
+  border-color: #111e30;
+  background: #94a3b8;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  html:has(.admin-workspace),
+  .admin-workspace * {
+    scrollbar-color: #64748b #e2e8f0;
+    scrollbar-width: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-workspace *,
   .admin-login * {
