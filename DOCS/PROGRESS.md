@@ -36,6 +36,12 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 
 ## Session log
 
+### 2026-09-23 — Login page redesign (no-scroll showcase)
+- Rebuilt `/login` as a single `h-dvh` no-scroll screen per user request ("no scroll at all, all information at one place, impressive with images/carousel").
+- New `apps/web/src/app/(auth)/login/login-showcase.tsx`: auto-rotating 4-slide carousel (5s interval, crossfade, clickable dots) with generated inline SVG artwork — credit cards, MIS matching sheet, payout approval (₹ wallet + dual checks), team ops graph — over a navy panel with glow/dot-grid backdrop and `login-float` animation. Hidden below `lg`; mobile shows compact brand header + form.
+- OTP step now uses 6-box digit inputs (auto-advance, backspace-to-previous, paste spread) matching the mobile auth style. `resendAt`/`expiresAt` moved to module-level `otpStep()` because react-hooks/purity flags `Date.now()` inside components.
+- Verified: `scrollHeight === innerHeight` at 1280×900 and 390×844 (zero scroll), carousel auto-advance + dot navigation, full OTP round-trip → `/admin/leads`. Web typecheck/lint (0 errors, same TanStack warning)/tests (5)/production build pass. Screenshots: `.playwright-mcp/login-v2-{desktop,otp,mobile,slide3,slide4}.png`.
+
 ### 2026-09-23 — Admin table/layout correction (not page scrolling)
 - User clarified the UX bug: information and actions extended outside content panels. Leads measured 2209px inside 1046px. Corrected shared table nowrap defaults and badge wrapping, not just scrollbar appearance.
 - Leads has a six-column overview keeping separate bank stage/decision/activation and actions visible. More detail exposes references, dates, raw values, provenance and remarks; optional Full table view preserves all 13 sortable columns. Calling activity/records group related fields vertically; responsive rows become labelled cards below 700px container width.
