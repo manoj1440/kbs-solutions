@@ -15,4 +15,10 @@ export class MemoryStorageAdapter implements StorageProvider {
   async presignGet(input: { bucket: string; key: string; expiresInSec: number }) {
     return `memory://${input.bucket}/${input.key}?expires=${Date.now() + input.expiresInSec * 1000}`;
   }
+  async delete(input: { bucket: string; key: string }) {
+    this.objects.delete(`${input.bucket}/${input.key}`);
+  }
+  has(bucket: string, key: string) {
+    return this.objects.has(`${bucket}/${key}`);
+  }
 }

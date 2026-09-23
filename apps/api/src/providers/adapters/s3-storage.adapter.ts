@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import type { StorageProvider } from '../ports';
@@ -30,5 +30,9 @@ export class S3StorageAdapter implements StorageProvider {
       ResponseContentDisposition: input.fileName ? `inline; filename="${input.fileName.replace(/"/g, '')}"` : undefined,
     });
     return getSignedUrl(this.client, cmd, { expiresIn: input.expiresInSec });
+  }
+  async delete(input: { bucket: string; key: string }) {
+    // S3 DeleteObject is idempotent: deleting a missing key succeeds
+    await this.client.send(new DeleteObjectCommand({ Bucket: input.bucket, Key: input.key }));
   }
 }

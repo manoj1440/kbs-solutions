@@ -54,6 +54,8 @@ export interface StorageProvider {
   put(input: { bucket: string; key: string; body: Buffer; contentType: string }): Promise<void>;
   get(input: { bucket: string; key: string }): Promise<Buffer>;
   presignGet(input: { bucket: string; key: string; expiresInSec: number; fileName?: string }): Promise<string>;
+  /** F-904 retention purge only; idempotent (a missing object is not an error). */
+  delete(input: { bucket: string; key: string }): Promise<void>;
 }
 
 export const PUSH_PROVIDER = Symbol('PUSH_PROVIDER');

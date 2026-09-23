@@ -106,6 +106,7 @@ export class FilesService {
   async downloadUrl(actor: Actor, id: string) {
     const file = await this.prisma.client.storedFile.findUnique({ where: { id } });
     if (!file || !(await this.canRead(actor, file))) throw AppError.notFound('File');
+    if (file.purgedAt) throw new AppError('FILE_PURGED', 'This file was removed under the data-retention policy.', { purgedAt: file.purgedAt.toISOString() });
     if (file.scanStatus === 'INFECTED') throw new AppError('FILE_NOT_CLEAN', 'This file failed the malware scan.');
     const requireClean = this.config.getBool('files.requireCleanScanForNonAdmin');
     if (file.scanStatus !== 'CLEAN' && actor.role !== 'ADMIN' && requireClean && file.scanStatus !== 'SKIPPED') {
@@ -122,7 +123,8 @@ export class FilesService {
   }
 
   /** Presigned URL for a file already authorised by the caller (share redirects). */
-  presign(file: { bucket: string; key: string; originalName: string }, expiresInSec: number): Promise<string> {
+  presign(file: { bucket: string; key: string; originalName: string; purgedAt?: Date | null }, expiresInSec: number): Promise<string> {
+    if (file.purgedAt) throw new AppError('FILE_PURGED', 'This file was removed under the data-retention policy.');
     return this.storage.presignGet({ bucket: file.bucket, key: file.key, expiresInSec, fileName: file.originalName });
   }
 
@@ -132,6 +134,7 @@ export class FilesService {
     const file = await this.prisma.client.storedFile.findUnique({ where: { id } });
     if (!file) throw AppError.notFound('File');
     if (file.scanStatus === 'INFECTED') throw new AppError('FILE_NOT_CLEAN', 'Infected files stay quarantined.');
+    if (file.purgedAt) throw new AppError('FILE_PURGED', 'This file was removed under the data-retention policy.');
     const body = await this.storage.get({ bucket: file.bucket, key: file.key });
     let status: 'CLEAN' | 'INFECTED' | 'SKIPPED' | 'PENDING';
     let detail: string | undefined;
@@ -148,6 +151,7 @@ export class FilesService {
   /** Raw bytes for server-side processing (imports). Never exposed over HTTP. */
   async readBytes(id: string): Promise<{ file: { id: string; purpose: string; originalName: string; contentType: string }; body: Buffer }> {
     const file = await this.prisma.client.storedFile.findUniqueOrThrow({ where: { id } });
+    if (file.purgedAt) throw new AppError('FILE_PURGED', 'This file was removed under the data-retention policy.');
     const body = await this.storage.get({ bucket: file.bucket, key: file.key });
     if (file.scanStatus === 'INFECTED') throw new AppError('FILE_NOT_CLEAN', 'This file failed the malware scan.');
     return { file, body };
@@ -179,7 +183,7 @@ export class FilesService {
     }
   }
 
-  private toDto(f: { id: string; originalName: string; contentType: string; sizeBytes: number; sha256: string; purpose: string; scanStatus: string; createdAt: Date }) {
-    return { id: f.id, originalName: f.originalName, contentType: f.contentType, sizeBytes: f.sizeBytes, sha256: f.sha256, purpose: f.purpose, scanStatus: f.scanStatus, createdAt: f.createdAt.toISOString() };
+  private toDto(f: { id: string; originalName: string; contentType: string; sizeBytes: number; sha256: string; purpose: string; scanStatus: string; createdAt: Date; legalHold?: boolean; purgedAt?: Date | null }) {
+    return { id: f.id, originalName: f.originalName, contentType: f.contentType, sizeBytes: f.sizeBytes, sha256: f.sha256, purpose: f.purpose, scanStatus: f.scanStatus, createdAt: f.createdAt.toISOString(), legalHold: f.legalHold ?? false, purgedAt: f.purgedAt?.toISOString() ?? null };
   }
 }
