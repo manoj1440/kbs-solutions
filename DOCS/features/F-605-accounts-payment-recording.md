@@ -1,6 +1,6 @@
 # F-605 Accounts queue, external payment record, proof and paid state
 
-- Group: Payouts · Status: **PLANNED** · Depends on: F-604, F-108
+- Group: Payouts · Status: **IN_PROGRESS** · Depends on: F-604, F-108
 - PRD refs: REQ-17 §17.6 (ready row content; manual transfer outside KBS; record date/amount/reference/method + proof; no in-app disbursement), §17.7 (Paid; entitlements 'Paid for this event'; counts; traceability; reject duplicate references; exceptions for partial/reversal/correction), REQ-18 §18.1–18.3, REQ-25 §25.5, REQ-26 §26.3 steps 4–5
 - QA ids: PAY-05, PAY-06, PAY-07
 
