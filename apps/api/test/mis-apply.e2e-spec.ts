@@ -118,8 +118,23 @@ describe('F-503 preview / F-504 matching + resolution / F-505 apply (MIS-02…MI
     expect(C.body.data.bankStatus).toMatchObject({ stage: 'Decisioned Cases', decision: 'Declined' });
     // events + notifications only for changed leads
     expect(await prisma.outboxEvent.count({ where: { type: 'mis.lead.changed' } })).toBe(3);
-    expect(await prisma.notification.count({ where: { kind: 'MIS_CHANGED' } })).toBe(3);
+    // NOTIF-01 (F-701): first match → MIS_MATCHED naming raw field = value and the batch; only owning Advisor, their Manager, Admin
+    const matched = await prisma.notification.findMany({ where: { kind: 'MIS_MATCHED' } });
+    const batchRef = (await prisma.misImportBatch.findUniqueOrThrow({ where: { id } })).publicRef;
+    expect(new Set(matched.map((n) => (n.deepLink as { entityId: string }).entityId))).toEqual(new Set([leads.A, leads.C, leads.D]));
+    const nA = matched.filter((n) => (n.deepLink as { entityId: string }).entityId === leads.A);
+    const leadA = await prisma.lead.findUniqueOrThrow({ where: { id: leads.A as string } });
+    const parentA = await prisma.reportingAssignment.findFirst({ where: { childUserId: leadA.advisorUserId, effectiveTo: null }, include: { parent: { select: { id: true, role: true } } } });
+    const adminUser = await prisma.user.findFirstOrThrow({ where: { role: 'ADMIN' } });
+    const allowed = new Set([leadA.advisorUserId, adminUser.id, ...(parentA?.parent.role === 'MANAGER' ? [parentA.parent.id] : [])]);
+    expect(new Set(nA.map((n) => n.recipientUserId))).toEqual(allowed);
+    expect(nA[0].body).toContain(`batch ${batchRef}`);
+    expect(nA[0].body).toContain('Final decision = "Approved"');
+    expect(nA[0].body).not.toContain('Card activation'); // a blank (#N/A) activation is not a change and is not claimed
+    expect(nA[0].body).not.toMatch(/\bactivated\b/i);
+    expect(await prisma.notification.count({ where: { kind: 'MIS_CHANGED' } })).toBe(0);
     expect(await prisma.notification.count({ where: { kind: 'MIS_IMPORT_RESULT' } })).toBe(1);
+    const notifBefore = await prisma.notification.count();
 
     // MIS-08: applying again → no new history/events
     const before = { h: await prisma.bankStatusHistory.count(), e: await prisma.outboxEvent.count() };
@@ -134,7 +149,8 @@ describe('F-503 preview / F-504 matching + resolution / F-505 apply (MIS-02…MI
     expect(await prisma.outboxEvent.count()).toBe(before.e); // no fake transition
     expect(await prisma.bankStatusHistory.count({ where: { batchId: b2, changeKind: 'CONFIRMED_SAME' } })).toBeGreaterThan(0);
     expect(await prisma.bankStatusHistory.count({ where: { batchId: b2, changeKind: { in: ['SET', 'CHANGED'] } } })).toBe(0);
-    expect(await prisma.notification.count({ where: { kind: 'MIS_CHANGED' } })).toBe(3);
+    expect(await prisma.notification.count({ where: { kind: { in: ['MIS_CHANGED', 'MIS_MATCHED'] } } })).toBe(matched.length); // identical re-apply → zero new MIS notifications
+    expect(await prisma.notification.count()).toBe(notifBefore + 1); // only the batch result for the uploader
   });
 
   it('MIS-10 / MIS-05: later correction → CHANGED with reported date ≠ upload time; FULL_SNAPSHOT absence recorded without touching values', async () => {
@@ -157,6 +173,11 @@ describe('F-503 preview / F-504 matching + resolution / F-505 apply (MIS-02…MI
     expect(snapC.lastMatchedBatchId).not.toBe(b3);
     const C = await api().get(`/api/v1/leads/${leads.C}`).set(auth(adminToken)).expect(200);
     expect(C.body.data.bankStatus.decision).toBe('Declined');
+    // F-701: a later change cites only the changed raw fields with the bank's own words
+    const changedN = await prisma.notification.findFirstOrThrow({ where: { kind: 'MIS_CHANGED', recipientUserId: (await prisma.lead.findUniqueOrThrow({ where: { id: leads.A as string } })).advisorUserId } });
+    expect(changedN.body).toContain('Card activation reported as "V + ACTIVE"');
+    expect(changedN.body).toContain('Current stage = "Decisioned Cases and Card setup completed"');
+    expect(changedN.body).not.toContain('Final decision');
     // history endpoint groups by batch, newest first
     const hist = await api().get(`/api/v1/leads/${leads.A}/mis-history`).set(auth(adminToken)).expect(200);
     expect(hist.body.data).toHaveLength(3);
