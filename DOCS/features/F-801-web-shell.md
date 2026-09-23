@@ -15,4 +15,5 @@
 - [ ] Playwright smoke: login + role redirect + logout.
 
 ## Progress notes
+- 2026-09-23: Admin web redesign in progress: grouped responsive navigation, workspace search, business overview using existing scoped API summaries, actionable exceptions, payout positions and per-bank MIS freshness. Mobile and backend contracts remain unchanged; full F-703 analytics are separate.
 - 2026-09-22 (session 1): Login (OTP, cookies), proxy redirect, role-gated route groups, AppShell sidebar, admin overview (launch gates), config + users tables, access-denied. Pending: shadcn Sidebar/DataTable/date-range/command components, notification drawer, `/verify/[ref]`, Playwright smoke in CI.
