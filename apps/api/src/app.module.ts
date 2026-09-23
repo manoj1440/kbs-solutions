@@ -22,6 +22,7 @@ import { CallingListModule } from './modules/calling-list/calling-list.module';
 import { CallsModule } from './modules/calls/calls.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
 import { ConfigModule } from './modules/config/config.module';
+import { DashboardsModule } from './modules/dashboards/dashboards.module';
 import { FilesModule } from './modules/files/files.module';
 import { GatesModule } from './modules/gates/gates.module';
 import { HealthController } from './modules/health/health.controller';
@@ -91,6 +92,7 @@ export const LOG_REDACT_PATHS = [
     OnboardingModule,
     LeadsModule,
     PayoutsModule,
+    DashboardsModule,
     MisModule,
   ],
   controllers: [HealthController],
