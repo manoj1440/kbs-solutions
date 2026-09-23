@@ -27,6 +27,7 @@ const PAGES = [
   '/admin/audit',
   '/admin/audit?tab=sensitive',
   '/admin/config',
+  '/admin/retention',
 ];
 
 test.describe('Admin workspace smoke', () => {

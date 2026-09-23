@@ -3,6 +3,7 @@
 import type { MeResponse } from '@kbs/shared';
 import {
   AlertTriangle,
+  Archive,
   ArrowRight,
   Building2,
   ChevronRight,
@@ -82,6 +83,7 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
     items: [
       { href: '/admin/compliance', label: 'Compliance', icon: ShieldCheck },
       { href: '/admin/config', label: 'Configuration', icon: Settings2 },
+      { href: '/admin/retention', label: 'Retention & legal hold', icon: Archive },
     ],
   },
 ];
