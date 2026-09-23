@@ -124,7 +124,8 @@ export class MisImportService {
       }
       const totals = { rows: rows.length, unique: unique.length, duplicateRows: rows.length - unique.length, invalid: unique.filter((r) => r.matchState === 'INVALID').length, missingHeaders: check.missing, unmappedColumns: check.unmapped };
       await tx.misImportBatch.update({ where: { id: batchId }, data: { stage: 'MAPPED', totals, error: null, preview: { headers: sheet.headers, resolved: check.resolved, references: check.refs.map((r) => ({ kind: r.kind, header: r.header, resolved: r.resolved })) } } });
-    });
+      // F-905 finding: the default 5 s interactive-transaction timeout failed a 100k-row HDFC sheet. Budget scales with rows.
+    }, { timeout: Math.max(30_000, rows.length * 5), maxWait: 10_000 });
   }
 
   async get(id: string) {
