@@ -1,0 +1,22 @@
+# Manager: login → Approvals tab lists requests awaiting the Manager → open one (read-only check)
+appId: com.kbs.dsa
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Next.*"
+          optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: "9876500001"
+- tapOn: "Login"
+- inputText: "000000"
+- tapOn: "Verify OTP"
+- assertVisible: "My team"
+- tapOn: "Approvals"
+- assertVisible:
+    text: ".*approval.*"

@@ -1,0 +1,11 @@
+# REQ-24 §24.5 poor connectivity: with the network off, the app shows an error instead of stale "live" data.
+appId: com.kbs.dsa
+---
+- launchApp
+- setAirplaneMode: enabled
+- tapOn:
+    text: "Leads"
+    optional: true
+- assertVisible:
+    text: ".*(Could not|Network|offline|try again).*"
+- setAirplaneMode: disabled

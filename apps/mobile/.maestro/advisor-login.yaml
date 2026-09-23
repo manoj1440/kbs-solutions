@@ -1,0 +1,29 @@
+# Advisor: welcome carousel → OTP login → Home → Earnings → Notifications
+appId: com.kbs.dsa
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: "9555999001"
+- tapOn: "Login"
+- inputText: "000000"
+- tapOn: "Verify OTP"
+- assertVisible: "Home"
+- tapOn: "Earnings"
+- assertVisible:
+    text: ".*Card events appear here only when the bank MIS confirms.*"
+- tapOn: "Home"
+- tapOn:
+    label: "Notifications.*"
+- assertVisible: "Notifications"
