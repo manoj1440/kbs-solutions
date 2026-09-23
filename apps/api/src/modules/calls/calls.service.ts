@@ -1,4 +1,4 @@
-import { type CallAttemptView, maskMobile, type RecordingStatusValue } from '@kbs/shared';
+import { CALL_LIVE_WINDOW_MINUTES, type CallAttemptView, maskMobile, type RecordingStatusValue } from '@kbs/shared';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -45,7 +45,7 @@ export class CallsService {
     if (!r.mobile.startsWith('+')) throw new AppError('VALIDATION_FAILED', 'This record has no valid mobile number.');
 
     // safe retry: block re-dial while a previous attempt on this record is still live
-    const live = await this.prisma.client.callAttempt.findFirst({ where: { callingRecordId, providerState: { in: ['REQUESTED', 'RINGING', 'CONNECTED'] }, initiatedAt: { gt: new Date(Date.now() - 30 * 60_000) } } });
+    const live = await this.prisma.client.callAttempt.findFirst({ where: { callingRecordId, providerState: { in: ['REQUESTED', 'RINGING', 'CONNECTED'] }, initiatedAt: { gt: new Date(Date.now() - CALL_LIVE_WINDOW_MINUTES * 60_000) } } });
     if (live) throw new AppError('CONFLICT', 'A call to this customer is already in progress.', { callAttemptId: live.id });
     const lastFailed = await this.prisma.client.callAttempt.findFirst({ where: { callingRecordId, telecallerUserId: actor.userId, providerState: 'FAILED' }, orderBy: { initiatedAt: 'desc' } });
     if (lastFailed && lastFailed.initiatedAt.getTime() + RETRY_AFTER_MS > Date.now()) throw new AppError('RATE_LIMITED', 'Please wait a few seconds before retrying.', { retryAfter: new Date(lastFailed.initiatedAt.getTime() + RETRY_AFTER_MS).toISOString() });
