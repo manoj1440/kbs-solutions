@@ -28,7 +28,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-101-otp-authentication.md](./F-101-otp-authentication.md) | F-101 OTP-only authentication and sessions | Core | DONE | F-003, F-004, F-005, F-109 |
 | [F-102-rbac-and-scoping.md](./F-102-rbac-and-scoping.md) | F-102 RBAC, permissions matrix and data scoping | Core | DONE | F-101 |
 | [F-103-audit-and-logging.md](./F-103-audit-and-logging.md) | F-103 Audit log, sensitive-access log, request ids, redacted logging | Core | DONE | F-003, F-005 |
-| [F-104-system-config.md](./F-104-system-config.md) | F-104 SystemConfig with history and launch-gate checklist | Core | IN_PROGRESS | F-005, F-102, F-103 |
+| [F-104-system-config.md](./F-104-system-config.md) | F-104 SystemConfig with history and launch-gate checklist | Core | DONE | F-005, F-102, F-103 |
 | [F-105-user-administration.md](./F-105-user-administration.md) | F-105 User administration and lifecycle | Core | IN_PROGRESS | F-101, F-102, F-103 |
 | [F-106-reporting-hierarchy-agent-codes.md](./F-106-reporting-hierarchy-agent-codes.md) | F-106 Reporting hierarchy and Agent Codes | Core | DONE | F-105 |
 | [F-107-common-http-conventions.md](./F-107-common-http-conventions.md) | F-107 Common HTTP conventions: envelope, errors, pagination, idempotency | Core | DONE | F-003, F-004 |
