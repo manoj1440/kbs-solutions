@@ -2,12 +2,12 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-09-23, end of session 9)
+## Current state (as of 2026-09-23, end of session 10)
 
-- **Feature status:** 71 of 73 features **DONE** (session 9 added and finished F-314 Admin calls & delivery oversight, found by a REQ-25 screen-inventory gap check) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
+- **Feature status:** 72 of 74 features **DONE** (sessions 9–10 added and finished F-314 Admin calls & delivery oversight and F-315 Manager Advisor drill-down, both found by REQ-15/REQ-25 gap checks) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
   - **F-302** Android protected screens — code complete; stays IN_PROGRESS only for the **SEC-02 manual run on a physical Android 12+ device** (checklist in `DOCS/runbooks/02-mobile-security-limits.md`).
   - **F-904** Data retention — **BLOCKED** on KBS durations (REQ-21 §21.5 OPEN). Structure is built and fails closed (`/retention/plan` dry run, legal holds, `/retention/execute` → `CONFIG_MISSING` until `retention.*Days` and `retention.executionEnabled` are set).
-- **Latest verification (session 9, cloud sandbox):** typecheck + lint green (existing TanStack warning only); `pnpm test` on `kbs_base` (shared 44, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **142/142 across 36 suites**; web Playwright **60/60** (desktop + phone); QA matrix regenerated.
+- **Latest verification (session 10, cloud sandbox):** typecheck + lint green (existing TanStack warning only); `pnpm test` on `kbs_base` (shared 44, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **143/143 across 36 suites**; web Playwright **62/62** (desktop + phone); `expo export --platform android` bundles; QA matrix regenerated.
 - **Previous verification (session 8, cloud sandbox):** workspace typecheck + lint (only the existing TanStack warning); `pnpm test` against baseline-seeded `kbs_base` (shared 39, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **136/136 across 35 suites** on `kbs_test`; web Playwright smoke + role routing **54/54** (desktop 1280 + phone 390); REQ-27 QA matrix **58/58** ids named by automated tests (CI ratchet 58).
 - **Next steps for a new session (in order):**
   1. On the Mac: push to GitHub, then build the preview APK (`cd apps/mobile && npx eas init && eas build -p android --profile preview`, see `DOCS/runbooks/04-android-release.md`), run the Maestro flows and the SEC-02 checklist → close F-302.
@@ -37,6 +37,12 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 ```
 
 ## Session log
+
+### 2026-09-23 — Session 10 (gap analysis → F-315)
+- I checked REQ-15 (Manager workspace) and REQ-25 §25.3 against the built screens. Managers could not drill into their Advisors: on web, Advisors were plain rows; on mobile, tapping an Advisor did nothing and there was no lead/MIS screen. The data APIs existed, but the per-Advisor summary was Admin-only. Created **F-315** and finished it.
+- Commits: `docs(F-315): start` → `feat(api)` `/dashboards/manager/advisors` + e2e → `feat(web)` Advisors list + drill-down → `feat(mobile)` Advisors tab, Advisor and read-only lead screens (+ shared contract) → `test(web)` Playwright → `docs`.
+- Commits from this session are authored `Claude <noreply@anthropic.com>`. Session 9's six commits still carry the repo owner's identity. They have not been pushed, and rewriting them was left to the user.
+- Remaining gap candidates: the Manager version of the F-314 oversight page (API is ready), a full-page web notification centre, web profile/support page for Admin/Manager/Accounts (REQ-25 §25.1), and date/bank filters on the mobile Advisor screen.
 
 ### 2026-09-23 — Session 9 (gap analysis → F-314)
 - Remaining tracked work was F-302 (physical-device check) and F-904 (blocked on KBS durations); neither is code work. Checked the REQ-25 role screen inventory against the built routes. Admin "telephony/WhatsApp delivery/recording oversight" (REQ-25 §25.4, REQ-16 §16.1) had no feature file and no screen, because F-313 is per-Telecaller only. Created **F-314** and finished it.
