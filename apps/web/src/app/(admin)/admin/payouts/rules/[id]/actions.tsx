@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiClientError, type PayoutRuleView } from '@kbs/shared';
+import { ApiClientError, amountInput, digitsOnly, type PayoutRuleView } from '@kbs/shared';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -70,7 +70,7 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
             <Label htmlFor="ra-values">Trigger values (separate with |)</Label>
             <Input id="ra-values" value={values} onChange={(e) => setValues(e.target.value)} />
             <Label htmlFor="ra-hold">Hold days</Label>
-            <Input id="ra-hold" type="number" min={0} value={holdDays} onChange={(e) => setHoldDays(Number(e.target.value))} />
+            <Input id="ra-hold" inputMode="numeric" min={0} value={holdDays} onChange={(e) => setHoldDays(Number(digitsOnly(e.target.value, 3)))} />
             <Button
               variant="outline"
               disabled={busy}
@@ -86,7 +86,7 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
             </Button>
             <Label htmlFor="ra-amount">New rate (₹)</Label>
             <div className="flex gap-2">
-              <Input id="ra-amount" type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1500" />
+              <Input id="ra-amount" inputMode="decimal" min={1} value={amount} onChange={(e) => setAmount(amountInput(e.target.value))} placeholder="1500" />
               <Input type="date" value={rateFrom} onChange={(e) => setRateFrom(e.target.value)} aria-label="rate effective from" />
               <Button variant="outline" disabled={busy || !amount} onClick={() => void run(() => clientApi.post(`/payouts/rules/${rule.id}/rates`, { amountInr: Number(amount), effectiveFrom: new Date(`${rateFrom}T00:00:00+05:30`).toISOString() }), 'Draft rate added.').then(() => setAmount(''))}>
                 Add rate

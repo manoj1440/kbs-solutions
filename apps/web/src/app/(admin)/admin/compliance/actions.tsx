@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiClientError } from '@kbs/shared';
+import { ApiClientError, isValidE164India, mobileInput } from '@kbs/shared';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -29,8 +29,9 @@ export function ComplianceActions() {
         </CardHeader>
         <CardContent className="grid gap-2">
           <Label htmlFor="sup-mobile">Mobile</Label>
-          <Input id="sup-mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="98765 43210" />
+          <Input id="sup-mobile" inputMode="tel" value={mobile} onChange={(e) => setMobile(mobileInput(e.target.value))} placeholder="98765 43210" />
           <Button
+            disabled={!isValidE164India(mobile)}
             onClick={async () => {
               try {
                 await clientApi.post('/suppressions', { mobile, reason: 'COMPLIANCE' });

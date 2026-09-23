@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiClientError, PAYOUT_TRIGGER_FIELDS } from '@kbs/shared';
+import { ApiClientError, digitsOnly, PAYOUT_TRIGGER_FIELDS } from '@kbs/shared';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -100,7 +100,7 @@ export function NewRule({ banks }: { banks: { id: string; code: string; displayN
         </div>
         <div className="grid gap-1">
           <Label htmlFor="pr-hold">Hold days</Label>
-          <Input id="pr-hold" type="number" min={0} max={365} value={holdDays} onChange={(e) => setHoldDays(Number(e.target.value))} />
+          <Input id="pr-hold" inputMode="numeric" min={0} max={365} value={holdDays} onChange={(e) => setHoldDays(Number(digitsOnly(e.target.value, 3)))} />
         </div>
         <div className="grid gap-1">
           <Label htmlFor="pr-from">Effective from</Label>

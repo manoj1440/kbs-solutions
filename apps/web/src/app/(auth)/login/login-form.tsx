@@ -5,6 +5,7 @@ import {
   type AuthSessionResponse,
   type OtpRequestResponse,
   isValidE164India,
+  mobileInput,
 } from '@kbs/shared';
 import { AlertCircle, ArrowRight, CheckCircle2, Lock, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -166,7 +167,7 @@ export function LoginForm({ next }: { next?: string }) {
                   autoComplete="tel"
                   placeholder="98765 43210"
                   value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  onChange={(e) => setMobile(mobileInput(e.target.value))}
                   autoFocus
                   className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 pr-12 pl-12 text-[15px] tracking-wide transition-colors focus:border-teal-600 focus:bg-white"
                 />
@@ -178,8 +179,8 @@ export function LoginForm({ next }: { next?: string }) {
             </div>
             <Button
               type="submit"
-              disabled={busy}
-              className="relative h-14 w-full rounded-full bg-gradient-to-r from-teal-700 to-teal-500 text-base font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:from-teal-600 hover:to-teal-400 hover:shadow-teal-500/40"
+              disabled={busy || !mobileValid}
+              className="relative h-14 w-full rounded-full bg-gradient-to-r from-teal-700 to-teal-500 text-base font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:from-teal-600 hover:to-teal-400 hover:shadow-teal-500/40 disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
             >
               {busy ? 'Sending…' : 'Send OTP'}
               <span className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20">

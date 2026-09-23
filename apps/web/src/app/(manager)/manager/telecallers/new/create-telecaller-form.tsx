@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiClientError, CreateTelecallerBody } from '@kbs/shared';
+import { ApiClientError, CreateTelecallerBody, mobileInput } from '@kbs/shared';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -24,6 +24,8 @@ export function CreateTelecallerForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<Created | null>(null);
+
+  const canSubmit = CreateTelecallerBody.safeParse({ fullName, mobile }).success;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,7 +82,7 @@ export function CreateTelecallerForm() {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="mobile">Mobile number</Label>
-        <Input id="mobile" inputMode="tel" placeholder="98765 43210" value={mobile} onChange={(e) => setMobile(e.target.value)} required />
+        <Input id="mobile" inputMode="tel" placeholder="98765 43210" value={mobile} onChange={(e) => setMobile(mobileInput(e.target.value))} required />
       </div>
       {error ? (
         <p role="alert" className="text-destructive text-sm">
@@ -88,7 +90,7 @@ export function CreateTelecallerForm() {
         </p>
       ) : null}
       <div className="flex gap-2">
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" disabled={busy || !canSubmit}>
           {busy ? 'Creating…' : 'Create Telecaller'}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push('/manager')}>

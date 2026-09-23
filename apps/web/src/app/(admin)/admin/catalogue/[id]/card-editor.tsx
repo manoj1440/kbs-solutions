@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiClientError, formatDateTime } from '@kbs/shared';
+import { ApiClientError, amountInput, digitsOnly, formatDateTime } from '@kbs/shared';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -114,13 +114,13 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
       fail(e, 'Could not publish.');
     }
   };
-  const field = (key: keyof typeof form, label: string, textarea = false) => (
+  const field = (key: keyof typeof form, label: string, textarea = false, mask?: (v: string) => string) => (
     <div className="grid gap-1">
       <Label htmlFor={`f-${key}`}>{label}</Label>
       {textarea ? (
         <textarea id={`f-${key}`} disabled={readOnly} className="border-input bg-background min-h-20 rounded-md border p-2 text-sm" value={form[key] as string} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
       ) : (
-        <Input id={`f-${key}`} disabled={readOnly} value={form[key] as string} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+        <Input id={`f-${key}`} disabled={readOnly} inputMode={mask ? 'decimal' : undefined} value={form[key] as string} onChange={(e) => setForm({ ...form, [key]: mask ? mask(e.target.value) : e.target.value })} />
       )}
     </div>
   );
@@ -150,8 +150,8 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
             {field('description', 'Description', true)}
             {field('benefits', 'Rewards / benefits (one per line)', true)}
             <div className="grid grid-cols-2 gap-2">
-              {field('joiningFee', 'Joining fee (₹)')}
-              {field('annualFee', 'Annual fee (₹)')}
+              {field('joiningFee', 'Joining fee (₹)', false, amountInput)}
+              {field('annualFee', 'Annual fee (₹)', false, amountInput)}
             </div>
             {field('majorCharges', 'Major charges (label: value per line)', true)}
             {field('eligibilityHighlights', 'Eligibility highlights', true)}
@@ -323,7 +323,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                     <option value="STATE">State</option>
                     <option value="PINCODE">Pincode</option>
                   </select>
-                  {pub.scope === 'PINCODE' ? <Input id="pub-pincode" placeholder="302001" value={pub.pincode} onChange={(e) => setPub({ ...pub, pincode: e.target.value })} /> : pub.scope === 'STATE' ? <Input id="pub-state" placeholder="Rajasthan" value={pub.state} onChange={(e) => setPub({ ...pub, state: e.target.value })} /> : <span />}
+                  {pub.scope === 'PINCODE' ? <Input id="pub-pincode" inputMode="numeric" placeholder="302001" value={pub.pincode} onChange={(e) => setPub({ ...pub, pincode: digitsOnly(e.target.value, 6) })} /> : pub.scope === 'STATE' ? <Input id="pub-state" placeholder="Rajasthan" value={pub.state} onChange={(e) => setPub({ ...pub, state: e.target.value })} /> : <span />}
                   <Button
                     id="pub-add"
                     variant="outline"
