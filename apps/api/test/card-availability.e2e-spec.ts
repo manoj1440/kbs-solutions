@@ -105,7 +105,7 @@ describe('F-308 card availability (sourceability ∩ publication ∩ link)', () 
     expect(r3.body.data.cards[0].provenance.publication.scope).toBe('PINCODE');
   });
 
-  it('record-scoped lookup: Telecaller gets cards for an assigned record only', async () => {
+  it('record-scoped lookup / CALL-03: Telecaller gets cards for an assigned record only, with benefits, PDF, link, ID and remarks reachable in the call context', async () => {
     const s = await setupManagerAndTelecaller(app, prisma, '30001');
     await prisma.trainingEnrollment.update({ where: { telecallerUserId: s.telecallerId }, data: { status: 'PASSED', passedAt: new Date(), firstLoginAt: new Date() } });
     const file = await prisma.storedFile.create({ data: { purpose: 'CUSTOMER_LIST', bucket: 't', key: 't/c.csv', originalName: 'c.csv', contentType: 'text/csv', sizeBytes: 1, sha256: 'a'.repeat(64), uploadedByUserId: s.admin.user.id } });
@@ -116,6 +116,16 @@ describe('F-308 card availability (sourceability ∩ publication ∩ link)', () 
     const r = await api().get(`/api/v1/calling/records/${mine.id}/cards`).set(auth(t.accessToken)).expect(200);
     expect(r.body.data.cards).toHaveLength(2);
     expect(r.body.data.location).toMatchObject({ state: 'Rajasthan' });
+    // CALL-03: everything the call needs is reachable from the record without leaving the calling context
+    for (const c of r.body.data.cards) {
+      expect(Array.isArray(c.benefits)).toBe(true);
+      expect(c).toHaveProperty('benefitPdfFileId');
+      expect(c.link).toMatchObject({ id: expect.any(String), version: expect.any(Number) });
+    }
+    const rec = await api().get(`/api/v1/calling/records/${mine.id}`).set(auth(t.accessToken)).expect(200);
+    expect(rec.body.data).toHaveProperty('outcomes'); // remarks live on outcomes
+    await api().get(`/api/v1/calling/records/${mine.id}/shares`).set(auth(t.accessToken)).expect(200);
+    await api().get('/api/v1/id-cards/me').set(auth(t.accessToken)).expect(200);
     await api().get(`/api/v1/calling/records/${other.id}/cards`).set(auth(t.accessToken)).expect(404);
     // generic route is not for Telecallers' customers but still permitted for catalogue reads; training gate applies
     await api().get('/api/v1/cards/available?pincode=302002&channel=TELECALLER').set(auth(t.accessToken)).expect(200);
