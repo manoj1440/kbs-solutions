@@ -33,3 +33,7 @@ apps/mobile/ios/
 # local data
 docker/data/
 dump.rdb
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
