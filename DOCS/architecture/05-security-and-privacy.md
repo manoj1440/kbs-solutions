@@ -21,6 +21,6 @@ Maps REQ-09, REQ-21, REQ-24 to concrete controls. Every row is either **CORE** (
 | Presigned, expiring download URLs | CORE | 5 min. |
 | Helmet, CORS allowlist, cookie flags | CORE | |
 | Secrets via env only; `.env` ignored | CORE | |
-| Data retention / deletion authority | BLOCKED (REQ-21 §21.5 OPEN) | Config keys exist with null values; no deletion job until set. |
+| Data retention / deletion authority | BLOCKED (REQ-21 §21.5 OPEN) | F-904 structure built fail-closed: `/retention/plan` dry run, legal holds, `/retention/execute` refuses (`CONFIG_MISSING`) until `retention.*Days` are set and `retention.executionEnabled` is on. Files purged (row kept), calling records restricted, never deleted; MIS/payout/audit/suppression data out of scope. |
 | Malware scanning provider | F-902 | ClamAV adapter. |
 | DB-level trigger protecting bank-status columns | F-903 | |

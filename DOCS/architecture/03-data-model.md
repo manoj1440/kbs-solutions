@@ -64,7 +64,7 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 ## 5. Calling list (Telecaller operations)
 
 `CustomerImportBatch(publicRef KBS-B-…, fileId, uploaderUserId, uploadedAt, checksum unique, headerMapping jsonb, totals jsonb{imported,rejected,skipped,duplicates}, status)`
-`CallingRecord(id, batchId, sourceRowNumber, fullName, mobile (E.164), panEncrypted?, panLast4?, pincode char(6), resolvedCity?, resolvedState?, locationResolved bool, assignedTelecallerUserId?, assignedAt?, interactionStatus enum(UNTOUCHED, FOLLOW_UP, INTERESTED, LINK_SHARED, DECLINED, COMPLETED, UNREACHABLE), nextFollowUpAt?, hiddenAt?, hiddenReason?, suppressed bool, reviewStatus(ACCEPTED, NEEDS_REVIEW, EXCLUDED), reviewReason?)`
+`CallingRecord(id, batchId, sourceRowNumber, fullName, mobile (E.164), panEncrypted?, panLast4?, pincode char(6), resolvedCity?, resolvedState?, locationResolved bool, assignedTelecallerUserId?, assignedAt?, interactionStatus enum(UNTOUCHED, FOLLOW_UP, INTERESTED, LINK_SHARED, DECLINED, COMPLETED, UNREACHABLE), nextFollowUpAt?, hiddenAt?, hiddenReason?, suppressed bool, reviewStatus(ACCEPTED, NEEDS_REVIEW, EXCLUDED), reviewReason?, legalHold bool, legalHoldReason?, restrictedAt?)` — F-904: a retention run restricts (redacts name/mobile/PAN, hides) instead of deleting (INV-07); `legalHold` blocks it.
 `AllocationEvent(callingRecordId, fromTelecallerUserId?, toTelecallerUserId?, batchId?, at, actorUserId?, reason, algorithmVersion)`
 `ContactSuppression(mobile unique, reason(CUSTOMER_REQUEST, COMPLIANCE, DND_LIST), sourceCallingRecordId?, createdByUserId, at, liftedAt?, liftedByUserId?)`
 `PincodeMaster(pincode, officeName, district, state, importedAt)` (PK pincode+officeName).
@@ -123,7 +123,7 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 
 ## 11. Files, notifications
 
-`StoredFile(id, bucket, key, contentType, sizeBytes, sha256, uploadedByUserId, purpose enum, scanStatus(PENDING, CLEAN, INFECTED, SKIPPED), createdAt)`
+`StoredFile(id, bucket, key, contentType, sizeBytes, sha256, uploadedByUserId, purpose enum, scanStatus(PENDING, CLEAN, INFECTED, SKIPPED), createdAt, legalHold bool, legalHoldReason?, purgedAt?)` — F-904: `purgedAt` = object deleted by an authorised retention run; the row stays as the trace and downloads return 410 `FILE_PURGED`.
 `Notification(id, recipientUserId, kind, title, body, deepLink jsonb{entityType, entityId}, sourceRef jsonb{batchId?, field?}, dedupeKey unique, createdAt, readAt?, pushedAt?)`
 `OutboxEvent(id, type, payload jsonb, createdAt, processedAt?, attempts)`.
 `PushDevice(id, userId, sessionId?, token unique (Expo push token), platform, createdAt, lastSeenAt, revokedAt?)` — F-701 push targets; revoked on logout.
