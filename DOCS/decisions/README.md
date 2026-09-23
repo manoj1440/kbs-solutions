@@ -17,3 +17,4 @@ Template: `ADR-000-template.md`.
 | ADR-010 | Shared Zod contracts as the single API contract | Accepted |
 | ADR-011 | Single-tenant, one Admin | Accepted |
 | ADR-012 | Identifiers: UUIDv7 internal, Crockford public refs | Accepted |
+| ADR-013 | MIS preview/apply as background jobs above a row threshold | Accepted |
