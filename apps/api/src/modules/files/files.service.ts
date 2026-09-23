@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { type FilePurpose, FilePurpose as FilePurposeEnum } from '@kbs/shared';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
@@ -11,6 +11,7 @@ import { PrismaService } from '../../infra/prisma/prisma.service';
 import { SCAN_PROVIDER, STORAGE_PROVIDER, type ScanProvider, type StorageProvider } from '../../providers/ports';
 import { AuditService } from '../audit/audit.service';
 import { ConfigService } from '../config/config.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 import { ALLOWED_BY_PURPOSE, canonicalContentType, sniff } from './sniff';
 
@@ -42,7 +43,9 @@ export class FilesService {
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
     @Inject(SCAN_PROVIDER) private readonly scanner: ScanProvider,
     @Inject(ENV) private readonly env: Env,
+    private readonly notifications: NotificationsService,
   ) {}
+  private readonly logger = new Logger(FilesService.name);
 
   async upload(actor: Actor, input: { purpose: FilePurpose; originalName: string; declaredType: string; body: Buffer }) {
     if (!(Object.values(FilePurposeEnum) as string[]).includes(input.purpose)) throw new AppError('VALIDATION_FAILED', 'Unknown file purpose.');
@@ -56,10 +59,19 @@ export class FilesService {
     }
     const contentType = canonicalContentType(sniffed, input.declaredType);
     const sha256 = createHash('sha256').update(input.body).digest('hex');
-    const key = `private/${input.purpose.toLowerCase()}/${randomUUID()}`;
+    // F-902: scan before storing. Scanner failure → PENDING (fail closed: never CLEAN without a verdict).
+    let scan: { status: 'CLEAN' | 'INFECTED' | 'SKIPPED' | 'PENDING'; detail?: string };
+    try {
+      scan = await this.scanner.scan({ body: input.body });
+    } catch (e) {
+      this.logger.warn({ err: (e as Error).message, scanner: this.scanner.name }, 'malware scan failed; file kept PENDING');
+      scan = { status: 'PENDING', detail: 'scanner unavailable' };
+    }
+    const infected = scan.status === 'INFECTED';
+    // infected uploads are kept as evidence under quarantine/ and are never served
+    const key = `${infected ? 'quarantine' : 'private'}/${input.purpose.toLowerCase()}/${randomUUID()}`;
     const bucket = this.env.S3_BUCKET;
     await this.storage.put({ bucket, key, body: input.body, contentType });
-    const scan = await this.scanner.scan({ body: input.body });
     const file = await this.prisma.client.storedFile.create({
       data: {
         bucket,
@@ -71,9 +83,15 @@ export class FilesService {
         uploadedByUserId: actor.userId,
         purpose: input.purpose,
         scanStatus: scan.status,
-        scannedAt: new Date(),
+        scannedAt: scan.status === 'PENDING' ? null : new Date(),
       },
     });
+    if (infected) {
+      await this.audit.record({ action: 'files.quarantine', entityType: 'StoredFile', entityId: file.id, after: { purpose: file.purpose, sha256, signature: scan.detail ?? null, uploadedByUserId: actor.userId } });
+      const admin = await this.prisma.client.user.findFirst({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true } });
+      if (admin) await this.notifications.notify({ recipientUserId: admin.id, kind: 'SECURITY_EVENT', title: 'Infected upload quarantined', body: `A ${file.purpose.toLowerCase().replace(/_/g, ' ')} upload was blocked by the malware scanner (${scan.detail ?? 'signature'}). It is quarantined and never served.`, deepLink: { entityType: 'StoredFile', entityId: file.id }, dedupeKey: `security:quarantine:${file.id}` });
+      throw new AppError('FILE_NOT_CLEAN', 'The malware scanner blocked this file. It has been quarantined; upload a clean copy.', { fileId: file.id });
+    }
     RequestContextStore.audit({ entityId: file.id, after: { purpose: file.purpose, sizeBytes: file.sizeBytes, sha256, scanStatus: file.scanStatus } });
     return this.toDto(file);
   }
@@ -108,10 +126,30 @@ export class FilesService {
     return this.storage.presignGet({ bucket: file.bucket, key: file.key, expiresInSec, fileName: file.originalName });
   }
 
+  /** Admin: re-scan a file whose scan failed or was skipped (F-902). An infected verdict quarantines it for good. */
+  async rescan(actor: Actor, id: string) {
+    if (actor.role !== 'ADMIN') throw new AppError('RBAC_FORBIDDEN', 'Only Admin can re-scan files.');
+    const file = await this.prisma.client.storedFile.findUnique({ where: { id } });
+    if (!file) throw AppError.notFound('File');
+    if (file.scanStatus === 'INFECTED') throw new AppError('FILE_NOT_CLEAN', 'Infected files stay quarantined.');
+    const body = await this.storage.get({ bucket: file.bucket, key: file.key });
+    let status: 'CLEAN' | 'INFECTED' | 'SKIPPED' | 'PENDING';
+    let detail: string | undefined;
+    try {
+      ({ status, detail } = await this.scanner.scan({ body }));
+    } catch (e) {
+      throw new AppError('INTERNAL', `The malware scanner is unavailable: ${(e as Error).message}`);
+    }
+    const updated = await this.prisma.client.storedFile.update({ where: { id }, data: { scanStatus: status, scannedAt: new Date() } });
+    RequestContextStore.audit({ entityId: id, before: { scanStatus: file.scanStatus }, after: { scanStatus: status, signature: detail ?? null } });
+    return this.toDto(updated);
+  }
+
   /** Raw bytes for server-side processing (imports). Never exposed over HTTP. */
   async readBytes(id: string): Promise<{ file: { id: string; purpose: string; originalName: string; contentType: string }; body: Buffer }> {
     const file = await this.prisma.client.storedFile.findUniqueOrThrow({ where: { id } });
     const body = await this.storage.get({ bucket: file.bucket, key: file.key });
+    if (file.scanStatus === 'INFECTED') throw new AppError('FILE_NOT_CLEAN', 'This file failed the malware scan.');
     return { file, body };
   }
 

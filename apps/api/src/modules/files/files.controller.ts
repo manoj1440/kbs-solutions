@@ -33,4 +33,12 @@ export class FilesController {
   url(@CurrentActor() actor: Actor, @Param('id') id: string) {
     return this.files.downloadUrl(actor, id);
   }
+
+  /** F-902: Admin re-scan of a file whose scan failed (PENDING) or was skipped. */
+  @Post(':id/rescan')
+  @RequirePermission('CONFIG_MANAGE')
+  @Audited({ action: 'files.rescan', entityType: 'StoredFile', entityIdFrom: 'params.id' })
+  rescan(@CurrentActor() actor: Actor, @Param('id') id: string) {
+    return this.files.rescan(actor, id);
+  }
 }

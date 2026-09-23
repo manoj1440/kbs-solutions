@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 
 import { ENV, type Env } from '../config/env';
 
+import { ClamdScanAdapter } from './adapters/clamd-scan.adapter';
 import { ConsoleOtpAdapter } from './adapters/console-otp.adapter';
 import { ExpoPushAdapter } from './adapters/expo-push.adapter';
 import { HandoffWhatsAppAdapter } from './adapters/handoff-whatsapp.adapter';
@@ -24,7 +25,7 @@ import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER,
     { provide: KYC_PROVIDER, useFactory: () => new MockKycAdapter() },
     { provide: PAN_PROVIDER, useFactory: () => new MockPanAdapter() },
     { provide: PUSH_PROVIDER, inject: [ENV], useFactory: (env: Env) => (env.PUSH_PROVIDER === 'expo' ? new ExpoPushAdapter(env.EXPO_ACCESS_TOKEN) : new MockPushAdapter()) },
-    { provide: SCAN_PROVIDER, useFactory: () => new NoopScanAdapter() },
+    { provide: SCAN_PROVIDER, inject: [ENV], useFactory: (env: Env) => (env.SCAN_PROVIDER === 'clamav' ? new ClamdScanAdapter(env.CLAMAV_HOST, env.CLAMAV_PORT, env.CLAMAV_TIMEOUT_MS) : new NoopScanAdapter()) },
     {
       provide: STORAGE_PROVIDER,
       inject: [ENV],

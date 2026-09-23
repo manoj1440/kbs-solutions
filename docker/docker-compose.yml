@@ -44,6 +44,19 @@ services:
       mc alias set local http://minio:9000 kbsminio kbsminio123 &&
       mc mb --ignore-existing local/kbs-private &&
       echo 'bucket ready'"
+  clamav:
+    # F-902 malware scanner (clamd on TCP 3310). First start downloads signatures (a few minutes).
+    # Use with SCAN_PROVIDER=clamav, CLAMAV_HOST=localhost, CLAMAV_PORT=3310.
+    image: clamav/clamav:stable
+    profiles: ["scan"]
+    ports: ["3310:3310"]
+    volumes: ["clamdb:/var/lib/clamav"]
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
 volumes:
   pgdata:
+  clamdb:
   miniodata:
