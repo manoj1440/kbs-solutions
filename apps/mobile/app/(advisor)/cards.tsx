@@ -1,33 +1,43 @@
 import { ApiClientError, type BrowseCard, digitsOnly } from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { FlatList, Text as RNText, RefreshControl, ScrollView, View } from 'react-native';
 
-import { Badge, Button, Card, ErrorText, Heading, Input, Muted, Screen, Text } from '@/components/ui';
+import { CreditCardArt } from '@/components/brand/credit-card-art';
+import {
+  Appear,
+  Badge,
+  Button,
+  Callout,
+  Card,
+  Chip,
+  EmptyState,
+  ErrorText,
+  Icon,
+  Input,
+  Muted,
+  PressableScale,
+  Screen,
+  SkeletonList,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import { money } from '@/lib/cards';
+import { colors } from '@/lib/theme';
 
 interface Category {
   key: string;
   label: string;
 }
 
-const TINTS = ['bg-brand', 'bg-sky-800', 'bg-rose-700', 'bg-orange-600', 'bg-emerald-700', 'bg-indigo-800'];
-
-/** Card-art thumbnail — bank + card name on a tinted block (no image assets). */
-function CardThumb({ item, index }: { item: BrowseCard; index: number }) {
+function SourcingBadge({ value }: { value: BrowseCard['sourceableAtPincode'] }) {
+  if (value === null) return null;
   return (
-    <View className={`h-16 w-24 rounded-lg ${TINTS[index % TINTS.length]} justify-between p-2`}>
-      <View className="h-2.5 w-6 rounded-sm bg-amber-300" />
-      <View>
-        <Text className="text-[9px] font-semibold text-white" numberOfLines={1}>
-          {item.bank.displayName.toUpperCase()}
-        </Text>
-        <Muted className="text-[8px] text-white/70" numberOfLines={1}>
-          {item.name}
-        </Muted>
-      </View>
-    </View>
+    <Badge
+      size="sm"
+      dot
+      label={value === true ? 'Sourceable' : value === false ? 'Not here' : 'Pending'}
+      variant={value === true ? 'success' : value === false ? 'destructive' : 'warning'}
+    />
   );
 }
 
@@ -40,6 +50,7 @@ export default function CardCatalogue() {
   const [pincode, setPincode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,13 +60,17 @@ export default function CardCatalogue() {
       if (category) params.set('category', category);
       if (q.trim()) params.set('q', q.trim());
       if (/^\d{6}$/.test(pincode)) params.set('pincode', pincode);
-      const [c, k] = await Promise.all([api.get<{ cards: BrowseCard[] }>(`/cards/browse?${params.toString()}`), cats.length ? Promise.resolve(null) : api.get<Category[]>('/catalogue/categories')]);
+      const [c, k] = await Promise.all([
+        api.get<{ cards: BrowseCard[] }>(`/cards/browse?${params.toString()}`),
+        cats.length ? Promise.resolve(null) : api.get<Category[]>('/catalogue/categories'),
+      ]);
       setCards(c.data.cards);
       if (k) setCats(k.data);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load the catalogue.');
     } finally {
       setLoading(false);
+      setLoaded(true);
     }
   }, [category, q, pincode, cats.length]);
 
@@ -65,56 +80,145 @@ export default function CardCatalogue() {
     }, [load]),
   );
 
-  return (
-    <Screen>
-      <View className="mb-3 gap-3">
-        <Heading>Card Catalogue</Heading>
-        <Input placeholder="🔍 Search cards, banks…" value={q} onChangeText={setQ} onSubmitEditing={() => void load()} returnKeyType="search" className="rounded-xl" />
-        <Input placeholder="Customer pincode (optional) — checks bank sourcing" value={pincode} keyboardType="number-pad" maxLength={6} onChangeText={(t) => setPincode(digitsOnly(t, 6))} onSubmitEditing={() => void load()} className="rounded-xl" />
-        <View className="flex-row flex-wrap gap-2">
-          {[{ key: null, label: 'All' } as { key: string | null; label: string }, ...cats].map((c) => (
-            <Pressable key={c.key ?? 'all'} accessibilityRole="tab" accessibilityState={{ selected: category === c.key }} onPress={() => setCategory(category === c.key ? null : c.key)} className={`rounded-full px-3 py-1.5 ${category === c.key || (c.key === null && category === null) ? 'bg-primary' : 'bg-secondary'}`}>
-              <Text className={`text-xs ${category === c.key || (c.key === null && category === null) ? 'text-primary-foreground' : 'text-secondary-foreground'}`}>{c.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+  const openCard = (item: BrowseCard) =>
+    router.push({ pathname: '/(advisor)/card', params: { card: JSON.stringify(item), pincode } });
+
+  const header = (
+    <View className="gap-3 pb-1">
+      <View>
+        <RNText
+          accessibilityRole="header"
+          className="font-extrabold text-[28px] tracking-tight text-ink"
+        >
+          Card Catalogue
+        </RNText>
+        <Muted>
+          {loaded ? `${cards.length} card${cards.length === 1 ? '' : 's'}` : 'Loading cards…'}
+        </Muted>
       </View>
+      <Callout kind="info" icon="add-circle">
+        Pick a card to start a new lead
+      </Callout>
+      <Input
+        icon="search"
+        placeholder="Search cards, banks…"
+        value={q}
+        onChangeText={setQ}
+        onSubmitEditing={() => void load()}
+        returnKeyType="search"
+      />
+      <Input
+        icon="location-outline"
+        placeholder="Customer pincode (optional)"
+        hint="Checks bank sourcing for the customer's pincode"
+        value={pincode}
+        keyboardType="number-pad"
+        maxLength={6}
+        onChangeText={(t) => setPincode(digitsOnly(t, 6))}
+        onSubmitEditing={() => void load()}
+      />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="-mx-4"
+        contentContainerClassName="gap-2 px-4"
+      >
+        {[{ key: null, label: 'All' } as { key: string | null; label: string }, ...cats].map(
+          (c) => (
+            <Chip
+              key={c.key ?? 'all'}
+              label={c.label}
+              active={category === c.key || (c.key === null && category === null)}
+              onPress={() => setCategory(category === c.key ? null : c.key)}
+            />
+          ),
+        )}
+      </ScrollView>
       <ErrorText>{error}</ErrorText>
+    </View>
+  );
+
+  return (
+    <Screen padded={false}>
       <FlatList
-        data={cards}
+        data={loaded ? cards : []}
         keyExtractor={(c) => c.id}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-        ItemSeparatorComponent={() => <View className="h-2" />}
+        contentContainerClassName="gap-3 px-4 pb-10 pt-1"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={loading && loaded}
+            onRefresh={() => void load()}
+            tintColor={colors.brand}
+            colors={[colors.brand]}
+          />
+        }
+        ListHeaderComponent={header}
         ListEmptyComponent={
-          loading ? null : (
-            <Card>
-              <Text>No cards match.</Text>
-              <Muted>Cards appear here once KBS publishes them with an application link. Bank status for any application is shown only after the MIS upload.</Muted>
-            </Card>
+          !loaded ? (
+            <SkeletonList rows={3} />
+          ) : loading ? null : (
+            <EmptyState
+              icon="card-outline"
+              title="No cards match."
+              body="Cards appear here once KBS publishes them with an application link. Bank status for any application is shown only after the MIS upload."
+            />
           )
         }
         renderItem={({ item, index }) => (
-          <Card className="flex-row items-center gap-3 p-3">
-            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(advisor)/card', params: { card: JSON.stringify(item), pincode } })}>
-              <CardThumb item={item} index={index} />
-            </Pressable>
-            <Pressable accessibilityRole="button" className="flex-1" onPress={() => router.push({ pathname: '/(advisor)/card', params: { card: JSON.stringify(item), pincode } })}>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-semibold" numberOfLines={1}>
-                  {item.name}
-                </Text>
-                {item.sourceableAtPincode !== null ? <Badge label={item.sourceableAtPincode === true ? 'Sourceable' : item.sourceableAtPincode === false ? 'Not here' : 'Pending'} variant={item.sourceableAtPincode === true ? 'success' : item.sourceableAtPincode === false ? 'destructive' : 'warning'} /> : null}
+          <Appear index={index}>
+            <Card className="gap-3 p-3.5">
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel={`${item.name}, ${item.bank.displayName}. View details`}
+                scaleTo={0.985}
+                onPress={() => openCard(item)}
+                className="flex-row gap-3.5"
+              >
+                <CreditCardArt bank={item.bank.displayName} name={item.name} width={120} compact />
+                <View className="flex-1 justify-center gap-1">
+                  <RNText
+                    numberOfLines={2}
+                    className="font-bold text-[16px] leading-[20px] text-ink"
+                  >
+                    {item.name}
+                  </RNText>
+                  <Muted numberOfLines={1}>{item.bank.displayName}</Muted>
+                  <SourcingBadge value={item.sourceableAtPincode} />
+                </View>
+              </PressableScale>
+              <View className="flex-row items-center gap-3 border-t border-line pt-3">
+                <View className="flex-1 gap-1">
+                  <View className="flex-row items-center gap-1.5">
+                    <Icon name="pricetag-outline" size={13} color={colors.subtle} />
+                    <RNText numberOfLines={1} className="font-semibold text-[13px] text-ink">
+                      {money(item.joiningFee)} Joining Fee
+                    </RNText>
+                  </View>
+                  {item.benefits[0] ? (
+                    <View className="flex-row items-center gap-1.5">
+                      <Icon name="sparkles-outline" size={13} color="#B7791F" />
+                      <Muted numberOfLines={1} className="flex-1 text-[12px]">
+                        {item.benefits[0]}
+                      </Muted>
+                    </View>
+                  ) : null}
+                </View>
+                <Button
+                  title="Apply"
+                  size="sm"
+                  iconRight="arrow-forward"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(advisor)/lead-new',
+                      params: { cardId: item.id, pincode },
+                    })
+                  }
+                />
               </View>
-              <Muted className="text-xs" numberOfLines={1}>
-                {item.bank.displayName}
-              </Muted>
-              <Muted className="text-xs" numberOfLines={1}>
-                {money(item.joiningFee)} Joining Fee
-                {item.benefits[0] ? ` · ${item.benefits[0]}` : ''}
-              </Muted>
-            </Pressable>
-            <Button title="Apply" className="h-9 rounded-lg px-4" onPress={() => router.push({ pathname: '/(advisor)/lead-new', params: { cardId: item.id, pincode } })} />
-          </Card>
+            </Card>
+          </Appear>
         )}
       />
     </Screen>

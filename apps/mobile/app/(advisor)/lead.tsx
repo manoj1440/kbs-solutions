@@ -1,14 +1,42 @@
-import { ApiClientError, formatDateTime, type LeadStatusRow, type MisHistoryGroup, type OperationalEvent } from '@kbs/shared';
+import {
+  ApiClientError,
+  formatDateTime,
+  type LeadStatusRow,
+  type MisHistoryGroup,
+  type OperationalEvent,
+  shareStatusLabel,
+} from '@kbs/shared';
 import * as Linking from 'expo-linking';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import type React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, Text as RNText, View } from 'react-native';
 
+import { CopyValue, FieldRow, MetaLine, SectionCard, Timeline } from '@/components/advisor/parts';
 import { ShareButtons } from '@/components/share-buttons';
-import { ActivationBadge, DecisionBadge, ProvenanceChip, StageBadge } from '@/components/status';
-import { Badge, Button, Card, ErrorText, Heading, Input, Label, Muted, Screen, Text } from '@/components/ui';
+import { ProvenanceChip, StatusTrio } from '@/components/status';
+import {
+  AppBar,
+  Appear,
+  Avatar,
+  Badge,
+  Button,
+  Chip,
+  Divider,
+  EmptyState,
+  ErrorState,
+  ErrorText,
+  Icon,
+  type IconName,
+  Input,
+  KeyValue,
+  Muted,
+  Screen,
+  Segmented,
+  Skeleton,
+  Text,
+} from '@/components/ui';
 import { api } from '@/lib/api';
+import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
 
 interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   customerPanMasked: string | null;
@@ -20,12 +48,43 @@ interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   employmentType: string;
   annualIncomeItr: number;
   operationalEvents: OperationalEvent[];
-  followUps: { id: string; text: string; dueAt: string; doneAt: string | null; owner: { id: string; fullName: string } }[];
-  remarks: { id: string; text: string; at: string; editedAt: string | null; author: { id: string; fullName: string } }[];
-  bankStatus: { matched: boolean; provenance: string; lastMatchedAt: string | null; lastMatchedBatchRef: string | null; finalDecisionDate: string | null; raw: Record<string, string> | null };
+  followUps: {
+    id: string;
+    text: string;
+    dueAt: string;
+    doneAt: string | null;
+    owner: { id: string; fullName: string };
+  }[];
+  remarks: {
+    id: string;
+    text: string;
+    at: string;
+    editedAt: string | null;
+    author: { id: string; fullName: string };
+  }[];
+  bankStatus: {
+    matched: boolean;
+    provenance: string;
+    lastMatchedAt: string | null;
+    lastMatchedBatchRef: string | null;
+    finalDecisionDate: string | null;
+    raw: Record<string, string> | null;
+  };
   bankRemarks: { remarks: RemarkField[]; kyc: RemarkField[] };
-  bankReference: { value: string | null; kind?: string; status?: string; label?: string; at?: string };
-  referenceHistory: { id: string; value: string; status: string; at: string; supersededAt: string | null }[];
+  bankReference: {
+    value: string | null;
+    kind?: string;
+    status?: string;
+    label?: string;
+    at?: string;
+  };
+  referenceHistory: {
+    id: string;
+    value: string;
+    status: string;
+    at: string;
+    supersededAt: string | null;
+  }[];
   linkActivity: { id: string; action: string; linkVersion: number; at: string; label: string }[];
   shares: { id: string; kind: string; at: string; handoffResult: string; deliveryStatus: string }[];
 }
@@ -36,39 +95,57 @@ interface RemarkField {
   display: string;
 }
 
-const CHANGE_LABEL: Record<string, string> = { SET: 'set', CHANGED: 'changed', CONFIRMED_SAME: 'confirmed unchanged', REPORTED_BLANK: 'reported blank', ABSENT_FROM_BATCH: 'absent from batch' };
+type Tab = 'overview' | 'bank' | 'activity';
 
-function Section({ title, subtitle, open, onToggle, children }: { title: string; subtitle?: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
-  return (
-    <Card className="gap-2">
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={onToggle} className="flex-row items-center justify-between">
-        <View className="flex-1">
-          <Text className="font-medium">{title}</Text>
-          {subtitle ? <Muted>{subtitle}</Muted> : null}
-        </View>
-        <Muted>{open ? '▲' : '▼'}</Muted>
-      </Pressable>
-      {open ? children : null}
-    </Card>
-  );
-}
+const CHANGE_LABEL: Record<string, string> = {
+  SET: 'set',
+  CHANGED: 'changed',
+  CONFIRMED_SAME: 'confirmed unchanged',
+  REPORTED_BLANK: 'reported blank',
+  ABSENT_FROM_BATCH: 'absent from batch',
+};
+const EVENT_ICON: Record<OperationalEvent['kind'], IconName> = {
+  LEAD_CREATED: 'add-circle-outline',
+  LINK_SHARED: 'share-social-outline',
+  LINK_OPENED: 'open-outline',
+  BANK_REFERENCE_ENTERED: 'pricetag-outline',
+  BANK_REFERENCE_CORRECTED: 'create-outline',
+  SHARE_SENT: 'paper-plane-outline',
+  FOLLOW_UP_TASK: 'alarm-outline',
+  OPERATIONAL_REMARK: 'chatbox-ellipses-outline',
+};
+const SHARE_KIND: Record<string, string> = {
+  APPLICATION_LINK: 'Application link',
+  BENEFIT_PDF: 'Benefit PDF',
+  OFFICE_ID: 'Official ID',
+};
+const RAW_PREVIEW = 8;
 
-/** F-408 lead detail: A customer + KBS activity, B references + raw snapshot, C bank remarks / KYC, MIS history by batch. No timeline. */
+/**
+ * F-408 lead detail: A customer + KBS activity, B references + raw snapshot, C bank remarks / KYC, MIS history by batch.
+ * KBS activity is a chronological log only — never a bank-stage timeline (VIEW-02).
+ */
 export default function LeadScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [l, setL] = useState<LeadDetail | null>(null);
   const [history, setHistory] = useState<MisHistoryGroup[]>([]);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({ remarks: true });
-  const toggle = (k: string) => setExpanded((p) => ({ ...p, [k]: !p[k] }));
+  const [tab, setTab] = useState<Tab>('overview');
+  const [rawAll, setRawAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [ref, setRef] = useState('');
   const [taskText, setTaskText] = useState('');
   const [taskDays, setTaskDays] = useState(1);
   const [remark, setRemark] = useState('');
-  const [kind, setKind] = useState<'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER' | 'OTHER'>('APPLICATION_NO');
+  const [kind, setKind] = useState<'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER' | 'OTHER'>(
+    'APPLICATION_NO',
+  );
   const load = useCallback(async () => {
     try {
-      const [d, h] = await Promise.all([api.get<LeadDetail>(`/leads/${id}`), api.get<MisHistoryGroup[]>(`/leads/${id}/mis-history`)]);
+      const [d, h] = await Promise.all([
+        api.get<LeadDetail>(`/leads/${id}`),
+        api.get<MisHistoryGroup[]>(`/leads/${id}/mis-history`),
+      ]);
       setL(d.data);
       setHistory(h.data);
     } catch (e) {
@@ -100,7 +177,10 @@ export default function LeadScreen() {
   };
   const addTask = async () => {
     try {
-      await api.post(`/leads/${id}/follow-ups`, { text: taskText.trim(), dueAt: new Date(Date.now() + taskDays * 86_400_000).toISOString() });
+      await api.post(`/leads/${id}/follow-ups`, {
+        text: taskText.trim(),
+        dueAt: new Date(Date.now() + taskDays * 86_400_000).toISOString(),
+      });
       setTaskText('');
       await load();
     } catch (e) {
@@ -124,180 +204,631 @@ export default function LeadScreen() {
       setError(e instanceof ApiClientError ? e.message : 'Could not update the task.');
     }
   };
+  const refresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
+
+  if (!l) {
+    return (
+      <Screen scroll header={<AppBar title="Lead" />}>
+        {error ? (
+          <ErrorState
+            message={error}
+            onRetry={() => {
+              setError(null);
+              void load();
+            }}
+          />
+        ) : (
+          <View accessibilityLabel="Loading" className="gap-4">
+            <Skeleton className="h-48 w-full rounded-3xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-10 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+          </View>
+        )}
+      </Screen>
+    );
+  }
+
+  const verified = l.bankReference.status === 'VERIFIED_BY_MIS_MATCH';
+  const openTasks = l.followUps.filter((t) => !t.doneAt).length;
+  const rawEntries = l.bankStatus.raw ? Object.entries(l.bankStatus.raw) : [];
+  const rawShown = rawAll ? rawEntries : rawEntries.slice(0, RAW_PREVIEW);
+  const earlierRefs = l.referenceHistory.filter((h) => h.supersededAt);
+
   return (
-    <Screen>
-      <ScrollView contentContainerClassName="gap-3 pb-8">
-        <Button title="← Back" variant="ghost" onPress={() => router.back()} />
-        <ErrorText>{error}</ErrorText>
-        {l ? (
-          <>
-            <View>
-              <Muted>KBS {l.kbsRef}</Muted>
-              <Heading>{l.customer.name}</Heading>
-              <Muted>
-                {l.bank.displayName} {l.card.name} · created {formatDateTime(l.leadCreatedAt)} (KBS activity)
-              </Muted>
+    <Screen
+      scroll
+      refreshing={refreshing}
+      onRefresh={() => void refresh()}
+      header={<AppBar title={l.customer.name} subtitle={`KBS ${l.kbsRef}`} />}
+    >
+      {error ? <ErrorText>{error}</ErrorText> : null}
+
+      {/* Hero summary */}
+      <Appear>
+        <View
+          className="overflow-hidden rounded-3xl p-5"
+          style={[gradientStyle(gradients.hero, 135), shadow.lg]}
+        >
+          <View
+            pointerEvents="none"
+            className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-white/[0.07]"
+          />
+          <View
+            pointerEvents="none"
+            className="absolute -bottom-16 left-10 h-32 w-32 rounded-full"
+            style={{ backgroundColor: 'rgba(245, 185, 66, 0.10)' }}
+          />
+          <View className="flex-row items-center gap-3">
+            <Avatar name={l.customer.name} size={52} light />
+            <View className="flex-1">
+              <RNText numberOfLines={1} className="font-bold text-[20px] text-white">
+                {l.customer.name}
+              </RNText>
+              <View className="mt-0.5 flex-row items-center gap-1.5">
+                <Icon name="card-outline" size={13} color="rgba(255,255,255,0.7)" />
+                <RNText numberOfLines={1} className="flex-1 font-medium text-[13px] text-white/75">
+                  {l.bank.displayName} · {l.card.name}
+                </RNText>
+              </View>
             </View>
-            <Card className="gap-1">
-              <Text className="font-medium">Bank status (from MIS only)</Text>
-              <StageBadge field={l.stage} />
-              <DecisionBadge field={l.decision} />
-              <ActivationBadge field={l.activation} />
-              <ProvenanceChip provenance="BANK_MIS" asOf={l.lastMatchedAt} />
-              <Muted>{l.bankStatus.matched ? `Exact values from bank MIS batch ${l.bankStatus.lastMatchedBatchRef ?? ''}.` : 'No MIS row has matched this lead yet.'}</Muted>
-              {l.remarksPreview ? <Muted>{l.remarksPreview}</Muted> : null}
-            </Card>
-            <Card className="gap-1">
-              <Text className="font-medium">Customer</Text>
-              <Muted>
-                {l.customer.mobileMasked} · PAN {l.customerPanMasked} ({l.panVerificationStatus.toLowerCase()})
-              </Muted>
-              <Muted>
-                {l.pincode} · {l.city ?? '—'}, {l.state ?? '—'} · {l.employmentType.toLowerCase().replace(/_/g, ' ')} · ₹{l.annualIncomeItr.toLocaleString('en-IN')}
-              </Muted>
-            </Card>
-            <Card className="gap-2">
-              <Text className="font-medium">Application link</Text>
-              <Button title="Open application link" variant="outline" onPress={() => void open()} />
-              <ShareButtons target={{ type: 'LEAD', id: l.id }} cardId={l.cardId} kinds={['APPLICATION_LINK']} onShared={() => void api.post(`/leads/${id}/link/share`, {}).then(load).catch(() => undefined)} />
-              {l.linkActivity.map((a) => (
-                <Muted key={a.id}>
-                  {formatDateTime(a.at)} · {a.label} (v{a.linkVersion})
-                </Muted>
-              ))}
-            </Card>
-            <Card className="gap-2">
-              <Text className="font-medium">Bank application reference</Text>
+          </View>
+          <View className="mt-5 rounded-2xl bg-white/10 px-3.5">
+            <View className="min-h-[48px] flex-row items-center justify-between gap-3 border-b border-white/10 py-2">
+              <RNText className="font-semibold text-[10px] uppercase tracking-[1px] text-white/60">
+                KBS reference
+              </RNText>
+              <CopyValue value={l.kbsRef} light />
+            </View>
+            <View className="min-h-[48px] flex-row items-center justify-between gap-3 py-2">
+              <RNText className="font-semibold text-[10px] uppercase tracking-[1px] text-white/60">
+                Bank reference
+              </RNText>
               {l.bankReference.value ? (
-                <>
-                  <Text>
-                    {l.bankReference.value} <Badge label={l.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'Verified by MIS match' : 'Unverified'} variant={l.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'success' : 'warning'} />
-                  </Text>
-                </>
-              ) : (
-                <Muted>{l.bankReference.label ?? 'Bank application reference not yet available'}</Muted>
-              )}
-              {l.bankReference.status !== 'VERIFIED_BY_MIS_MATCH' ? (
-                <>
-                  <View className="flex-row gap-2">
-                    {(['APPLICATION_NO', 'APPLICATION_REFERENCE_NUMBER', 'OTHER'] as const).map((k) => (
-                      <Button key={k} title={k === 'APPLICATION_NO' ? 'App no.' : k === 'APPLICATION_REFERENCE_NUMBER' ? 'Ref no.' : 'Other'} variant={kind === k ? 'default' : 'outline'} onPress={() => setKind(k)} />
-                    ))}
+                <View className="items-end gap-0.5">
+                  <CopyValue value={l.bankReference.value} light />
+                  <View className="flex-row items-center gap-1">
+                    <Icon
+                      name={verified ? 'shield-checkmark' : 'alert-circle-outline'}
+                      size={12}
+                      color={verified ? '#86EFAC' : colors.gold}
+                    />
+                    <RNText
+                      className="font-semibold text-[11px]"
+                      style={{ color: verified ? '#86EFAC' : colors.gold }}
+                    >
+                      {verified ? 'Verified by MIS match' : 'Unverified'}
+                    </RNText>
                   </View>
-                  <Label>Reference exactly as the bank shows it</Label>
-                  <Input value={ref} onChangeText={setRef} autoCapitalize="none" />
-                  <Button title={l.bankReference.value ? 'Correct reference' : 'Save reference'} disabled={!ref.trim()} onPress={() => void saveRef()} />
-                </>
-              ) : null}
-              {l.referenceHistory.filter((h) => h.supersededAt).map((h) => (
-                <Muted key={h.id}>
-                  Earlier: {h.value} ({formatDateTime(h.at)})
-                </Muted>
-              ))}
-            </Card>
-            <Section title="Follow-up tasks & my remarks" subtitle="KBS activity — never changes bank status" open={!!expanded.tasks} onToggle={() => toggle('tasks')}>
-              {l.followUps.map((t) => (
-                <View key={t.id} className="gap-0.5">
-                  <View className="flex-row items-center gap-2">
-                    <Badge label="Follow-up task" variant={t.doneAt ? 'secondary' : 'warning'} />
-                    <Text className="flex-1 text-xs">{t.text}</Text>
-                  </View>
-                  <Muted>
-                    {t.owner.fullName} · due {formatDateTime(t.dueAt)}
-                    {t.doneAt ? ` · done` : ''}
-                  </Muted>
-                  {!t.doneAt ? <Button title="Mark done" variant="ghost" onPress={() => void doneTask(t.id)} /> : null}
                 </View>
-              ))}
-              <Label>New follow-up task</Label>
-              <Input value={taskText} onChangeText={setTaskText} placeholder="What needs to be done" />
-              <View className="flex-row gap-2">
-                {[1, 3, 7].map((d) => (
-                  <Button key={d} title={`in ${d} day${d > 1 ? 's' : ''}`} variant={taskDays === d ? 'default' : 'outline'} onPress={() => setTaskDays(d)} />
+              ) : (
+                <RNText className="flex-1 text-right font-medium text-[12px] leading-[16px] text-white/70">
+                  {l.bankReference.label ?? 'Bank application reference not yet available'}
+                </RNText>
+              )}
+            </View>
+          </View>
+          <View className="mt-4 flex-row items-center gap-1.5">
+            <Icon name="time-outline" size={12} color="rgba(255,255,255,0.6)" />
+            <RNText className="font-medium text-[12px] text-white/60">
+              Created {formatDateTime(l.leadCreatedAt)} (KBS activity)
+            </RNText>
+          </View>
+        </View>
+      </Appear>
+
+      {/* Bank status — MIS only */}
+      <Appear index={1}>
+        <SectionCard
+          icon="business-outline"
+          tone="info"
+          title="Bank status (from MIS only)"
+          subtitle="Stage, decision and activation exactly as the bank reported"
+        >
+          <StatusTrio stage={l.stage} decision={l.decision} activation={l.activation} />
+          <ProvenanceChip provenance="BANK_MIS" asOf={l.lastMatchedAt} />
+          <MetaLine icon={l.bankStatus.matched ? 'sync-outline' : 'hourglass-outline'}>
+            {l.bankStatus.matched
+              ? `Exact values from bank MIS batch ${l.bankStatus.lastMatchedBatchRef ?? ''}.`
+              : 'No MIS row has matched this lead yet.'}
+          </MetaLine>
+          {l.remarksPreview ? (
+            <View className="rounded-xl bg-[#F4F6FB] px-3 py-2.5">
+              <Muted className="italic">“{l.remarksPreview}”</Muted>
+            </View>
+          ) : null}
+        </SectionCard>
+      </Appear>
+
+      <Appear index={2}>
+        <Segmented<Tab>
+          value={tab}
+          onChange={setTab}
+          options={[
+            { key: 'overview', label: 'Overview' },
+            { key: 'bank', label: 'Bank data', count: history.length || undefined },
+            { key: 'activity', label: 'Activity', count: openTasks || undefined },
+          ]}
+        />
+      </Appear>
+
+      {tab === 'overview' ? (
+        <>
+          <Appear index={3}>
+            <SectionCard
+              icon="person-outline"
+              title="Customer"
+              subtitle="Masked — full numbers are never shown"
+            >
+              <View>
+                <KeyValue label="Mobile" value={l.customer.mobileMasked} />
+                <KeyValue
+                  label="PAN"
+                  value={
+                    <View className="items-end gap-1">
+                      <RNText
+                        selectable
+                        className="font-semibold text-[14px] tracking-wide text-ink"
+                      >
+                        {l.customerPanMasked ?? '—'}
+                      </RNText>
+                      <Badge
+                        label={l.panVerificationStatus.toLowerCase()}
+                        variant={l.panVerificationStatus === 'VERIFIED' ? 'success' : 'warning'}
+                        size="sm"
+                      />
+                    </View>
+                  }
+                />
+                <KeyValue
+                  label="Location"
+                  value={`${l.pincode} · ${l.city ?? '—'}, ${l.state ?? '—'}`}
+                />
+                <KeyValue
+                  label="Employment"
+                  value={l.employmentType.toLowerCase().replace(/_/g, ' ')}
+                />
+                <KeyValue
+                  label="Annual income (ITR)"
+                  value={`₹${l.annualIncomeItr.toLocaleString('en-IN')}`}
+                  last
+                />
+              </View>
+            </SectionCard>
+          </Appear>
+
+          <Appear index={4}>
+            <SectionCard
+              icon="link-outline"
+              title="Application link"
+              subtitle="Opening or sharing is KBS activity — it never sets a bank status"
+            >
+              <Button
+                title="Open application link"
+                icon="open-outline"
+                variant="outline"
+                onPress={() => void open()}
+              />
+              <ShareButtons
+                target={{ type: 'LEAD', id: l.id }}
+                cardId={l.cardId}
+                kinds={['APPLICATION_LINK']}
+                onShared={() =>
+                  void api
+                    .post(`/leads/${id}/link/share`, {})
+                    .then(load)
+                    .catch(() => undefined)
+                }
+              />
+              {l.linkActivity.length ? (
+                <View className="gap-2 rounded-xl bg-[#F4F6FB] p-3">
+                  {l.linkActivity.map((a) => (
+                    <MetaLine key={a.id} icon="radio-button-on-outline">
+                      {formatDateTime(a.at)} · {a.label} (v{a.linkVersion})
+                    </MetaLine>
+                  ))}
+                </View>
+              ) : null}
+            </SectionCard>
+          </Appear>
+
+          <Appear index={5}>
+            <SectionCard
+              icon="pricetag-outline"
+              tone={verified ? 'success' : 'warning'}
+              title="Bank application reference"
+            >
+              {l.bankReference.value ? (
+                <View className="flex-row flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F4F6FB] px-3 py-2.5">
+                  <CopyValue value={l.bankReference.value} />
+                  <Badge
+                    label={verified ? 'Verified by MIS match' : 'Unverified'}
+                    variant={verified ? 'success' : 'warning'}
+                    icon={verified ? 'shield-checkmark' : 'alert-circle-outline'}
+                  />
+                </View>
+              ) : (
+                <Muted>
+                  {l.bankReference.label ?? 'Bank application reference not yet available'}
+                </Muted>
+              )}
+              {!verified ? (
+                <View className="gap-3">
+                  <Segmented<typeof kind>
+                    value={kind}
+                    onChange={setKind}
+                    options={[
+                      { key: 'APPLICATION_NO', label: 'App no.' },
+                      { key: 'APPLICATION_REFERENCE_NUMBER', label: 'Ref no.' },
+                      { key: 'OTHER', label: 'Other' },
+                    ]}
+                  />
+                  <Input
+                    label="Reference exactly as the bank shows it"
+                    icon="document-text-outline"
+                    value={ref}
+                    onChangeText={setRef}
+                    autoCapitalize="none"
+                  />
+                  <Button
+                    title={l.bankReference.value ? 'Correct reference' : 'Save reference'}
+                    disabled={!ref.trim()}
+                    onPress={() => void saveRef()}
+                  />
+                </View>
+              ) : null}
+              {earlierRefs.length ? (
+                <View className="gap-1.5">
+                  {earlierRefs.map((h) => (
+                    <MetaLine key={h.id} icon="git-commit-outline">
+                      Earlier: {h.value} ({formatDateTime(h.at)})
+                    </MetaLine>
+                  ))}
+                </View>
+              ) : null}
+            </SectionCard>
+          </Appear>
+        </>
+      ) : null}
+
+      {tab === 'bank' ? (
+        <>
+          <Appear index={3}>
+            <SectionCard
+              icon="chatbubble-ellipses-outline"
+              tone="info"
+              title="Bank reason / remarks"
+              subtitle="Named bank fields, verbatim"
+            >
+              <View>
+                {l.bankRemarks.remarks.map((f, i, a) => (
+                  <FieldRow
+                    key={f.field}
+                    label={f.label}
+                    value={f.display}
+                    unknown={f.raw === null}
+                    last={i === a.length - 1}
+                  />
                 ))}
               </View>
-              <Button title="Add follow-up task" disabled={taskText.trim().length < 3} onPress={() => void addTask()} />
-              {l.remarks.map((r) => (
-                <View key={r.id} className="gap-0.5 border-t border-border pt-2">
-                  <Text className="text-xs">{r.text}</Text>
-                  <Muted>
-                    {r.author.fullName} · {formatDateTime(r.at)}
-                  </Muted>
-                </View>
-              ))}
-              <Label>Add operational remark</Label>
-              <Input value={remark} onChangeText={setRemark} placeholder="Dated note with your name attached" />
-              <Button title="Add remark" variant="outline" disabled={!remark.trim()} onPress={() => void addRemark()} />
-            </Section>
-            <Section title="C · Bank reason / remarks" subtitle="Named bank fields, verbatim" open={!!expanded.remarks} onToggle={() => toggle('remarks')}>
-              {l.bankRemarks.remarks.map((f) => (
-                <View key={f.field} className="flex-row justify-between gap-2">
-                  <Muted>{f.label}</Muted>
-                  <Text className={`flex-1 text-right ${f.raw === null ? 'text-muted-foreground italic' : ''}`}>{f.display}</Text>
-                </View>
-              ))}
-            </Section>
-            <Section title="Bank/KYC information" subtitle="Sub-statuses and dates from the bank" open={!!expanded.kyc} onToggle={() => toggle('kyc')}>
-              {l.bankRemarks.kyc.map((f) => (
-                <View key={f.field} className="flex-row justify-between gap-2">
-                  <Muted>{f.label}</Muted>
-                  <Text className={`flex-1 text-right ${f.raw === null ? 'text-muted-foreground italic' : ''}`}>{f.display}</Text>
-                </View>
-              ))}
-            </Section>
-            <Section title="MIS update history" subtitle={history.length ? `${history.length} batch(es)` : 'No MIS batch has matched this lead yet'} open={!!expanded.history} onToggle={() => toggle('history')}>
-              {history.map((g) => {
-                const changed = g.changes.filter((c) => c.changeKind === 'SET' || c.changeKind === 'CHANGED' || c.changeKind === 'ABSENT_FROM_BATCH');
+            </SectionCard>
+          </Appear>
+          <Appear index={4}>
+            <SectionCard
+              icon="finger-print-outline"
+              tone="info"
+              title="Bank/KYC information"
+              subtitle="Sub-statuses and dates from the bank"
+            >
+              <View>
+                {l.bankRemarks.kyc.map((f, i, a) => (
+                  <FieldRow
+                    key={f.field}
+                    label={f.label}
+                    value={f.display}
+                    unknown={f.raw === null}
+                    last={i === a.length - 1}
+                  />
+                ))}
+              </View>
+            </SectionCard>
+          </Appear>
+          <Appear index={5}>
+            <SectionCard
+              icon="layers-outline"
+              tone="info"
+              title="MIS update history"
+              subtitle={
+                history.length
+                  ? `${history.length} batch(es)`
+                  : 'No MIS batch has matched this lead yet'
+              }
+            >
+              {history.map((g, gi) => {
+                const changed = g.changes.filter(
+                  (c) =>
+                    c.changeKind === 'SET' ||
+                    c.changeKind === 'CHANGED' ||
+                    c.changeKind === 'ABSENT_FROM_BATCH',
+                );
                 const quiet = g.changes.length - changed.length;
                 return (
-                  <View key={g.batchId} className="gap-1 border-t border-border pt-2">
-                    <Text className="text-xs font-medium">
-                      {g.publicRef} · imported {formatDateTime(g.importedAt)} by {g.uploaderRole.toLowerCase()}
-                    </Text>
-                    {changed.length === 0 ? <Muted>Identical repeat — no bank value changed.</Muted> : null}
+                  <View key={g.batchId} className="gap-2">
+                    {gi ? <Divider /> : null}
+                    <View className="flex-row items-center gap-2">
+                      <Icon name="cloud-upload-outline" size={15} color={colors.info} />
+                      <Text className="flex-1 font-semibold text-[13px]">
+                        {g.publicRef} · imported {formatDateTime(g.importedAt)} by{' '}
+                        {g.uploaderRole.toLowerCase()}
+                      </Text>
+                    </View>
+                    {changed.length === 0 ? (
+                      <Muted>Identical repeat — no bank value changed.</Muted>
+                    ) : null}
                     {changed.map((c) => (
-                      <View key={`${g.batchId}-${c.field}`} className="gap-0.5">
-                        <View className="flex-row items-center gap-2">
-                          <Text className="text-xs">{c.field === '*' ? '(whole row)' : c.field}</Text>
-                          <Badge label={CHANGE_LABEL[c.changeKind] ?? c.changeKind.toLowerCase()} variant={c.changeKind === 'ABSENT_FROM_BATCH' ? 'warning' : 'info'} />
+                      <View
+                        key={`${g.batchId}-${c.field}`}
+                        className="gap-1 rounded-xl bg-[#F4F6FB] px-3 py-2.5"
+                      >
+                        <View className="flex-row items-center justify-between gap-2">
+                          <Text className="flex-1 font-semibold text-[13px]">
+                            {c.field === '*' ? '(whole row)' : c.field}
+                          </Text>
+                          <Badge
+                            label={CHANGE_LABEL[c.changeKind] ?? c.changeKind.toLowerCase()}
+                            variant={c.changeKind === 'ABSENT_FROM_BATCH' ? 'warning' : 'info'}
+                            size="sm"
+                          />
                         </View>
-                        <Muted>
+                        <Muted className="text-[12px]">
                           {c.oldValue ?? 'blank'} → {c.newValue ?? 'blank'}
-                          {c.reportedEventDate ? ` · bank date ${formatDateTime(c.reportedEventDate)}` : ''}
+                          {c.reportedEventDate
+                            ? ` · bank date ${formatDateTime(c.reportedEventDate)}`
+                            : ''}
                         </Muted>
                       </View>
                     ))}
-                    {quiet ? <Muted>{quiet} field(s) confirmed unchanged or reported blank</Muted> : null}
+                    {quiet ? (
+                      <Muted className="text-[12px]">
+                        {quiet} field(s) confirmed unchanged or reported blank
+                      </Muted>
+                    ) : null}
                   </View>
                 );
               })}
-            </Section>
-            <Section title="B · Raw bank values" subtitle={l.bankStatus.raw ? `Batch ${l.bankStatus.lastMatchedBatchRef ?? ''}` : 'Awaiting MIS Update'} open={!!expanded.raw} onToggle={() => toggle('raw')}>
+            </SectionCard>
+          </Appear>
+          <Appear index={6}>
+            <SectionCard
+              icon="code-slash-outline"
+              tone="secondary"
+              title="Raw bank values"
+              subtitle={
+                l.bankStatus.raw
+                  ? `Batch ${l.bankStatus.lastMatchedBatchRef ?? ''}`
+                  : 'Awaiting MIS Update'
+              }
+            >
               {l.bankStatus.raw ? (
-                Object.entries(l.bankStatus.raw).map(([k, v]) => (
-                  <View key={k} className="flex-row justify-between gap-2">
-                    <Muted>{k}</Muted>
-                    <Text className="flex-1 text-right">{v === '' ? '(blank)' : v}</Text>
-                  </View>
-                ))
+                <View>
+                  {rawShown.map(([k, v], i) => (
+                    <FieldRow
+                      key={k}
+                      label={k}
+                      value={v === '' ? '(blank)' : v}
+                      unknown={v === ''}
+                      last={i === rawShown.length - 1}
+                    />
+                  ))}
+                  {rawEntries.length > RAW_PREVIEW ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: rawAll }}
+                      onPress={() => setRawAll(!rawAll)}
+                      className="mt-2 h-11 flex-row items-center justify-center gap-1 rounded-xl bg-[#EEF2FF]"
+                    >
+                      <RNText className="font-semibold text-[13px] text-brand">
+                        {rawAll ? 'Show fewer fields' : `Show all ${rawEntries.length} fields`}
+                      </RNText>
+                      <Icon
+                        name={rawAll ? 'chevron-up' : 'chevron-down'}
+                        size={14}
+                        color={colors.brand}
+                      />
+                    </Pressable>
+                  ) : null}
+                </View>
               ) : (
                 <Muted>No MIS row has matched this lead yet.</Muted>
               )}
-            </Section>
-            <Section title="A · KBS activity" subtitle="Operational events — never a bank stage" open={!!expanded.ops} onToggle={() => toggle('ops')}>
-              {l.operationalEvents.map((e) => (
-                <View key={e.id} className="gap-0.5">
-                  <Text className="text-xs">{e.label}</Text>
-                  <Muted>
-                    {formatDateTime(e.at)}
-                    {e.detail ? ` · ${e.detail}` : ''} · KBS activity
-                  </Muted>
+            </SectionCard>
+          </Appear>
+        </>
+      ) : null}
+
+      {tab === 'activity' ? (
+        <>
+          <Appear index={3}>
+            <SectionCard
+              icon="pulse-outline"
+              tone="info"
+              title="KBS activity"
+              subtitle="Operational events — never a bank stage"
+            >
+              <ProvenanceChip provenance="KBS_OPERATIONAL" />
+              {l.operationalEvents.length ? (
+                <Timeline
+                  items={l.operationalEvents.map((e) => ({
+                    id: e.id,
+                    title: e.label,
+                    detail: e.detail,
+                    meta: `${formatDateTime(e.at)} · KBS activity`,
+                    icon: EVENT_ICON[e.kind],
+                  }))}
+                />
+              ) : (
+                <Muted>No KBS activity recorded yet.</Muted>
+              )}
+            </SectionCard>
+          </Appear>
+
+          <Appear index={4}>
+            <SectionCard
+              icon="alarm-outline"
+              tone="warning"
+              title="Follow-up tasks"
+              subtitle="KBS activity — never changes bank status"
+              right={
+                openTasks ? <Badge label={`${openTasks} open`} variant="warning" size="sm" /> : null
+              }
+            >
+              {l.followUps.map((t) => (
+                <View key={t.id} className="flex-row items-start gap-3 rounded-xl bg-[#F4F6FB] p-3">
+                  <Icon
+                    name={t.doneAt ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={t.doneAt ? colors.success : colors.warning}
+                  />
+                  <View className="flex-1 gap-0.5">
+                    <View className="flex-row items-center gap-2">
+                      <Badge
+                        label="Follow-up task"
+                        variant={t.doneAt ? 'secondary' : 'warning'}
+                        size="sm"
+                      />
+                    </View>
+                    <Text
+                      className={
+                        t.doneAt ? 'text-[14px] text-[#5B6478] line-through' : 'text-[14px]'
+                      }
+                    >
+                      {t.text}
+                    </Text>
+                    <Muted className="text-[12px]">
+                      {t.owner.fullName} · due {formatDateTime(t.dueAt)}
+                      {t.doneAt ? ` · done` : ''}
+                    </Muted>
+                  </View>
+                  {!t.doneAt ? (
+                    <Button
+                      title="Mark done"
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => void doneTask(t.id)}
+                    />
+                  ) : null}
                 </View>
               ))}
-            </Section>
-          </>
-        ) : null}
-      </ScrollView>
+              <View className="gap-3">
+                <Input
+                  label="New follow-up task"
+                  icon="add-circle-outline"
+                  value={taskText}
+                  onChangeText={setTaskText}
+                  placeholder="What needs to be done"
+                />
+                <View className="flex-row flex-wrap gap-2">
+                  {[1, 3, 7].map((d) => (
+                    <Chip
+                      key={d}
+                      label={`in ${d} day${d > 1 ? 's' : ''}`}
+                      active={taskDays === d}
+                      onPress={() => setTaskDays(d)}
+                    />
+                  ))}
+                </View>
+                <Button
+                  title="Add follow-up task"
+                  icon="add"
+                  disabled={taskText.trim().length < 3}
+                  onPress={() => void addTask()}
+                />
+              </View>
+            </SectionCard>
+          </Appear>
+
+          <Appear index={5}>
+            <SectionCard
+              icon="chatbox-ellipses-outline"
+              title="My remarks"
+              subtitle="KBS activity — never changes bank status"
+            >
+              {l.remarks.map((r) => (
+                <View key={r.id} className="flex-row gap-3">
+                  <Avatar name={r.author.fullName} size={32} />
+                  <View className="flex-1 rounded-2xl rounded-tl-md bg-[#F4F6FB] px-3 py-2.5">
+                    <Text className="text-[14px]">{r.text}</Text>
+                    <Muted className="mt-1 text-[12px]">
+                      {r.author.fullName} · {formatDateTime(r.at)}
+                    </Muted>
+                  </View>
+                </View>
+              ))}
+              <Input
+                label="Add operational remark"
+                value={remark}
+                onChangeText={setRemark}
+                placeholder="Dated note with your name attached"
+                multiline
+              />
+              <Button
+                title="Add remark"
+                icon="send"
+                variant="outline"
+                disabled={!remark.trim()}
+                onPress={() => void addRemark()}
+              />
+            </SectionCard>
+          </Appear>
+
+          <Appear index={6}>
+            <SectionCard
+              icon="share-social-outline"
+              title="Shares"
+              subtitle="Share hand-offs logged for this lead"
+            >
+              {l.shares.length ? (
+                <View>
+                  {l.shares.map((s, i, a) => (
+                    <View
+                      key={s.id}
+                      className={`flex-row items-center gap-3 py-2.5 ${i < a.length - 1 ? 'border-b border-line' : ''}`}
+                    >
+                      <Icon name="paper-plane-outline" size={18} color={colors.brand} />
+                      <View className="flex-1">
+                        <Text className="font-semibold text-[14px]">
+                          {SHARE_KIND[s.kind] ?? s.kind.toLowerCase().replace(/_/g, ' ')}
+                        </Text>
+                        <Muted className="text-[12px]">{formatDateTime(s.at)}</Muted>
+                      </View>
+                      <Badge
+                        label={shareStatusLabel({
+                          channel: 'WHATSAPP_HANDOFF',
+                          handoffResult: s.handoffResult,
+                          deliveryStatus: s.deliveryStatus,
+                        } as unknown as Parameters<typeof shareStatusLabel>[0])}
+                        variant="secondary"
+                        size="sm"
+                      />
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <EmptyState
+                  compact
+                  icon="share-social-outline"
+                  title="Nothing shared yet"
+                  body="Share the application link from the Overview tab."
+                />
+              )}
+            </SectionCard>
+          </Appear>
+        </>
+      ) : null}
     </Screen>
   );
 }
