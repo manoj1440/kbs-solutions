@@ -124,7 +124,8 @@ export class ConfigService implements OnModuleInit {
   }
 
   async history(key: string) {
-    return this.prisma.client.systemConfigHistory.findMany({ where: { key }, orderBy: { at: 'desc' }, take: 100 });
+    if (!CONFIG_KEY_MAP.has(key)) throw AppError.notFound('Config key');
+    return this.prisma.client.systemConfigHistory.findMany({ where: { key }, orderBy: { at: 'desc' }, take: 100, include: { changedBy: { select: { id: true, fullName: true, role: true, publicRef: true } } } });
   }
 
   /** REQ-28 §28.2 launch-gate checklist: keys that must hold a value before production. */
