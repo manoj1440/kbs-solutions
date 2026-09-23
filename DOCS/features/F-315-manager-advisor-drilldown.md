@@ -1,6 +1,6 @@
 # F-315 Manager Advisor team drill-down (web + mobile)
 
-- Group: Advisor · Status: **IN_PROGRESS** · Depends on: F-106, F-408, F-506, F-603, F-604, F-702
+- Group: Advisor · Status: **DONE** · Depends on: F-106, F-408, F-506, F-603, F-604, F-702
 - PRD refs: REQ-15 §15.1 ("View Advisors assigned through reporting code, their lead/MIS results and payout requests"), REQ-15 §15.3 ("Advisor view drills down to each eligible card/lead, bank result and payout history"; no score/ranking), REQ-25 §25.3 ("Advisor team and lead-MIS details … Mobile may use smaller cards/filters; web may use richer full-width data tables, but authorization and calculation must be consistent"), REQ-14 §14.3 (separate Stage / Decision / Activation), REQ-16 §16.3 (denominators, sources, no mixing)
 - QA ids: RBAC-01, DASH-02, VIEW-01
 - Origin: session 10 gap analysis. On web the Manager "Team" page lists Advisors as plain rows (name/status/mobile) with no link. On mobile, tapping an Advisor does nothing, and the Manager app has no lead/MIS screen at all. The data APIs (`/leads?advisorId`, `/payouts/requests?advisorId`, `/payouts/entitlements?advisorId`, F-702 metric engine) already exist, but no per-Advisor summary was available to Managers (`/dashboards/admin/advisors` is Admin-only).
@@ -24,11 +24,15 @@
 4. Calculation consistency: web and mobile read the same endpoint; nothing is recomputed on the client (REQ-25 §25.3).
 
 ## Acceptance criteria
-- [ ] A Manager sees one row per own-team Advisor with lead, MIS and payout figures equal to F-702 for that Advisor (same engine).
-- [ ] Another team's Advisor → 404; Telecaller / Advisor / Accounts → 403; the Admin can view any Manager's rows (DASH-02).
-- [ ] Stage, decision and activation stay three separate distributions with `Awaiting MIS` / `Not reported` buckets; no ranking field.
-- [ ] Web list + drill-down render and link to the lead detail and payout request pages; they fit 390 px.
-- [ ] Mobile: Advisors tab → Advisor → lead (read-only) and → payout request; the new routes are protected.
+- [x] A Manager sees one row per own-team Advisor with lead, MIS and payout figures equal to F-702 for that Advisor (same engine).
+- [x] Another team's Advisor → 404; Telecaller / Advisor / Accounts → 403; the Admin can view any Manager's rows (DASH-02).
+- [x] Stage, decision and activation stay three separate distributions with `Awaiting MIS` / `Not reported` buckets; no ranking field.
+- [x] Web list + drill-down render and link to the lead detail and payout request pages; they fit 390 px.
+- [x] Mobile: Advisors tab → Advisor → lead (read-only) and → payout request; the new routes are protected.
 
 ## Progress notes
-- Session 10: started.
+- Session 10 (done): contract `AdvisorTeamRow` / `AdvisorTeamResponse` / `REPORTING_SOURCE_LABELS` in `@kbs/shared` (API return type is checked against it; web and mobile import it). API `AdminDashboardsService.teamAdvisors` + `GET /dashboards/manager/advisors` (`DASHBOARD_MANAGER`), scope = F-702 `metrics.scope` (Manager own team, foreign `advisorId`/`managerId` → 404), per-Advisor `metrics.advisors` (same engine as the Manager dashboard), active reporting line with Agent Code, `awaitingManagerApproval` = PENDING_APPROVALS requests without a Manager decision. No schema change.
+- Web: `/manager/advisors` (filters: lead date range, bank; table with reporting line, leads x of y matched, activation values verbatim, ledger buckets with ₹, pending approvals link), `/manager/advisors/[id]` (8 metric tiles with sources, three separate distributions, bank reasons, 10 recent leads with separate Stage/Decision/Activation badges → existing lead detail, payout requests → approval page, eligible card events with MIS evidence). Nav item "Advisors"; Team page Advisor names link to the drill-down.
+- Mobile: tab "Advisors" (`advisors.tsx`), `advisor.tsx` (tiles, distributions, reasons, `LeadRow` list → `lead.tsx`, payout requests → existing `payout-request`), `lead.tsx` read-only (badges + provenance, customer masked, bank remarks/KYC verbatim, MIS history, KBS activity). Team list Advisor rows open the Advisor screen. `advisors`, `advisor`, `lead` added to `PROTECTED_ROUTES` (unit test extended). Maestro flow `.maestro/manager-advisors.yaml` (run on device with the release checklist). `expo export --platform android` bundles.
+- Tests: `dashboards.e2e-spec.ts` F-315 case (row equals `/dashboards/manager?advisorId` for leads/decision/activation/payouts; separate distributions with `Awaiting MIS`/`Not reported`; no rank/score keys; foreign advisor/manager → 404; Admin by managerId; Telecaller 403). Web Playwright `e2e/manager-advisors.spec.ts` (desktop + phone). Browser-checked with payout-payments fixture data: list and drill-down at 1280 and 390 px with no overflow.
+- Follow-ups: the mobile Advisor screen has no date/bank filter yet (web has them); a Maestro run on a device is still pending, together with F-302.
