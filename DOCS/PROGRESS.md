@@ -2,12 +2,13 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-09-23, end of session 8)
+## Current state (as of 2026-09-23, end of session 9)
 
-- **Feature status:** 70 of 72 features **DONE** (F-508 MIS background jobs added and done late in session 8) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
+- **Feature status:** 71 of 73 features **DONE** (session 9 added and finished F-314 Admin calls & delivery oversight, found by a REQ-25 screen-inventory gap check) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
   - **F-302** Android protected screens — code complete; stays IN_PROGRESS only for the **SEC-02 manual run on a physical Android 12+ device** (checklist in `DOCS/runbooks/02-mobile-security-limits.md`).
   - **F-904** Data retention — **BLOCKED** on KBS durations (REQ-21 §21.5 OPEN). Structure is built and fails closed (`/retention/plan` dry run, legal holds, `/retention/execute` → `CONFIG_MISSING` until `retention.*Days` and `retention.executionEnabled` are set).
-- **Latest verification (session 8, cloud sandbox):** workspace typecheck + lint (only the existing TanStack warning); `pnpm test` against baseline-seeded `kbs_base` (shared 39, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **136/136 across 35 suites** on `kbs_test`; web Playwright smoke + role routing **54/54** (desktop 1280 + phone 390); REQ-27 QA matrix **58/58** ids named by automated tests (CI ratchet 58).
+- **Latest verification (session 9, cloud sandbox):** typecheck + lint green (existing TanStack warning only); `pnpm test` on `kbs_base` (shared 44, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **142/142 across 36 suites**; web Playwright **60/60** (desktop + phone); QA matrix regenerated.
+- **Previous verification (session 8, cloud sandbox):** workspace typecheck + lint (only the existing TanStack warning); `pnpm test` against baseline-seeded `kbs_base` (shared 39, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **136/136 across 35 suites** on `kbs_test`; web Playwright smoke + role routing **54/54** (desktop 1280 + phone 390); REQ-27 QA matrix **58/58** ids named by automated tests (CI ratchet 58).
 - **Next steps for a new session (in order):**
   1. On the Mac: push to GitHub, then build the preview APK (`cd apps/mobile && npx eas init && eas build -p android --profile preview`, see `DOCS/runbooks/04-android-release.md`), run the Maestro flows and the SEC-02 checklist → close F-302.
   2. Collect KBS decisions for the open launch gates (Admin → Configuration shows them; `pnpm release:check` lists everything that still fails): retention durations (F-904), office egress CIDRs (F-301), payout designated approver, training thresholds / reactivation window, compliance confirmations and texts, recovery policy (`auth.recoveryEnabled`), audit export policy, perf thresholds.
@@ -36,6 +37,12 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 ```
 
 ## Session log
+
+### 2026-09-23 — Session 9 (gap analysis → F-314)
+- Remaining tracked work was F-302 (physical-device check) and F-904 (blocked on KBS durations); neither is code work. Checked the REQ-25 role screen inventory against the built routes. Admin "telephony/WhatsApp delivery/recording oversight" (REQ-25 §25.4, REQ-16 §16.1) had no feature file and no screen, because F-313 is per-Telecaller only. Created **F-314** and finished it.
+- Commits: `docs(F-314): start` → `feat(shared)` attention rules + delivery labels + queries → `feat(api)` `/calling/oversight/{summary,calls,shares}` + e2e → `feat(web)` `/admin/calling-list/oversight` + nav + smoke URLs → `docs`.
+- Definition note: "failed before provider" = FAILED with no provider call id (same as F-702); the mock's `…0000` refusal carries an id, so it counts as a provider-reported failure.
+- Other gaps seen but not built (candidates for the next session): the Manager web/mobile version of the oversight view (the API already scopes Managers), and a full-page web notification centre (the web has the bell drawer only; REQ-25 §25.1 lists "notifications with record deep-link" as a shared screen).
 
 ### 2026-09-23 — Session 8 (remaining features: payouts reconciliation → hardening → shells)
 - Worked through every remaining feature with the analyse → `docs(F-xxx): start` → small commits → tests → `docs(F-xxx): done` cycle.
