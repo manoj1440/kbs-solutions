@@ -1,4 +1,4 @@
-import { withMisApplyContext } from '@kbs/db';
+import { misApplyTransaction } from '@kbs/db';
 import { makePublicRef, RefPrefix } from '@kbs/shared';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -50,7 +50,7 @@ describe('F-702 Manager dashboard / F-703 Admin dashboards (DASH-01, DASH-02)', 
   async function lead(advisorId: string, snap: { currentStage?: string | null; finalDecision?: string | null; cardActivationStatus?: string | null; declineDescription?: string | null } | null) {
     const l = await prisma.lead.create({ data: { publicRef: makePublicRef(RefPrefix.LEAD), advisorUserId: advisorId, reportingParentUserIdSnapshot: advisorId, bankId: hdfcId, cardId, customerFullName: `L ${++seq}`, customerMobile: `+9195${String(seq).padStart(8, '0')}`, pincode: '302001', state: 'Rajasthan', employmentType: 'SALARIED', annualIncomeItr: 500000, declarations: {}, bureauAckAt: new Date(), idempotencyKey: idem() } });
     // fixture only: bank-status rows can be written solely inside the MIS apply context (INV-01)
-    if (snap) await withMisApplyContext(misBatchId, () => prisma.bankStatusSnapshot.create({ data: { leadId: l.id, bankId: hdfcId, ...snap, rawLatest: {}, lastMatchedBatchId: misBatchId, lastMatchedAt: new Date(), firstMatchedAt: new Date() } }));
+    if (snap) await misApplyTransaction(prisma, misBatchId, (tx) => tx.bankStatusSnapshot.create({ data: { leadId: l.id, bankId: hdfcId, ...snap, rawLatest: {}, lastMatchedBatchId: misBatchId, lastMatchedAt: new Date(), firstMatchedAt: new Date() } }));
     return l;
   }
 

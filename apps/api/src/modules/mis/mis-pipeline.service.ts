@@ -1,4 +1,4 @@
-import { withMisApplyContext } from '@kbs/db';
+import { MIS_APPLY_SET_LOCAL, withMisApplyContext } from '@kbs/db';
 import { formatDate, isBlankBankValue, maskName, MIS_DATE_FIELDS, MIS_NOTIFY_FIELD_LABEL, misChangeBody, MIS_PII_FIELDS, MIS_STATUS_FIELDS, MIS_TEXT_FIELDS, type MisResolveBody } from '@kbs/shared';
 import { Injectable, Logger } from '@nestjs/common';
 
@@ -194,6 +194,8 @@ export class MisPipelineService {
         const dates = (row.mappedDates as Record<string, { text: string; iso: string | null }>) ?? {};
         const changed: string[] = [];
         await this.prisma.client.$transaction(async (tx) => {
+          // F-903: the database trigger accepts bank-status writes only when this transaction declares the MIS apply
+          await tx.$executeRawUnsafe(MIS_APPLY_SET_LOCAL);
           const snap = await tx.bankStatusSnapshot.findUnique({ where: { leadId } });
           const textUpdates: Record<string, string | null> = {};
           const dateUpdates: Record<string, Date | null> = {};
@@ -258,7 +260,10 @@ export class MisPipelineService {
         const others = await this.prisma.client.bankStatusSnapshot.findMany({ where: { bankId: batch.bankId, lastMatchedBatchId: { not: batchId } }, select: { leadId: true } });
         for (const o of others) {
           if (present.has(o.leadId)) continue;
-          await this.prisma.client.bankStatusHistory.upsert({ where: { leadId_batchId_field: { leadId: o.leadId, batchId, field: '*' } }, create: { leadId: o.leadId, batchId, field: '*', changeKind: 'ABSENT_FROM_BATCH', importedAt: batch.uploadedAt, uploaderUserId: batch.uploaderUserId }, update: {} });
+          await this.prisma.client.$transaction(async (tx) => {
+            await tx.$executeRawUnsafe(MIS_APPLY_SET_LOCAL);
+            await tx.bankStatusHistory.upsert({ where: { leadId_batchId_field: { leadId: o.leadId, batchId, field: '*' } }, create: { leadId: o.leadId, batchId, field: '*', changeKind: 'ABSENT_FROM_BATCH', importedAt: batch.uploadedAt, uploaderUserId: batch.uploaderUserId }, update: {} });
+          });
         }
       }
     });

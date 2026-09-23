@@ -118,6 +118,10 @@ describe('F-503 preview / F-504 matching + resolution / F-505 apply (MIS-02…MI
     expect(C.body.data.bankStatus).toMatchObject({ stage: 'Decisioned Cases', decision: 'Declined' });
     // events + notifications only for changed leads
     expect(await prisma.outboxEvent.count({ where: { type: 'mis.lead.changed' } })).toBe(3);
+    // F-903 / MIS-07: raw SQL cannot change bank values either — the database trigger refuses outside the MIS apply
+    await expect(prisma.$executeRawUnsafe(`UPDATE "BankStatusSnapshot" SET "finalDecision" = 'Approve' WHERE "leadId" = '${leads.A}'`)).rejects.toThrow(/INV-01/);
+    await expect(prisma.$executeRawUnsafe(`DELETE FROM "BankStatusHistory" WHERE "leadId" = '${leads.A}'`)).rejects.toThrow(/INV-01/);
+    expect((await prisma.bankStatusSnapshot.findUniqueOrThrow({ where: { leadId: leads.A as string } })).finalDecision).toBe('Approved');
     // NOTIF-01 (F-701): first match → MIS_MATCHED naming raw field = value and the batch; only owning Advisor, their Manager, Admin
     const matched = await prisma.notification.findMany({ where: { kind: 'MIS_MATCHED' } });
     const batchRef = (await prisma.misImportBatch.findUniqueOrThrow({ where: { id } })).publicRef;
