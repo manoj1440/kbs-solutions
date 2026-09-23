@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, ShieldCheck } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const SLIDES = [
@@ -84,24 +84,18 @@ export function LoginShowcase() {
         ))}
       </div>
 
-      <div className="relative flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {SLIDES.map((s, i) => (
-            <button
-              key={s.eyebrow}
-              type="button"
-              aria-label={`Show slide ${i + 1}: ${s.eyebrow}`}
-              onClick={() => setIndex(i)}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
-                i === index ? 'w-8 bg-teal-300' : 'w-3 bg-white/20 hover:bg-white/40'
-              }`}
-            />
-          ))}
-        </div>
-        <p className="flex items-center gap-2 text-xs text-slate-400">
-          <ShieldCheck className="size-4 text-teal-300" />
-          Bank outcomes backed by uploaded MIS. Always.
-        </p>
+      <div className="relative flex items-center gap-2">
+        {SLIDES.map((s, i) => (
+          <button
+            key={s.eyebrow}
+            type="button"
+            aria-label={`Show slide ${i + 1}: ${s.eyebrow}`}
+            onClick={() => setIndex(i)}
+            className={`h-1.5 rounded-full transition-all duration-500 ${
+              i === index ? 'w-8 bg-teal-300' : 'w-3 bg-white/20 hover:bg-white/40'
+            }`}
+          />
+        ))}
       </div>
     </section>
   );
