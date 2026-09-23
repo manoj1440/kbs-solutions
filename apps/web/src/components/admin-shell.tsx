@@ -16,6 +16,7 @@ import {
   MapPin,
   Menu,
   Phone,
+  PhoneCall,
   RefreshCw,
   Search,
   Settings2,
@@ -52,6 +53,7 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
     items: [
       { href: '/admin/calling-list', label: 'Calling lists', icon: Phone },
       { href: '/admin/calling-list/distribution', label: 'Calling allocation', icon: Users },
+      { href: '/admin/calling-list/oversight', label: 'Calls & delivery', icon: PhoneCall },
       { href: '/admin/catalogue', label: 'Card catalogue', icon: CreditCard },
       { href: '/admin/pincode-profiles', label: 'Bank coverage', icon: MapPin },
       { href: '/admin/training', label: 'Training content', icon: GraduationCap },
