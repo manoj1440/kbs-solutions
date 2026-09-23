@@ -8,6 +8,7 @@ const NAV = [
   { href: '/manager/pending-actions', label: 'Pending actions' },
   { href: '/manager/payouts', label: 'Team payouts' },
   { href: '/manager/payouts/requests', label: 'Payout approvals' },
+  { href: '/manager/payouts/liability', label: 'Payout liability' },
   { href: '/manager/telecallers/new', label: 'Create Telecaller' },
 ];
 

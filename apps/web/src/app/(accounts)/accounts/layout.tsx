@@ -5,6 +5,7 @@ const NAV = [
   { href: '/accounts?queue=awaiting', label: 'Awaiting payment' },
   { href: '/accounts?queue=paid', label: 'Paid' },
   { href: '/accounts?queue=exceptions', label: 'Exceptions' },
+  { href: '/accounts/reconciliation', label: 'Reconciliation' },
 ];
 
 export default async function AccountsLayout({ children }: { children: React.ReactNode }) {

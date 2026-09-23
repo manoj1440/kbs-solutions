@@ -59,6 +59,7 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
     items: [
       { href: '/admin/mis', label: 'MIS imports', icon: FileSpreadsheet },
       { href: '/admin/mis/integrity', label: 'Data integrity', icon: ShieldCheck },
+      { href: '/admin/payouts/liability', label: 'Payout liability', icon: LayoutDashboard },
       { href: '/admin/payouts/requests', label: 'Payout requests', icon: Wallet },
       { href: '/admin/payouts/requests?queue=exceptions', label: 'Payment exceptions', icon: AlertTriangle },
       { href: '/admin/payouts/entitlements', label: 'Entitlement ledger', icon: ListChecks },
