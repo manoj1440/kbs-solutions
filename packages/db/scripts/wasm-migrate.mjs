@@ -36,7 +36,26 @@ instance.exports.__wbindgen_start();
 const { PrismaPg } = await import('@prisma/adapter-pg');
 const { bindMigrationAwareSqlAdapterFactory } = await import('@prisma/driver-adapter-utils');
 // The engine expects Result-wrapped, error-registry-aware adapter calls — the same binding the CLI uses.
-const adapter = bindMigrationAwareSqlAdapterFactory(new PrismaPg({ connectionString: url }));
+// The pg adapter's executeScript splits on ';', which breaks semicolons inside comments and $$-quoted function
+// bodies (F-903 triggers). Send each migration script as ONE simple-protocol query instead — what the Prisma CLI does.
+const basePg = new PrismaPg({ connectionString: url });
+const wholeScript = (a) => {
+  a.executeScript = async (script) => {
+    try {
+      await a.client.query(script);
+    } catch (error) {
+      a.onError(error);
+    }
+  };
+  return a;
+};
+const pgFactory = {
+  provider: basePg.provider,
+  adapterName: basePg.adapterName,
+  connect: async () => wholeScript(await basePg.connect()),
+  connectToShadowDb: async () => wholeScript(await basePg.connectToShadowDb()),
+};
+const adapter = bindMigrationAwareSqlAdapterFactory(pgFactory);
 
 const schemaContent = readFileSync(schemaPath, 'utf8');
 const schema = { files: [{ path: schemaPath, content: schemaContent }] };
