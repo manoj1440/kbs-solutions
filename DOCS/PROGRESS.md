@@ -36,6 +36,13 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 
 ## Session log
 
+### 2026-09-23 — Form input validation pass (web + mobile)
+- User reported free text could be typed into numeric fields (e.g. `/login` mobile). Client-side validation was ad hoc; authoritative checks remain the Zod contracts in `packages/shared/src/schemas` (enforced on every API request) + `normalize.ts`.
+- New typing-time masks in `packages/shared/src/normalize.ts`: `digitsOnly`, `mobileInput` (≤12 digits so 91/0-prefixed input still normalises via `toE164India`), `panInput`, `ifscInput`, `agentCodeInput`, `amountInput`. Covered in `normalize.test.ts`.
+- Applied to every numeric/patterned field. Web: `/login` mobile (+ Send OTP disabled until `isValidE164India`), create-telecaller mobile (+ submit gated by `CreateTelecallerBody.safeParse`), compliance suppression mobile, card publication pincode, card joining/annual fee, payout rule hold-days and rate amount. Mobile: auth mobile (+ disabled until valid), manager create-telecaller, lead wizard mobile/PAN/pincode/income, catalogue + card pincode, onboarding account number/IFSC/agent code, advisor profile agent code.
+- Free-text fields (reasons, names, search) keep existing `required`/min-length guards; server schema errors still surface as toast/alert text.
+- Checks: `pnpm typecheck` 9/9, `pnpm lint` (same TanStack warning), shared 31 + web 5 + mobile 4 tests pass.
+
 ### 2026-09-23 — Login page redesign (no-scroll showcase)
 - Rebuilt `/login` as a single `h-dvh` no-scroll screen per user request ("no scroll at all, all information at one place, impressive with images/carousel").
 - New `apps/web/src/app/(auth)/login/login-showcase.tsx`: auto-rotating 4-slide carousel (5s interval, crossfade, clickable dots) with generated inline SVG artwork — credit cards, MIS matching sheet, payout approval (₹ wallet + dual checks), team ops graph — over a navy panel with glow/dot-grid backdrop and `login-float` animation. Hidden below `lg`; mobile shows compact brand header + form.
