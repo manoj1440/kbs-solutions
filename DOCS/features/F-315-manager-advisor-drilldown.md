@@ -10,11 +10,11 @@
    - `user` (id, name, public ref, status, masked mobile), `reporting` (source, Agent Code when the link came from a code, since),
    - `leads` (created, MIS-matched with denominator, awaiting MIS), `stage` / `decision` / `activation` distributions (verbatim bank values, `Not reported`, `Awaiting MIS` — the F-702 engine, not a new calculation),
    - `payouts` buckets from the payout ledger (eligible, available, requested, approved-unpaid, on hold, paid), each with count + amount,
-   - `pendingMyApproval` — requests by this Advisor still waiting on the Manager's decision.
+   - `awaitingManagerApproval` — requests by this Advisor still waiting on a Manager decision.
    Rows sorted by name. No score, rank or "top performer" field (REQ-15 §15.3).
 2. **Web Manager**
    - `/manager/advisors` — table of the rows above (name → drill-down, reporting source/code, leads created, MIS matched `x of y`, activation values, eligible / approved-unpaid / paid with ₹, pending approval). Date + bank filters. Nav item "Advisors". The Team page's Advisor rows link to the drill-down.
-   - `/manager/advisors/[id]` — header (name, status, reporting), metric tiles with source labels, Stage / Decision / Activation distributions as three separate lists, bank reasons, the Advisor's leads (existing `LeadsBrowser` with `advisorId`, links to the existing Manager lead detail), payout requests (state, amount, card events, submitted, link to the approval page) and entitlement ledger (lead, card, state, amount).
+   - `/manager/advisors/[id]` — header (name, status, reporting), metric tiles with source labels, Stage / Decision / Activation distributions as three separate lists, bank reasons, the Advisor's 10 most recent leads (links to the existing Manager lead detail, plus "All leads with filters" → `/manager/leads?advisorId=…`), payout requests (state, amount, card events, submitted, link to the approval page) and entitlement ledger (lead, card, state, amount).
 3. **Mobile Manager** (Expo)
    - New tab "Advisors": list of cards (name, status, leads/matched, eligible/paid, pending my approval) → Advisor screen.
    - Advisor screen: tiles, three separate distributions, recent leads using the existing `LeadRow` (three separate badges), payout requests → existing payout-request screen.
