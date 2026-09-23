@@ -31,6 +31,7 @@ export const EnvSchema = z.object({
   PAN_PROVIDER: z.enum(['mock']).default('mock'),
   PUSH_PROVIDER: z.enum(['mock', 'expo']).default('mock'),
   EXPO_ACCESS_TOKEN: z.string().optional(),
+  THROTTLE_LIMIT_PER_MIN: z.coerce.number().int().min(10).default(300),
   SCAN_PROVIDER: z.enum(['noop', 'clamav']).default('noop'),
   CLAMAV_HOST: z.string().default('localhost'),
   CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),

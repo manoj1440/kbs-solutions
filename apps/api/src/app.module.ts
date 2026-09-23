@@ -11,6 +11,7 @@ import { IdempotencyInterceptor } from './common/interceptors/idempotency.interc
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { CoreModule } from './config/core.module';
+import { ENV, type Env } from './config/env';
 import { loadEnv } from './config/env';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { RedisModule } from './infra/redis/redis.module';
@@ -69,7 +70,8 @@ export const LOG_REDACT_PATHS = [
         customProps: (req) => ({ requestId: (req.headers['x-request-id'] as string | undefined) ?? undefined }),
       },
     }),
-    ThrottlerModule.forRoot([{ name: 'global', ttl: 60_000, limit: 300 }]),
+    // per-IP request budget; perf/acceptance environments may raise it (F-905), production keeps the default
+    ThrottlerModule.forRootAsync({ inject: [ENV], useFactory: (env: Env) => [{ name: 'global', ttl: 60_000, limit: env.THROTTLE_LIMIT_PER_MIN }] }),
     CoreModule,
     PrismaModule,
     RedisModule,
