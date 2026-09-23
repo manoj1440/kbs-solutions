@@ -1,6 +1,6 @@
 # F-702 Manager dashboard
 
-- Group: Dashboards & notifications · Status: **PLANNED** · Depends on: F-313, F-408, F-602, F-604
+- Group: Dashboards & notifications · Status: **IN_PROGRESS** · Depends on: F-313, F-408, F-602, F-604
 - PRD refs: REQ-15 §15.2 (filters; counts; Advisor metrics; denominators and sources), §15.3, REQ-16 §16.3 (metric formulas), REQ-20 §20.4
 - QA ids: DASH-01, DASH-02
 
