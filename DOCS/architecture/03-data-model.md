@@ -119,6 +119,7 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 `PayoutApproval(requestId, approverRole(MANAGER, ADMIN), approverUserId, decision(APPROVED, REJECTED), reason?, at)` unique `(requestId, approverRole)`.
 `ExternalPayment(id, requestId, recordedByUserId, paidAt, amountInr, transferReference (as entered), transferReferenceKey (upper-cased, no whitespace), method?, proofFileId?, proofAttachedAt?, state(RECORDED, PROOF_PENDING, VERIFIED, EXCEPTION, CORRECTION_PENDING, SUPERSEDED, CORRECTION_REJECTED), exceptionReason?, exceptionRaisedAt?, exceptionRaisedByUserId?, resolvedAt?, resolvedByUserId?, resolutionNote?, correctionOfId? → ExternalPayment, correctionReason?, correctionDecidedAt?, correctionDecidedByUserId?, correctionDecisionReason?, supersededAt?)` — append-only; a request has at most one *live* entry (RECORDED/PROOF_PENDING/VERIFIED/EXCEPTION). F-605.
 `PayoutRequest` also carries `holdReason?, heldAt?, heldByUserId?, paidAt?` (F-605).
+`PayoutExceptionResolution(id, kind, subjectId, resolvedByUserId, reason, resolvedAt)` unique `(kind, subjectId)` — acknowledgement of a derived exception (`STALE_REQUEST`:requestId, `MIS_CORRECTION_AFTER_PAYMENT`:entitlementEventId). Exceptions themselves are computed on read (F-606).
 
 ## 11. Files, notifications
 

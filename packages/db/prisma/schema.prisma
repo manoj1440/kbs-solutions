@@ -452,6 +452,7 @@ model User {
   payoutRequests       PayoutRequest[]       @relation("PayoutRequestAdvisor")
   payoutApprovals      PayoutApproval[]
   externalPayments     ExternalPayment[]
+  payoutExceptionResolutions PayoutExceptionResolution[]
   misBatchesUploaded   MisImportBatch[]
   customerBatchesUploaded CustomerImportBatch[]
   pincodeBatchesUploaded BankPincodeBatch[]
@@ -1707,6 +1708,21 @@ model ExternalPayment {
   @@index([requestId, createdAt])
   @@index([transferReferenceKey])
   @@index([state, createdAt])
+}
+
+/// F-606: acknowledgement of a derived payout exception (stale request, MIS correction after payment).
+/// Exceptions are computed on read; this row records who resolved which one, why and when. No clawback/refund.
+model PayoutExceptionResolution {
+  id               String   @id @default(uuid(7))
+  kind             String
+  subjectId        String
+  resolvedByUserId String
+  reason           String
+  resolvedAt       DateTime @default(now())
+
+  resolvedBy User @relation(fields: [resolvedByUserId], references: [id])
+
+  @@unique([kind, subjectId])
 }
 
 // ───────────────────────────── 11. files, notifications, outbox ─────────────────────────────
