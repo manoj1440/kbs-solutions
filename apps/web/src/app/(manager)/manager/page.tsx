@@ -60,7 +60,11 @@ export default async function ManagerTeam() {
             ) : (
               advisors.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell>{u.fullName || '(onboarding)'}</TableCell>
+                  <TableCell>
+                    <Link className="underline-offset-2 hover:underline" href={`/manager/advisors/${u.id}`}>
+                      {u.fullName || '(onboarding)'}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={u.status === 'ACTIVE' ? 'success' : 'warning'}>{u.status}</Badge>
                   </TableCell>

@@ -5,6 +5,7 @@ const NAV = [
   { href: '/manager/dashboard', label: 'Dashboard' },
   { href: '/manager', label: 'Team' },
   { href: '/manager/calling', label: 'Team calling' },
+  { href: '/manager/advisors', label: 'Advisors' },
   { href: '/manager/leads', label: 'Team leads' },
   { href: '/manager/pending-actions', label: 'Pending actions' },
   { href: '/manager/payouts', label: 'Team payouts' },
