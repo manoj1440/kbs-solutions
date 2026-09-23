@@ -4,6 +4,7 @@ import request from 'supertest';
 
 import type { PrismaService } from '../src/infra/prisma/prisma.service';
 import { MemoryStorageAdapter } from '../src/providers/adapters/memory-storage.adapter';
+import { MaintenanceProcessor } from '../src/modules/maintenance/maintenance.processor';
 import { STORAGE_PROVIDER } from '../src/providers/ports';
 
 import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase } from './helpers';
@@ -127,6 +128,28 @@ describe('F-904 data retention & legal hold — fail closed while durations are 
     expect(plan.categories.map((c: { category: string }) => c.category).sort()).toEqual(['CALLING_RECORDS', 'DOCUMENTS', 'MIS_FILES', 'RECORDINGS']);
     expect(plan.neverRemoved.join(' ')).toMatch(/MIS rows.*Payout.*Audit.*suppressions/s);
     // reset for other suites sharing the DB
+    await setCfg('retention.executionEnabled', false);
+  });
+
+  it('F-904: the nightly run does nothing unless both retention.scheduleEnabled and retention.executionEnabled are on', async () => {
+    const extra = (await upload('payment_proof', 'nightly')).id;
+    const proc = app.get(MaintenanceProcessor);
+    expect(await proc.runMaintenance('retention.nightly')).toMatchObject({ skipped: expect.any(String) });
+    await setCfg('retention.scheduleEnabled', true);
+    expect(await proc.runMaintenance('retention.nightly')).toMatchObject({ skipped: expect.any(String) }); // execution still off
+    expect((await prisma.storedFile.findUniqueOrThrow({ where: { id: extra } })).purgedAt).toBeNull();
+
+    await setCfg('retention.executionEnabled', true);
+    const r = (await proc.runMaintenance('retention.nightly')) as { processed: number; results: { category: string; skipped?: string; processed?: number }[] };
+    expect(r.processed).toBe(1);
+    expect(r.results.find((x) => x.category === 'RECORDINGS')).toMatchObject({ skipped: 'duration not set' });
+    expect(r.results.find((x) => x.category === 'DOCUMENTS')).toMatchObject({ processed: 1 });
+    expect((await prisma.storedFile.findUniqueOrThrow({ where: { id: extra } })).purgedAt).not.toBeNull();
+    const run = await prisma.auditLog.findFirstOrThrow({ where: { action: 'retention.scheduledRun' } });
+    expect(run.actorUserId).toBeNull(); // system run
+    expect(await prisma.notification.count({ where: { kind: 'SECURITY_EVENT', title: 'Nightly retention run' } })).toBe(1);
+    expect((await api().get('/api/v1/retention/plan').set(auth(admin)).expect(200)).body.data.scheduleEnabled).toBe(true);
+    await setCfg('retention.scheduleEnabled', false);
     await setCfg('retention.executionEnabled', false);
   });
 });

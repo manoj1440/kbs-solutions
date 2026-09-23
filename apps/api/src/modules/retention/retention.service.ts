@@ -1,6 +1,6 @@
 import type { Prisma } from '@kbs/db';
 import { type LegalHoldBody, RETENTION_CATEGORIES, RETENTION_CATEGORY_META, type RetentionCategory, type RetentionExecuteBody } from '@kbs/shared';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
@@ -9,6 +9,8 @@ import { PrismaService } from '../../infra/prisma/prisma.service';
 import { STORAGE_PROVIDER, type StorageProvider } from '../../providers/ports';
 import { AuditService } from '../audit/audit.service';
 import { ConfigService } from '../config/config.service';
+import { MaintenanceProcessor } from '../maintenance/maintenance.processor';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const DAY_MS = 86_400_000;
 /** MIS batches still in flight keep their source file whatever its age (REQ-24 §24.4 "preserve source files and support safe retry"). */
@@ -26,14 +28,21 @@ export const RESTRICTED_NAME = 'Restricted (retention)';
  * deleted. Anything under legal hold is skipped.
  */
 @Injectable()
-export class RetentionService {
+export class RetentionService implements OnModuleInit {
   private readonly logger = new Logger(RetentionService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
+    private readonly notifications: NotificationsService,
+    private readonly maintenance: MaintenanceProcessor,
   ) {}
+
+  onModuleInit() {
+    // 02:00 IST every day; the job itself re-checks both flags, so enabling/disabling needs no restart
+    this.maintenance.schedule('retention.nightly', { pattern: '0 2 * * *', tz: 'Asia/Kolkata' }, () => this.scheduledRun());
+  }
 
   private days(category: RetentionCategory): number | null {
     const d = this.config.getInt(RETENTION_CATEGORY_META[category].configKey);
@@ -125,6 +134,7 @@ export class RetentionService {
     );
     return {
       executionEnabled,
+      scheduleEnabled: this.config.getBool('retention.scheduleEnabled'),
       neverRemoved: ['MIS rows, bank status snapshots and history', 'Payout entitlements, requests, payments and ledger', 'Audit and sensitive-access logs', 'Contact suppressions (do-not-contact list)'],
       categories,
     };
@@ -133,6 +143,45 @@ export class RetentionService {
   /** Authorised run for one category (Admin, with a reason). Fails closed; bounded by `limit`; everything audited. */
   async execute(actor: Actor, body: RetentionExecuteBody) {
     if (actor.role !== 'ADMIN') throw new AppError('RBAC_FORBIDDEN', 'Only Admin can run retention.');
+    const result = await this.runCategory(body);
+    const { failures: _f, ...summary } = result;
+    RequestContextStore.audit({ entityType: 'Retention', entityId: body.category, after: summary, reason: body.reason });
+    return result;
+  }
+
+  /**
+   * F-904 nightly run (maintenance queue, 02:00 IST). Needs BOTH `retention.scheduleEnabled` and
+   * `retention.executionEnabled`; only categories whose duration KBS has set are processed. System actor; one audit row
+   * per run plus the per-item rows; the Admin is told when anything was purged/restricted or failed.
+   */
+  async scheduledRun() {
+    if (!this.config.getBool('retention.scheduleEnabled') || !this.config.getBool('retention.executionEnabled')) return { skipped: 'retention.scheduleEnabled / retention.executionEnabled is off' };
+    const reason = 'Scheduled nightly retention (retention.scheduleEnabled)';
+    const results: Array<Record<string, unknown>> = [];
+    for (const category of RETENTION_CATEGORIES) {
+      if (this.days(category) === null) {
+        results.push({ category, skipped: 'duration not set' });
+        continue;
+      }
+      try {
+        const { failures, ...r } = await this.runCategory({ category, reason, limit: 5000 });
+        results.push({ ...r, failedIds: failures.map((f) => f.id).slice(0, 20) });
+      } catch (e) {
+        results.push({ category, error: (e as Error).message });
+      }
+    }
+    await this.audit.record({ action: 'retention.scheduledRun', entityType: 'Retention', entityId: 'scheduled', actor: { userId: null, role: null }, after: { results }, reason });
+    const processed = results.reduce((a, r) => a + (Number(r.processed) || 0), 0);
+    const failed = results.reduce((a, r) => a + (Number(r.failed) || 0) + (r.error ? 1 : 0), 0);
+    if (processed || failed) {
+      const admin = await this.prisma.client.user.findFirst({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true } });
+      if (admin) await this.notifications.notify({ recipientUserId: admin.id, kind: 'SECURITY_EVENT', title: 'Nightly retention run', body: `${processed} item(s) purged or restricted under the retention policy${failed ? `; ${failed} failed and will be retried next run` : ''}. Details are in the audit trail (retention.scheduledRun).`, deepLink: { entityType: 'Retention', entityId: 'scheduled' }, dedupeKey: `retention:scheduled:${new Date().toISOString().slice(0, 10)}` });
+    }
+    return { processed, failed, results };
+  }
+
+  /** Shared body of manual and scheduled runs; fails closed. */
+  private async runCategory(body: RetentionExecuteBody) {
     const meta = RETENTION_CATEGORY_META[body.category];
     const days = this.days(body.category);
     if (days === null) throw new AppError('CONFIG_MISSING', `${meta.configKey} is not set. KBS has not approved a retention duration for ${meta.label.toLowerCase()} (REQ-21 §21.5 OPEN).`, { key: meta.configKey });
@@ -183,7 +232,6 @@ export class RetentionService {
       }
     }
     const summary = { category: body.category, days, cutoff: cutoff.toISOString(), processed, failed: failures.length, limit: body.limit, runAt: runAt.toISOString() };
-    RequestContextStore.audit({ entityType: 'Retention', entityId: body.category, after: summary, reason: body.reason });
     return { ...summary, failures };
   }
 

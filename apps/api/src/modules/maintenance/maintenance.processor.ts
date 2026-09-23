@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
 import { type Job, Worker } from 'bullmq';
 
 import { ENV, type Env } from '../../config/env';
@@ -18,10 +18,16 @@ export type EventHandler = (job: Job) => Promise<unknown>;
  * - `payouts.releaseHolds` hourly materialises PENDING_HOLD → ELIGIBLE_AVAILABLE (reads also release lazily).
  */
 @Injectable()
-export class MaintenanceProcessor implements OnModuleInit, OnModuleDestroy {
+export class MaintenanceProcessor implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(MaintenanceProcessor.name);
   private workers: Worker[] = [];
   readonly handlers = new Map<string, EventHandler>();
+  /** Scheduled maintenance jobs contributed by feature modules (registered in their onModuleInit). */
+  private readonly scheduled = new Map<string, { run: () => Promise<unknown>; repeat: { every?: number; pattern?: string; tz?: string } }>();
+
+  schedule(name: string, repeat: { every?: number; pattern?: string; tz?: string }, run: () => Promise<unknown>) {
+    this.scheduled.set(name, { run, repeat });
+  }
 
   constructor(
     @Inject(ENV) private readonly env: Env,
@@ -34,6 +40,8 @@ export class MaintenanceProcessor implements OnModuleInit, OnModuleDestroy {
   async runMaintenance(name: string): Promise<unknown> {
     if (name === 'outbox.relay') return { relayed: await this.outbox.relay() };
     if (name === 'payouts.releaseHolds') return { released: await this.eligibility.releaseHolds() };
+    const job = this.scheduled.get(name);
+    if (job) return job.run();
     throw new Error(`unknown maintenance job ${name}`);
   }
 
@@ -45,12 +53,14 @@ export class MaintenanceProcessor implements OnModuleInit, OnModuleDestroy {
     return { acknowledged: true };
   }
 
-  async onModuleInit() {
+  /** After every module's onModuleInit, so contributed schedules are known. */
+  async onApplicationBootstrap() {
     if (!(this.env.WORKER_MODE || this.env.JOBS_INLINE) || this.env.NODE_ENV === 'test') return;
     const connection = parseRedisUrl(this.env.REDIS_URL);
     try {
       await this.jobs.queues.maintenance.add('outbox.relay', {}, { jobId: 'outbox.relay', repeat: { every: 5_000 }, removeOnComplete: 100, removeOnFail: 100 });
       await this.jobs.queues.maintenance.add('payouts.releaseHolds', {}, { jobId: 'payouts.releaseHolds', repeat: { every: 60 * 60_000 } });
+      for (const [name, j] of this.scheduled) await this.jobs.queues.maintenance.add(name, {}, { jobId: name, repeat: j.repeat });
       this.workers.push(new Worker(QUEUES.maintenance, (job) => this.runMaintenance(job.name), { connection, concurrency: 1 }));
       for (const q of EVENT_QUEUES) this.workers.push(new Worker(q, (job) => this.handleEvent(job), { connection, concurrency: 4 }));
       for (const w of this.workers) w.on('failed', (job, err) => this.logger.error({ queue: w.name, jobId: job?.id, requestId: job?.data?.requestId, err: err.message }, 'job failed'));
