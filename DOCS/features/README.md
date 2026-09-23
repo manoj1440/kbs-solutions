@@ -88,6 +88,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-802-mobile-shell.md](./F-802-mobile-shell.md) | F-802 Mobile shell: Expo Router, OTP login, gates routing, base components | UX shells | DONE | F-003, F-006, F-101, F-111 |
 | [F-803-status-and-provenance-components.md](./F-803-status-and-provenance-components.md) | F-803 Shared status/provenance component set (web + mobile) | UX shells | DONE | F-006, F-004 |
 | [F-804-web-session-and-account-screens.md](./F-804-web-session-and-account-screens.md) | F-804 Web session continuity and shared account screens (REQ-25 §25.1) | UX shells | DONE | F-101, F-701, F-801 |
+| [F-805-mobile-ui-revamp.md](./F-805-mobile-ui-revamp.md) | F-805 Mobile UI revamp: premium design system + every screen | UX shells | IN_PROGRESS | F-802, F-803 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | DONE | F-801, F-802 |
 | [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | DONE | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |
