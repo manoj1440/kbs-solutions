@@ -1,4 +1,6 @@
-import { Building2 } from 'lucide-react';
+import { Building2, Info } from 'lucide-react';
+
+import { LOGIN_NOTICES, loginReason } from '@/lib/session-paths';
 
 import { LoginForm } from './login-form';
 import { LoginShowcase } from './login-showcase';
@@ -8,9 +10,10 @@ export const metadata = { title: 'Sign in · KBS Solutions' };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; reason?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, reason: rawReason } = await searchParams;
+  const reason = loginReason(rawReason);
   return (
     <main className="admin-login grid h-dvh overflow-hidden bg-[#f7fafb] lg:grid-cols-[1.2fr_1fr]">
       <LoginShowcase />
@@ -35,6 +38,15 @@ export default async function LoginPage({
             KBS<span className="font-normal text-slate-500"> Solutions</span>
           </span>
         </div>
+        {reason ? (
+          <p
+            role={reason === 'deactivated' ? 'alert' : 'status'}
+            className={`relative flex w-full max-w-md items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${reason === 'deactivated' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-teal-200 bg-teal-50 text-teal-900'}`}
+          >
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            {LOGIN_NOTICES[reason]}
+          </p>
+        ) : null}
         <LoginForm next={next} />
         <p
           aria-hidden="true"

@@ -32,6 +32,18 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   return { data: body.data as T, meta: body.meta ?? {} };
 }
 
+/** F-804: session, or why there is none — `expired` (401: token lapsed/revoked) or `deactivated` (403 account). */
+export async function getSessionState(): Promise<{ session: MeResponse } | { session: null; reason: 'expired' | 'deactivated' | 'forbidden' }> {
+  try {
+    return { session: (await apiFetch<MeResponse>('/auth/me')).data };
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) return { session: null, reason: 'expired' };
+    if (e instanceof ApiError && e.code === 'AUTH_ACCOUNT_DEACTIVATED') return { session: null, reason: 'deactivated' };
+    if (e instanceof ApiError && e.status === 403) return { session: null, reason: 'forbidden' };
+    throw e;
+  }
+}
+
 /** Current session or null (never throws for 401). */
 export async function getSession(): Promise<MeResponse | null> {
   try {

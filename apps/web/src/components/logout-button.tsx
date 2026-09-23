@@ -13,7 +13,7 @@ export function LogoutButton() {
       size="sm"
       onClick={async () => {
         await clientApi.post('/auth/logout').catch(() => undefined);
-        router.replace('/login');
+        router.replace('/login?reason=signed-out');
         router.refresh();
       }}
     >

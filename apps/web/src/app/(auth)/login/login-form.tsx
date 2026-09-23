@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { clientApi } from '@/lib/client-api';
-import { homeFor } from '@/lib/roles';
+import { nextForRole } from '@/lib/session-paths';
 
 type Step =
   | { kind: 'mobile' }
@@ -88,8 +88,8 @@ export function LoginForm({ next }: { next?: string }) {
         code,
         platform: 'WEB',
       });
-      const home = homeFor(r.data.user.role);
-      router.replace(next && next.startsWith('/') ? next : home);
+      // F-804: return to the page the session ended on, but only inside the user's own area (no open redirect)
+      router.replace(nextForRole(next, r.data.user.role));
       router.refresh();
     } catch (e) {
       // F-801: Telecaller / Advisor accounts use the Android app — show the role-aware access screen, not a form error

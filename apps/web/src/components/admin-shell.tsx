@@ -4,6 +4,7 @@ import type { MeResponse } from '@kbs/shared';
 import {
   AlertTriangle,
   Archive,
+  Bell,
   ArrowRight,
   Building2,
   ChevronRight,
@@ -21,6 +22,7 @@ import {
   Search,
   Settings2,
   ShieldCheck,
+  UserRound,
   Users,
   Wallet,
   Wifi,
@@ -34,6 +36,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
 import { LogoutButton } from '@/components/logout-button';
+import { SessionKeepAlive } from '@/components/session-keep-alive';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -88,6 +91,8 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
       { href: '/admin/network', label: 'Office network', icon: Wifi },
       { href: '/admin/config', label: 'Configuration', icon: Settings2 },
       { href: '/admin/retention', label: 'Retention & legal hold', icon: Archive },
+      { href: '/admin/notifications', label: 'Notifications', icon: Bell },
+      { href: '/admin/account', label: 'Account & support', icon: UserRound },
     ],
   },
 ];
@@ -253,11 +258,18 @@ export function AdminShell({
               <div className="absolute right-0 mt-3 grid w-56 gap-3 rounded-xl border bg-white p-4 shadow-xl">
                 <span className="text-sm font-medium">{name}</span>
                 <span className="text-xs text-slate-500">{session.user.mobileMasked}</span>
+                <Link href="/admin/account" className="text-sm text-teal-800 hover:underline">
+                  Account & support
+                </Link>
+                <Link href="/admin/notifications" className="text-sm text-teal-800 hover:underline">
+                  All notifications
+                </Link>
                 <LogoutButton />
               </div>
             </details>
           </div>
         </header>
+        <SessionKeepAlive accessExpiresInSec={session.account?.accessExpiresInSec ?? 900} />
         <main
           id="admin-content"
           tabIndex={-1}
