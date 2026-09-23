@@ -102,7 +102,7 @@ export class DashboardMetricsService {
   }
 
   // ── calling (Telecaller operations) ──
-  private async calling(scope: Scope, q: DashboardQuery) {
+  async calling(scope: Scope, q: DashboardQuery) {
     const range = this.range(q);
     const tc = scope.telecallerIds;
     const recWhere = { ...(tc ? { assignedTelecallerUserId: { in: tc } } : {}), ...(q.pincode ? { pincode: q.pincode } : {}), ...(q.state ? { resolvedState: { equals: q.state, mode: 'insensitive' as const } } : {}) };
@@ -151,7 +151,7 @@ export class DashboardMetricsService {
   }
 
   // ── advisors (leads, bank MIS values, payouts) ──
-  private leadWhere(scope: Scope, q: DashboardQuery) {
+  leadWhere(scope: Scope, q: DashboardQuery) {
     const range = this.range(q);
     const now = Date.now();
     const recency =
@@ -175,7 +175,7 @@ export class DashboardMetricsService {
     };
   }
 
-  private async advisors(scope: Scope, q: DashboardQuery) {
+  async advisors(scope: Scope, q: DashboardQuery) {
     const where = this.leadWhere(scope, q);
     const tokens = this.config.getJson<string[]>('mis.blankValueTokens');
     const leads = await this.prisma.client.lead.findMany({ where, select: { id: true, statusSnapshot: { select: { currentStage: true, finalDecision: true, cardActivationStatus: true, dropoffReason: true, declineCode: true, declineDescription: true, declineDescription2: true, declineType: true, reason: true } } } });

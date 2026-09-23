@@ -1,0 +1,121 @@
+import type { DashboardQuery } from '@kbs/shared';
+import { Injectable } from '@nestjs/common';
+
+import type { Actor } from '../../common/actor';
+import { AppError } from '../../common/errors/app-error';
+import { PrismaService } from '../../infra/prisma/prisma.service';
+import { ConfigService } from '../config/config.service';
+import { bucketOf, totalsOf } from '../payouts/ledger-buckets';
+import { PayoutDashboardService } from '../payouts/payout-dashboard.service';
+import { HierarchyService } from '../users/hierarchy.service';
+
+import { DashboardMetricsService } from './dashboard-metrics.service';
+
+export interface Alert {
+  kind: 'MIS_UNMATCHED' | 'MIS_CONFLICT' | 'PAYOUT_EXCEPTIONS' | 'LAUNCH_GATES_OPEN' | 'BANK_NEVER_APPLIED';
+  count: number;
+  message: string;
+  href: string;
+}
+
+/**
+ * F-703 Admin dashboards (REQ-16 §16.2). Built on the F-702 metric engine so per-team, per-person and organisation
+ * figures reconcile. Conflicts/unmatched rows always raise an alert on the executive view — never hidden behind a
+ * green KPI (REQ-20 §20.4).
+ */
+@Injectable()
+export class AdminDashboardsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly metrics: DashboardMetricsService,
+    private readonly payouts: PayoutDashboardService,
+    private readonly config: ConfigService,
+    private readonly hierarchy: HierarchyService,
+  ) {}
+
+  private assertAdmin(actor: Actor) {
+    if (actor.role !== 'ADMIN') throw new AppError('RBAC_FORBIDDEN', 'Admin dashboards are for the Admin.');
+  }
+
+  async executive(actor: Actor, q: DashboardQuery) {
+    this.assertAdmin(actor);
+    const base = await this.metrics.compute(await this.metrics.scope(actor, q), q);
+    const [unmatched, conflicts, exceptions, gates] = await Promise.all([
+      this.prisma.client.misRow.count({ where: { matchState: 'UNMATCHED', ...(q.bankId ? { batch: { bankId: q.bankId } } : {}) } }),
+      this.prisma.client.misRow.count({ where: { matchState: 'CONFLICT', ...(q.bankId ? { batch: { bankId: q.bankId } } : {}) } }),
+      this.payouts.exceptions(actor, { managerId: q.managerId, advisorId: q.advisorId, bankId: q.bankId }),
+      this.config.launchGates(),
+    ]);
+    const openGates = gates.filter((g) => !g.isSet);
+    const alerts: Alert[] = [];
+    if (unmatched) alerts.push({ kind: 'MIS_UNMATCHED', count: unmatched, message: `${unmatched} bank MIS row(s) are unmatched and waiting in quarantine`, href: '/admin/mis/integrity' });
+    if (conflicts) alerts.push({ kind: 'MIS_CONFLICT', count: conflicts, message: `${conflicts} bank MIS row(s) conflict with KBS references`, href: '/admin/mis/integrity' });
+    if (exceptions.length) alerts.push({ kind: 'PAYOUT_EXCEPTIONS', count: exceptions.length, message: `${exceptions.length} open payout exception(s)`, href: '/admin/payouts/liability' });
+    if (openGates.length) alerts.push({ kind: 'LAUNCH_GATES_OPEN', count: openGates.length, message: `${openGates.length} launch-gate setting(s) still need a KBS decision`, href: '/admin/config' });
+    const neverApplied = base.meta.misFreshness.filter((f) => !f.lastAppliedAt).length;
+    if (neverApplied) alerts.push({ kind: 'BANK_NEVER_APPLIED', count: neverApplied, message: `${neverApplied} active bank(s) have no applied MIS yet — their leads show Awaiting MIS`, href: '/admin/mis' });
+    return { ...base, alerts, launchGates: gates };
+  }
+
+  private async users(role: 'TELECALLER' | 'ADVISOR' | 'MANAGER', q: DashboardQuery) {
+    const team = q.managerId ? await this.hierarchy.teamUserIds(q.managerId) : null;
+    return this.prisma.client.user.findMany({ where: { role, ...(team ? { id: { in: team } } : {}) }, select: { id: true, fullName: true, publicRef: true, status: true }, orderBy: { fullName: 'asc' } });
+  }
+
+  /** Telecaller performance: evidence per person, no ranking or score (REQ-15 §15.3). */
+  async telecallers(actor: Actor, q: DashboardQuery) {
+    this.assertAdmin(actor);
+    const people = q.telecallerId ? await this.prisma.client.user.findMany({ where: { id: q.telecallerId, role: 'TELECALLER' }, select: { id: true, fullName: true, publicRef: true, status: true } }) : await this.users('TELECALLER', q);
+    const rows = [];
+    for (const u of people) {
+      const c = await this.metrics.calling({ telecallerIds: [u.id], advisorIds: [], label: u.fullName }, q);
+      rows.push({ user: u, records: c.records, calls: c.calls, callbacks: c.callbacks, shares: { total: c.shares.total }, outcomes: c.outcomes });
+    }
+    return { rows, meta: await this.metrics.meta(q) };
+  }
+
+  async advisors(actor: Actor, q: DashboardQuery) {
+    this.assertAdmin(actor);
+    const people = q.advisorId ? await this.prisma.client.user.findMany({ where: { id: q.advisorId, role: 'ADVISOR' }, select: { id: true, fullName: true, publicRef: true, status: true } }) : await this.users('ADVISOR', q);
+    const rows = [];
+    for (const u of people) {
+      const a = await this.metrics.advisors({ telecallerIds: [], advisorIds: [u.id], label: u.fullName }, q);
+      rows.push({ user: u, leads: a.leads, decision: a.decision, activation: a.activation, payouts: a.payouts });
+    }
+    return { rows, meta: await this.metrics.meta(q) };
+  }
+
+  async managers(actor: Actor, q: DashboardQuery) {
+    this.assertAdmin(actor);
+    const managers = await this.prisma.client.user.findMany({ where: { role: 'MANAGER', ...(q.managerId ? { id: q.managerId } : {}) }, select: { id: true, fullName: true, publicRef: true, status: true }, orderBy: { fullName: 'asc' } });
+    const rows = [];
+    for (const u of managers) {
+      const scope = await this.metrics.scope(actor, { ...q, managerId: u.id });
+      const d = await this.metrics.compute(scope, { ...q, managerId: u.id });
+      rows.push({ user: u, telecallers: scope.telecallerIds?.length ?? 0, advisors: scope.advisorIds?.length ?? 0, calls: { attempts: d.calling.calls.attempts, connected: d.calling.calls.connected }, shares: d.calling.shares.total, leads: d.advisors.leads, payouts: { eligible: d.advisors.payouts.eligible, approvedUnpaid: d.advisors.payouts.approvedUnpaid, paid: d.advisors.payouts.paid } });
+    }
+    return { rows, meta: await this.metrics.meta(q) };
+  }
+
+  /** Bank/card mix: leads, MIS coverage and payout events per bank × card (latest accepted MIS only). */
+  async bankCardMix(actor: Actor, q: DashboardQuery) {
+    this.assertAdmin(actor);
+    const scope = await this.metrics.scope(actor, q);
+    const where = this.metrics.leadWhere(scope, q);
+    const [total, matched] = await Promise.all([
+      this.prisma.client.lead.groupBy({ by: ['bankId', 'cardId'], where, _count: { _all: true } }),
+      this.prisma.client.lead.groupBy({ by: ['bankId', 'cardId'], where: { ...where, statusSnapshot: { isNot: null } }, _count: { _all: true } }),
+    ]);
+    const ents = await this.prisma.client.payoutEntitlement.findMany({ where: { lead: where }, select: { bankId: true, cardId: true, state: true, amountInr: true, requestItems: { where: { active: true }, take: 1, select: { request: { select: { state: true } } } } } });
+    const banks = new Map((await this.prisma.client.bank.findMany({ select: { id: true, code: true, displayName: true } })).map((b) => [b.id, b]));
+    const cards = new Map((await this.prisma.client.creditCard.findMany({ where: { id: { in: total.map((t) => t.cardId) } }, select: { id: true, name: true } })).map((c) => [c.id, c]));
+    const rows = total.map((t) => {
+      const mine = ents.filter((e) => e.bankId === t.bankId && e.cardId === t.cardId);
+      const tot = totalsOf(mine.map((e) => ({ bucket: bucketOf(e.state, e.requestItems[0]?.request.state), amountInr: Number(e.amountInr) })));
+      const m = matched.find((x) => x.bankId === t.bankId && x.cardId === t.cardId)?._count._all ?? 0;
+      return { bank: banks.get(t.bankId) ?? { id: t.bankId, code: '?', displayName: '?' }, card: cards.get(t.cardId) ?? { id: t.cardId, name: '?' }, leads: t._count._all, misMatched: m, awaitingMis: t._count._all - m, payoutEligible: tot.eligible, payoutPaid: tot.paid };
+    });
+    rows.sort((a, b) => b.leads - a.leads || a.bank.displayName.localeCompare(b.bank.displayName));
+    return { rows, meta: { ...(await this.metrics.meta(q)), source: 'KBS leads + latest accepted bank MIS + payout ledger', dateBasis: 'KBS lead created date' } };
+  }
+}
