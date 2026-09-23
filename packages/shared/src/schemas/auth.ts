@@ -87,7 +87,16 @@ export const AuthSessionResponse = z.object({
 });
 export type AuthSessionResponse = z.infer<typeof AuthSessionResponse>;
 
-export const MeResponse = z.object({ user: UserSummary, gates: Gates, permissions: z.array(z.string()) });
+/** F-804: account-page facts for the signed-in user (optional so older clients keep parsing). */
+export const MeAccount = z.object({
+  lastLoginAt: z.string().nullable(),
+  /** `support.contact` config value; null until KBS sets it. */
+  supportContact: z.string().nullable(),
+  /** Access-token lifetime, so web shells can refresh before it lapses. */
+  accessExpiresInSec: z.number().int(),
+});
+export type MeAccount = z.infer<typeof MeAccount>;
+export const MeResponse = z.object({ user: UserSummary, gates: Gates, permissions: z.array(z.string()), account: MeAccount.optional() });
 export type MeResponse = z.infer<typeof MeResponse>;
 
 /** F-302: device integrity report from the mobile app (REQ-09 §9.3). Informational: never a hard block (policy OPEN). */

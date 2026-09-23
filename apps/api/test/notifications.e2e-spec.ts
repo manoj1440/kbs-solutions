@@ -84,13 +84,20 @@ describe('F-701 notifications: scrubbing, push, dedupe, read state, deep-link re
     await svc.notifyMany([who.advisorUserId, who.managerUserId, who.adminUserId, adminId], { kind: 'MIS_CHANGED', title: 'Bank MIS updated', body: 'b', deepLink: { entityType: 'Lead', entityId: lead.id }, dedupeKey: `mis.lead.changed:${lead.id}:test` });
     expect(await prisma.notification.count({ where: { dedupeKey: { startsWith: `mis.lead.changed:${lead.id}:test` } } })).toBe(3); // Admin listed twice → one row
     const mn = await prisma.notification.findFirstOrThrow({ where: { recipientUserId: managerId, kind: 'MIS_CHANGED' } });
-    expect((await api().get(`/api/v1/notifications/${mn.id}/target`).set(auth(managerToken)).expect(200)).body.data).toEqual({ entityType: 'Lead', entityId: lead.id });
+    expect((await api().get(`/api/v1/notifications/${mn.id}/target`).set(auth(managerToken)).expect(200)).body.data).toEqual({ entityType: 'Lead', entityId: lead.id, targetRole: null });
     // Advisor moves away from this Manager → the old Manager's notification no longer opens the lead
     await prisma.reportingAssignment.updateMany({ where: { childUserId: advId, effectiveTo: null }, data: { effectiveTo: new Date(), status: 'CLOSED' } });
     const fresh = (await loginAs(app, prisma, (await prisma.user.findUniqueOrThrow({ where: { id: managerId } })).mobile.slice(3))).accessToken;
     await api().get(`/api/v1/notifications/${mn.id}/target`).set(auth(fresh)).expect(404);
     expect((await prisma.notification.findUniqueOrThrow({ where: { id: mn.id } })).readAt).not.toBeNull();
     await prisma.reportingAssignment.create({ data: { childUserId: advId, parentUserId: managerId, source: 'AGENT_CODE', status: 'ACTIVE' } });
+  });
+
+  it('F-804 NOTIF-02: a User deep link tells the web which page to open (target role), still scope-checked', async () => {
+    await svc.notify({ recipientUserId: managerId, kind: 'ANNOUNCEMENT', title: 'Advisor update', body: 'b', deepLink: { entityType: 'User', entityId: advId }, dedupeKey: 'test:user-link' });
+    const n = await prisma.notification.findFirstOrThrow({ where: { dedupeKey: 'test:user-link' } });
+    const fresh = (await loginAs(app, prisma, (await prisma.user.findUniqueOrThrow({ where: { id: managerId } })).mobile.slice(3))).accessToken;
+    expect((await api().get(`/api/v1/notifications/${n.id}/target`).set(auth(fresh)).expect(200)).body.data).toEqual({ entityType: 'User', entityId: advId, targetRole: 'ADVISOR' });
   });
 
   it('WFH grant/revoke notify the Telecaller and their Manager; OTP lock raises an Admin security event without the full mobile', async () => {

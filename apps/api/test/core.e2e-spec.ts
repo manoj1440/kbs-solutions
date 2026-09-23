@@ -93,6 +93,31 @@ describe('core foundation (F-101…F-111)', () => {
         .expect(403);
       expect(refused.body.error.code).toBe('AUTH_PLATFORM_NOT_ALLOWED');
     });
+
+    it('F-804 AUTH-01: web session continuity — cookie-only refresh re-issues cookies (no tokens in body); /auth/me carries account facts; revoked refresh fails with LOGIN_AGAIN', async () => {
+      await prisma.otpChallenge.deleteMany({ where: { mobile: `+91${ADMIN_MOBILE}` } });
+      await prisma.systemConfig.update({ where: { key: 'support.contact' }, data: { value: 'support@kbs.example' } }).catch(() => undefined);
+      const req = await request(app.getHttpServer()).post('/api/v1/auth/otp/request').send({ mobile: ADMIN_MOBILE }).expect(201);
+      const verify = await request(app.getHttpServer()).post('/api/v1/auth/otp/verify').send({ challengeId: req.body.data.challengeId, code: '000000', platform: 'WEB' }).expect(201);
+      const cookies = verify.headers['set-cookie'] as unknown as string[];
+      const refreshCookie = cookies.find((c) => c.startsWith('kbs_refresh='))!.split(';')[0];
+      expect(cookies.find((c) => c.startsWith('kbs_refresh='))).toMatch(/Path=\/api\/v1\/auth/);
+      const me = await request(app.getHttpServer()).get('/api/v1/auth/me').set('Cookie', cookies).expect(200);
+      expect(me.body.data.account).toMatchObject({ accessExpiresInSec: 900 });
+      expect(me.body.data.account).toHaveProperty('supportContact');
+      expect(me.body.data.account).toHaveProperty('lastLoginAt');
+      // the browser only has the refresh cookie (access cookie expired): refresh sets new cookies, body has no tokens
+      const r = await request(app.getHttpServer()).post('/api/v1/auth/refresh').set('Cookie', refreshCookie).send({}).expect(201);
+      expect(r.body.data.accessToken).toBeUndefined();
+      expect(r.body.data.refreshToken).toBeUndefined();
+      const renewed = r.headers['set-cookie'] as unknown as string[];
+      expect(renewed.some((c) => c.startsWith('kbs_access='))).toBe(true);
+      await request(app.getHttpServer()).get('/api/v1/auth/me').set('Cookie', renewed).expect(200);
+      // sign out of all devices → the refresh cookie no longer works (the /session hop sends the user to login)
+      await request(app.getHttpServer()).post('/api/v1/auth/logout-all').set('Cookie', renewed).expect(201);
+      const dead = await request(app.getHttpServer()).post('/api/v1/auth/refresh').set('Cookie', renewed.find((c) => c.startsWith('kbs_refresh='))!.split(';')[0]).send({}).expect(401);
+      expect(dead.body.error.recovery).toBe('LOGIN_AGAIN');
+    });
   });
 
   describe('RBAC-01 / RBAC-02 / TRAIN-01 / TRAIN-02', () => {

@@ -1,4 +1,4 @@
-import { type DeviceIntegrityBody, type Gates, type OtpRequestBody, type OtpVerifyBody, makePublicRef, RefPrefix, ROLE_PERMISSIONS, toE164India, type Role } from '@kbs/shared';
+import { type DeviceIntegrityBody, type Gates, type MeAccount, type OtpRequestBody, type OtpVerifyBody, makePublicRef, RefPrefix, ROLE_PERMISSIONS, toE164India, type Role } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -164,9 +164,14 @@ export class AuthService {
     await this.notifications.revokeDevicesForSessions(all ? { userId } : { sessionId });
   }
 
-  async me(actor: Actor, ip: string): Promise<{ user: unknown; gates: Gates; permissions: string[] }> {
+  async me(actor: Actor, ip: string): Promise<{ user: unknown; gates: Gates; permissions: string[]; account: MeAccount }> {
     const user = await this.prisma.client.user.findUniqueOrThrow({ where: { id: actor.userId } });
-    return { user: await this.users.toSummary(user), gates: await this.gates.compute(actor, ip), permissions: [...actor.permissions] };
+    const account: MeAccount = {
+      lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+      supportContact: this.config.getString('support.contact') ?? null,
+      accessExpiresInSec: (this.config.getInt('auth.accessTokenMinutes') ?? 15) * 60,
+    };
+    return { user: await this.users.toSummary(user), gates: await this.gates.compute(actor, ip), permissions: [...actor.permissions], account };
   }
 
   /**

@@ -99,9 +99,11 @@ export class NotificationsService {
     if (!n || n.recipientUserId !== actor.userId) throw AppError.notFound('Notification');
     if (!n.readAt) await this.prisma.client.notification.update({ where: { id }, data: { readAt: new Date() } });
     const link = n.deepLink as { entityType?: string; entityId?: string } | null;
-    if (!link?.entityType || !link.entityId) return { entityType: null, entityId: null };
+    if (!link?.entityType || !link.entityId) return { entityType: null, entityId: null, targetRole: null };
     if (!(await this.canSee(actor, link.entityType, link.entityId))) throw AppError.notFound(link.entityType);
-    return { entityType: link.entityType, entityId: link.entityId };
+    // F-804: web areas route User targets by role (Telecaller vs Advisor pages)
+    const targetRole = link.entityType === 'User' ? ((await this.prisma.client.user.findUnique({ where: { id: link.entityId }, select: { role: true } }))?.role ?? null) : null;
+    return { entityType: link.entityType, entityId: link.entityId, targetRole };
   }
 
   private async canSee(actor: Actor, entityType: string, entityId: string): Promise<boolean> {
