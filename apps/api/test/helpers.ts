@@ -62,7 +62,7 @@ export async function resetDatabase(url: string) {
   const prisma = createPrismaClient({ connectionString: url, log: ['error'] });
   try {
     await prisma.$executeRawUnsafe(`
-      TRUNCATE TABLE "PayoutExceptionResolution","ExternalPayment","PayoutApproval","PayoutRequestItem","PayoutRequest","PayoutEntitlementEvent","PayoutEntitlement","PayoutRate","PayoutRule","AuditLog","SensitiveAccessLog","IdempotencyRecord","OtpChallenge","RefreshToken","Session",
+      TRUNCATE TABLE "PushDevice","PayoutExceptionResolution","ExternalPayment","PayoutApproval","PayoutRequestItem","PayoutRequest","PayoutEntitlementEvent","PayoutEntitlement","PayoutRate","PayoutRule","AuditLog","SensitiveAccessLog","IdempotencyRecord","OtpChallenge","RefreshToken","Session",
         "NetworkAccessEvent","WfhException","OfficeNetwork","TrainingReactivation","TrainingAttempt","TrainingModuleResult",
         "TrainingEnrollment","AllocationEvent","ShareAction","FollowUpTask","CallOutcome","CallingInterest","CallRecording","CallAttempt","OperationalRemark","CallingRecord","CustomerImportBatch","ContactSuppression","PincodeMaster","Notification","StoredFile","BankPincodeRow","BankPincodeBatch","BankPincodeProfile","ApplicationLink","ProductCodeCrosswalk","CreditCardCategory","CardPincodePublication","OfficialIdCard","ReportingAssignment","AgentCode","UserLifecycleEvent","SystemConfigHistory","SystemConfig","OutboxEvent","BankStatusHistory","BankStatusSnapshot","MisRow","MisImportBatch","MisImportProfile","BankApplicationLinkage","LeadLinkInitiation","Lead","LeadDraft","AdvisorProfile","CreditCard","User"
       CASCADE`);

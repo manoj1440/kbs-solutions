@@ -453,6 +453,7 @@ model User {
   payoutApprovals      PayoutApproval[]
   externalPayments     ExternalPayment[]
   payoutExceptionResolutions PayoutExceptionResolution[]
+  pushDevices          PushDevice[]
   misBatchesUploaded   MisImportBatch[]
   customerBatchesUploaded CustomerImportBatch[]
   pincodeBatchesUploaded BankPincodeBatch[]
@@ -1773,6 +1774,22 @@ model Notification {
   recipient User @relation(fields: [recipientUserId], references: [id])
 
   @@index([recipientUserId, readAt, createdAt])
+}
+
+/// F-701: push delivery target (Expo push token) registered by a signed-in device; revoked on logout/session revoke.
+model PushDevice {
+  id        String    @id @default(uuid(7))
+  userId    String
+  sessionId String?
+  token     String    @unique
+  platform  Platform
+  createdAt DateTime  @default(now())
+  lastSeenAt DateTime @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, revokedAt])
 }
 
 model OutboxEvent {

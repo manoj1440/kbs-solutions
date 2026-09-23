@@ -126,6 +126,7 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 `StoredFile(id, bucket, key, contentType, sizeBytes, sha256, uploadedByUserId, purpose enum, scanStatus(PENDING, CLEAN, INFECTED, SKIPPED), createdAt)`
 `Notification(id, recipientUserId, kind, title, body, deepLink jsonb{entityType, entityId}, sourceRef jsonb{batchId?, field?}, dedupeKey unique, createdAt, readAt?, pushedAt?)`
 `OutboxEvent(id, type, payload jsonb, createdAt, processedAt?, attempts)`.
+`PushDevice(id, userId, sessionId?, token unique (Expo push token), platform, createdAt, lastSeenAt, revokedAt?)` — F-701 push targets; revoked on logout.
 
 ## 12. Cross-cutting invariants enforced in DB
 
