@@ -89,4 +89,4 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |
 | [F-904-data-retention.md](./F-904-data-retention.md) | F-904 Data retention and deletion authority (BLOCKED) | Hardening | BLOCKED | F-104 |
 | [F-905-performance-acceptance.md](./F-905-performance-acceptance.md) | F-905 Performance acceptance harness | Hardening | DONE | F-505, F-307 |
-| [F-906-android-release.md](./F-906-android-release.md) | F-906 Android APK build and release checklist | Hardening | IN_PROGRESS | F-802, F-302 |
+| [F-906-android-release.md](./F-906-android-release.md) | F-906 Android APK build and release checklist | Hardening | DONE | F-802, F-302 |
