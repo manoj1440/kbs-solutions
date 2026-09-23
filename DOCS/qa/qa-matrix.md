@@ -47,7 +47,7 @@
 | PIN-01 | `apps/api/test/catalogue.e2e-spec.ts` |
 | PIN-02 | `apps/api/test/card-availability.e2e-spec.ts`<br>`apps/api/test/catalogue.e2e-spec.ts` |
 | PIN-03 | `apps/api/test/card-availability.e2e-spec.ts`<br>`apps/api/test/catalogue.e2e-spec.ts`<br>`packages/shared/test/normalize.test.ts` |
-| RBAC-01 | `apps/api/test/calling-queue.e2e-spec.ts`<br>`apps/api/test/core.e2e-spec.ts`<br>`apps/api/test/oversight.e2e-spec.ts` |
+| RBAC-01 | `apps/api/test/calling-queue.e2e-spec.ts`<br>`apps/api/test/core.e2e-spec.ts`<br>`apps/api/test/dashboards.e2e-spec.ts`<br>`apps/api/test/oversight.e2e-spec.ts` |
 | RBAC-02 | `apps/api/test/core.e2e-spec.ts`<br>`apps/api/test/files.e2e-spec.ts` |
 | SEC-01 | `apps/api/src/modules/access-policy/access-policy.spec.ts`<br>`apps/api/test/core.e2e-spec.ts`<br>`apps/api/test/network-policy.e2e-spec.ts`<br>`apps/mobile/lib/routing.test.ts` |
 | SEC-02 | `apps/mobile/lib/secure-routes.test.ts` |

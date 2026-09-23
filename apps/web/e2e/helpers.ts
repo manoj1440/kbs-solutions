@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import { expect, type Page } from '@playwright/test';
 
 /** Dev/test only: clears OTP history for a mobile so repeated logins are not blocked by the resend cooldown. */
-function clearOtp(mobile: string) {
+export function clearOtp(mobile: string) {
   const db = process.env.E2E_DB_URL;
   if (db) execSync(`psql "${db}" -qc "DELETE FROM \\"OtpChallenge\\" WHERE mobile = '+91${mobile}'"`);
 }
