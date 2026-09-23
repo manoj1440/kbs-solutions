@@ -41,6 +41,7 @@ check('api-env', 'object storage (STORAGE_PROVIDER=s3)', env.STORAGE_PROVIDER ==
 for (const k of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'OTP_PEPPER']) check('api-env', `${k} is set and not a placeholder`, env[k] && env[k].length >= 32 && !/change-me|ci-|test-/.test(env[k]));
 check('api-env', 'DATA_ENCRYPTION_KEY is not the dev/test key', env.DATA_ENCRYPTION_KEY && env.DATA_ENCRYPTION_KEY !== 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=');
 check('api-env', 'API connects as the non-owner kbs_app role (F-903)', /\/\/kbs_app[:@]/.test(env.DATABASE_URL ?? ''), 'see DOCS/runbooks/03-production-database.md');
+check('api-env', 'long jobs go to the worker queue (JOBS_DISPATCH unset or queue, F-508)', !env.JOBS_DISPATCH || env.JOBS_DISPATCH === 'queue', env.JOBS_DISPATCH);
 check('api-env', 'default request budget (THROTTLE_LIMIT_PER_MIN unset or ≤ 300)', !env.THROTTLE_LIMIT_PER_MIN || Number(env.THROTTLE_LIMIT_PER_MIN) <= 300, env.THROTTLE_LIMIT_PER_MIN);
 
 // 3. Live API: health + launch gates (REQ-28 §28.2 — every ★ OPEN value decided by KBS)
@@ -50,6 +51,7 @@ if (base && token) {
   try {
     const h = await fetch(`${base}/health`).then((r) => r.json());
     check('live', 'health: db + redis', h?.data?.db && h?.data?.redis);
+    check('live', 'no dead-lettered outbox events (F-110)', (h?.data?.outbox?.deadLettered ?? 0) === 0, String(h?.data?.outbox?.deadLettered ?? ''));
     const g = await fetch(`${base}/config/launch-gates`, { headers: { authorization: `Bearer ${token}` } }).then((r) => r.json());
     const gates = g?.data ?? [];
     check('live', 'launch-gate list readable', Array.isArray(gates) && gates.length > 0);
@@ -60,7 +62,7 @@ if (base && token) {
 } else check('live', 'API_URL and ADMIN_TOKEN provided (launch gates)', false, 'set API_URL and ADMIN_TOKEN');
 
 // 4. Manual evidence the script cannot see
-const manual = ['Maestro flows pass on the release APK (apps/mobile/.maestro)', 'SEC-02 protected screens verified on Android 12+ (F-302)', 'k6 thresholds approved by KBS recorded (DOCS/perf/01-baseline-results.md)', 'DPDP/compliance sign-offs recorded (launch gates above)'];
+const manual = ['A worker process runs with WORKER_MODE=1 (outbox relay, MIS background jobs — F-110 / F-508)', 'Maestro flows pass on the release APK (apps/mobile/.maestro)', 'SEC-02 protected screens verified on Android 12+ (F-302)', 'k6 thresholds approved by KBS recorded (DOCS/perf/01-baseline-results.md)', 'DPDP/compliance sign-offs recorded (launch gates above)'];
 
 const w = Math.max(...results.map((r) => r.name.length));
 for (const r of results) console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.area.padEnd(11)} ${r.name.padEnd(w)}  ${r.ok ? '' : r.detail}`);

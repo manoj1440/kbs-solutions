@@ -55,3 +55,6 @@ Env: `API_URL` (default `http://localhost:4200/api/v1`), `ADMIN_MOBILE`, `MOBILE
 | Step | p95 threshold | Approved by / date |
 |---|---|---|
 | _to be filled by KBS_ | | |
+
+## F-508 follow-up — MIS preview/apply as background jobs (2026-09-23)
+Batches above `mis.asyncRowThreshold` (2000) now return `{ queued: true, job }` immediately; `perf/k6/mis-apply.js` polls `GET /mis/batches/:id/job` and times until the job finishes. Sandbox run, 20,000-row synthetic HDFC batch (`JOBS_DISPATCH=local`): preview **24.1 s**, apply **24.4 s** end to end, with the triggering request returning in milliseconds and progress/heartbeat written about once a second. The in-request timeout risk from the 100k baseline is gone; throughput per batch is unchanged (same pipeline code), so a 100k batch still takes ~2 minutes per phase — now in the background.

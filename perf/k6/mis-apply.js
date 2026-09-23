@@ -1,6 +1,6 @@
 // F-905: MIS import end-to-end for a large HDFC sheet (default the 100k-row file from gen-mis.mjs):
 // upload → create batch → preview (parse + match) → apply. Records each phase as its own trend.
-import { check, fail } from 'k6';
+import { check, fail, sleep } from 'k6';
 import http from 'k6/http';
 import { Trend } from 'k6/metrics';
 
@@ -22,10 +22,21 @@ export default function () {
   r = http.post(`${BASE}/mis/batches`, JSON.stringify({ bankId: hdfc.id, profileId: profile.id, fileId: r.json('data.id') }), { ...authz(admin), timeout: '600s' });
   if (!check(r, { batch: (x) => x.status === 201 })) fail(`batch ${r.status} ${r.body}`);
   const id = r.json('data.id');
-  r = http.post(`${BASE}/mis/batches/${id}/preview`, null, { ...authz(admin), timeout: '1800s' });
-  t.preview.add(r.timings.duration);
-  if (!check(r, { preview: (x) => x.status === 201 })) fail(`preview ${r.status} ${r.body}`);
-  r = http.post(`${BASE}/mis/batches/${id}/apply`, null, { ...authz(admin), timeout: '1800s' });
-  t.apply.add(r.timings.duration);
-  check(r, { apply: (x) => x.status === 201 });
+  // F-508: large batches answer { queued: true } and run in the background — time until the job finishes
+  const step = (kind, trend) => {
+    const t0 = Date.now();
+    const res = http.post(`${BASE}/mis/batches/${id}/${kind}`, null, { ...authz(admin), timeout: '1800s' });
+    if (!check(res, { [kind]: (x) => x.status === 201 })) fail(`${kind} ${res.status} ${res.body}`);
+    if (res.json('data.queued')) {
+      for (;;) {
+        sleep(2);
+        const j = http.get(`${BASE}/mis/batches/${id}/job`, authz(admin)).json('data.job');
+        if (j.status === 'SUCCEEDED') break;
+        if (j.status === 'FAILED') fail(`${kind} job failed: ${j.error}`);
+      }
+    }
+    trend.add(Date.now() - t0);
+  };
+  step('preview', t.preview);
+  step('apply', t.apply);
 }

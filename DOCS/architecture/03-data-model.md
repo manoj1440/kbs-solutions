@@ -108,6 +108,8 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 `BankStatusSnapshot(leadId unique, bankId, currentStage?, finalDecision?, cardActivationStatus?, kycStatus?, vkycStatus?, bkycStatus?, ipaStatus?, dropoffReason?, declineCode?, declineDescription?, declineDescription2?, declineType?, reason?, curableFlag?, productCode?, productDescription?, cardType?, bankCreationDateTime?, bankCreationDate?, finalDecisionDate?, vkycConsentDate?, vkycExpiryDate?, decisionMonth?, rawLatest jsonb, lastMatchedBatchId, lastMatchedAt, firstMatchedAt)` — **written only by mis/apply**. Absent row = "Awaiting MIS Update". Null field = "Not reported".
 `BankStatusHistory(id, leadId, batchId, misRowId, field, oldValue?, newValue?, reportedEventDate?, importedAt, uploaderUserId, changeKind(SET, CHANGED, CONFIRMED_SAME, REPORTED_BLANK, ABSENT_FROM_BATCH))` unique `(leadId, batchId, field)`.
 
+`MisImportBatch` F-508 job columns: `jobKind(PREVIEW|APPLY)?, jobStatus(QUEUED|RUNNING|SUCCEEDED|FAILED)?, jobProgress jsonb{phase, done, total}?, jobError?, jobRequestedByUserId?, jobQueuedAt?, jobStartedAt?, jobHeartbeatAt?, jobFinishedAt?` — one active job per batch; a RUNNING job without heartbeat for 10 min is stale.
+
 ## 10. Payouts
 
 `PayoutRule(id, bankId, name, version, triggerField (e.g. cardActivationStatus), triggerValues jsonb[], productCodePattern?, holdDays, effectiveFrom, effectiveTo?, approvedByUserId, notes)`
