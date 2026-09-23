@@ -6,7 +6,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 
 1. **Foundation** F-001 → F-006 (this is the 'core' that must exist before anything else).
 2. **Core services** F-107, F-109, F-103, F-104, F-101, F-102, F-110, F-108, F-111, F-105, F-106.
-3. **Shells** F-803, F-801, F-802 (login + role routing on both platforms).
+3. **Shells** F-803, F-801, F-802, F-804 (login + role routing on both platforms).
 4. **Vertical slice 1 — Telecaller lifecycle**: F-201, F-202, F-203, F-204, F-205, F-301, F-302.
 5. **Vertical slice 2 — Calling desk**: F-306, F-304, F-303, F-305, F-403, F-404, F-308, F-307, F-312, F-309, F-310, F-311, F-313, F-314.
 6. **Vertical slice 3 — Advisor**: F-401, F-402, F-405, F-406, F-407, F-315.
@@ -87,6 +87,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-801-web-shell.md](./F-801-web-shell.md) | F-801 Web shell: layout, navigation, OTP login, role routing | UX shells | DONE | F-003, F-006, F-101, F-111 |
 | [F-802-mobile-shell.md](./F-802-mobile-shell.md) | F-802 Mobile shell: Expo Router, OTP login, gates routing, base components | UX shells | DONE | F-003, F-006, F-101, F-111 |
 | [F-803-status-and-provenance-components.md](./F-803-status-and-provenance-components.md) | F-803 Shared status/provenance component set (web + mobile) | UX shells | DONE | F-006, F-004 |
+| [F-804-web-session-and-account-screens.md](./F-804-web-session-and-account-screens.md) | F-804 Web session continuity and shared account screens (REQ-25 §25.1) | UX shells | IN_PROGRESS | F-101, F-701, F-801 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | DONE | F-801, F-802 |
 | [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | DONE | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |

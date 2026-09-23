@@ -1,0 +1,28 @@
+# F-804 Web session continuity and shared account screens
+
+- Group: UX shells · Status: **IN_PROGRESS** · Depends on: F-101, F-701, F-801
+- PRD refs: REQ-25 §25.1 (shared screens: "profile/support/logout; notifications with record deep-link; … session-expired recovery; no-connection/retry and account-deactivated explanations"), REQ-04 (OTP-only sessions; 15-min access + 30-day rotating refresh per `01-system-architecture.md`), REQ-18 §18.1 / REQ-25 §25.5 (Accounts "notifications/profile"), REQ-19 §19.2 (deep link re-checks permission), REQ-23 (error states and recovery paths)
+- QA ids: AUTH-01, NOTIF-02
+- Origin: session 11 gap analysis. F-801 promised a `/session-expired` page and "401 → session-expired redirect"; neither exists. Reproduced in a browser: sign in to the web, drop the access cookie (what the browser does after its 15-minute max-age), open any page → silent redirect to `/login`. The 30-day refresh cookie is scoped to the API's `/api/v1/auth` path, so the web server never sees it and never refreshes. **Every web user is effectively logged out 15 minutes after signing in, with no explanation.** The web also has no profile/support page, no full notification list (the drawer shows the last 30 only), and no error boundary (an API outage shows the framework error page).
+
+## Detailed requirements
+1. **Session refresh hop.** When a protected web route (`/admin|manager|accounts/**`) is requested without the access cookie, the edge proxy redirects to `/session?next=<path>` instead of `/login`. That page runs in the browser, calls `POST /auth/refresh` against the API with credentials (the browser sends the path-scoped refresh cookie there), and on success replaces the location with `next`. On failure it goes to `/login?reason=<reason>&next=<path>`: `session-expired` normally, `deactivated` when the API answers `AUTH_ACCOUNT_DEACTIVATED`. `next` must be a same-site path (starts with `/`, not `//`); anything else becomes `/`.
+2. **Server-side 401.** A role layout whose `/auth/me` answers 401 (token expired or session revoked) sends the user through the same hop; a 403 `AUTH_ACCOUNT_DEACTIVATED` goes to `/login?reason=deactivated`.
+3. **Keep-alive.** While a web shell is open, the browser refreshes the session a couple of minutes before the access cookie expires, so ordinary use never hits the hop. The browser only calls the refresh endpoint; it never reads or stores tokens (cookies stay httpOnly).
+4. **Login explanations.** `/login` shows a plain notice for `reason=session-expired` ("Your session ended. Sign in again to continue."), `deactivated` ("This account has been deactivated. Contact your Manager or the KBS Admin."), and `signed-out`. After OTP, a valid `next` is honoured when it belongs to the user's own area; otherwise the role home.
+5. **Account page** `/<area>/account` for Admin, Manager and Accounts: name, role, masked mobile, public ref, employee code if any, current reporting parent if any, last sign-in; **Sign out** and **Sign out of all devices** (`/auth/logout-all`); support contact from `support.contact` (shown as "Not configured yet" when unset — it is a KBS setting, not invented). `GET /auth/me` gains an optional `support: { contact }` block (additive, mobile unaffected).
+6. **Notification centre** `/<area>/notifications`: paginated list (20 per page), All / Unread filter, **Mark all read**, open an item → `GET /notifications/:id/target` re-check → navigate to the record for that area, or explain "You no longer have access to this item." Items without a web destination stay readable. Deep-link map for the web areas covers Lead, PayoutRequest, MisImportBatch (Admin), User (Admin → user page; Manager → Telecaller or Advisor page by the target's role, which the target endpoint now returns). The drawer gets a "View all" link.
+7. **Error and not-found boundaries** for the web app: a failed server render (API unreachable, 5xx) shows "We couldn't reach KBS right now" with **Try again** (re-render) and a link home; unknown URLs get a not-found page with a link to the user's home. No stack traces or internal messages are shown.
+8. Shell links: every shell shows **Account** and the notification centre; the Admin account menu links to the Account page.
+
+## Acceptance criteria
+- [ ] With the access cookie removed but a valid refresh cookie, opening a protected page lands on that page (no OTP).
+- [ ] With the refresh token revoked, the user lands on `/login?reason=session-expired&next=…` and sees the notice; after OTP they return to `next`.
+- [ ] A deactivated user sees the deactivated explanation, not a generic login.
+- [ ] `next` cannot redirect off-site.
+- [ ] Account page shows the profile, support contact state and both sign-out actions for all three web roles; sign-out-all ends other sessions.
+- [ ] Notification centre pages, filters unread, marks all read and opens deep links after the permission re-check.
+- [ ] API outage shows the retry screen; unknown URL shows not-found; both fit 390 px.
+
+## Progress notes
+- Session 11: started.
