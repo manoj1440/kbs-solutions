@@ -133,7 +133,7 @@ export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: stri
           <CardDescription>Evidence from the bank MIS, the rule/rate version in force at eligibility, and any earlier requests for the same lead.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>Lead</TableHead>
@@ -147,7 +147,7 @@ export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: stri
             <TableBody>
               {r.items.map((i) => (
                 <TableRow key={i.id}>
-                  <TableCell>
+                  <TableCell data-label="Lead">
                     {leadHref ? (
                       <Link className="underline" href={leadHref(i.lead.id)}>
                         {i.lead.publicRef}
@@ -157,20 +157,20 @@ export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: stri
                     )}
                     <div className="text-muted-foreground text-xs">{i.lead.customerFullName}</div>
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Bank / card" className="text-xs">
                     {i.bank.displayName} · {i.card}
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="MIS evidence" className="text-xs">
                     <code>{i.triggerField}</code> = “{i.triggerFieldValue}”
                     <div className="text-muted-foreground">
                       batch {i.evidence.batchRef} · {formatDateTime(i.evidence.uploadedAt)} · eligible {formatDateTime(i.eligibleAt)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Rule" className="text-xs">
                     {i.rule.name} v{i.rule.version}
                   </TableCell>
-                  <TableCell>{formatInr(i.amountSnapshotInr)}</TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Amount" className="whitespace-nowrap">{formatInr(i.amountSnapshotInr)}</TableCell>
+                  <TableCell data-label="Warnings / prior" className="text-xs">
                     {i.warnings.map((w) => (
                       <Badge key={w} variant="warning" className="mr-1">
                         {w}
@@ -247,7 +247,7 @@ function PaymentTrace({ r }: { r: PayoutRequestDto }) {
           </div>
         ) : null}
         {r.paymentHistory.length ? (
-          <Table>
+          <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>Entry</TableHead>
@@ -259,20 +259,20 @@ function PaymentTrace({ r }: { r: PayoutRequestDto }) {
             <TableBody>
               {r.paymentHistory.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Entry" className="text-xs">
                     <Badge variant={PAYMENT_STATE[p.state]?.tone ?? 'unknown'}>{PAYMENT_STATE[p.state]?.label ?? p.state}</Badge>
                     <div className="text-muted-foreground mt-1">
                       {p.recordedBy.fullName} · {formatDateTime(p.recordedAt)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Transfer" className="text-xs">
                     {formatInr(p.amountInr)} · {p.method ?? '—'}
                     <div>
                       <code>{p.transferReference}</code> · paid {formatDateTime(p.paidAt)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs">{p.proofFileId ? <ProofLink fileId={p.proofFileId} /> : <span className="text-muted-foreground">none</span>}</TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Proof" className="text-xs">{p.proofFileId ? <ProofLink fileId={p.proofFileId} /> : <span className="text-muted-foreground">none</span>}</TableCell>
+                  <TableCell data-label="Notes" className="text-xs">
                     {p.correctionReason ? <div>Correction: {p.correctionReason}</div> : null}
                     {p.correctionDecision ? (
                       <div className="text-muted-foreground">

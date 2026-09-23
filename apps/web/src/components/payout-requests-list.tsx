@@ -80,7 +80,7 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, descripti
           <CardDescription>{mode === 'accounts' ? 'Only requests approved by both the Manager and the Admin reach Accounts. Pay outside KBS, then record the transfer.' : 'A submitted request is not an approval; Accounts sees a request only after both approvals.'}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>Request</TableHead>
@@ -101,19 +101,19 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, descripti
               ) : null}
               {r.data.map((x) => (
                 <TableRow key={x.id}>
-                  <TableCell>
+                  <TableCell data-label="Request">
                     <Link className="underline" href={`${basePath}/${x.id}`}>
                       {x.publicRef}
                     </Link>
                     <div className="text-muted-foreground text-xs">{x.itemCount} card event(s)</div>
                   </TableCell>
-                  <TableCell>{x.advisor.fullName}</TableCell>
-                  <TableCell>{formatInr(x.totalAmountInr)}</TableCell>
-                  <TableCell>
+                  <TableCell data-label="Advisor">{x.advisor.fullName}</TableCell>
+                  <TableCell data-label="Amount" className="whitespace-nowrap">{formatInr(x.totalAmountInr)}</TableCell>
+                  <TableCell data-label="State">
                     <PayoutStateBadge state={x.state} />
                   </TableCell>
                   {mode === 'accounts' ? (
-                    <TableCell className="text-xs">
+                    <TableCell data-label="Payment" className="text-xs">
                       {x.payment ? `${x.payment.state.toLowerCase().replace(/_/g, ' ')} · ${formatInr(x.payment.amountInr)}` : x.state === 'APPROVED' ? 'not yet recorded' : '—'}
                       {x.correctionPending ? (
                         <Badge variant="warning" className="ml-1">
@@ -123,7 +123,7 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, descripti
                       {x.holdReason ? <div className="text-destructive mt-1 whitespace-normal">{x.holdReason}</div> : null}
                     </TableCell>
                   ) : (
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Approvals" className="text-xs">
                     {x.approvals.map((a) => (
                       <Badge key={a.role} variant={a.decision === 'APPROVED' ? 'success' : 'destructive'} className="mr-1">
                         {a.role.toLowerCase()} {a.decision.toLowerCase()}
@@ -138,7 +138,7 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, descripti
                     {x.correctionPending ? <Badge variant="warning">correction awaiting Admin</Badge> : null}
                   </TableCell>
                   )}
-                  <TableCell className="text-xs">{formatDateTime(x.submittedAt)}</TableCell>
+                  <TableCell data-label="Submitted" className="text-xs">{formatDateTime(x.submittedAt)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

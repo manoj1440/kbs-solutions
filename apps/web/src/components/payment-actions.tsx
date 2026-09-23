@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiClientError, amountInput, formatInr, PAYMENT_METHODS } from '@kbs/shared';
+import { ApiClientError, amountInput, formatDateTime, formatInr, PAYMENT_METHODS } from '@kbs/shared';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -13,9 +13,10 @@ import { Label } from '@/components/ui/label';
 import { clientApi } from '@/lib/client-api';
 
 const sel = 'border-input bg-background h-9 w-full min-w-0 rounded-md border px-2 text-sm';
-const todayIst = () => new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
-/** Date picked in IST → noon IST instant, so the stored date never shifts a day. */
-const istNoon = (d: string) => new Date(`${d}T12:00:00+05:30`).toISOString();
+const istDate = (ms: number) => new Date(ms + 5.5 * 3_600_000).toISOString().slice(0, 10);
+const todayIst = () => istDate(Date.now());
+/** Date picked in IST → an instant on that IST day: now for today (never in the future), noon IST for earlier days. */
+const istInstant = (d: string) => (d === todayIst() ? new Date().toISOString() : new Date(`${d}T12:00:00+05:30`).toISOString());
 const newKey = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 
 function useRunner() {
@@ -56,7 +57,7 @@ function Status({ msg }: { msg: { ok: boolean; text: string } | null }) {
 function PaymentForm({ request, mode, onDone }: { request: PayoutRequestDto; mode: 'record' | 'correct'; onDone?: () => void }) {
   const { msg, busy, run } = useRunner();
   const prior = request.payment;
-  const [date, setDate] = useState(prior ? prior.paidAt.slice(0, 10) : todayIst());
+  const [date, setDate] = useState(prior ? istDate(Date.parse(prior.paidAt)) : todayIst());
   const [amount, setAmount] = useState(String(prior?.amountInr ?? request.totalAmountInr));
   const [ref, setRef] = useState(prior?.transferReference ?? '');
   const [method, setMethod] = useState(prior?.method ?? 'NEFT');
@@ -71,7 +72,7 @@ function PaymentForm({ request, mode, onDone }: { request: PayoutRequestDto; mod
       () =>
         clientApi.post(
           mode === 'record' ? `/payouts/requests/${request.id}/payment` : `/payouts/requests/${request.id}/payment/correct`,
-          { paidAt: istNoon(date), amountInr: amt, transferReference: ref.trim(), method, ...(proof ? { proofFileId: proof.id } : {}), ...(mode === 'correct' ? { reason: reason.trim() } : {}) },
+          { paidAt: istInstant(date), amountInr: amt, transferReference: ref.trim(), method, ...(proof ? { proofFileId: proof.id } : {}), ...(mode === 'correct' ? { reason: reason.trim() } : {}) },
           key,
         ),
       mode === 'record' ? 'Payment recorded.' : 'Correction sent to Admin for approval.',
@@ -158,7 +159,7 @@ function CorrectionDecision({ request }: { request: PayoutRequestDto }) {
   return (
     <div className="grid gap-2">
       <p className="text-sm">
-        Proposed by {c.recordedBy.fullName}: {formatInr(c.amountInr)} · ref <code>{c.transferReference}</code> · {c.paidAt.slice(0, 10)} — “{c.correctionReason}”
+        Proposed by {c.recordedBy.fullName}: {formatInr(c.amountInr)} · ref <code>{c.transferReference}</code> · {formatDateTime(c.paidAt)} — “{c.correctionReason}”
       </p>
       <Input aria-label="correction decision reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Decision note (required)" />
       <div className="flex flex-wrap gap-2">

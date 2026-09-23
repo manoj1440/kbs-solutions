@@ -84,6 +84,7 @@ describe('F-605 Accounts payment recording (PAY-05, PAY-06, PAY-07)', () => {
   afterAll(async () => app.close());
 
   it('PAY-05/PAY-06: payment with proof → PAID; entitlements Paid for this event; ledger + MIS untouched; full trace; Advisor receipt only', async () => {
+    // the cancelled request below leaves one event available again — available counts only unreserved, unpaid events
     const pendingOnly = (await post('/payouts/requests', advToken, { entitlementIds: [(await entitlement()).id] }).expect(201)).body.data;
     await api().get(`/api/v1/payouts/requests/${pendingOnly.id}`).set(auth(accountsToken)).expect(404); // PAY-03: not before both approvals
     await api().get(`/api/v1/payouts/requests/${pendingOnly.id}/payee`).set(auth(accountsToken)).expect(404);
@@ -113,8 +114,8 @@ describe('F-605 Accounts payment recording (PAY-05, PAY-06, PAY-07)', () => {
     expect(await prisma.outboxEvent.count({ where: { type: 'payouts.request.paid' } })).toBe(1);
     // PAY-06: available excludes paid, paid totals = confirmed transfer, MIS snapshot/history untouched, raw activation unchanged
     const ledger = (await api().get('/api/v1/payouts/me/ledger').set(auth(advToken)).expect(200)).body.data;
-    expect(ledger.totals).toMatchObject({ available: { count: 0 }, paid: { count: 2, amountInr: 3000 }, approvedUnpaid: { count: 0 } });
-    expect(ledger.rows.every((x: { position: string; rawActivation: string }) => x.position === 'Paid' && x.rawActivation === 'V + ACTIVE')).toBe(true);
+    expect(ledger.totals).toMatchObject({ available: { count: 1 }, paid: { count: 2, amountInr: 3000 }, approvedUnpaid: { count: 0 } });
+    expect(ledger.rows.filter((x: { entitlementId: string }) => r.ents.some((e) => e.id === x.entitlementId)).map((x: { position: string; rawActivation: string }) => `${x.position}|${x.rawActivation}`)).toEqual(['Paid|V + ACTIVE', 'Paid|V + ACTIVE']);
     expect([await prisma.bankStatusSnapshot.count(), await prisma.bankStatusHistory.count()]).toEqual(bankRowsBefore);
     await post('/payouts/requests', advToken, { entitlementIds: [r.ents[0].id] }).expect(409); // paid event never claimable again
     // Advisor: receipt summary, no proof, no operator, masked reference
