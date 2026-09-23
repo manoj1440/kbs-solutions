@@ -8,7 +8,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 2. **Core services** F-107, F-109, F-103, F-104, F-101, F-102, F-110, F-108, F-111, F-105, F-106.
 3. **Shells** F-803, F-801, F-802 (login + role routing on both platforms).
 4. **Vertical slice 1 — Telecaller lifecycle**: F-201, F-202, F-203, F-204, F-205, F-301, F-302.
-5. **Vertical slice 2 — Calling desk**: F-306, F-304, F-303, F-305, F-403, F-404, F-308, F-307, F-312, F-309, F-310, F-311, F-313.
+5. **Vertical slice 2 — Calling desk**: F-306, F-304, F-303, F-305, F-403, F-404, F-308, F-307, F-312, F-309, F-310, F-311, F-313, F-314.
 6. **Vertical slice 3 — Advisor**: F-401, F-402, F-405, F-406, F-407.
 7. **Vertical slice 4 — MIS**: F-501, F-502, F-504, F-503, F-505, F-506, F-408, F-409, F-410, F-507.
 8. **Vertical slice 5 — Payouts**: F-601, F-602, F-603, F-604, F-605, F-606.
@@ -54,6 +54,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-311-whatsapp-sharing.md](./F-311-whatsapp-sharing.md) | F-311 WhatsApp sharing: benefit PDF, official ID, application link | Telecaller ops | DONE | F-109, F-308, F-312, F-403 |
 | [F-312-official-id-card.md](./F-312-official-id-card.md) | F-312 Official Telecaller ID card | Telecaller ops | DONE | F-201, F-108 |
 | [F-313-manager-team-operations.md](./F-313-manager-team-operations.md) | F-313 Manager team operations views | Telecaller ops | DONE | F-205, F-305, F-309, F-310, F-311 |
+| [F-314-communications-oversight.md](./F-314-communications-oversight.md) | F-314 Telephony, WhatsApp delivery and recording oversight (org-wide) | Telecaller ops | IN_PROGRESS | F-309, F-310, F-311, F-313 |
 | [F-401-advisor-onboarding.md](./F-401-advisor-onboarding.md) | F-401 Advisor self-registration and verified onboarding | Advisor | DONE | F-101, F-108, F-109, F-111 |
 | [F-402-agent-code-in-onboarding-and-profile.md](./F-402-agent-code-in-onboarding-and-profile.md) | F-402 Agent Code in signup and profile (Advisor-facing) | Advisor | DONE | F-106, F-401 |
 | [F-403-card-catalogue-admin.md](./F-403-card-catalogue-admin.md) | F-403 Bank and credit-card catalogue administration | Advisor | DONE | F-108, F-104 |
