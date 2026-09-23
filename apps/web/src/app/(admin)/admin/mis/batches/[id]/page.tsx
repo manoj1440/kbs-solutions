@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiFetch } from '@/lib/api';
 
-import { PipelineActions } from './pipeline';
+import { type MisJob, PipelineActions } from './pipeline';
 import { BatchRows } from './rows';
 
 interface PreviewReport {
@@ -34,7 +34,7 @@ interface Batch {
 
 export default async function MisBatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const b = (await apiFetch<Batch>(`/mis/batches/${id}`)).data;
+  const [b, jobStatus] = await Promise.all([apiFetch<Batch>(`/mis/batches/${id}`).then((r) => r.data), apiFetch<{ job: MisJob }>(`/mis/batches/${id}/job`).then((r) => r.data.job)]);
   const totals = (b.totals ?? {}) as { rows?: number; unique?: number; duplicateRows?: number; invalid?: number; missingHeaders?: string[]; unmappedColumns?: string[] };
   return (
     <div className="grid gap-6">
@@ -59,7 +59,7 @@ export default async function MisBatchPage({ params }: { params: Promise<{ id: s
           {totals.unmappedColumns?.length ? <p className="text-muted-foreground">Unmapped columns kept in raw: {totals.unmappedColumns.join(', ')}</p> : null}
         </CardContent>
       </Card>
-      <PipelineActions batchId={b.id} stage={b.stage} report={b.preview?.report ?? null} totals={b.totals as Record<string, number> | null} profileId={b.profile.id} />
+      <PipelineActions job={jobStatus} batchId={b.id} stage={b.stage} report={b.preview?.report ?? null} totals={b.totals as Record<string, number> | null} profileId={b.profile.id} />
       <BatchRows batchId={b.id} stage={b.stage} />
     </div>
   );

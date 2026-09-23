@@ -2,7 +2,7 @@
 
 import { ApiClientError, formatDateTime } from '@kbs/shared';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,16 +19,75 @@ interface PreviewReport {
   samples: Record<string, { row: number; customer: string; references: { kind: string; value: string }[]; explanation: string | null }[]>;
 }
 
+export interface MisJob {
+  kind: 'PREVIEW' | 'APPLY' | null;
+  status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | null;
+  progress: { phase: string; done: number; total: number } | null;
+  error: string | null;
+  queuedAt: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+const PHASE: Record<string, string> = { queued: 'Waiting for a worker', match: 'Matching rows to leads', apply: 'Applying bank status', payouts: 'Evaluating payout rules' };
+const active = (j: MisJob | null) => j?.status === 'QUEUED' || j?.status === 'RUNNING';
+
+/** F-508: progress for a background preview/apply; polls until the job ends, then refreshes the page. */
+function JobProgress({ batchId, job, onDone }: { batchId: string; job: MisJob; onDone: (j: MisJob) => void }) {
+  const [j, setJ] = useState(job);
+  useEffect(() => {
+    if (!active(j)) return;
+    const t = setTimeout(async () => {
+      try {
+        const next = (await clientApi.get<{ job: MisJob }>(`/mis/batches/${batchId}/job`)).data.job;
+        setJ(next);
+        if (!active(next)) onDone(next);
+      } catch {
+        /* keep polling */
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [j, batchId, onDone]);
+  const p = j.progress;
+  const pct = p && p.total ? Math.min(100, Math.round((p.done / p.total) * 100)) : 0;
+  const what = j.kind === 'APPLY' ? 'Apply' : 'Preview';
+  if (j.status === 'FAILED')
+    return (
+      <p role="alert" className="text-destructive rounded-md border p-3 text-sm">
+        {what} stopped: {j.error}. Rows already applied are kept — run it again to continue.
+      </p>
+    );
+  if (!active(j)) return null;
+  return (
+    <div className="grid gap-1 rounded-md border p-3" role="status" aria-live="polite">
+      <div className="flex justify-between text-sm">
+        <span>
+          {what} running in the background · {PHASE[p?.phase ?? 'queued'] ?? p?.phase}
+        </span>
+        <span className="tabular-nums">{p ? `${p.done.toLocaleString('en-IN')} / ${p.total.toLocaleString('en-IN')}` : ''}</span>
+      </div>
+      <div className="bg-muted h-2 overflow-hidden rounded-full">
+        <div className="bg-primary h-full transition-all" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-muted-foreground text-xs">You can leave this page; you will get a notification when it finishes.</span>
+    </div>
+  );
+}
+
 /** F-503 preview tiles + F-505 apply. */
-export function PipelineActions({ batchId, stage, report, totals, profileId }: { batchId: string; stage: string; report: PreviewReport | null; totals: Record<string, number> | null; profileId: string | null }) {
+export function PipelineActions({ batchId, stage, report, totals, profileId, job: initialJob }: { batchId: string; stage: string; report: PreviewReport | null; totals: Record<string, number> | null; profileId: string | null; job?: MisJob | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [job, setJob] = useState<MisJob | null>(initialJob ?? null);
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     setBusy(true);
     setMsg(null);
     try {
-      await fn();
+      const r = (await fn()) as { data?: { queued?: boolean; job?: MisJob } } | undefined;
+      if (r?.data?.queued && r.data.job) {
+        setJob(r.data.job);
+        return;
+      }
       setMsg(ok);
       router.refresh();
     } catch (e) {
@@ -37,8 +96,9 @@ export function PipelineActions({ batchId, stage, report, totals, profileId }: {
       setBusy(false);
     }
   };
-  const canPreview = stage === 'MAPPED' || stage === 'PREVIEWED';
-  const canApply = stage === 'PREVIEWED' || stage === 'FAILED';
+  const running = active(job);
+  const canPreview = !running && (stage === 'MAPPED' || stage === 'PREVIEWED');
+  const canApply = !running && (stage === 'PREVIEWED' || stage === 'FAILED');
   return (
     <Card>
       <CardHeader>
@@ -54,6 +114,18 @@ export function PipelineActions({ batchId, stage, report, totals, profileId }: {
             Confirm processing (apply)
           </Button>
         </div>
+        {job && (running || job.status === 'FAILED') ? (
+          <JobProgress
+            key={`${job.kind}-${job.queuedAt}`}
+            batchId={batchId}
+            job={job}
+            onDone={(j) => {
+              setJob(j);
+              setMsg(j.status === 'SUCCEEDED' ? (j.kind === 'APPLY' ? 'Batch applied.' : 'Preview generated.') : null);
+              router.refresh();
+            }}
+          />
+        ) : null}
         {msg ? (
           <p role="status" className="text-sm">
             {msg}
