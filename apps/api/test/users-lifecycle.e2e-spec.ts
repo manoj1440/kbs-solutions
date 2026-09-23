@@ -60,7 +60,7 @@ describe('F-105 user administration & lifecycle (REQ-04 §4.3, AUDIT-01)', () =>
     const events = await prisma.userLifecycleEvent.findMany({ where: { userId: telecallerId }, orderBy: { at: 'asc' } });
     expect(events.map((e) => e.eventType)).toEqual(['CREATED', 'DEACTIVATED', 'REACTIVATED']);
     for (const e of events) {
-      expect(e.reason.length).toBeGreaterThan(2);
+      expect(e.reason?.length ?? 0).toBeGreaterThan(2);
       expect(e.actorUserId).toBeTruthy();
     }
     for (const action of ['telecallers.create', 'users.deactivate', 'users.reactivate', 'users.sessions.revoke']) expect(await prisma.auditLog.count({ where: { action, entityId: telecallerId } })).toBeGreaterThanOrEqual(1);

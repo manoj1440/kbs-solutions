@@ -24,3 +24,19 @@ export async function createApp(): Promise<INestApplication> {
   }
   return app;
 }
+
+/**
+ * F-110: `WORKER_MODE=1` initialises the app (processors, repeatable jobs) without an HTTP listener; otherwise HTTP only
+ * (processors also run with `JOBS_INLINE=1` in dev).
+ */
+export async function startApp(env: { WORKER_MODE: boolean; API_PORT: number; NODE_ENV: string }): Promise<INestApplication> {
+  const app = await createApp();
+  if (env.WORKER_MODE) {
+    await app.init();
+    console.warn('[api] worker mode started (no HTTP)');
+    return app;
+  }
+  await app.listen(env.API_PORT);
+  console.warn(`[api] listening on :${env.API_PORT} (${env.NODE_ENV})`);
+  return app;
+}

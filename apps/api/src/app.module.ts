@@ -30,6 +30,7 @@ import { HealthController } from './modules/health/health.controller';
 import { IdCardsModule } from './modules/id-cards/id-cards.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { MisModule } from './modules/mis/mis.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
@@ -97,6 +98,7 @@ export const LOG_REDACT_PATHS = [
     PayoutsModule,
     DashboardsModule,
     RetentionModule,
+    MaintenanceModule,
     MisModule,
   ],
   controllers: [HealthController],

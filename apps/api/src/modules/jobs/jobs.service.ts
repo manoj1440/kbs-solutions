@@ -25,7 +25,7 @@ export class JobsService implements OnModuleDestroy {
   }
 
   async enqueue(queue: keyof typeof QUEUES, name: string, data: Record<string, unknown>, opts: JobsOptions = {}) {
-    await this.queues[queue].add(name, data, opts);
+    await this.queues[queue].add(name, data, opts.jobId ? { ...opts, jobId: safeJobId(opts.jobId) } : opts);
   }
 
   async depths(): Promise<Record<string, number>> {
@@ -38,6 +38,14 @@ export class JobsService implements OnModuleDestroy {
     await Promise.allSettled(Object.values(this.queues).map((q) => q.close()));
     this.logger.debug('queues closed');
   }
+}
+
+/**
+ * BullMQ rejects custom job ids containing ':' (its key separator). Domain ids are written as `type:entity:…`, so the
+ * separator is mapped to '|' — still deterministic, so duplicates keep collapsing.
+ */
+export function safeJobId(id: string): string {
+  return id.replace(/:/g, '|');
 }
 
 export function parseRedisUrl(url: string) {
