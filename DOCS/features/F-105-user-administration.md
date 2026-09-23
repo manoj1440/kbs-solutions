@@ -20,3 +20,4 @@
 
 ## Progress notes
 - 2026-09-22 (session 1): API: Admin creates Manager/Accounts, deactivate/reactivate with lifecycle events, session revoke, scoped list/detail (e2e covered). Pending: web dialogs, `change-mobile` behind recovery flag.
+- Session 8: resuming — web users list filters, create dialog, user detail with lifecycle timeline/sessions/actions; change-mobile behind `auth.recoveryEnabled` (fails closed); lifecycle acceptance tests.
