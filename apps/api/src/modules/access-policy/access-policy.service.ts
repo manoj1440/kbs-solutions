@@ -4,6 +4,7 @@ import ipaddr from 'ipaddr.js';
 
 import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
+import { Paginated } from '../../common/interceptors/response-envelope.interceptor';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
@@ -114,7 +115,18 @@ export class AccessPolicyService {
   }
   listWfh(actor: Actor) {
     const where = actor.role === 'MANAGER' ? { telecallerUserId: { in: actor.teamUserIds } } : {};
-    return this.prisma.client.wfhException.findMany({ where, orderBy: { createdAt: 'desc' }, take: 200 });
+    return this.prisma.client.wfhException.findMany({ where, orderBy: { createdAt: 'desc' }, take: 200, include: { telecaller: { select: { id: true, fullName: true, employeeCode: true } }, grantedBy: { select: { id: true, fullName: true, role: true } } } });
+  }
+
+  async listEvents(actor: Actor, q: { page: number; pageSize: number; userId?: string; outcome?: 'DENIED' | 'ALLOWED_OFFICE' | 'ALLOWED_WFH' }) {
+    const scope = actor.role === 'MANAGER' ? actor.teamUserIds : null;
+    const userId = q.userId ? (scope && !scope.includes(q.userId) ? '__none__' : q.userId) : scope ? { in: scope } : undefined;
+    const where = { userId, outcome: q.outcome };
+    const [rows, total] = await Promise.all([
+      this.prisma.client.networkAccessEvent.findMany({ where, orderBy: { at: 'desc' }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: { user: { select: { id: true, fullName: true, employeeCode: true } }, matchedNetwork: { select: { label: true, cidr: true } } } }),
+      this.prisma.client.networkAccessEvent.count({ where }),
+    ]);
+    return new Paginated(rows, q.page, q.pageSize, total);
   }
 }
 
