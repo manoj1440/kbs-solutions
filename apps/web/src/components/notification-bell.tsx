@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { clientApi } from '@/lib/client-api';
+import { notificationHref, type WebArea } from '@/lib/notification-links';
 
 interface Row {
   id: string;
@@ -17,17 +18,7 @@ interface Row {
   readAt: string | null;
   deepLink: { entityType: string; entityId: string } | null;
 }
-type Area = 'admin' | 'manager' | 'accounts';
-
-/** Where a notification target lives for each web role area; unknown targets simply stay in the drawer. */
-function hrefFor(area: Area, entityType: string, id: string): string | null {
-  const map: Record<Area, Record<string, string>> = {
-    admin: { Lead: `/admin/leads/${id}`, PayoutRequest: `/admin/payouts/requests/${id}`, MisImportBatch: `/admin/mis/batches/${id}` },
-    manager: { Lead: `/manager/leads/${id}`, PayoutRequest: `/manager/payouts/requests/${id}` },
-    accounts: { PayoutRequest: `/accounts/requests/${id}` },
-  };
-  return map[area][entityType] ?? null;
-}
+type Area = WebArea;
 
 /**
  * F-701 web notification drawer: unread badge (polled), latest items, mark all read. Opening an item asks the API to
@@ -67,10 +58,10 @@ export function NotificationBell({ area }: { area: Area }) {
   };
   const follow = async (n: Row) => {
     try {
-      const t = (await clientApi.get<{ entityType: string | null; entityId: string | null }>(`/notifications/${n.id}/target`)).data;
+      const t = (await clientApi.get<{ entityType: string | null; entityId: string | null; targetRole?: string | null }>(`/notifications/${n.id}/target`)).data;
       setRows((r) => r?.map((x) => (x.id === n.id ? { ...x, readAt: x.readAt ?? new Date().toISOString() } : x)) ?? r);
       void poll();
-      const href = t.entityType && t.entityId ? hrefFor(area, t.entityType, t.entityId) : null;
+      const href = t.entityType && t.entityId ? notificationHref(area, t.entityType, t.entityId, t.targetRole) : null;
       if (href) {
         ref.current?.close();
         router.push(href);
@@ -87,7 +78,12 @@ export function NotificationBell({ area }: { area: Area }) {
       </Button>
       <dialog ref={ref} aria-label="Notifications" className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-white p-0 shadow-2xl backdrop:bg-slate-900/40" onClick={(e) => e.target === ref.current && ref.current?.close()}>
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <h2 className="font-semibold">Notifications</h2>
+          <div className="grid">
+            <h2 className="font-semibold">Notifications</h2>
+            <a href={`/${area}/notifications`} className="text-xs text-teal-800 hover:underline">
+              View all
+            </a>
+          </div>
           <div className="flex gap-1">
             <Button
               size="sm"

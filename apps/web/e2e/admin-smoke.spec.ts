@@ -32,6 +32,8 @@ const PAGES = [
   '/admin/config',
   '/admin/retention',
   '/admin/network',
+  '/admin/account',
+  '/admin/notifications',
 ];
 
 test.describe('Admin workspace smoke', () => {
