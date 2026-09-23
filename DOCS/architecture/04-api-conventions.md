@@ -43,3 +43,6 @@ Default responses mask `mobile` (`+91••••••1234`), `pan` (`•••
 
 ## Role scoping
 Every list/get service takes `Actor` (`userId, role, teamUserIds[]`) and applies a scope `where` builder. Controllers never query Prisma directly.
+
+## Long-running operations (F-508, ADR-013)
+`POST /mis/batches/:id/preview` and `/apply` return the result directly for batches up to `mis.asyncRowThreshold` rows. Above it they return `201 { queued: true, alreadyRunning, batchId, stage, job }` and run in the background; poll `GET /mis/batches/:id/job` (`job.status` QUEUED → RUNNING → SUCCEEDED | FAILED, `job.progress {phase, done, total}`). Triggering again while a job is active returns the same job with `alreadyRunning: true`.

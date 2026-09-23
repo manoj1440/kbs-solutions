@@ -1,6 +1,6 @@
 # F-508 MIS preview/apply as background jobs with progress
 
-- Group: MIS · Status: **IN_PROGRESS** · Depends on: F-503, F-505, F-110, F-905
+- Group: MIS · Status: **DONE** · Depends on: F-503, F-505, F-110, F-905
 - PRD refs: REQ-13 §13.4 (batch processing), REQ-24 §24.1 (retry without duplicates), REQ-24 §24.2 (performance), ADR-004, ADR-005, ADR-013
 - Origin: F-905 perf baseline — a 100k-row batch took ~1m50s to preview and ~1m47s to apply inside one HTTP request (`DOCS/perf/01-baseline-results.md`). User chose to move it to a background job (session 8).
 
@@ -14,9 +14,13 @@
 7. Web batch page: shows progress and polls while a job is queued/running; buttons disabled meanwhile.
 
 ## Acceptance criteria
-- [ ] A batch above the threshold returns immediately with a queued job; polling shows RUNNING → SUCCEEDED; resulting stage, history and totals equal the synchronous path.
-- [ ] Triggering again while a job is active does not start a second job.
-- [ ] A failed background job is visible (status, error, audit, notification) and can be retried; retry does not duplicate history.
-- [ ] Small batches still complete synchronously.
+- [x] A batch above the threshold returns immediately with a queued job; polling shows RUNNING → SUCCEEDED; resulting stage, history and totals equal the synchronous path.
+- [x] Triggering again while a job is active does not start a second job.
+- [x] A failed background job is visible (status, error, audit, notification) and can be retried; retry does not duplicate history.
+- [x] Small batches still complete synchronously.
 
 ## Progress notes
+- Session 8 (done): migration `20260923160000_mis_background_jobs` (job columns + `MisJobKind`/`MisJobStatus`), config `mis.asyncRowThreshold` (2000), env `JOBS_DISPATCH` (queue|local). `MisJobsService` (trigger → atomic claim → BullMQ `mis-import` or local detached run; `run` with QUEUED→RUNNING claim, throttled progress/heartbeat, audit `misBatch.previewCompleted/applyCompleted/jobFailed`, requester notifications); worker handler registered through `MaintenanceProcessor.handlers`. Controllers switch on batch size; `GET /mis/batches/:id/job`.
+- **Bug fixed on the way:** an apply that ended FAILED could never be retried (`match()` refused FAILED batches) — retries now re-match only unapplied rows and resume.
+- Web batch page shows progress and polls; k6 `mis-apply.js` waits for jobs; `pnpm release:check` flags `JOBS_DISPATCH=local` and lists "worker process running".
+- Tests `apps/api/test/mis-jobs.e2e-spec.ts` (sync small batch, async preview with progress + audit + notification, failed apply → retry without duplicate history, concurrent triggers → one job, stale RUNNING re-trigger). Browser: 20k-row batch, request returns at once, preview ~26 s. k6: preview 24.1 s / apply 24.4 s for 20k rows in the background.
