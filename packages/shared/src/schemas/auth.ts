@@ -89,3 +89,12 @@ export type AuthSessionResponse = z.infer<typeof AuthSessionResponse>;
 
 export const MeResponse = z.object({ user: UserSummary, gates: Gates, permissions: z.array(z.string()) });
 export type MeResponse = z.infer<typeof MeResponse>;
+
+/** F-302: device integrity report from the mobile app (REQ-09 §9.3). Informational: never a hard block (policy OPEN). */
+export const DeviceIntegrityBody = z.object({
+  rooted: z.boolean(),
+  platform: z.enum(['ANDROID', 'IOS']),
+  appVersion: z.string().max(40).optional(),
+  deviceModel: z.string().max(80).optional(),
+});
+export type DeviceIntegrityBody = z.infer<typeof DeviceIntegrityBody>;

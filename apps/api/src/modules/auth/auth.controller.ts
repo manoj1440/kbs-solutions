@@ -1,9 +1,9 @@
-import { OtpRequestBody, OtpVerifyBody, RefreshBody } from '@kbs/shared';
+import { DeviceIntegrityBody, OtpRequestBody, OtpVerifyBody, RefreshBody } from '@kbs/shared';
 import { Body, Controller, Get, Inject, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 import type { Actor } from '../../common/actor';
-import { CurrentActor, Public } from '../../common/decorators';
+import { Audited, CurrentActor, Public } from '../../common/decorators';
 import { AppError } from '../../common/errors/app-error';
 import { RequestContextStore } from '../../common/request-context';
 import { ENV, type Env } from '../../config/env';
@@ -67,6 +67,13 @@ export class AuthController {
     await this.auth.logout(actor.sessionId, true, actor.userId);
     this.clearCookies(res);
     return { ok: true };
+  }
+
+  /** F-302: the app reports root / compromised-device detection once per session; audited, Admin alerted if rooted. */
+  @Post('device-integrity')
+  @Audited({ action: 'security.deviceIntegrity', entityType: 'Session' })
+  deviceIntegrity(@CurrentActor() actor: Actor, @Body() raw: unknown) {
+    return this.auth.reportDeviceIntegrity(actor, DeviceIntegrityBody.parse(raw));
   }
 
   @Get('me')

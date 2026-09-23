@@ -1,9 +1,10 @@
-import { type Gates, type OtpRequestBody, type OtpVerifyBody, makePublicRef, RefPrefix, ROLE_PERMISSIONS, toE164India, type Role } from '@kbs/shared';
+import { type DeviceIntegrityBody, type Gates, type OtpRequestBody, type OtpVerifyBody, makePublicRef, RefPrefix, ROLE_PERMISSIONS, toE164India, type Role } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
 import { CryptoService } from '../../common/crypto/crypto.service';
 import { AppError } from '../../common/errors/app-error';
+import { RequestContextStore } from '../../common/request-context';
 import { ENV, type Env } from '../../config/env';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { OTP_PROVIDER, type OtpProvider } from '../../providers/ports';
@@ -166,6 +167,20 @@ export class AuthService {
   async me(actor: Actor, ip: string): Promise<{ user: unknown; gates: Gates; permissions: string[] }> {
     const user = await this.prisma.client.user.findUniqueOrThrow({ where: { id: actor.userId } });
     return { user: await this.users.toSummary(user), gates: await this.gates.compute(actor, ip), permissions: [...actor.permissions] };
+  }
+
+  /**
+   * F-302 (REQ-09 §9.3): root detection is a warning, not a block (policy OPEN). The report is audited on the session;
+   * a rooted device raises one Admin SECURITY_EVENT per session.
+   */
+  async reportDeviceIntegrity(actor: Actor, body: DeviceIntegrityBody) {
+    RequestContextStore.audit({ entityId: actor.sessionId, after: { rooted: body.rooted, platform: body.platform, appVersion: body.appVersion ?? null, deviceModel: body.deviceModel ?? null }, metadata: { userId: actor.userId, role: actor.role } });
+    if (body.rooted) {
+      const user = await this.prisma.client.user.findUniqueOrThrow({ where: { id: actor.userId }, select: { publicRef: true, role: true } });
+      const adminId = await this.hierarchy.adminUserId();
+      await this.notifications.notify({ recipientUserId: adminId, kind: 'SECURITY_EVENT', title: 'App used on a rooted / compromised device', body: `${user.role.toLowerCase()} ${user.publicRef} signed in on a device that looks rooted (${body.deviceModel ?? body.platform}). Screen protection may not hold on such devices; access was not blocked.`, deepLink: { entityType: 'User', entityId: actor.userId }, dedupeKey: `security:rooted:${actor.sessionId}` });
+    }
+    return { recorded: true, warning: body.rooted ? 'This device appears to be rooted. Screen protection may not work; avoid viewing customer or bank details on it.' : null };
   }
 
   /** Builds the Actor for guards/scoping from a verified access token (F-102). */
