@@ -2,7 +2,6 @@ import {
   BarChart3,
   Building2,
   CreditCard,
-  FileSpreadsheet,
   ShieldCheck,
   Users,
   Zap,
@@ -17,7 +16,7 @@ const FEATURES = [
 
 const STATS = [
   { icon: Users, value: 'OTP-only', label: 'Secure sign-in' },
-  { icon: FileSpreadsheet, value: 'Bank MIS', label: 'Single source of truth' },
+  { icon: ShieldCheck, value: 'Role-based', label: 'Access control' },
   { icon: Zap, value: 'Dual', label: 'Payout approvals' },
 ];
 

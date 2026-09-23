@@ -137,7 +137,7 @@ export default function Welcome() {
       body: (
         <View className="w-full gap-4 px-6">
           <CheckRow label="Digital Application Process" sub="No paperwork, fully online" />
-          <CheckRow label="Track Status Easily" sub="Real-time updates via MIS" />
+          <CheckRow label="Track Status Easily" sub="Real-time status updates" />
           <CheckRow label="Earn Attractive Incentives" sub="Higher payouts on activations" />
         </View>
       ),

@@ -736,7 +736,7 @@ export default async function AdminOverview() {
       <footer className="flex flex-wrap items-start justify-between gap-3 border-t border-slate-200 pt-4 text-[11px] leading-relaxed text-slate-500">
         <span className="inline-flex max-w-3xl items-start gap-2">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
-          Bank outcomes come only from Admin-uploaded MIS. Blank values mean “Not reported”; a lead
+          Statuses reflect the latest uploaded bank file. Blank values mean “Not reported”; a lead
           without a match is “Awaiting MIS Update”.
         </span>
         <span>All-time snapshot · Not live bank status</span>

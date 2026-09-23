@@ -39,7 +39,7 @@ export default async function MisPage() {
     <div className="grid gap-6">
       <div>
         <h1 className="text-2xl font-semibold">Bank MIS</h1>
-        <p className="text-muted-foreground text-sm">The bank MIS is the only source of application status. Files are kept immutable; every cell is stored as text exactly as received.</p>
+        <p className="text-muted-foreground text-sm">Upload, preview and apply bank-reported application files. Files are kept immutable; every cell is stored as text exactly as received.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
