@@ -15,3 +15,4 @@
 
 ## Progress notes
 - 2026-09-22 (session 1): `SecureScreen` component applied to the Telecaller home; runbook written. Pending: root-detection banner, manual SEC-02 verification on device.
+- Session 8: resuming — route-level protection policy (one source of truth for protected screens, unit-tested), root/compromised-device warning banner + audited report, SEC-02 manual checklist.
