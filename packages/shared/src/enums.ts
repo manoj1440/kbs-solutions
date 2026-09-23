@@ -288,6 +288,12 @@ export const MisBatchStage = {
 } as const;
 export type MisBatchStage = (typeof MisBatchStage)[keyof typeof MisBatchStage];
 
+/** F-508 background MIS jobs. */
+export const MisJobKind = { PREVIEW: 'PREVIEW', APPLY: 'APPLY' } as const;
+export type MisJobKind = (typeof MisJobKind)[keyof typeof MisJobKind];
+export const MisJobStatus = { QUEUED: 'QUEUED', RUNNING: 'RUNNING', SUCCEEDED: 'SUCCEEDED', FAILED: 'FAILED' } as const;
+export type MisJobStatus = (typeof MisJobStatus)[keyof typeof MisJobStatus];
+
 export const MisRowMatchState = {
   PENDING: 'PENDING',
   MATCHED: 'MATCHED',

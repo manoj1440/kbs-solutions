@@ -57,6 +57,7 @@ export const CONFIG_KEYS: readonly ConfigKeyDefinition[] = [
   def('calling.outcomeTaxonomyVersion', ConfigValueType.INT, 1, 'Version of the operational outcome taxonomy.'),
   // mis
   def('mis.blankValueTokens', ConfigValueType.JSON, ['', '#N/A', 'N/A', 'NA', '-', '#REF!', 'NULL'], 'Cell values treated as blank / not reported (INV-02).'),
+  def('mis.asyncRowThreshold', ConfigValueType.INT, 2000, 'MIS batches with more rows than this run preview/apply as a background job with progress (F-508).'),
   def('mis.actionableRules', ConfigValueType.JSON, [], 'Per-bank rules that turn MIS fields into pending actions with owner/CTA (REQ-11 §11.10). Empty = none.'),
   // payouts
   def('payouts.designatedApproverManagerUserId', ConfigValueType.USER_ID, null, 'Manager who gives the Manager approval for Advisors reporting directly to Admin (REQ-17 §17.4 OPEN).', true),

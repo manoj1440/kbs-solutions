@@ -281,6 +281,18 @@ enum MisSnapshotMode {
   FULL_SNAPSHOT
 }
 
+enum MisJobKind {
+  PREVIEW
+  APPLY
+}
+
+enum MisJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
 enum MisBatchStage {
   UPLOADED
   PARSED
@@ -1402,6 +1414,16 @@ model MisImportBatch {
   appliedAt      DateTime?
   error          String?
   rejectReason   String?
+  /// F-508 background job state (preview/apply above mis.asyncRowThreshold)
+  jobKind              MisJobKind?
+  jobStatus            MisJobStatus?
+  jobProgress          Json?
+  jobError             String?
+  jobRequestedByUserId String?
+  jobQueuedAt          DateTime?
+  jobStartedAt         DateTime?
+  jobHeartbeatAt       DateTime?
+  jobFinishedAt        DateTime?
 
   bank      Bank                @relation(fields: [bankId], references: [id])
   profile   MisImportProfile    @relation(fields: [profileId], references: [id])
