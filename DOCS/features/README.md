@@ -34,7 +34,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-107-common-http-conventions.md](./F-107-common-http-conventions.md) | F-107 Common HTTP conventions: envelope, errors, pagination, idempotency | Core | DONE | F-003, F-004 |
 | [F-108-files-module.md](./F-108-files-module.md) | F-108 Files: upload, storage port, scan status, presigned access | Core | DONE | F-102, F-103, F-109 |
 | [F-109-provider-ports.md](./F-109-provider-ports.md) | F-109 Provider ports and mock adapters | Core | DONE | F-003 |
-| [F-110-jobs-and-outbox.md](./F-110-jobs-and-outbox.md) | F-110 Background jobs (BullMQ), worker mode and outbox | Core | IN_PROGRESS | F-002, F-003 |
+| [F-110-jobs-and-outbox.md](./F-110-jobs-and-outbox.md) | F-110 Background jobs (BullMQ), worker mode and outbox | Core | DONE | F-002, F-003 |
 | [F-111-access-gates.md](./F-111-access-gates.md) | F-111 Access gates (training / network / onboarding) in `/auth/me` and guards | Core | DONE | F-101, F-102, F-104 |
 | [F-201-manager-creates-telecaller.md](./F-201-manager-creates-telecaller.md) | F-201 Manager creates Telecaller (name + mobile) with employee code | Training | DONE | F-105, F-106 |
 | [F-202-training-content-admin.md](./F-202-training-content-admin.md) | F-202 Training content administration (modules, videos, MCQs, thresholds) | Training | DONE | F-104, F-108 |
