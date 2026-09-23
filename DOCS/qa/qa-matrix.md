@@ -8,7 +8,7 @@
 | AUTH-01 | `apps/api/test/core.e2e-spec.ts`<br>`apps/web/e2e/role-routing.spec.ts` |
 | AUTH-02 | `apps/api/test/core.e2e-spec.ts` |
 | CALL-01 | `apps/api/test/calls.e2e-spec.ts` |
-| CALL-02 | `apps/api/test/calls.e2e-spec.ts` |
+| CALL-02 | `apps/api/test/calls.e2e-spec.ts`<br>`apps/api/test/oversight.e2e-spec.ts`<br>`packages/shared/test/oversight.test.ts` |
 | CALL-03 | `apps/api/test/card-availability.e2e-spec.ts` |
 | CALL-04 | `apps/api/test/calls.e2e-spec.ts` |
 | CARD-01 | `apps/api/test/catalogue.e2e-spec.ts` |
@@ -47,7 +47,7 @@
 | PIN-01 | `apps/api/test/catalogue.e2e-spec.ts` |
 | PIN-02 | `apps/api/test/card-availability.e2e-spec.ts`<br>`apps/api/test/catalogue.e2e-spec.ts` |
 | PIN-03 | `apps/api/test/card-availability.e2e-spec.ts`<br>`apps/api/test/catalogue.e2e-spec.ts`<br>`packages/shared/test/normalize.test.ts` |
-| RBAC-01 | `apps/api/test/calling-queue.e2e-spec.ts`<br>`apps/api/test/core.e2e-spec.ts` |
+| RBAC-01 | `apps/api/test/calling-queue.e2e-spec.ts`<br>`apps/api/test/core.e2e-spec.ts`<br>`apps/api/test/oversight.e2e-spec.ts` |
 | RBAC-02 | `apps/api/test/core.e2e-spec.ts`<br>`apps/api/test/files.e2e-spec.ts` |
 | SEC-01 | `apps/api/src/modules/access-policy/access-policy.spec.ts`<br>`apps/api/test/core.e2e-spec.ts`<br>`apps/api/test/network-policy.e2e-spec.ts`<br>`apps/mobile/lib/routing.test.ts` |
 | SEC-02 | `apps/mobile/lib/secure-routes.test.ts` |
@@ -60,5 +60,5 @@
 | VIEW-01 | `apps/api/test/leads-list.e2e-spec.ts`<br>`apps/web/test/status-components.test.tsx`<br>`packages/shared/test/status-tone.test.ts` |
 | VIEW-02 | `apps/web/test/view-02-no-timeline.test.ts` |
 | VIEW-03 | `apps/api/test/pending-actions.e2e-spec.ts` |
-| WA-01 | `apps/api/test/sharing.e2e-spec.ts` |
+| WA-01 | `apps/api/test/oversight.e2e-spec.ts`<br>`apps/api/test/sharing.e2e-spec.ts`<br>`packages/shared/test/oversight.test.ts` |
 | WA-02 | `apps/api/test/catalogue.e2e-spec.ts`<br>`apps/api/test/sharing.e2e-spec.ts` |

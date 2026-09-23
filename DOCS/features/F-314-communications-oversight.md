@@ -1,6 +1,6 @@
 # F-314 Telephony, WhatsApp delivery and recording oversight
 
-- Group: Telecaller ops · Status: **IN_PROGRESS** · Depends on: F-309, F-310, F-311, F-313
+- Group: Telecaller ops · Status: **DONE** · Depends on: F-309, F-310, F-311, F-313
 - PRD refs: REQ-25 §25.4 ("telephony/WhatsApp delivery/recording oversight"), REQ-16 §16.1 (Admin oversees "operational call data/recordings"), REQ-08 §8.2 (failure visible, never "Recorded" without a retrievable recording, provider-confirmed vs user-selected), REQ-08 §8.5 (hand-off ≠ delivery), REQ-16 §16.3 (attempt / connected / share formulas), REQ-21 §21.1 (recording playback is a logged sensitive read), REQ-15 §15.3 (evidence, no scores)
 - QA ids: CALL-02, WA-01, RBAC-01
 - Origin: session 9 gap analysis — REQ-25 §25.4 screen inventory checked against the built routes. F-313 shows calls and shares **one Telecaller at a time**; nothing gave the Admin an organisation-wide view of provider health (failed calls, calls the provider never confirmed, failed / overdue recordings, WhatsApp delivery results). No feature file covered it.
@@ -26,13 +26,17 @@
 8. No new data is written; no provider state is ever inferred or changed from this screen (INV-01 spirit: provider-confirmed facts only come from provider events).
 
 ## Acceptance criteria
-- [ ] Admin summary separates provider-confirmed attempts from failures before the provider, and connected only from provider `connectedAt`.
-- [ ] Recording coverage uses connected calls as denominator; a FAILED recording is never counted or shown as available (CALL-02).
-- [ ] A hand-off share is never counted as delivered; provider FAILED delivery appears in attention (WA-01).
-- [ ] Stale un-confirmed calls and overdue recordings appear in the attention list.
-- [ ] Manager sees only own-team rows; another Manager's Telecaller is invisible; Telecaller / Advisor / Accounts → 403 (RBAC-01).
-- [ ] No full mobile number appears in any oversight response.
-- [ ] Web page renders the summary, filters and both tables; play uses the audited endpoint; fits 390 px.
+- [x] Admin summary separates provider-confirmed attempts from failures before the provider, and connected only from provider `connectedAt`.
+- [x] Recording coverage uses connected calls as denominator; a FAILED recording is never counted or shown as available (CALL-02).
+- [x] A hand-off share is never counted as delivered; provider FAILED delivery appears in attention (WA-01).
+- [x] Stale un-confirmed calls and overdue recordings appear in the attention list.
+- [x] Manager sees only own-team rows; another Manager's Telecaller is invisible; Telecaller / Advisor / Accounts → 403 (RBAC-01).
+- [x] No full mobile number appears in any oversight response.
+- [x] Web page renders the summary, filters and both tables; play uses the audited endpoint; fits 390 px.
 
 ## Progress notes
-- Session 9: started.
+- Session 9 (done): shared `callAttention()`, `shareDeliveryLabel()`, `CALL_LIVE_WINDOW_MINUTES` (now also used by `CallsService` re-dial guard), `RECORDING_OVERDUE_MINUTES`, `Oversight*Query` (unit tests `packages/shared/test/oversight.test.ts`). API `OversightService`/`OversightController` in the calls module: `GET /calling/oversight/summary|calls|shares` (permissions `CALLING_RECORDS_READ_ALL|TEAM`; Manager scope = `actor.teamUserIds`, a Manager's `managerId` is ignored and another team's Telecaller → 404; IST day range, default last 7 days, max 1 year). No schema change, no writes.
+- Definition kept consistent with F-702: "failed before provider" = FAILED **without** `providerCallId` (the adapter threw). The mock provider's refusal of `…0000` numbers returns a provider call id, so it counts as a provider-reported failure, not as failed-before-provider.
+- Web `/admin/calling-list/oversight` ("Calls & delivery" nav item): filter form, attention chips (toggle filters, share chip switches to the shares tab), summary tiles with denominators, provider-state chips, top failure reasons, calls table with recording chip + audited Play, shares table with hand-off vs provider delivery labels, pagination.
+- Tests: `apps/api/test/oversight.e2e-spec.ts` (6: summary numbers, WA-01, attention filters/CALL-02, no full mobiles, RBAC-01 scoping, date validation); Admin Playwright smoke now covers 3 oversight URLs at 1280 and 390 px. Browser-checked: attention filter, Play opens the provider link and writes one `SensitiveAccessLog` RECORDING/PLAYBACK row, nav highlights "Calls & delivery", no horizontal overflow.
+- Follow-ups (not blocking): the same view for Managers on web/mobile (API already scopes Managers); telephony webhooks for unknown call ids are only logged, not stored, so they cannot be listed here.

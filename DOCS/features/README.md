@@ -54,7 +54,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-311-whatsapp-sharing.md](./F-311-whatsapp-sharing.md) | F-311 WhatsApp sharing: benefit PDF, official ID, application link | Telecaller ops | DONE | F-109, F-308, F-312, F-403 |
 | [F-312-official-id-card.md](./F-312-official-id-card.md) | F-312 Official Telecaller ID card | Telecaller ops | DONE | F-201, F-108 |
 | [F-313-manager-team-operations.md](./F-313-manager-team-operations.md) | F-313 Manager team operations views | Telecaller ops | DONE | F-205, F-305, F-309, F-310, F-311 |
-| [F-314-communications-oversight.md](./F-314-communications-oversight.md) | F-314 Telephony, WhatsApp delivery and recording oversight (org-wide) | Telecaller ops | IN_PROGRESS | F-309, F-310, F-311, F-313 |
+| [F-314-communications-oversight.md](./F-314-communications-oversight.md) | F-314 Telephony, WhatsApp delivery and recording oversight (org-wide) | Telecaller ops | DONE | F-309, F-310, F-311, F-313 |
 | [F-401-advisor-onboarding.md](./F-401-advisor-onboarding.md) | F-401 Advisor self-registration and verified onboarding | Advisor | DONE | F-101, F-108, F-109, F-111 |
 | [F-402-agent-code-in-onboarding-and-profile.md](./F-402-agent-code-in-onboarding-and-profile.md) | F-402 Agent Code in signup and profile (Advisor-facing) | Advisor | DONE | F-106, F-401 |
 | [F-403-card-catalogue-admin.md](./F-403-card-catalogue-admin.md) | F-403 Bank and credit-card catalogue administration | Advisor | DONE | F-108, F-104 |
