@@ -1,6 +1,6 @@
 # F-801 Web shell: layout, navigation, OTP login, role routing
 
-- Group: UX shells · Status: **IN_PROGRESS** · Depends on: F-003, F-006, F-101, F-111
+- Group: UX shells · Status: **DONE** · Depends on: F-003, F-006, F-101, F-111
 - PRD refs: REQ-20 §20.1 (shadcn/ui), §20.3 (web components: sidebar, cards, dialogs, command/search, data tables, upload steps, badges, filters, date-range, drill-down, viewers, notification drawer), REQ-25 §25.1 (shared screens), REQ-02 §2.3 (web roles), REQ-23 §23.1
 - QA ids: AUTH-01, AUTH-02
 
@@ -11,7 +11,7 @@
 4. API client with cookie auth, envelope handling, idempotency header injection for mutations, 401 → session-expired redirect.
 
 ## Acceptance criteria
-- [ ] Admin logs in on web and lands on `/admin`; Advisor login on web → access denied screen.
+- [x] Admin logs in on web and lands on `/admin`; Advisor login on web → access denied screen.
 - [x] Playwright smoke: login + role redirect + logout.
 
 ## Progress notes
@@ -27,3 +27,4 @@
 - Web typecheck/lint/tests (5) and production build pass; existing TanStack React Compiler lint warning remains. Workspace typecheck/lint pass; full tests fail only on two DB baseline-fixture expectations against demo data (payout rules expected empty; HDFC profile expected DRAFT). API unit tests separately pass (13). Demo database not reset.
 - Still IN_PROGRESS: Advisor-web access-denied verification, notification drawer, dedicated shadcn Sidebar/Command primitives and automated browser smoke in CI. Full F-703 analytics/date ranges/trends are not implemented by this overview; no synthetic growth/conversion charts.
 - 2026-09-22 (session 1): Login (OTP, cookies), proxy redirect, role-gated route groups, AppShell sidebar, admin overview (launch gates), config + users tables, access-denied. Pending: shadcn Sidebar/DataTable/date-range/command components, notification drawer, `/verify/[ref]`, Playwright smoke in CI.
+- Session 8 (done): web OTP verify refused with `AUTH_PLATFORM_NOT_ALLOWED` redirects to `/access-denied?reason=mobile-app` (role-aware Android-app hint). `apps/web/e2e/role-routing.spec.ts` (AUTH-01): Admin → `/admin`; self-registered Advisor → access denied, at 1280 and 390 px. Full Playwright suite 54/54 locally (`E2E_API_URL` defaults to :4000 as in CI).
