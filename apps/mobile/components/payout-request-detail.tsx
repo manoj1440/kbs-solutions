@@ -34,8 +34,14 @@ export interface PayoutRequestDto {
     eligibleAt: string;
     priorRequests: { id: string; publicRef: string; state: string; submittedAt: string }[];
   }[];
+  /** Advisor-safe receipt (masked reference, no proof/operator) — REQ-18 §18.2. */
+  receipt: { state: string; paidAt: string; amountInr: number; transferReferenceMasked: string | null; method: string | null } | null;
+  /** Full entry for Manager/Admin; null for the Advisor. */
   payment: { paidAt: string; amountInr: number; transferReference: string; state: string } | null;
+  paidAt: string | null;
 }
+
+const RECEIPT_LABEL: Record<string, string> = { VERIFIED: 'Paid', PROOF_PENDING: 'Payment recorded — receipt being finalised', RECORDED: 'Payment recorded', EXCEPTION: 'Payment under review by KBS' };
 interface Approval {
   by: { id: string; fullName: string; role: string };
   decision: string;
@@ -108,12 +114,27 @@ export function PayoutRequestDetail({ id }: { id: string }) {
         {r.state === 'CANCELLED' ? <Muted>Cancelled: {r.cancelReason}</Muted> : null}
         {r.payment ? (
           <Muted>
-            Payment {r.payment.state.toLowerCase()} · {formatInr(r.payment.amountInr)} · ref {r.payment.transferReference} · {formatDateTime(r.payment.paidAt)}
+            Payment {r.payment.state.toLowerCase().replace(/_/g, ' ')} · {formatInr(r.payment.amountInr)} · ref {r.payment.transferReference} · {formatDateTime(r.payment.paidAt)}
           </Muted>
         ) : r.state === 'APPROVED' ? (
           <Muted>Both approved — awaiting Accounts payment.</Muted>
         ) : null}
       </Card>
+      {r.receipt ? (
+        <Card className="gap-1">
+          <View className="flex-row items-center justify-between gap-2">
+            <Text className="font-medium">{r.state === 'PAID' ? 'Paid' : (RECEIPT_LABEL[r.receipt.state] ?? 'Payment recorded')}</Text>
+            <Badge label={r.state === 'PAID' ? 'Paid' : 'In progress'} variant={r.state === 'PAID' ? 'success' : 'warning'} />
+          </View>
+          <Text>{formatInr(r.receipt.amountInr)}</Text>
+          <Muted>
+            Paid on {formatDateTime(r.receipt.paidAt)}
+            {r.receipt.method ? ` · ${r.receipt.method}` : ''}
+          </Muted>
+          <Muted>Bank reference {r.receipt.transferReferenceMasked ?? '—'}</Muted>
+          <Muted>Transferred by KBS Accounts to your registered bank account. Card events in this request are paid for this event.</Muted>
+        </Card>
+      ) : null}
       {r.me.canApprove || r.me.canCancel ? (
         <Card className="gap-2">
           <Label>Reason (required to reject or cancel)</Label>
