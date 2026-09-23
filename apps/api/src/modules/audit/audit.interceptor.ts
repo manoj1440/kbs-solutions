@@ -1,7 +1,7 @@
 import { type CallHandler, type ExecutionContext, Injectable, type NestInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import { type Observable, tap } from 'rxjs';
+import { concatMap, type Observable } from 'rxjs';
 
 import { AUDIT_KEY, type AuditMeta } from '../../common/decorators';
 import { RequestContextStore } from '../../common/request-context';
@@ -26,12 +26,13 @@ export class AuditInterceptor implements NestInterceptor {
     if (!meta) return next.handle();
     const req = ctx.switchToHttp().getRequest<Request>();
     return next.handle().pipe(
-      tap((result) => {
+      // the audit row is written before the response is sent (REQ-24 §24.3 trace is never "eventually" there)
+      concatMap(async (result) => {
         const extra = RequestContextStore.get()?.audit ?? {};
         const entityId =
           (extra.entityId as string | undefined) ??
           (meta.entityIdFrom?.startsWith('params.') ? pick(req.params, meta.entityIdFrom.slice(7)) : meta.entityIdFrom ? pick(result, meta.entityIdFrom) : undefined);
-        void this.audit.record({
+        await this.audit.record({
           action: meta.action,
           entityType: (extra.entityType as string | undefined) ?? meta.entityType,
           entityId,
@@ -40,6 +41,7 @@ export class AuditInterceptor implements NestInterceptor {
           reason: (extra.reason as string | undefined) ?? (typeof req.body?.reason === 'string' ? req.body.reason : undefined),
           metadata: extra.metadata as Record<string, unknown> | undefined,
         });
+        return result;
       }),
     );
   }
