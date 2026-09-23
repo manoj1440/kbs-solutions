@@ -645,7 +645,7 @@ export function HeroHeader({ children, className, colors: stops = gradients.hero
       <View pointerEvents="none" className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-white/[0.07]" />
       <View pointerEvents="none" className="absolute -left-20 top-24 h-44 w-44 rounded-full bg-white/[0.05]" />
       <View pointerEvents="none" className="absolute right-10 top-40 h-24 w-24 rounded-full" style={{ backgroundColor: 'rgba(245, 185, 66, 0.10)' }} />
-      <View className={cx('px-4 pb-6', className)}>{children}</View>
+      <View className={cx('px-4', !/\bpb-/.test(className ?? '') && 'pb-6', className)}>{children}</View>
     </View>
   );
 }

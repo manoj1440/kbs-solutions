@@ -99,7 +99,7 @@ export default function AdvisorHome() {
 
   return (
     <Screen inset="none" statusBar="light" scroll padded={false} refreshing={loading && loaded} onRefresh={() => void load()} contentClassName="pt-0">
-      <HeroHeader className="pb-20">
+      <HeroHeader className="pb-16">
         <View className="flex-row items-center justify-between">
           <PressableScale accessibilityLabel="Open profile" onPress={() => router.push('/(advisor)/profile' as never)} className="flex-row items-center gap-3">
             <Avatar name={name || 'Advisor'} size={46} light />
