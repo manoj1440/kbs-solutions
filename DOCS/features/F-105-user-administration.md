@@ -1,6 +1,6 @@
 # F-105 User administration and lifecycle
 
-- Group: Core · Status: **IN_PROGRESS** · Depends on: F-101, F-102, F-103
+- Group: Core · Status: **DONE** · Depends on: F-101, F-102, F-103
 - PRD refs: REQ-03 §3.1 (account origins), REQ-04 §4.3 (lifecycle events with who/when/why; preserve history), REQ-16 §16.1, REQ-25 §25.4, ADR-006, gap analysis A1
 - QA ids: AUDIT-01 (user changes)
 
@@ -14,10 +14,11 @@
 7. Web screens: Users table (filters role/status/search by name or masked mobile), Create user dialog, User detail with lifecycle timeline, sessions, reporting parent.
 
 ## Acceptance criteria
-- [ ] A second `ADMIN` cannot be created via API (400) or DB (unique violation).
-- [ ] Deactivating a Telecaller with assigned customers keeps assignments visible to the Manager with the user flagged inactive.
-- [ ] Every lifecycle transition has an audit row + lifecycle event with reason.
+- [x] A second `ADMIN` cannot be created via API (400) or DB (unique violation).
+- [x] Deactivating a Telecaller with assigned customers keeps assignments visible to the Manager with the user flagged inactive.
+- [x] Every lifecycle transition has an audit row + lifecycle event with reason.
 
 ## Progress notes
 - 2026-09-22 (session 1): API: Admin creates Manager/Accounts, deactivate/reactivate with lifecycle events, session revoke, scoped list/detail (e2e covered). Pending: web dialogs, `change-mobile` behind recovery flag.
 - Session 8: resuming — web users list filters, create dialog, user detail with lifecycle timeline/sessions/actions; change-mobile behind `auth.recoveryEnabled` (fails closed); lifecycle acceptance tests.
+- Session 8 (done): `POST /users/:id/change-mobile {mobile, reason≥10}` — Admin only, `CONFIG_MISSING` while `auth.recoveryEnabled` is false (policy OPEN); when on: `MOBILE_CHANGED` event, sessions + push devices revoked, audit `users.changeMobile` with masked values only. Reactivate is a no-op for ACTIVE and refuses PENDING_ONBOARDING; sign-out-everywhere also revokes push devices. Web: users filters/paging, create dialog, `/admin/users/[id]` detail (lifecycle timeline, sessions, actions). Tests `apps/api/test/users-lifecycle.e2e-spec.ts` (single Admin via API + DB index, deactivated Telecaller's customers visible to Manager with `needsReassignment`, audit + lifecycle row per transition, recovery flag fails closed).
