@@ -1,7 +1,7 @@
 import { makePublicRef, RefPrefix } from '@kbs/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { BankStatusWriteForbiddenError, createPrismaClient, withMisApplyContext } from '../src';
+import { BankStatusWriteForbiddenError, createPrismaClient, misApplyTransaction, withMisApplyContext } from '../src';
 import { seed } from '../src/seed';
 
 const url = process.env.DATABASE_URL;
@@ -39,6 +39,19 @@ run('database invariants', () => {
         }),
       ),
     ).rejects.not.toBeInstanceOf(BankStatusWriteForbiddenError);
+  });
+
+  it('F-903: the database itself rejects bank-status writes that bypass the MIS apply transaction (raw SQL too)', async () => {
+    // raw SQL skips the Prisma extension — the trigger still refuses
+    await expect(prisma.$executeRawUnsafe(`UPDATE "BankStatusSnapshot" SET "finalDecision" = 'Approve'`)).resolves.toBe(0); // no rows: trigger is row-level
+    await expect(prisma.$executeRawUnsafe(`INSERT INTO "BankStatusHistory" (id, "leadId", "batchId", field, "changeKind", "importedAt", "uploaderUserId") VALUES ('h1', 'x', 'y', 'f', 'SET', now(), '${adminId}')`)).rejects.toThrow(/INV-01/);
+    // the app-level context alone is not enough: the transaction must declare kbs.mis_apply
+    await expect(withMisApplyContext('b', () => prisma.bankStatusHistory.create({ data: { leadId: 'x', batchId: 'y', field: 'f', importedAt: new Date(), uploaderUserId: adminId, changeKind: 'SET' } }))).rejects.toThrow(/INV-01/);
+    // inside misApplyTransaction the trigger passes and Postgres reaches the FK check (no such lead)
+    const err = await misApplyTransaction(prisma, 'b', (tx) => tx.bankStatusHistory.create({ data: { leadId: 'x', batchId: 'y', field: 'f', importedAt: new Date(), uploaderUserId: adminId, changeKind: 'SET' } })).catch((e: Error) => e);
+    expect(String((err as Error).message)).toMatch(/Foreign key constraint/); // (Prisma error text quotes nearby source lines, so assert the positive reason)
+    // the flag is transaction-local: it does not leak to the next statement
+    expect(await prisma.$queryRawUnsafe<{ v: string | null }[]>(`SELECT current_setting('kbs.mis_apply', true) AS v`)).toEqual([{ v: expect.not.stringMatching(/^on$/) }]);
   });
 
   it('ADR-011: a second ADMIN is rejected by the partial unique index', async () => {
