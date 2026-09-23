@@ -147,9 +147,10 @@ export class AuthService {
       await this.audit.record({ action: 'auth.refresh.reuse', entityType: 'Session', entityId: rt.sessionId, actor: { userId: rt.session.userId, role: rt.session.user.role } });
       throw new AppError('AUTH_SESSION_REVOKED', 'Session revoked for security. Please log in again.', undefined, 'LOGIN_AGAIN');
     }
-    if (rt.expiresAt.getTime() < Date.now() || rt.session.revokedAt) throw new AppError('AUTH_SESSION_REVOKED', 'Session expired. Please log in again.', undefined, 'LOGIN_AGAIN');
     const user = rt.session.user;
-    if (user.status === 'DEACTIVATED' || user.status === 'BLOCKED') throw new AppError('AUTH_ACCOUNT_DEACTIVATED', 'This account is not active.');
+    // F-804: deactivation also revokes sessions — say why (REQ-25 §25.1 "account-deactivated explanation") rather than "expired"
+    if (user.status === 'DEACTIVATED' || user.status === 'BLOCKED') throw new AppError('AUTH_ACCOUNT_DEACTIVATED', 'This account is not active. Contact your Manager or Admin.', undefined, user.role === 'TELECALLER' ? 'CONTACT_MANAGER' : 'CONTACT_ADMIN');
+    if (rt.expiresAt.getTime() < Date.now() || rt.session.revokedAt) throw new AppError('AUTH_SESSION_REVOKED', 'Session expired. Please log in again.', undefined, 'LOGIN_AGAIN');
 
     const newRaw = await this.issueRefresh(rt.sessionId, rt.familyId, rt.id);
     await this.prisma.client.session.update({ where: { id: rt.sessionId }, data: { lastSeenAt: new Date() } });

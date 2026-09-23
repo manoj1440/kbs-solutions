@@ -118,6 +118,17 @@ describe('core foundation (F-101…F-111)', () => {
       const dead = await request(app.getHttpServer()).post('/api/v1/auth/refresh').set('Cookie', renewed.find((c) => c.startsWith('kbs_refresh='))!.split(';')[0]).send({}).expect(401);
       expect(dead.body.error.recovery).toBe('LOGIN_AGAIN');
     });
+
+    it('F-804: refreshing a deactivated account says "deactivated" (not "expired") even though deactivation revoked the session', async () => {
+      const t = await setupManagerAndTelecaller(app, prisma, '804');
+      await prisma.otpChallenge.deleteMany({ where: { mobile: `+91${t.managerMobile}` } });
+      const req = await request(app.getHttpServer()).post('/api/v1/auth/otp/request').send({ mobile: t.managerMobile }).expect(201);
+      const verify = await request(app.getHttpServer()).post('/api/v1/auth/otp/verify').send({ challengeId: req.body.data.challengeId, code: '000000', platform: 'WEB' }).expect(201);
+      const refreshCookie = (verify.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('kbs_refresh='))!.split(';')[0];
+      await request(app.getHttpServer()).post(`/api/v1/users/${t.managerId}/deactivate`).set(auth(t.admin.accessToken)).set('idempotency-key', idem()).send({ reason: 'left the company' }).expect(201);
+      const r = await request(app.getHttpServer()).post('/api/v1/auth/refresh').set('Cookie', refreshCookie).send({}).expect(403);
+      expect(r.body.error).toMatchObject({ code: 'AUTH_ACCOUNT_DEACTIVATED', recovery: 'CONTACT_ADMIN' });
+    });
   });
 
   describe('RBAC-01 / RBAC-02 / TRAIN-01 / TRAIN-02', () => {
