@@ -5,6 +5,7 @@ export * from './display';
 export * from './lead-status';
 export * from './mask';
 export * from './notification-text';
+export * from './audit-actions';
 export * from './normalize';
 export * from './refs';
 export * from './money';
