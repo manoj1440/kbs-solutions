@@ -2,6 +2,7 @@
 
 import type { MeResponse } from '@kbs/shared';
 import {
+  AlertTriangle,
   ArrowRight,
   Building2,
   ChevronRight,
@@ -59,6 +60,7 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
       { href: '/admin/mis', label: 'MIS imports', icon: FileSpreadsheet },
       { href: '/admin/mis/integrity', label: 'Data integrity', icon: ShieldCheck },
       { href: '/admin/payouts/requests', label: 'Payout requests', icon: Wallet },
+      { href: '/admin/payouts/requests?queue=exceptions', label: 'Payment exceptions', icon: AlertTriangle },
       { href: '/admin/payouts/entitlements', label: 'Entitlement ledger', icon: ListChecks },
       { href: '/admin/payouts/rules', label: 'Payout rules', icon: Settings2 },
     ],

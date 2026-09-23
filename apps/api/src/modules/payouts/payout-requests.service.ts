@@ -22,6 +22,7 @@ const requestInclude = {
 } as const;
 
 const LIVE = ['RECORDED', 'PROOF_PENDING', 'VERIFIED', 'EXCEPTION'];
+const ACCOUNTS_STATES = ['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'];
 type PaymentRow = { id: string; state: string; paidAt: Date; amountInr: unknown; transferReference: string; method: string | null; proofFileId: string | null; proofAttachedAt: Date | null; recordedBy: { id: string; fullName: string }; createdAt: Date; exceptionReason: string | null; exceptionRaisedAt: Date | null; resolutionNote: string | null; resolvedAt: Date | null; correctionOfId: string | null; correctionReason: string | null; correctionDecidedAt: Date | null; correctionDecidedByUserId: string | null; correctionDecisionReason: string | null; supersededAt: Date | null };
 
 /**
@@ -171,8 +172,10 @@ export class PayoutRequestsService {
     return this.get(actor, created.id);
   }
 
-  private canSee(actor: Actor, r: { advisorUserId: string; managerApproverUserId: string }) {
-    return actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || r.advisorUserId === actor.userId || r.managerApproverUserId === actor.userId || (actor.role === 'MANAGER' && actor.teamUserIds.includes(r.advisorUserId));
+  private canSee(actor: Actor, r: { advisorUserId: string; managerApproverUserId: string; state?: string }) {
+    // Accounts sees a request only once both approvals exist (PAY-03, REQ-18 §18.1)
+    if (actor.role === 'ACCOUNTS') return ACCOUNTS_STATES.includes(r.state ?? '');
+    return actor.role === 'ADMIN' || r.advisorUserId === actor.userId || r.managerApproverUserId === actor.userId || (actor.role === 'MANAGER' && actor.teamUserIds.includes(r.advisorUserId));
   }
 
   async get(actor: Actor, id: string) {

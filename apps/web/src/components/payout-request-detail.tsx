@@ -1,6 +1,7 @@
 import { formatDateTime, formatInr } from '@kbs/shared';
 import Link from 'next/link';
 
+import { PayeeReveal, PaymentActions, ProofLink } from '@/components/payment-actions';
 import { RequestActions } from '@/components/payout-request-actions';
 import { PayoutStateBadge } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
@@ -44,11 +45,48 @@ export interface PayoutRequestDto {
     eligibleAt: string;
     priorRequests: { id: string; publicRef: string; state: string; submittedAt: string }[];
   }[];
-  payment: { id: string; paidAt: string; amountInr: number; transferReference: string; state: string; proofFileId: string | null } | null;
+  receipt: { state: string; paidAt: string; amountInr: number; transferReferenceMasked: string | null; method: string | null } | null;
+  payment: PaymentEntry | null;
+  pendingCorrection: PaymentEntry | null;
+  paymentHistory: PaymentEntry[];
+  paidAt: string | null;
+  hold: { reason: string; at: string | null; byUserId: string | null } | null;
+  payee: { accountHolderName: string | null; bankName: string | null; ifsc: string | null; accountMasked: string | null; verified: boolean; canReveal: boolean } | null;
+  payments: { proofRequired: boolean; canRecord: boolean; canAttachProof: boolean; canCorrect: boolean; canDecideCorrection: boolean; canFlag: boolean; canResolve: boolean };
+}
+export interface PaymentEntry {
+  id: string;
+  state: string;
+  paidAt: string;
+  amountInr: number;
+  transferReference: string;
+  method: string | null;
+  proofFileId: string | null;
+  proofAttachedAt: string | null;
+  recordedBy: { id: string; fullName: string };
+  recordedAt: string;
+  exceptionReason: string | null;
+  exceptionRaisedAt: string | null;
+  resolutionNote: string | null;
+  resolvedAt: string | null;
+  correctionOfId: string | null;
+  correctionReason: string | null;
+  correctionDecision: { by: { id: string; fullName: string } | null; at: string; reason: string | null } | null;
+  supersededAt: string | null;
 }
 
+const PAYMENT_STATE: Record<string, { label: string; tone: 'success' | 'warning' | 'destructive' | 'info' | 'unknown' }> = {
+  VERIFIED: { label: 'verified', tone: 'success' },
+  PROOF_PENDING: { label: 'proof pending', tone: 'warning' },
+  RECORDED: { label: 'recorded', tone: 'info' },
+  EXCEPTION: { label: 'exception', tone: 'destructive' },
+  CORRECTION_PENDING: { label: 'correction awaiting Admin', tone: 'warning' },
+  SUPERSEDED: { label: 'superseded', tone: 'unknown' },
+  CORRECTION_REJECTED: { label: 'correction rejected', tone: 'unknown' },
+};
+
 /** F-604 approval detail: itemised cards with MIS evidence, rule/rate version, prior requests and warnings; two approval rows. */
-export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: string; backHref: string; leadHref: (leadId: string) => string }) {
+export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: string; backHref: string; leadHref?: (leadId: string) => string }) {
   const r = (await apiFetch<PayoutRequestDto>(`/payouts/requests/${id}`)).data;
   return (
     <div className="grid gap-4">
@@ -78,15 +116,17 @@ export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: stri
             {r.state === 'CANCELLED' ? <p className="text-sm">Cancelled {r.cancelledAt ? formatDateTime(r.cancelledAt) : ''}: {r.cancelReason}</p> : null}
             {r.payment ? (
               <p className="text-sm">
-                Payment {r.payment.state.toLowerCase()} · {formatInr(r.payment.amountInr)} · ref <code>{r.payment.transferReference}</code> · {formatDateTime(r.payment.paidAt)}
+                Payment {PAYMENT_STATE[r.payment.state]?.label ?? r.payment.state.toLowerCase()} · {formatInr(r.payment.amountInr)} · ref <code>{r.payment.transferReference}</code> · {formatDateTime(r.payment.paidAt)}
               </p>
             ) : r.state === 'APPROVED' ? (
               <p className="text-muted-foreground text-sm">Both approved — awaiting Accounts payment.</p>
             ) : null}
           </CardContent>
         </Card>
-        <RequestActions request={r} />
+        {r.state === 'PENDING_APPROVALS' || r.me.canCancel ? <RequestActions request={r} /> : <PaymentActions request={r} />}
       </div>
+      {r.state === 'PENDING_APPROVALS' || r.me.canCancel ? <PaymentActions request={r} /> : null}
+      <PaymentTrace r={r} />
       <Card>
         <CardHeader>
           <CardTitle>Itemised card events</CardTitle>
@@ -108,9 +148,13 @@ export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: stri
               {r.items.map((i) => (
                 <TableRow key={i.id}>
                   <TableCell>
-                    <Link className="underline" href={leadHref(i.lead.id)}>
-                      {i.lead.publicRef}
-                    </Link>
+                    {leadHref ? (
+                      <Link className="underline" href={leadHref(i.lead.id)}>
+                        {i.lead.publicRef}
+                      </Link>
+                    ) : (
+                      <span>{i.lead.publicRef}</span>
+                    )}
                     <div className="text-muted-foreground text-xs">{i.lead.customerFullName}</div>
                   </TableCell>
                   <TableCell className="text-xs">
@@ -161,5 +205,94 @@ function ApprovalRow({ label, a, pending }: { label: string; a: Approval | null;
         <Badge variant={pending ? 'warning' : 'unknown'}>{pending ? 'pending' : '—'}</Badge>
       )}
     </div>
+  );
+}
+
+/** F-605 payment trace: payee (Accounts/Admin), hold, and every payment entry incl. superseded ones (REQ-18 §18.3). */
+function PaymentTrace({ r }: { r: PayoutRequestDto }) {
+  const show = r.payee || r.hold || r.paymentHistory.length > 0 || ['APPROVED', 'ON_HOLD', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID'].includes(r.state);
+  if (!show) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Payment</CardTitle>
+        <CardDescription>
+          {r.state === 'PAID' ? `Paid ${r.paidAt ? formatDateTime(r.paidAt) : ''} — every card event in this request is Paid for this event.` : r.state === 'APPROVED' ? 'Both approved — awaiting Accounts payment.' : 'Recorded transfers made outside KBS. Earlier entries are kept when corrected.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        {r.hold ? (
+          <div role="alert" className="border-destructive/40 bg-destructive/5 rounded-md border p-3 text-sm">
+            <span className="font-medium">On hold for Admin review:</span> {r.hold.reason}
+            {r.hold.at ? <span className="text-muted-foreground"> · {formatDateTime(r.hold.at)}</span> : null}
+          </div>
+        ) : null}
+        {r.payee ? (
+          <div className="grid gap-1 text-sm sm:grid-cols-2">
+            <div>
+              <div className="text-muted-foreground text-xs">Payee</div>
+              {r.payee.accountHolderName ?? '—'} {r.payee.verified ? <Badge variant="success">verified at onboarding</Badge> : <Badge variant="warning">not verified</Badge>}
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">Bank · IFSC</div>
+              {r.payee.bankName ?? '—'} · <code>{r.payee.ifsc ?? '—'}</code>
+            </div>
+            <div className="sm:col-span-2">
+              <div className="text-muted-foreground text-xs">Account</div>
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <code>{r.payee.accountMasked ?? 'not on file'}</code>
+                {r.payee.canReveal && r.payee.accountMasked ? <PayeeReveal requestId={r.id} /> : null}
+              </span>
+            </div>
+          </div>
+        ) : null}
+        {r.paymentHistory.length ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Entry</TableHead>
+                <TableHead>Transfer</TableHead>
+                <TableHead>Proof</TableHead>
+                <TableHead>Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {r.paymentHistory.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="text-xs">
+                    <Badge variant={PAYMENT_STATE[p.state]?.tone ?? 'unknown'}>{PAYMENT_STATE[p.state]?.label ?? p.state}</Badge>
+                    <div className="text-muted-foreground mt-1">
+                      {p.recordedBy.fullName} · {formatDateTime(p.recordedAt)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    {formatInr(p.amountInr)} · {p.method ?? '—'}
+                    <div>
+                      <code>{p.transferReference}</code> · paid {formatDateTime(p.paidAt)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs">{p.proofFileId ? <ProofLink fileId={p.proofFileId} /> : <span className="text-muted-foreground">none</span>}</TableCell>
+                  <TableCell className="text-xs">
+                    {p.correctionReason ? <div>Correction: {p.correctionReason}</div> : null}
+                    {p.correctionDecision ? (
+                      <div className="text-muted-foreground">
+                        Admin {p.state === 'CORRECTION_REJECTED' ? 'rejected' : 'approved'} ({p.correctionDecision.by?.fullName ?? '—'}, {formatDateTime(p.correctionDecision.at)}): {p.correctionDecision.reason}
+                      </div>
+                    ) : null}
+                    {p.exceptionReason ? <div className="text-destructive">{p.exceptionReason}</div> : null}
+                    {p.resolutionNote ? <div className="text-muted-foreground">Resolved: {p.resolutionNote}</div> : null}
+                    {p.supersededAt ? <div className="text-muted-foreground">Superseded {formatDateTime(p.supersededAt)}</div> : null}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : r.receipt ? (
+          <p className="text-sm">
+            {formatInr(r.receipt.amountInr)} · ref {r.receipt.transferReferenceMasked} · {formatDateTime(r.receipt.paidAt)}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }

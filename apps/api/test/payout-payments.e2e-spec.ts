@@ -84,6 +84,10 @@ describe('F-605 Accounts payment recording (PAY-05, PAY-06, PAY-07)', () => {
   afterAll(async () => app.close());
 
   it('PAY-05/PAY-06: payment with proof → PAID; entitlements Paid for this event; ledger + MIS untouched; full trace; Advisor receipt only', async () => {
+    const pendingOnly = (await post('/payouts/requests', advToken, { entitlementIds: [(await entitlement()).id] }).expect(201)).body.data;
+    await api().get(`/api/v1/payouts/requests/${pendingOnly.id}`).set(auth(accountsToken)).expect(404); // PAY-03: not before both approvals
+    await api().get(`/api/v1/payouts/requests/${pendingOnly.id}/payee`).set(auth(accountsToken)).expect(404);
+    await post(`/payouts/requests/${pendingOnly.id}/cancel`, advToken, { reason: 'test cleanup' }).expect(201);
     const r = await approvedRequest([1500, 1500]);
     const bankRowsBefore = [await prisma.bankStatusSnapshot.count(), await prisma.bankStatusHistory.count()];
     // Accounts queue + masked payee

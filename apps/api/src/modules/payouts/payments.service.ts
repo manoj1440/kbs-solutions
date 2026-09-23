@@ -291,8 +291,9 @@ export class PaymentsService {
   // ── payee bank (masked by default; reveal is logged) ──
   async payee(actor: Actor, id: string, reveal: boolean) {
     if (actor.role !== 'ACCOUNTS' && actor.role !== 'ADMIN') throw AppError.notFound('Payout request');
-    const r = await this.prisma.client.payoutRequest.findUnique({ where: { id }, select: { advisorUserId: true } });
-    if (!r) throw AppError.notFound('Payout request');
+    const r = await this.prisma.client.payoutRequest.findUnique({ where: { id }, select: { advisorUserId: true, state: true } });
+    // Accounts only for dual-approved requests (REQ-18 §18.1: restrict payee banking fields to what payment needs)
+    if (!r || (actor.role === 'ACCOUNTS' && !['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'].includes(r.state))) throw AppError.notFound('Payout request');
     const p = await this.prisma.client.advisorProfile.findUnique({ where: { userId: r.advisorUserId } });
     if (!p) return { available: false, accountHolderName: null, bankName: null, ifsc: null, accountMasked: null, accountNumber: null, verified: false };
     let accountNumber: string | null = null;
