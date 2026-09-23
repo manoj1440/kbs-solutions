@@ -2,12 +2,12 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-09-23, end of session 10)
+## Current state (as of 2026-09-23, end of session 11)
 
-- **Feature status:** 72 of 74 features **DONE** (sessions 9–10 added and finished F-314 Admin calls & delivery oversight and F-315 Manager Advisor drill-down, both found by REQ-15/REQ-25 gap checks) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
+- **Feature status:** 73 of 75 features **DONE** (sessions 9–11 added and finished F-314 Admin calls & delivery oversight, F-315 Manager Advisor drill-down and F-804 web session continuity + account screens, all found by REQ-15/REQ-25 gap checks) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
   - **F-302** Android protected screens — code complete; stays IN_PROGRESS only for the **SEC-02 manual run on a physical Android 12+ device** (checklist in `DOCS/runbooks/02-mobile-security-limits.md`).
   - **F-904** Data retention — **BLOCKED** on KBS durations (REQ-21 §21.5 OPEN). Structure is built and fails closed (`/retention/plan` dry run, legal holds, `/retention/execute` → `CONFIG_MISSING` until `retention.*Days` and `retention.executionEnabled` are set).
-- **Latest verification (session 10, cloud sandbox):** typecheck + lint green (existing TanStack warning only); `pnpm test` on `kbs_base` (shared 44, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **143/143 across 36 suites**; web Playwright **62/62** (desktop + phone); `expo export --platform android` bundles; QA matrix regenerated.
+- **Latest verification (session 11, cloud sandbox):** typecheck + lint green (existing TanStack warning only); `pnpm test` on `kbs_base` (shared 44, web 11, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **145/145 across 36 suites**; web Playwright **72/72** (desktop + phone, run twice); QA matrix regenerated.
 - **Previous verification (session 8, cloud sandbox):** workspace typecheck + lint (only the existing TanStack warning); `pnpm test` against baseline-seeded `kbs_base` (shared 39, web 8, mobile 11, api unit 15, db invariants 7, ui-tokens 22); API e2e **136/136 across 35 suites** on `kbs_test`; web Playwright smoke + role routing **54/54** (desktop 1280 + phone 390); REQ-27 QA matrix **58/58** ids named by automated tests (CI ratchet 58).
 - **Next steps for a new session (in order):**
   1. On the Mac: push to GitHub, then build the preview APK (`cd apps/mobile && npx eas init && eas build -p android --profile preview`, see `DOCS/runbooks/04-android-release.md`), run the Maestro flows and the SEC-02 checklist → close F-302.
@@ -37,6 +37,11 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 ```
 
 ## Session log
+
+### 2026-09-23 — Session 11 (gap analysis → F-804, web session bug)
+- Checked the REQ-25 §25.1 shared screens on the web and found a real defect. Because the refresh cookie is scoped to the API path, the web never refreshed, so **every web user was logged out 15 minutes after sign-in without explanation** (reproduced in a browser). The login `next` check also allowed `//other-host` (open redirect). Profile/support, a full notification list and error/retry screens were missing.
+- Built **F-804**: `/session` refresh hop + keep-alive, login notices (session ended / deactivated / signed out / required), own-area `next`, Account & support pages, notification centre with deep links (User targets by role), error and not-found screens. Commits: `docs(F-804): start` → `feat(api)` me.account + target role → `fix(web)` session hop/keep-alive/safe next → `feat(web)` account, notifications, error screens → `docs`.
+- Remaining gap candidates: the Manager version of the F-314 oversight page (API ready); date/bank filters on the mobile Advisor screen; mobile account screens for Manager/Telecaller already exist (profile tabs), so no mobile change was needed here.
 
 ### 2026-09-23 — Session 10 (gap analysis → F-315)
 - I checked REQ-15 (Manager workspace) and REQ-25 §25.3 against the built screens. Managers could not drill into their Advisors: on web, Advisors were plain rows; on mobile, tapping an Advisor did nothing and there was no lead/MIS screen. The data APIs existed, but the per-Advisor summary was Admin-only. Created **F-315** and finished it.
