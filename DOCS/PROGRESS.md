@@ -36,6 +36,13 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 
 ## Session log
 
+### 2026-09-23 — Admin table/layout correction (not page scrolling)
+- User clarified the UX bug: information and actions extended outside content panels. Leads measured 2209px inside 1046px. Corrected shared table nowrap defaults and badge wrapping, not just scrollbar appearance.
+- Leads has a six-column overview keeping separate bank stage/decision/activation and actions visible. More detail exposes references, dates, raw values, provenance and remarks; optional Full table view preserves all 13 sortable columns. Calling activity/records group related fields vertically; responsive rows become labelled cards below 700px container width.
+- Reassignment now opens a bounded native dialog with required target/reason, no-target guidance and focus restoration rather than growing an inline table form. No backend, mobile or bank-status changes; shared web components also benefit Manager views.
+- Playwright verified both reported pages at 1440/1280/1024/768/390px: default tables fit and actions remain visible. Fifteen other Admin pages checked at 1280px without page/default-table overflow. Verified sorting, expansion, all 13 full-table columns, empty leads search, modal fit and Escape. No reassignment mutation submitted. Screenshots `.playwright-mcp/layout-after-{leads,distribution}-{1280,390}.png`.
+- Reusable MCP regression: `apps/web/test/admin-layout-smoke.mjs`; use `browser_run_code_unsafe` with that `filename` on an authenticated Admin page and demo data. Web build/typecheck/lint and 5 unit tests pass; existing TanStack lint warning and previously documented DB fixture failures remain.
+
 ### 2026-09-23 — Admin scrolling follow-up
 - User reported hidden content/no scrollbar. Reproduced absent scrollbar gutters (native auto-hide); page/sidebar wheel scrolling already worked. Added Admin-only persistent 12px scrollbar styling for page, sidebar, dialogs and tables with stable gutters. No mobile-app/backend changes.
 - Playwright asserts 12px page/sidebar/horizontal-table gutters; scroll reaches dashboard footer, sidebar Configuration, rightmost lead-table columns and training Publish button at 1280×720. Mobile drawer scrolls to Configuration at 390×640 without page-width overflow. Screenshot: `.playwright-mcp/admin-visible-scrollbars.png`. Web typecheck/lint/tests rerun; prior workspace DB fixture limitation remains.
