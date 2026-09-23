@@ -18,6 +18,7 @@ export default function Profile() {
           {user?.reportingParent ? <Muted>Reports to: {user.reportingParent.fullName}</Muted> : null}
         </Card>
         <Button title="My official ID" onPress={() => router.push('/(telecaller)/id-card')} />
+        <Button title="Notifications" variant="outline" onPress={() => router.push('/(telecaller)/notifications' as never)} />
         <Button title="Sign out" variant="outline" onPress={() => void signOut()} />
       </View>
     </Screen>

@@ -24,6 +24,7 @@ export default function AdvisorLayout() {
       <Tabs.Screen name="leads" options={{ title: 'Leads' }} />
       <Tabs.Screen name="cards" options={{ title: 'Cards' }} />
       <Tabs.Screen name="payouts" options={{ title: 'Earnings' }} />
+      <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ title: 'More' }} />
       <Tabs.Screen name="pending" options={{ href: null }} />
       <Tabs.Screen name="card" options={{ href: null }} />

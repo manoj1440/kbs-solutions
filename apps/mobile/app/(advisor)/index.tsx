@@ -92,14 +92,14 @@ export default function AdvisorHome() {
             <Heading>Hi {first}! 👋</Heading>
             <Muted>Great work this week!</Muted>
           </View>
-          <View className="relative h-11 w-11 items-center justify-center rounded-full border border-border bg-card">
+          <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Notifications, ${unread} unread` : 'Notifications'} onPress={() => router.push('/(advisor)/notifications' as never)} className="relative h-11 w-11 items-center justify-center rounded-full border border-border bg-card">
             <Text className="text-lg">🔔</Text>
             {unread > 0 ? (
               <View className="absolute -right-0.5 -top-0.5 h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1">
                 <Text className="text-[10px] font-bold text-destructive-foreground">{unread}</Text>
               </View>
             ) : null}
-          </View>
+          </Pressable>
         </View>
         <ErrorText>{error}</ErrorText>
         <View className="flex-row flex-wrap justify-between gap-y-3">
