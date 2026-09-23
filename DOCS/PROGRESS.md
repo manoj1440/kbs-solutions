@@ -36,6 +36,10 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 
 ## Session log
 
+### 2026-09-23 — Admin scrolling follow-up
+- User reported hidden content/no scrollbar. Reproduced absent scrollbar gutters (native auto-hide); page/sidebar wheel scrolling already worked. Added Admin-only persistent 12px scrollbar styling for page, sidebar, dialogs and tables with stable gutters. No mobile-app/backend changes.
+- Playwright asserts 12px page/sidebar/horizontal-table gutters; scroll reaches dashboard footer, sidebar Configuration, rightmost lead-table columns and training Publish button at 1280×720. Mobile drawer scrolls to Configuration at 390×640 without page-width overflow. Screenshot: `.playwright-mcp/admin-visible-scrollbars.png`. Web typecheck/lint/tests rerun; prior workspace DB fixture limitation remains.
+
 ### 2026-09-23 — Session 6 (web Admin experience, F-801)
 - Replaced launch-gates-only Admin home with an all-time operational business overview: leads/MIS matches, eligible card events, reserved payout value, prominent exceptions/approvals/onboarding/unassigned queues, bank coverage with upload/apply timestamps, distinct payout positions, recent leads with MIS provenance, staffing/allocation counts and expandable launch readiness.
 - Totals use complete MIS summaries and payout metadata, never the 5-row recent sample. No invented trends, inferred approvals, global bank freshness or double-counted payout buckets. Partial API failures show unavailable. Dates/amounts retain India formatting.
