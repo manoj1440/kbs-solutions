@@ -1,6 +1,6 @@
 # F-701 Notifications: outbox fan-out, in-app centre, push, dedupe, deep links
 
-- Group: Dashboards & notifications · Status: **PLANNED** · Depends on: F-110, F-109, F-102
+- Group: Dashboards & notifications · Status: **IN_PROGRESS** · Depends on: F-110, F-109, F-102
 - PRD refs: REQ-19 §19.1 (mandatory per-role list), §19.2 (cite raw field changed and batch date; never 'approved/activated' unless the configured field supports it; dedupe identical imports; scope by ownership; deep link with re-check; push provider OPEN), REQ-14 §14.6 (wording), REQ-21 §21.1 (no PAN/full account in notifications), REQ-12 S28
 - QA ids: NOTIF-01, NOTIF-02
 
