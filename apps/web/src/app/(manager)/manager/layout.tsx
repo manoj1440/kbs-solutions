@@ -2,6 +2,7 @@ import { AppShell } from '@/components/app-shell';
 import { requireRole } from '@/lib/require-role';
 
 const NAV = [
+  { href: '/manager/dashboard', label: 'Dashboard' },
   { href: '/manager', label: 'Team' },
   { href: '/manager/calling', label: 'Team calling' },
   { href: '/manager/leads', label: 'Team leads' },
