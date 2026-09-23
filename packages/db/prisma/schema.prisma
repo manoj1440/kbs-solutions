@@ -350,6 +350,11 @@ enum ExternalPaymentState {
   PROOF_PENDING
   VERIFIED
   EXCEPTION
+  /// F-605 audited correction: a replacement entry awaiting Admin approval (prior entry stays live).
+  CORRECTION_PENDING
+  /// Prior entry replaced by an Admin-approved correction; retained for audit, never deleted.
+  SUPERSEDED
+  CORRECTION_REJECTED
 }
 
 enum FilePurpose {
@@ -1617,12 +1622,18 @@ model PayoutRequest {
   cancelledAt           DateTime?
   cancelledByUserId     String?
   cancelReason          String?
+  /// F-605: Accounts/Admin discrepancy flag (REQ-18 §18.2) or amount-mismatch exception.
+  holdReason            String?
+  heldAt                DateTime?
+  heldByUserId          String?
+  paidAt                DateTime?
   updatedAt             DateTime           @updatedAt
 
   advisor   User                @relation("PayoutRequestAdvisor", fields: [advisorUserId], references: [id])
   items     PayoutRequestItem[]
   approvals PayoutApproval[]
-  payment   ExternalPayment?
+  /// Append-only: at most one live entry (partial unique index); corrections add rows with `correctionOfId`.
+  payments  ExternalPayment[]
 
   @@index([advisorUserId, state])
   @@index([managerApproverUserId, state])
@@ -1660,22 +1671,42 @@ model PayoutApproval {
 }
 
 model ExternalPayment {
-  id               String               @id @default(uuid(7))
-  requestId        String               @unique
-  recordedByUserId String
-  paidAt           DateTime
-  amountInr        Decimal              @db.Decimal(14, 2)
-  transferReference String              @unique
-  method           String?
-  proofFileId      String?
-  state            ExternalPaymentState @default(RECORDED)
-  exceptionReason  String?
-  correctionOfId   String?
-  createdAt        DateTime             @default(now())
+  id                     String               @id @default(uuid(7))
+  requestId              String
+  recordedByUserId       String
+  paidAt                 DateTime
+  amountInr              Decimal              @db.Decimal(14, 2)
+  /// As entered (trimmed). Uniqueness is enforced on `transferReferenceKey` across live entries.
+  transferReference      String
+  /// Upper-cased, whitespace-free form used for duplicate detection (REQ-17 §17.7).
+  transferReferenceKey   String
+  method                 String?
+  proofFileId            String?
+  proofAttachedAt        DateTime?
+  state                  ExternalPaymentState @default(RECORDED)
+  exceptionReason        String?
+  exceptionRaisedAt      DateTime?
+  exceptionRaisedByUserId String?
+  resolvedAt             DateTime?
+  resolvedByUserId       String?
+  resolutionNote         String?
+  correctionOfId         String?
+  correctionReason       String?
+  correctionDecidedAt    DateTime?
+  correctionDecidedByUserId String?
+  correctionDecisionReason String?
+  supersededAt           DateTime?
+  createdAt              DateTime             @default(now())
 
-  request    PayoutRequest @relation(fields: [requestId], references: [id])
-  recordedBy User          @relation(fields: [recordedByUserId], references: [id])
-  proofFile  StoredFile?   @relation(fields: [proofFileId], references: [id])
+  request      PayoutRequest     @relation(fields: [requestId], references: [id])
+  recordedBy   User              @relation(fields: [recordedByUserId], references: [id])
+  proofFile    StoredFile?       @relation(fields: [proofFileId], references: [id])
+  correctionOf ExternalPayment?  @relation("PaymentCorrection", fields: [correctionOfId], references: [id])
+  corrections  ExternalPayment[] @relation("PaymentCorrection")
+
+  @@index([requestId, createdAt])
+  @@index([transferReferenceKey])
+  @@index([state, createdAt])
 }
 
 // ───────────────────────────── 11. files, notifications, outbox ─────────────────────────────

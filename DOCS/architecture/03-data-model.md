@@ -117,7 +117,8 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 `PayoutRequest(id, publicRef KBS-PR-…, advisorUserId, managerApproverUserId, itemCount, totalAmountInr, submittedAt, state(PENDING_APPROVALS, APPROVED, REJECTED, CANCELLED, PAYMENT_RECORDED_PENDING_PROOF, PAID, ON_HOLD), snapshot jsonb, idempotencyKey unique)`
 `PayoutRequestItem(requestId, entitlementId unique-while-active, amountSnapshotInr)`
 `PayoutApproval(requestId, approverRole(MANAGER, ADMIN), approverUserId, decision(APPROVED, REJECTED), reason?, at)` unique `(requestId, approverRole)`.
-`ExternalPayment(id, requestId unique, recordedByUserId, paidAt, amountInr, transferReference unique, method?, proofFileId?, state(RECORDED, PROOF_PENDING, VERIFIED, EXCEPTION), exceptionReason?, correctionOfId?)`
+`ExternalPayment(id, requestId, recordedByUserId, paidAt, amountInr, transferReference (as entered), transferReferenceKey (upper-cased, no whitespace), method?, proofFileId?, proofAttachedAt?, state(RECORDED, PROOF_PENDING, VERIFIED, EXCEPTION, CORRECTION_PENDING, SUPERSEDED, CORRECTION_REJECTED), exceptionReason?, exceptionRaisedAt?, exceptionRaisedByUserId?, resolvedAt?, resolvedByUserId?, resolutionNote?, correctionOfId? → ExternalPayment, correctionReason?, correctionDecidedAt?, correctionDecidedByUserId?, correctionDecisionReason?, supersededAt?)` — append-only; a request has at most one *live* entry (RECORDED/PROOF_PENDING/VERIFIED/EXCEPTION). F-605.
+`PayoutRequest` also carries `holdReason?, heldAt?, heldByUserId?, paidAt?` (F-605).
 
 ## 11. Files, notifications
 
@@ -127,7 +128,7 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 
 ## 12. Cross-cutting invariants enforced in DB
 
-- Partial unique: one `ADMIN` user; one open `ReportingAssignment` per child; one `RESERVED/PAID` request item per entitlement.
+- Partial unique: one `ADMIN` user; one open `ReportingAssignment` per child; one `RESERVED/PAID` request item per entitlement; one live `ExternalPayment` per request; one live `ExternalPayment` per `transferReferenceKey` (duplicate bank reference refused); one `CORRECTION_PENDING` per request.
 - `BankStatusSnapshot` and `BankStatusHistory` have no update path outside MIS apply (application-level guard now; DB trigger in hardening feature F-903).
 - `ContactSuppression.mobile` checked by unique index + service before any `CallAttempt` insert.
 - Batch `checksum` unique per bank/profile → identical re-upload returns the earlier batch (REQ-13 §13.6 row 9).

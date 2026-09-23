@@ -343,6 +343,9 @@ export const ExternalPaymentState = {
   PROOF_PENDING: 'PROOF_PENDING',
   VERIFIED: 'VERIFIED',
   EXCEPTION: 'EXCEPTION',
+  CORRECTION_PENDING: 'CORRECTION_PENDING',
+  SUPERSEDED: 'SUPERSEDED',
+  CORRECTION_REJECTED: 'CORRECTION_REJECTED',
 } as const;
 export type ExternalPaymentState = (typeof ExternalPaymentState)[keyof typeof ExternalPaymentState];
 
