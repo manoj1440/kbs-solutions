@@ -12,3 +12,4 @@ Web (`apps/web/components/status/*`) and mobile (`apps/mobile/components/status/
 
 ## Progress notes
 - 2026-09-22 (session 1): Web + mobile Stage/Decision/Activation/Payout badges, ProvenanceChip, FreshnessLabel. Pending: dev gallery routes and snapshot tests.
+- Session 8: resuming — single tone/label source in @kbs/shared (web and mobile had drifted: VOID), unit + render tests, web /dev/components gallery and mobile dev screen.
