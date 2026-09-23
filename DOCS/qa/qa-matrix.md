@@ -5,7 +5,7 @@
 | QA id | Tests |
 |---|---|
 | AUDIT-01 | `apps/api/test/core.e2e-spec.ts`<br>`apps/api/test/users-lifecycle.e2e-spec.ts` |
-| AUTH-01 | `apps/api/test/core.e2e-spec.ts`<br>`apps/web/e2e/role-routing.spec.ts` |
+| AUTH-01 | `apps/api/test/core.e2e-spec.ts`<br>`apps/web/e2e/role-routing.spec.ts`<br>`apps/web/e2e/session.spec.ts` |
 | AUTH-02 | `apps/api/test/core.e2e-spec.ts` |
 | CALL-01 | `apps/api/test/calls.e2e-spec.ts` |
 | CALL-02 | `apps/api/test/calls.e2e-spec.ts`<br>`apps/api/test/oversight.e2e-spec.ts`<br>`packages/shared/test/oversight.test.ts` |

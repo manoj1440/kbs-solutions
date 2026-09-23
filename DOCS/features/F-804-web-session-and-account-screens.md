@@ -1,6 +1,6 @@
 # F-804 Web session continuity and shared account screens
 
-- Group: UX shells · Status: **IN_PROGRESS** · Depends on: F-101, F-701, F-801
+- Group: UX shells · Status: **DONE** · Depends on: F-101, F-701, F-801
 - PRD refs: REQ-25 §25.1 (shared screens: "profile/support/logout; notifications with record deep-link; … session-expired recovery; no-connection/retry and account-deactivated explanations"), REQ-04 (OTP-only sessions; 15-min access + 30-day rotating refresh per `01-system-architecture.md`), REQ-18 §18.1 / REQ-25 §25.5 (Accounts "notifications/profile"), REQ-19 §19.2 (deep link re-checks permission), REQ-23 (error states and recovery paths)
 - QA ids: AUTH-01, NOTIF-02
 - Origin: session 11 gap analysis. F-801 promised a `/session-expired` page and "401 → session-expired redirect"; neither exists. Reproduced in a browser: sign in to the web, drop the access cookie (what the browser does after its 15-minute max-age), open any page → silent redirect to `/login`. The 30-day refresh cookie is scoped to the API's `/api/v1/auth` path, so the web server never sees it and never refreshes. **Every web user is effectively logged out 15 minutes after signing in, with no explanation.** The web also has no profile/support page, no full notification list (the drawer shows the last 30 only), and no error boundary (an API outage shows the framework error page).
@@ -16,13 +16,17 @@
 8. Shell links: every shell shows **Account** and the notification centre; the Admin account menu links to the Account page.
 
 ## Acceptance criteria
-- [ ] With the access cookie removed but a valid refresh cookie, opening a protected page lands on that page (no OTP).
-- [ ] With the refresh token revoked, the user lands on `/login?reason=session-expired&next=…` and sees the notice; after OTP they return to `next`.
-- [ ] A deactivated user sees the deactivated explanation, not a generic login.
-- [ ] `next` cannot redirect off-site.
-- [ ] Account page shows the profile, support contact state and both sign-out actions for all three web roles; sign-out-all ends other sessions.
-- [ ] Notification centre pages, filters unread, marks all read and opens deep links after the permission re-check.
-- [ ] API outage shows the retry screen; unknown URL shows not-found; both fit 390 px.
+- [x] With the access cookie removed but a valid refresh cookie, opening a protected page lands on that page (no OTP).
+- [x] With the refresh token revoked, the user lands on `/login?reason=session-expired&next=…` and sees the notice; after OTP they return to `next`.
+- [x] A deactivated user sees the deactivated explanation, not a generic login.
+- [x] `next` cannot redirect off-site.
+- [x] Account page shows the profile, support contact state and both sign-out actions for all three web roles; sign-out-all ends other sessions.
+- [x] Notification centre pages, filters unread, marks all read and opens deep links after the permission re-check.
+- [x] API outage shows the retry screen; unknown URL shows not-found; both fit 390 px.
 
 ## Progress notes
-- Session 11: started.
+- Session 11 (done). API: `/auth/me` `account` block (`MeAccount` in `@kbs/shared`); notification target returns `targetRole`. Tests: `core.e2e-spec.ts` F-804 case (cookie-only refresh re-issues cookies with no tokens in the body, `account` present, logout-all kills the refresh cookie with `LOGIN_AGAIN`), `notifications.e2e-spec.ts` F-804 NOTIF-02 case.
+- Web: `proxy.ts` (no access cookie → `/session?next`; `/login?reason=…` drops a stale access cookie so it cannot bounce; `x-kbs-path` header for layouts), `app/session` hop (refresh → `location.replace(next)`; refusal → `loginUrlFor(code)`; API unreachable → retry screen, never "session ended"), `getSessionState()` + `requireRole` (401 → hop, deactivated → login notice), root page via the hop, `SessionKeepAlive` in both shells, login notices (`LOGIN_NOTICES`), `nextForRole` after OTP (**fixed an open redirect**: the old `next.startsWith('/')` check accepted `//other-host`), sign-out → `reason=signed-out`. Pages `/<area>/account` (`AccountPage` + `AccountActions` two-step sign-out-everywhere) and `/<area>/notifications` (`NotificationCentre`); deep links shared with the drawer via `lib/notification-links.ts` (drawer gained "View all"). `app/error.tsx` (retry, digest reference, no internals) and `app/not-found.tsx`. Admin nav + account menu and the Manager/Accounts shell link to both pages.
+- Tests: `apps/web/test/session-paths.test.ts` (safe next, own-area next, reason mapping); Playwright `e2e/session.spec.ts` (lapsed access cookie renewed in place; sign-out-everywhere → notice → sign-in returns to `next`, using a throw-away Manager so parallel tests keep the Admin session; `//evil` next ignored) and Admin smoke now covers `/admin/account` and `/admin/notifications`. Browser-checked: revoked session → notice → back to page, deep link from the centre, mark all read, API outage → retry screen and `/session` retry, phone widths with no horizontal overflow.
+- Supersedes F-801's planned `/session-expired` route: the explanation is a notice on `/login` (one screen, keeps `next`).
+- Not changed: tokens stay httpOnly cookies; access 15 min / refresh 30 days as before.

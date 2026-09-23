@@ -23,6 +23,9 @@ Error codes are an enum in `@kbs/shared` (`ErrorCode`). Messages are role-approp
     "onboarding": {"required":true,"complete":false,"step":"BANK_DETAILS"} }
   ```
   Clients route on `gates`; the server enforces the same gates on every protected endpoint.
+- `GET /auth/me` also returns `account: { lastLoginAt, supportContact, accessExpiresInSec }` (F-804, optional in the contract).
+- Web session lifecycle (F-804): the refresh cookie is `Path=/api/v1/auth` on the API, so web pages never see it. A protected web page without the access cookie goes to `/session?next=…`; that browser page calls `POST /auth/refresh` with credentials (cookie-only, no tokens in the body) and returns, or sends the user to `/login?reason=session-expired|deactivated|required&next=…`. Open web shells refresh two minutes before `accessExpiresInSec`. `POST /auth/logout-all` ends every session of the account.
+- `GET /notifications/:id/target` → `{ entityType, entityId, targetRole }` after a scope re-check; `targetRole` is set for `User` targets so the web opens the Telecaller or Advisor page.
 
 ## Headers
 `Authorization: Bearer <access>` (mobile) · cookie (web) · `Idempotency-Key: <uuid>` on POST/PUT that create side effects · `X-Request-Id` optional (echoed) · `X-Network-Ssid-Hint` optional (Telecaller mobile).
