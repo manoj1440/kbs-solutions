@@ -1,6 +1,6 @@
 # F-606 Payout reconciliation views and exception handling
 
-- Group: Payouts · Status: **PLANNED** · Depends on: F-605, F-602
+- Group: Payouts · Status: **IN_PROGRESS** · Depends on: F-605, F-602
 - PRD refs: REQ-17 §17.9 (same ledger across roles; approved outstanding vs paid), REQ-16 §16.2 (payout liability tile set), REQ-18 §18.3, REQ-23 §23.5, REQ-24 §24.1
 - QA ids: DASH-02 (payout population), PAY-07
 
