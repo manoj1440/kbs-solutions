@@ -27,7 +27,7 @@ describe('F-702 Manager dashboard (DASH-01, DASH-02)', () => {
     const adm = await prisma.user.findFirstOrThrow({ where: { role: 'ADMIN' } });
     const file = await prisma.storedFile.create({ data: { bucket: 'b', key: `k${++seq}`, sha256: 'x', originalName: 'c.xlsx', contentType: 'application/octet-stream', sizeBytes: 1, purpose: 'CUSTOMER_LIST', uploadedByUserId: adm.id } });
     const batch = await prisma.customerImportBatch.create({ data: { publicRef: makePublicRef(RefPrefix.IMPORT_BATCH), fileId: file.id, uploaderUserId: adm.id, checksum: `cb-${seq}` } });
-    const recs = [];
+    const recs: { id: string }[] = [];
     for (let i = 0; i < 4; i++) recs.push(await prisma.callingRecord.create({ data: { batchId: batch.id, sourceRowNumber: i + 1, fullName: `C ${seq}-${i}`, mobile: `+9196${String(++seq).padStart(8, '0')}`, pincode: '302001', resolvedState: 'Rajasthan', assignedTelecallerUserId: tcId, assignedAt: new Date(), ...(i === 3 ? { hiddenAt: new Date(), hiddenReason: 'closed' } : {}) } }));
     let k = 0;
     const attempt = async (data: object) => prisma.callAttempt.create({ data: { callingRecordId: recs[k++ % 3].id, telecallerUserId: tcId, providerKey: 'mock', targetMobileMasked: '+91••••••0000', idempotencyKey: idem(), ...data } });
