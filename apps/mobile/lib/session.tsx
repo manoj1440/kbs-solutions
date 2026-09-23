@@ -2,6 +2,8 @@ import type { Gates, MeResponse, UserSummary } from '@kbs/shared';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 
+import { onPushTap, registerForPush } from '@/lib/push';
+
 import { api, tokenStore } from './api';
 
 interface SessionState {
@@ -54,6 +56,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
     };
   }, [refresh]);
 
+  // F-701: tapping a push opens this role's notification centre
+  const role = me?.user?.role;
+  useEffect(() => onPushTap(role), [role]);
+
   const value = useMemo<SessionState>(
     () => ({
       status,
@@ -64,6 +70,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
       signIn: async (access, refreshToken) => {
         await tokenStore.set(access, refreshToken);
         await refresh();
+        void registerForPush(); // F-701: best effort, never blocks sign-in
       },
       signOut: async () => {
         await api.post('/auth/logout').catch(() => undefined);
