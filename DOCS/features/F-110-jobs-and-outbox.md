@@ -17,3 +17,4 @@
 
 ## Progress notes
 - 2026-09-22 (session 1): JobsService (BullMQ queues), OutboxService relay with deterministic job ids, worker mode boot. Pending: repeatable sweeps and processors (added by F-204/F-505/F-701) and the relay scheduler in worker mode.
+- Session 8: resuming — maintenance processor (outbox relay every 5 s, hourly payout hold release), drain workers for relayed queues, on-demand relay endpoint, queue/outbox health, worker-mode boot test.
