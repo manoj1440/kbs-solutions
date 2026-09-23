@@ -92,6 +92,11 @@ export function LoginForm({ next }: { next?: string }) {
       router.replace(next && next.startsWith('/') ? next : home);
       router.refresh();
     } catch (e) {
+      // F-801: Telecaller / Advisor accounts use the Android app — show the role-aware access screen, not a form error
+      if (e instanceof ApiClientError && e.error.code === 'AUTH_PLATFORM_NOT_ALLOWED') {
+        router.replace('/access-denied?reason=mobile-app');
+        return;
+      }
       const msg = e instanceof ApiClientError ? e.message : 'Could not verify the code.';
       setError(msg);
       if (

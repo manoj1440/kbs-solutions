@@ -41,10 +41,10 @@ export default async function ConfigPage() {
           Launch gates: {gates.data.length - open.length} of {gates.data.length} set
         </h2>
         {open.length ? (
-          <ul className="text-muted-foreground mt-2 grid gap-1 text-xs sm:grid-cols-2">
+          <ul className="text-muted-foreground mt-2 grid min-w-0 gap-1 text-xs sm:grid-cols-2">
             {open.map((g) => (
               <li key={g.key}>
-                <a className="font-mono underline" href={`#cfg-${g.key}`}>
+                <a className="font-mono break-all underline" href={`#cfg-${g.key}`}>
                   {g.key}
                 </a>
               </li>

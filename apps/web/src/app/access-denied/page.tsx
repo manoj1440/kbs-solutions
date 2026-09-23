@@ -5,11 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getSession } from '@/lib/api';
 
 /** Role-aware access error (REQ-25 §25.1). */
-export default async function AccessDenied() {
-  const session = await getSession();
+export default async function AccessDenied({ searchParams }: { searchParams: Promise<{ reason?: string }> }) {
+  const [session, sp] = await Promise.all([getSession(), searchParams]);
   const role = session?.user.role;
   const hint =
-    role === 'TELECALLER' || role === 'ADVISOR'
+    sp.reason === 'mobile-app' || role === 'TELECALLER' || role === 'ADVISOR'
       ? 'Your role uses the KBS Android app. The web application is for Admin, Manager and Accounts users.'
       : 'You do not have access to this area.';
   return (
