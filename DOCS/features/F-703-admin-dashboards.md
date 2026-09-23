@@ -1,6 +1,6 @@
 # F-703 Admin dashboards (executive, telecaller, manager, advisor, bank/card mix, payouts)
 
-- Group: Dashboards & notifications · Status: **PLANNED** · Depends on: F-702, F-507, F-606
+- Group: Dashboards & notifications · Status: **IN_PROGRESS** · Depends on: F-702, F-507, F-606
 - PRD refs: REQ-16 §16.2 (eight dashboards), §16.3 (formulas & guardrails; label date basis; never imply live bank status), REQ-01 §1.3, REQ-20 §20.4 (never hide conflicts behind green KPI)
 - QA ids: DASH-01, DASH-02
 
