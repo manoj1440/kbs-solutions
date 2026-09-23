@@ -1,5 +1,5 @@
 import { withMisApplyContext } from '@kbs/db';
-import { isBlankBankValue, maskName, MIS_DATE_FIELDS, MIS_PII_FIELDS, MIS_STATUS_FIELDS, MIS_TEXT_FIELDS, type MisResolveBody } from '@kbs/shared';
+import { formatDate, isBlankBankValue, maskName, MIS_DATE_FIELDS, MIS_NOTIFY_FIELD_LABEL, misChangeBody, MIS_PII_FIELDS, MIS_STATUS_FIELDS, MIS_TEXT_FIELDS, type MisResolveBody } from '@kbs/shared';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -182,6 +182,7 @@ export class MisPipelineService {
     const blankTokens = this.blankTokens();
     const rows = await this.prisma.client.misRow.findMany({ where: { batchId, matchState: 'MATCHED', appliedAt: null, ...(opts.onlyRowIds ? { id: { in: opts.onlyRowIds } } : {}) }, orderBy: { sourceRowNumber: 'asc' } });
     const changedLeads = new Map<string, string[]>();
+    const firstMatches = new Set<string>();
     const reviewEntitlements = new Set<string>();
     let updatedChanged = 0;
     let updatedNoChange = 0;
@@ -229,7 +230,10 @@ export class MisPipelineService {
           }
           const data = { ...textUpdates, ...dateUpdates, rawLatest: row.raw as object, lastMatchedBatchId: batchId, lastMatchedAt: batch.uploadedAt };
           if (snap) await tx.bankStatusSnapshot.update({ where: { leadId }, data });
-          else await tx.bankStatusSnapshot.create({ data: { leadId, bankId: batch.bankId, firstMatchedAt: batch.uploadedAt, ...data } });
+          else {
+            await tx.bankStatusSnapshot.create({ data: { leadId, bankId: batch.bankId, firstMatchedAt: batch.uploadedAt, ...data } });
+            firstMatches.add(leadId);
+          }
           for (const h of history) {
             await tx.bankStatusHistory.upsert({ where: { leadId_batchId_field: { leadId, batchId, field: h.field } }, create: { leadId, batchId, misRowId: row.id, field: h.field, oldValue: h.oldValue, newValue: h.newValue, changeKind: h.changeKind, reportedEventDate: h.reportedEventDate, importedAt: batch.uploadedAt, uploaderUserId: batch.uploaderUserId }, update: {} });
           }
@@ -265,10 +269,17 @@ export class MisPipelineService {
     // post-apply: outbox events only when something actually changed (MIS-08)
     if (changedLeads.size) {
       await this.prisma.client.outboxEvent.createMany({ data: [...changedLeads.entries()].map(([leadId, changedFields]) => ({ type: 'mis.lead.changed', payload: { leadId, batchId, changedFields, jobId: `mis.lead.changed:${batchId}:${leadId}` } })) });
+      // F-701 / REQ-19 §19.2: cite the raw fields that changed, their raw values and the accepted batch; Advisor, their Manager and Admin only
+      const batchDate = formatDate(batch.uploadedAt);
       for (const [leadId, changedFields] of changedLeads) {
-        const lead = await this.prisma.client.lead.findUniqueOrThrow({ where: { id: leadId }, select: { publicRef: true, advisorUserId: true, reportingParentUserIdSnapshot: true } });
-        const body = `Bank MIS reported an update for ${lead.publicRef} (${changedFields.filter((f) => (MIS_STATUS_FIELDS as readonly string[]).includes(f)).join(', ') || changedFields.length + ' fields'}).`;
-        await this.notifications.notify({ recipientUserId: lead.advisorUserId, kind: 'MIS_CHANGED', title: 'Bank status updated', body, deepLink: { entityType: 'Lead', entityId: leadId }, dedupeKey: `mis:changed:${batchId}:${leadId}` });
+        const lead = await this.prisma.client.lead.findUniqueOrThrow({ where: { id: leadId }, select: { publicRef: true, statusSnapshot: true } });
+        const snapValues = (lead.statusSnapshot ?? {}) as unknown as Record<string, string | null>;
+        const fields = changedFields.filter((f) => f in MIS_NOTIFY_FIELD_LABEL);
+        const changes = (fields.length ? fields : changedFields.filter((f) => (MIS_STATUS_FIELDS as readonly string[]).includes(f))).map((f) => ({ field: f, value: snapValues[f] ?? null }));
+        const firstMatch = firstMatches.has(leadId);
+        const body = misChangeBody({ kbsRef: lead.publicRef, batchRef: batch.publicRef, batchDate, changes, firstMatch });
+        const who = await this.notifications.leadAudience(leadId);
+        await this.notifications.notifyMany([who.advisorUserId, who.managerUserId, who.adminUserId], { kind: firstMatch ? 'MIS_MATCHED' : 'MIS_CHANGED', title: firstMatch ? 'Matched in bank MIS' : 'Bank MIS updated', body, deepLink: { entityType: 'Lead', entityId: leadId }, sourceRef: { batchId, fields: changes.map((c) => c.field) }, dedupeKey: `mis.lead.changed:${leadId}:${batchId}` });
       }
       if (reviewEntitlements.size) await this.prisma.client.outboxEvent.createMany({ data: [...reviewEntitlements].map((entitlementId) => ({ type: 'payouts.review', payload: { entitlementId, batchId, jobId: `payouts.review:${batchId}:${entitlementId}` } })) });
     }

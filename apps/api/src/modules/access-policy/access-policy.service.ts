@@ -1,3 +1,4 @@
+import { formatDateTime } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 import ipaddr from 'ipaddr.js';
 
@@ -6,6 +7,7 @@ import { AppError } from '../../common/errors/app-error';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface NetworkEvaluation {
   required: boolean;
@@ -21,6 +23,7 @@ export class AccessPolicyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async evaluate(actor: Pick<Actor, 'userId' | 'role'>, ip: string): Promise<NetworkEvaluation> {
@@ -92,6 +95,10 @@ export class AccessPolicyService {
       data: { telecallerUserId: target.id, grantedByUserId: actor.userId, startsAt: input.startsAt, endsAt: input.endsAt, reason: input.reason },
     });
     RequestContextStore.audit({ entityId: ex.id, after: { telecallerUserId: target.id, startsAt: ex.startsAt, endsAt: ex.endsAt } });
+    // F-701: Telecaller + their Manager (REQ-19 §19.1)
+    const until = ex.endsAt ? ` until ${formatDateTime(ex.endsAt)}` : ' until revoked';
+    const { managerUserId } = await this.notifications.chainOf(target.id);
+    await this.notifications.notifyMany([target.id, managerUserId], { kind: 'WFH_GRANTED', title: 'Work-from-home exception granted', body: `${target.fullName}: calling allowed outside the office network from ${formatDateTime(ex.startsAt)}${until}.`, deepLink: { entityType: 'User', entityId: target.id }, dedupeKey: `wfh:granted:${ex.id}` });
     return ex;
   }
   async revokeWfh(actor: Actor, id: string, reason: string) {
@@ -100,6 +107,9 @@ export class AccessPolicyService {
     if (ex.revokedAt) return ex;
     const updated = await this.prisma.client.wfhException.update({ where: { id }, data: { revokedAt: new Date(), revokedByUserId: actor.userId } });
     RequestContextStore.audit({ entityId: id, reason, after: { revokedAt: updated.revokedAt } });
+    const tc = await this.prisma.client.user.findUnique({ where: { id: ex.telecallerUserId }, select: { fullName: true } });
+    const { managerUserId } = await this.notifications.chainOf(ex.telecallerUserId);
+    await this.notifications.notifyMany([ex.telecallerUserId, managerUserId], { kind: 'WFH_REVOKED', title: 'Work-from-home exception revoked', body: `${tc?.fullName ?? 'Telecaller'}: calling is again limited to the office network. ${reason}`, deepLink: { entityType: 'User', entityId: ex.telecallerUserId }, dedupeKey: `wfh:revoked:${id}` });
     return updated;
   }
   listWfh(actor: Actor) {

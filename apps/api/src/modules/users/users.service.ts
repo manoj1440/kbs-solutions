@@ -132,6 +132,7 @@ export class UsersService {
       const r = await tx.user.update({ where: { id }, data: { status: 'DEACTIVATED' } });
       await tx.userLifecycleEvent.create({ data: { userId: id, eventType: 'DEACTIVATED', actorUserId: actor.userId, reason } });
       await tx.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: 'USER_DEACTIVATED' } });
+      await tx.pushDevice.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
       await tx.officialIdCard.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } }); // F-312: ID verifies as revoked
       return r;
     });

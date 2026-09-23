@@ -3,6 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { ENV, type Env } from '../config/env';
 
 import { ConsoleOtpAdapter } from './adapters/console-otp.adapter';
+import { ExpoPushAdapter } from './adapters/expo-push.adapter';
 import { HandoffWhatsAppAdapter } from './adapters/handoff-whatsapp.adapter';
 import { MemoryStorageAdapter } from './adapters/memory-storage.adapter';
 import { MockKycAdapter } from './adapters/mock-kyc.adapter';
@@ -22,7 +23,7 @@ import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER,
     { provide: WHATSAPP_PROVIDER, useFactory: () => new HandoffWhatsAppAdapter() },
     { provide: KYC_PROVIDER, useFactory: () => new MockKycAdapter() },
     { provide: PAN_PROVIDER, useFactory: () => new MockPanAdapter() },
-    { provide: PUSH_PROVIDER, useFactory: () => new MockPushAdapter() },
+    { provide: PUSH_PROVIDER, inject: [ENV], useFactory: (env: Env) => (env.PUSH_PROVIDER === 'expo' ? new ExpoPushAdapter(env.EXPO_ACCESS_TOKEN) : new MockPushAdapter()) },
     { provide: SCAN_PROVIDER, useFactory: () => new NoopScanAdapter() },
     {
       provide: STORAGE_PROVIDER,

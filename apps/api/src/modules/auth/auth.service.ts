@@ -10,6 +10,7 @@ import { OTP_PROVIDER, type OtpProvider } from '../../providers/ports';
 import { AuditService } from '../audit/audit.service';
 import { ConfigService } from '../config/config.service';
 import { GatesService } from '../gates/gates.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { HierarchyService } from '../users/hierarchy.service';
 import { UsersService } from '../users/users.service';
 
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly audit: AuditService,
     private readonly users: UsersService,
     private readonly hierarchy: HierarchyService,
+    private readonly notifications: NotificationsService,
     @Inject(OTP_PROVIDER) private readonly otp: OtpProvider,
     @Inject(ENV) private readonly env: Env,
   ) {}
@@ -116,6 +118,7 @@ export class AuthService {
       });
       if (this.config.getBool('auth.telecallerSingleSession')) {
         await this.prisma.client.session.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: 'NEW_LOGIN' } });
+        await this.notifications.revokeDevicesForSessions({ userId: user.id }); // F-701: old phone stops receiving pushes
       }
     }
 
@@ -157,6 +160,7 @@ export class AuthService {
 
   async logout(sessionId: string, all: boolean, userId: string) {
     await this.prisma.client.session.updateMany({ where: all ? { userId, revokedAt: null } : { id: sessionId }, data: { revokedAt: new Date(), revokedReason: all ? 'LOGOUT_ALL' : 'LOGOUT' } });
+    await this.notifications.revokeDevicesForSessions(all ? { userId } : { sessionId });
   }
 
   async me(actor: Actor, ip: string): Promise<{ user: unknown; gates: Gates; permissions: string[] }> {
@@ -199,7 +203,14 @@ export class AuthService {
     });
     return Boolean(lock);
   }
-  private async lock(_mobile: string): Promise<void> {
-    // Lock state is derived from the attempts counter + lockMinutes window (see isLocked); nothing extra to persist.
+  /** Lock state is derived from the attempts counter + lockMinutes window (see isLocked). F-701: tell Admin (privileged-security event, REQ-19 §19.1). */
+  private async lock(mobile: string): Promise<void> {
+    const user = await this.prisma.client.user.findUnique({ where: { mobile }, select: { id: true, role: true, publicRef: true } });
+    if (!user) return; // unknown numbers never generate account-revealing notifications
+    const adminId = await this.hierarchy.adminUserId().catch(() => null);
+    if (!adminId) return;
+    const window = Math.floor(Date.now() / ((this.config.getInt('auth.otp.lockMinutes') ?? 15) * 60_000));
+    await this.notifications.notify({ recipientUserId: adminId, kind: 'SECURITY_EVENT', title: 'Sign-in locked after wrong OTPs', body: `${user.role.toLowerCase()} ${user.publicRef} (${mobile}) hit the wrong-code limit; sign-in is locked for ${this.config.getInt('auth.otp.lockMinutes') ?? 15} minutes.`, deepLink: { entityType: 'User', entityId: user.id }, dedupeKey: `security:otp-lock:${user.id}:${window}` });
   }
+
 }
