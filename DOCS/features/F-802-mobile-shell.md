@@ -17,3 +17,4 @@
 
 ## Progress notes
 - 2026-09-22 (session 1): Expo Router tree, OTP screens, session provider (secure store, single-flight refresh, foreground re-check), gate screens, role tab areas, base UI. Pending: EAS/dev-client build verification on a device, offline banner, SSID hint wiring via expo-network.
+- Session 8: resuming — token store/refresher extracted and unit-tested across a simulated restart, offline banner, network-type hint for Telecallers.
