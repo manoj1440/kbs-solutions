@@ -119,7 +119,7 @@ export class FilesService {
    * Purpose-based read rules. Ownership of cheques/proofs/recordings is refined by the owning features
    * (F-401, F-605, F-309); until then only the uploader and Admin (and Accounts for cheques/proofs) may read them.
    */
-  private async canRead(actor: Actor, file: { purpose: string; uploadedByUserId: string }): Promise<boolean> {
+  private async canRead(actor: Actor, file: { id: string; purpose: string; uploadedByUserId: string }): Promise<boolean> {
     if (actor.role === 'ADMIN') return true;
     if (file.uploadedByUserId === actor.userId) return true;
     switch (file.purpose) {
@@ -128,8 +128,14 @@ export class FilesService {
       case 'BENEFIT_PDF':
         return true;
       case 'CHEQUE':
-      case 'PAYMENT_PROOF':
         return actor.role === 'ACCOUNTS';
+      case 'PAYMENT_PROOF': {
+        // F-605 / REQ-18 §18.2: Accounts; the relevant Manager (approver or team) for proofs linked to a request. Advisors get a receipt summary, never the proof.
+        if (actor.role === 'ACCOUNTS') return true;
+        if (actor.role !== 'MANAGER') return false;
+        const linked = await this.prisma.client.externalPayment.findFirst({ where: { proofFileId: file.id, request: { OR: [{ managerApproverUserId: actor.userId }, { advisorUserId: { in: actor.teamUserIds } }] } }, select: { id: true } });
+        return Boolean(linked);
+      }
       default:
         return false;
     }

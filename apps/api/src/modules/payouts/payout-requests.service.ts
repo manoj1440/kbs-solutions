@@ -1,5 +1,5 @@
 import type { CreatePayoutRequestBody, LedgerPosition, PayoutApprovalBody, PayoutRequestListQuery } from '@kbs/shared';
-import { makePublicRef, RefPrefix } from '@kbs/shared';
+import { makePublicRef, maskTransferReference, RefPrefix } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -12,13 +12,17 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { HierarchyService } from '../users/hierarchy.service';
 
 import { PayoutEligibilityService } from './eligibility.service';
+import { PAYMENT_QUEUE_WHERE } from './payment-queues';
 
 const requestInclude = {
   advisor: { select: { id: true, fullName: true } },
   items: { where: { active: true }, include: { entitlement: { include: { lead: { select: { id: true, publicRef: true, customerFullName: true } }, bank: { select: { code: true, displayName: true } }, card: { select: { name: true } }, rule: { select: { name: true, triggerField: true } }, evidenceBatch: { select: { publicRef: true, uploadedAt: true } } } } } },
   approvals: { include: { approver: { select: { id: true, fullName: true, role: true } } }, orderBy: { at: 'asc' as const } },
-  payment: { select: { id: true, paidAt: true, amountInr: true, transferReference: true, state: true, proofFileId: true } },
+  payments: { orderBy: { createdAt: 'asc' as const }, include: { recordedBy: { select: { id: true, fullName: true } } } },
 } as const;
+
+const LIVE = ['RECORDED', 'PROOF_PENDING', 'VERIFIED', 'EXCEPTION'];
+type PaymentRow = { id: string; state: string; paidAt: Date; amountInr: unknown; transferReference: string; method: string | null; proofFileId: string | null; proofAttachedAt: Date | null; recordedBy: { id: string; fullName: string }; createdAt: Date; exceptionReason: string | null; exceptionRaisedAt: Date | null; resolutionNote: string | null; resolvedAt: Date | null; correctionOfId: string | null; correctionReason: string | null; correctionDecidedAt: Date | null; correctionDecidedByUserId: string | null; correctionDecisionReason: string | null; supersededAt: Date | null };
 
 /**
  * F-603 — Advisor ledger + request creation with atomic reservation (REQ-17 §17.2–§17.3, INV-06, ADR-008).
@@ -200,7 +204,7 @@ export class PayoutRequestsService {
       cancelledAt: r.cancelledAt?.toISOString() ?? null,
       cancelReason: r.cancelReason,
       approvals: { manager: manager ? { by: manager.approver, decision: manager.decision, reason: manager.reason, at: manager.at.toISOString() } : null, admin: admin ? { by: admin.approver, decision: admin.decision, reason: admin.reason, at: admin.at.toISOString() } : null, outstanding, order },
-      me: { role: myRole, canApprove, canCancel: (actor.role === 'ADMIN' && !['PAID', 'CANCELLED', 'REJECTED'].includes(r.state)) || (r.advisorUserId === actor.userId && r.state === 'PENDING_APPROVALS' && r.approvals.length === 0 && this.config.getBool('payouts.advisorCanCancelBeforeApproval')) },
+      me: { role: myRole, canApprove, canCancel: (actor.role === 'ADMIN' && !['PAID', 'CANCELLED', 'REJECTED'].includes(r.state) && !r.payments.some((p) => LIVE.includes(p.state))) || (r.advisorUserId === actor.userId && r.state === 'PENDING_APPROVALS' && r.approvals.length === 0 && this.config.getBool('payouts.advisorCanCancelBeforeApproval')) },
       items: r.items.map((i) => ({
         id: i.id,
         entitlementId: i.entitlementId,
@@ -217,8 +221,67 @@ export class PayoutRequestsService {
         eligibleAt: i.entitlement.eligibleAt.toISOString(),
         priorRequests: prior.filter((p) => p.entitlement.leadId === i.entitlement.leadId).map((p) => ({ id: p.request.id, publicRef: p.request.publicRef, state: p.request.state, submittedAt: p.request.submittedAt.toISOString() })),
       })),
-      payment: r.payment ? { ...r.payment, amountInr: Number(r.payment.amountInr), paidAt: r.payment.paidAt.toISOString() } : null,
+      ...(await this.paymentSection(r, actor)),
       snapshot: r.snapshot,
+    };
+  }
+
+  /**
+   * F-605 payment trace. Admin/Accounts/Manager see every entry (corrections keep the prior one, REQ-18 §18.3);
+   * the Advisor sees only a privacy-safe receipt (REQ-18 §18.2). Payee bank summary only for Accounts/Admin.
+   */
+  private async paymentSection(r: { id: string; state: string; advisorUserId: string; totalAmountInr: unknown; holdReason: string | null; heldAt: Date | null; heldByUserId: string | null; paidAt: Date | null; payments: PaymentRow[] }, actor: Actor) {
+    const privileged = actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || actor.role === 'MANAGER';
+    const deciders = [...new Set(r.payments.map((p) => p.correctionDecidedByUserId).filter((x): x is string => Boolean(x)))];
+    const names = new Map((deciders.length ? await this.prisma.client.user.findMany({ where: { id: { in: deciders } }, select: { id: true, fullName: true } }) : []).map((u) => [u.id, u]));
+    const toView = (p: PaymentRow) => ({
+      id: p.id,
+      state: p.state,
+      paidAt: p.paidAt.toISOString(),
+      amountInr: Number(p.amountInr),
+      transferReference: p.transferReference,
+      method: p.method,
+      proofFileId: p.proofFileId,
+      proofAttachedAt: p.proofAttachedAt?.toISOString() ?? null,
+      recordedBy: p.recordedBy,
+      recordedAt: p.createdAt.toISOString(),
+      exceptionReason: p.exceptionReason,
+      exceptionRaisedAt: p.exceptionRaisedAt?.toISOString() ?? null,
+      resolutionNote: p.resolutionNote,
+      resolvedAt: p.resolvedAt?.toISOString() ?? null,
+      correctionOfId: p.correctionOfId,
+      correctionReason: p.correctionReason,
+      correctionDecision: p.correctionDecidedAt ? { by: p.correctionDecidedByUserId ? (names.get(p.correctionDecidedByUserId) ?? null) : null, at: p.correctionDecidedAt.toISOString(), reason: p.correctionDecisionReason } : null,
+      supersededAt: p.supersededAt?.toISOString() ?? null,
+    });
+    const live = r.payments.find((p) => LIVE.includes(p.state)) ?? null;
+    const pending = r.payments.find((p) => p.state === 'CORRECTION_PENDING') ?? null;
+    const proofRequired = this.config.getBool('payouts.proofRequiredForPaid') !== false;
+    const acc = actor.role === 'ACCOUNTS';
+    const adm = actor.role === 'ADMIN';
+    let payee = null;
+    if (acc || adm) {
+      const p = await this.prisma.client.advisorProfile.findUnique({ where: { userId: r.advisorUserId }, select: { accountHolderName: true, bankName: true, ifsc: true, bankAccountLast4: true, reviewOutcome: true, onboardingStep: true } });
+      payee = p ? { accountHolderName: p.accountHolderName, bankName: p.bankName, ifsc: p.ifsc, accountMasked: p.bankAccountLast4 ? `••••••${p.bankAccountLast4}` : null, verified: p.reviewOutcome === 'APPROVED' && p.onboardingStep === 'COMPLETE', canReveal: actor.permissions.includes('SENSITIVE_REVEAL_BANK') } : null;
+    }
+    return {
+      /** Advisor-safe confirmation (every viewer gets it). */
+      receipt: live ? { state: live.state, paidAt: live.paidAt.toISOString(), amountInr: Number(live.amountInr), transferReferenceMasked: maskTransferReference(live.transferReference), method: live.method } : null,
+      payment: privileged && live ? toView(live) : null,
+      pendingCorrection: privileged && pending ? toView(pending) : null,
+      paymentHistory: privileged ? r.payments.map(toView) : [],
+      paidAt: r.paidAt?.toISOString() ?? null,
+      hold: privileged && r.holdReason ? { reason: r.holdReason, at: r.heldAt?.toISOString() ?? null, byUserId: r.heldByUserId } : null,
+      payee,
+      payments: {
+        proofRequired,
+        canRecord: acc && r.state === 'APPROVED' && !live,
+        canAttachProof: acc && r.state === 'PAYMENT_RECORDED_PENDING_PROOF' && live?.state === 'PROOF_PENDING',
+        canCorrect: acc && Boolean(live) && !pending,
+        canDecideCorrection: adm && Boolean(pending),
+        canFlag: (acc || adm) && ((r.state === 'APPROVED' && !live) || (r.state === 'PAID' && live?.state === 'VERIFIED')),
+        canResolve: adm && ((r.state === 'ON_HOLD' && !live) || (r.state === 'PAID' && live?.state === 'EXCEPTION')),
+      },
     };
   }
 
@@ -226,13 +289,14 @@ export class PayoutRequestsService {
     const scope =
       actor.role === 'ADVISOR' ? { advisorUserId: actor.userId } : actor.role === 'MANAGER' ? { OR: [{ managerApproverUserId: actor.userId }, { advisorUserId: { in: actor.teamUserIds } }] } : actor.role === 'ACCOUNTS' ? { state: { in: ['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'] as never[] } } : {};
     const awaiting = q.awaitingMe ? (actor.role === 'ADMIN' ? { state: 'PENDING_APPROVALS' as const, approvals: { none: { approverRole: 'ADMIN' as const } } } : { state: 'PENDING_APPROVALS' as const, managerApproverUserId: actor.userId, approvals: { none: { approverRole: 'MANAGER' as const } } }) : {};
-    const where = { AND: [scope, awaiting, q.state ? { state: q.state } : {}, q.advisorId ? { advisorUserId: q.advisorId } : {}] };
+    const queue = q.queue ? PAYMENT_QUEUE_WHERE[q.queue] : {};
+    const where = { AND: [scope, awaiting, queue, q.state ? { state: q.state } : {}, q.advisorId ? { advisorUserId: q.advisorId } : {}] };
     const [rows, total] = await Promise.all([
-      this.prisma.client.payoutRequest.findMany({ where, orderBy: { submittedAt: 'desc' }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: { advisor: { select: { id: true, fullName: true } }, approvals: { select: { approverRole: true, decision: true, at: true } }, payment: { select: { state: true, paidAt: true } } } }),
+      this.prisma.client.payoutRequest.findMany({ where, orderBy: { submittedAt: 'desc' }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: { advisor: { select: { id: true, fullName: true } }, approvals: { select: { approverRole: true, decision: true, at: true } }, payments: { select: { state: true, paidAt: true, amountInr: true }, orderBy: { createdAt: 'asc' } } } }),
       this.prisma.client.payoutRequest.count({ where }),
     ]);
     return new Paginated(
-      rows.map((r) => ({ id: r.id, publicRef: r.publicRef, state: r.state, advisor: r.advisor, itemCount: r.itemCount, totalAmountInr: Number(r.totalAmountInr), submittedAt: r.submittedAt.toISOString(), approvals: r.approvals.map((a) => ({ role: a.approverRole, decision: a.decision, at: a.at.toISOString() })), outstanding: r.state === 'PENDING_APPROVALS' ? ['MANAGER', 'ADMIN'].filter((role) => !r.approvals.some((a) => a.approverRole === role && a.decision === 'APPROVED')) : [], payment: r.payment })),
+      rows.map((r) => ({ id: r.id, publicRef: r.publicRef, state: r.state, advisor: r.advisor, itemCount: r.itemCount, totalAmountInr: Number(r.totalAmountInr), submittedAt: r.submittedAt.toISOString(), approvals: r.approvals.map((a) => ({ role: a.approverRole, decision: a.decision, at: a.at.toISOString() })), outstanding: r.state === 'PENDING_APPROVALS' ? ['MANAGER', 'ADMIN'].filter((role) => !r.approvals.some((a) => a.approverRole === role && a.decision === 'APPROVED')) : [], holdReason: actor.role === 'ADVISOR' ? null : r.holdReason, paidAt: r.paidAt?.toISOString() ?? null, payment: ((p) => (p ? { state: p.state, paidAt: p.paidAt.toISOString(), amountInr: Number(p.amountInr) } : null))(r.payments.find((p) => LIVE.includes(p.state))), correctionPending: r.payments.some((p) => p.state === 'CORRECTION_PENDING') })),
       q.page,
       q.pageSize,
       total,
@@ -285,7 +349,7 @@ export class PayoutRequestsService {
 
   /** Advisor: before any approval (config); Admin: any time before PAID. Releases items. */
   async cancel(actor: Actor, id: string, reason: string) {
-    const r = await this.prisma.client.payoutRequest.findUnique({ where: { id }, include: { approvals: true, payment: { select: { id: true } }, items: { where: { active: true }, select: { entitlementId: true } } } });
+    const r = await this.prisma.client.payoutRequest.findUnique({ where: { id }, include: { approvals: true, payments: { select: { id: true, state: true } }, items: { where: { active: true }, select: { entitlementId: true } } } });
     if (!r || !this.canSee(actor, r)) throw AppError.notFound('Payout request');
     if (['PAID', 'CANCELLED', 'REJECTED'].includes(r.state)) throw new AppError('PAYOUT_STATE_INVALID', `Request is ${r.state}.`);
     const isAdvisor = r.advisorUserId === actor.userId;
@@ -294,7 +358,7 @@ export class PayoutRequestsService {
       if (!this.config.getBool('payouts.advisorCanCancelBeforeApproval')) throw new AppError('RBAC_FORBIDDEN', 'Advisor cancellation is disabled.');
       if (r.state !== 'PENDING_APPROVALS' || r.approvals.length > 0) throw new AppError('PAYOUT_STATE_INVALID', 'The request already has an approval decision; ask Admin to cancel.');
     }
-    if (r.payment) throw new AppError('PAYOUT_STATE_INVALID', 'A payment record exists; resolve it as an exception instead.');
+    if (r.payments.some((p) => LIVE.includes(p.state))) throw new AppError('PAYOUT_STATE_INVALID', 'A payment record exists; resolve it as an exception instead.');
     const entitlementIds = r.items.map((i) => i.entitlementId);
     await this.prisma.client.$transaction([
       this.prisma.client.payoutRequest.update({ where: { id }, data: { state: 'CANCELLED', cancelledAt: new Date(), cancelledByUserId: actor.userId, cancelReason: reason } }),
