@@ -3,8 +3,8 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 
 import type { PrismaService } from '../src/infra/prisma/prisma.service';
-import { MemoryStorageAdapter } from '../src/providers/adapters/memory-storage.adapter';
 import { MaintenanceProcessor } from '../src/modules/maintenance/maintenance.processor';
+import { MemoryStorageAdapter } from '../src/providers/adapters/memory-storage.adapter';
 import { STORAGE_PROVIDER } from '../src/providers/ports';
 
 import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase } from './helpers';

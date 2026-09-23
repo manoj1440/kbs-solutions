@@ -34,6 +34,7 @@ interface CategoryPlan {
 }
 interface Plan {
   executionEnabled: boolean;
+  scheduleEnabled: boolean;
   neverRemoved: string[];
   categories: CategoryPlan[];
 }
@@ -89,6 +90,14 @@ export default async function RetentionPage() {
       <Card>
         <CardHeader>
           <CardTitle>Dry run</CardTitle>
+          <CardDescription>
+            Nightly run (02:00 IST):{' '}
+            <Badge variant={plan.scheduleEnabled && plan.executionEnabled ? 'success' : 'unknown'}>
+              {plan.scheduleEnabled && plan.executionEnabled ? 'on' : 'off'}
+            </Badge>{' '}
+            — needs <span className="font-mono">retention.scheduleEnabled</span> and{' '}
+            <span className="font-mono">retention.executionEnabled</span>; only categories with a set duration run.
+          </CardDescription>
           <CardDescription>
             Counts are computed live and change nothing. Protected items are kept for a legitimate
             obligation (payout proofs, live cheques and ID cards, MIS files still being processed,
