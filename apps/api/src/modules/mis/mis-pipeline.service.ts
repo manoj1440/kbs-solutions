@@ -36,6 +36,12 @@ export function matchRow(refs: RefValue[], linkages: Map<string, string>): { sta
 }
 
 /** F-503 preview + F-504 match/resolve + F-505 apply. `apply()` is the ONLY code path that writes bank status (INV-01). */
+/** F-508: progress callback (phase, rows done, rows total); callers throttle. */
+export type MisProgress = (phase: 'match' | 'apply' | 'payouts', done: number, total: number) => Promise<void> | void;
+
+export const PREVIEW_STAGES = ['MAPPED', 'PREVIEWED'] as const;
+export const APPLY_STAGES = ['PREVIEWED', 'MAPPED', 'APPLYING', 'FAILED'] as const;
+
 @Injectable()
 export class MisPipelineService {
   private readonly log = new Logger(MisPipelineService.name);
@@ -57,11 +63,12 @@ export class MisPipelineService {
   }
 
   /** Runs matching for every row that is not already resolved (MATCHED by Admin / IGNORED keep their state). */
-  async match(batchId: string) {
+  async match(batchId: string, onProgress?: MisProgress) {
     const batch = await this.prisma.client.misImportBatch.findUniqueOrThrow({ where: { id: batchId } });
-    if (!['MAPPED', 'PREVIEWED'].includes(batch.stage)) throw new AppError('MIS_BATCH_STAGE_INVALID', `Batch is ${batch.stage}; matching runs on MAPPED/PREVIEWED batches.`);
+    // FAILED = an apply that stopped part-way (F-508 retry): re-match only rows not yet applied
+    if (![...PREVIEW_STAGES, 'FAILED'].includes(batch.stage as never)) throw new AppError('MIS_BATCH_STAGE_INVALID', `Batch is ${batch.stage}; matching runs on MAPPED/PREVIEWED batches.`);
     const linkages = await this.linkageMap(batch.bankId);
-    const rows = await this.prisma.client.misRow.findMany({ where: { batchId, matchState: { in: ['PENDING', 'MATCHED', 'UNMATCHED', 'CONFLICT'] }, resolution: null }, select: { id: true, referenceValues: true, mapped: true } });
+    const rows = await this.prisma.client.misRow.findMany({ where: { batchId, matchState: { in: ['PENDING', 'MATCHED', 'UNMATCHED', 'CONFLICT'] }, resolution: null, appliedAt: null }, select: { id: true, referenceValues: true, mapped: true } });
     // divergent duplicates: same reference on ≥2 rows with different mapped status values
     const byRef = new Map<string, { id: string; sig: string }[]>();
     for (const r of rows) {
@@ -76,18 +83,20 @@ export class MisPipelineService {
     const divergent = new Set<string>();
     for (const [, list] of byRef) if (new Set(list.map((l) => l.sig)).size > 1) list.forEach((l) => divergent.add(l.id));
     let matched = 0;
+    let done = 0;
     for (const r of rows) {
       const refs = (r.referenceValues as unknown as RefValue[]) ?? [];
       const res = divergent.has(r.id) ? { state: 'CONFLICT' as MatchState, leadId: null, explanation: 'DUPLICATE_IN_BATCH_DIVERGENT: the same reference appears on several rows with different status values.' } : matchRow(refs, linkages);
       if (res.state === 'MATCHED') matched++;
       await this.prisma.client.misRow.update({ where: { id: r.id }, data: { matchState: res.state, matchedLeadId: res.leadId, matchExplanation: res.explanation } });
+      await onProgress?.('match', ++done, rows.length);
     }
     return { rows: rows.length, matched };
   }
 
   /** F-503: dry-run match + anomaly report; never returns PII unmasked. */
-  async preview(batchId: string) {
-    await this.match(batchId);
+  async preview(batchId: string, opts: { onProgress?: MisProgress } = {}) {
+    await this.match(batchId, opts.onProgress);
     const batch = await this.prisma.client.misImportBatch.findUniqueOrThrow({ where: { id: batchId }, include: { profile: { select: { knownValues: true } } } });
     const rows = await this.prisma.client.misRow.findMany({ where: { batchId }, select: { id: true, sourceRowNumber: true, matchState: true, matchExplanation: true, mapped: true, referenceValues: true, matchedLeadId: true } });
     const blankTokens = this.blankTokens();
@@ -174,10 +183,10 @@ export class MisPipelineService {
    * snapshot updated only for non-blank values (or blankOverwrites). Row-level `appliedAt` makes retries resume; identical
    * re-processing writes no new history because the (leadId, batchId, field) unique already exists.
    */
-  async apply(actor: Actor, batchId: string, opts: { onlyRowIds?: string[] } = {}) {
+  async apply(actor: Actor, batchId: string, opts: { onlyRowIds?: string[]; onProgress?: MisProgress } = {}) {
     const batch = await this.prisma.client.misImportBatch.findUniqueOrThrow({ where: { id: batchId }, include: { profile: true } });
-    if (!opts.onlyRowIds && !['PREVIEWED', 'MAPPED', 'APPLYING', 'FAILED'].includes(batch.stage)) throw new AppError('MIS_BATCH_STAGE_INVALID', `Batch is ${batch.stage}.`);
-    if (!opts.onlyRowIds && batch.stage !== 'APPLYING') await this.match(batchId);
+    if (!opts.onlyRowIds && !(APPLY_STAGES as readonly string[]).includes(batch.stage)) throw new AppError('MIS_BATCH_STAGE_INVALID', `Batch is ${batch.stage}.`);
+    if (!opts.onlyRowIds && batch.stage !== 'APPLYING') await this.match(batchId, opts.onProgress);
     await this.prisma.client.misImportBatch.update({ where: { id: batchId }, data: opts.onlyRowIds ? {} : { stage: 'APPLYING', error: null } });
     const blankTokens = this.blankTokens();
     const rows = await this.prisma.client.misRow.findMany({ where: { batchId, matchState: 'MATCHED', appliedAt: null, ...(opts.onlyRowIds ? { id: { in: opts.onlyRowIds } } : {}) }, orderBy: { sourceRowNumber: 'asc' } });
@@ -252,6 +261,7 @@ export class MisPipelineService {
         });
         if (changed.length) updatedChanged++;
         else updatedNoChange++;
+        await opts.onProgress?.('apply', updatedChanged + updatedNoChange, rows.length);
       }
 
       // FULL_SNAPSHOT: leads matched by an earlier batch of this bank but absent now → ABSENT_FROM_BATCH (values untouched)
@@ -269,7 +279,11 @@ export class MisPipelineService {
     });
 
     // F-602: evaluate every applied lead against the bank's payout rules (idempotent by eventKey; corrections → UNDER_REVIEW)
-    for (const row of rows) await this.eligibility.evaluateLead(row.matchedLeadId as string, batchId);
+    let evaluated = 0;
+    for (const row of rows) {
+      await this.eligibility.evaluateLead(row.matchedLeadId as string, batchId);
+      await opts.onProgress?.('payouts', ++evaluated, rows.length);
+    }
 
     // post-apply: outbox events only when something actually changed (MIS-08)
     if (changedLeads.size) {

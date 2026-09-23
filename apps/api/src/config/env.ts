@@ -12,6 +12,8 @@ export const EnvSchema = z.object({
   API_PORT: z.coerce.number().int().default(4000),
   WORKER_MODE: bool,
   JOBS_INLINE: bool,
+  /** F-508: where long jobs run — BullMQ queue (worker mode) or detached in this process. Default: queue in production. */
+  JOBS_DISPATCH: z.enum(['queue', 'local']).optional(),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   WEB_ORIGIN: z.string().default('http://localhost:3000'),
   /** Externally reachable API base (provider webhooks / redirect links). */
