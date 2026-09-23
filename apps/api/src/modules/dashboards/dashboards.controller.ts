@@ -22,6 +22,13 @@ export class DashboardsController {
     return this.metrics.compute(await this.metrics.scope(actor, q), q);
   }
 
+  /** F-315 Manager Advisor drill-down (Manager own team; Admin may pass managerId). */
+  @Get('manager/advisors')
+  @RequirePermission('DASHBOARD_MANAGER')
+  managerAdvisors(@CurrentActor() actor: Actor, @Query() raw: unknown) {
+    return this.admin.teamAdvisors(actor, DashboardQuery.parse(raw));
+  }
+
   // ── F-703 Admin dashboards ──
   @Get('admin/executive')
   @RequirePermission('DASHBOARD_ADMIN')

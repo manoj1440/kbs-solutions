@@ -153,4 +153,32 @@ describe('F-702 Manager dashboard / F-703 Admin dashboards (DASH-01, DASH-02)', 
     for (const t of team) expect(strip(await get(`/dashboards/admin/executive?managerId=${t.managerId}`, admin))).toEqual(strip(await get('/dashboards/manager', t.managerToken)));
     await get('/dashboards/admin/executive', team[0].managerToken, 403);
   });
+  it('F-315: Manager Advisor drill-down = F-702 engine per Advisor, own team only, three separate distributions, no ranking (DASH-02, RBAC-01)', async () => {
+    const [a, b] = team;
+    const mine = await get('/dashboards/manager/advisors', a.managerToken);
+    expect(mine.rows).toHaveLength(1);
+    const row = mine.rows[0];
+    expect(row.user).toMatchObject({ id: a.advisorId, fullName: 'Dash Advisor 0', status: 'ACTIVE' });
+    expect(row.user.mobileMasked).not.toContain('9555999900');
+    expect(row.reporting).toMatchObject({ source: 'AGENT_CODE', parent: { id: a.managerId } });
+    // same numbers as the Manager dashboard filtered to that Advisor
+    const one = await get(`/dashboards/manager?advisorId=${a.advisorId}`, a.managerToken);
+    expect(JSON.parse(JSON.stringify({ leads: row.leads, decision: row.decision, activation: row.activation, payouts: row.payouts }))).toEqual(JSON.parse(JSON.stringify({ leads: one.advisors.leads, decision: one.advisors.decision, activation: one.advisors.activation, payouts: one.advisors.payouts })));
+    expect(row.leads).toMatchObject({ created: { value: 4 }, misMatched: { value: 3, denominator: { value: 4 } }, awaitingMis: { value: 1 } });
+    const buckets = (d: { buckets: { value: string; count: number }[] }) => Object.fromEntries(d.buckets.map((x) => [x.value, x.count]));
+    expect(buckets(row.decision)).toEqual({ Approve: 2, Decline: 1, 'Awaiting MIS': 1 });
+    expect(buckets(row.activation)).toEqual({ 'V + ACTIVE': 1, 'Not reported': 2, 'Awaiting MIS': 1 });
+    expect(buckets(row.stage)).toEqual({ 'Decisioned Cases': 3, 'Awaiting MIS': 1 });
+    expect(row.awaitingManagerApproval).toBe(0);
+    expect(Object.keys(row).filter((k) => /rank|score/i.test(k))).toEqual([]);
+    // scope: another team's Advisor is invisible; Admin sees any team; Telecaller is refused
+    await get(`/dashboards/manager/advisors?advisorId=${b.advisorId}`, a.managerToken, 404);
+    await get(`/dashboards/manager/advisors?managerId=${b.managerId}`, a.managerToken, 404);
+    const adminView = await get(`/dashboards/manager/advisors?managerId=${b.managerId}`, admin);
+    expect(adminView.rows.map((r: { user: { id: string } }) => r.user.id)).toEqual([b.advisorId]);
+    expect((await get('/dashboards/manager/advisors', admin)).rows).toHaveLength(2);
+    const tc = await prisma.user.findUniqueOrThrow({ where: { id: a.telecallerId } });
+    const tcToken = (await loginAs(app, prisma, tc.mobile.replace('+91', ''))).accessToken;
+    await get('/dashboards/manager/advisors', tcToken, 403);
+  });
 });

@@ -1,4 +1,4 @@
-import type { DashboardQuery } from '@kbs/shared';
+import { type DashboardQuery, maskMobile } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -83,6 +83,49 @@ export class AdminDashboardsService {
       rows.push({ user: u, leads: a.leads, decision: a.decision, activation: a.activation, payouts: a.payouts });
     }
     return { rows, meta: await this.metrics.meta(q) };
+  }
+
+  /**
+   * F-315: per-Advisor drill-down for a Manager's own team (Admin: any team via managerId). Same F-702 engine per
+   * Advisor, so the numbers equal the Manager dashboard filtered to that Advisor. Evidence only — no score or rank.
+   */
+  async teamAdvisors(actor: Actor, q: DashboardQuery) {
+    const scope = await this.metrics.scope(actor, q);
+    const people = await this.prisma.client.user.findMany({
+      where: { role: 'ADVISOR', ...(scope.advisorIds ? { id: { in: scope.advisorIds } } : {}) },
+      select: {
+        id: true,
+        fullName: true,
+        publicRef: true,
+        status: true,
+        mobile: true,
+        createdAt: true,
+        reportingAsChild: { where: { effectiveTo: null, status: 'ACTIVE' }, orderBy: { effectiveFrom: 'desc' }, take: 1, select: { source: true, effectiveFrom: true, parent: { select: { id: true, fullName: true } }, agentCode: { select: { code: true } } } },
+      },
+      orderBy: { fullName: 'asc' },
+    });
+    const ids = people.map((p) => p.id);
+    const awaiting = ids.length
+      ? await this.prisma.client.payoutRequest.groupBy({ by: ['advisorUserId'], where: { advisorUserId: { in: ids }, state: 'PENDING_APPROVALS', approvals: { none: { approverRole: 'MANAGER' } } }, _count: { _all: true } })
+      : [];
+    const awaitingMap = new Map(awaiting.map((a) => [a.advisorUserId, a._count._all]));
+    const rows = [];
+    for (const u of people) {
+      const a = await this.metrics.advisors({ telecallerIds: [], advisorIds: [u.id], label: u.fullName }, q);
+      const r = u.reportingAsChild[0];
+      rows.push({
+        user: { id: u.id, fullName: u.fullName, publicRef: u.publicRef, status: u.status, mobileMasked: maskMobile(u.mobile), joinedAt: u.createdAt.toISOString() },
+        reporting: r ? { source: r.source, since: r.effectiveFrom.toISOString(), parent: r.parent, agentCode: r.agentCode?.code ?? null } : null,
+        leads: a.leads,
+        stage: a.stage,
+        decision: a.decision,
+        activation: a.activation,
+        bankReasons: a.bankReasons,
+        payouts: a.payouts,
+        awaitingManagerApproval: awaitingMap.get(u.id) ?? 0,
+      });
+    }
+    return { scope: scope.label, rows, meta: await this.metrics.meta(q) };
   }
 
   async managers(actor: Actor, q: DashboardQuery) {
