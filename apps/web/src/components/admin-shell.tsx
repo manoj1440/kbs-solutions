@@ -57,6 +57,14 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
     ],
   },
   {
+    label: 'Dashboards',
+    items: [
+      { href: '/admin/dashboards', label: 'Executive dashboard', icon: LayoutDashboard },
+      { href: '/admin/dashboards/telecallers', label: 'Team performance', icon: Users },
+      { href: '/admin/dashboards/bank-card-mix', label: 'Bank / card mix', icon: CreditCard },
+    ],
+  },
+  {
     label: 'Bank data & finance',
     items: [
       { href: '/admin/mis', label: 'MIS imports', icon: FileSpreadsheet },

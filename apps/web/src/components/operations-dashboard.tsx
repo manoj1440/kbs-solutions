@@ -36,6 +36,7 @@ export interface OpsDashboard {
     bankReasons: { leadsWithReason: Metric; top: { value: string; count: number }[] };
     payouts: Record<'eligible' | 'available' | 'requested' | 'approvedUnpaid' | 'onHold' | 'paid' | 'confirmedTransfersInr', Metric>;
   };
+  alerts?: { kind: string; count: number; message: string; href: string }[];
   meta: { from: string | null; to: string | null; misFreshness: { bank: { code: string; displayName: string }; lastAppliedAt: string | null }[]; asOf: string; note: string };
 }
 interface UserRow {
@@ -211,6 +212,16 @@ export async function OperationsDashboard({ basePath, sp, title, endpoint, extra
           </Badge>
         ))}
       </div>
+      {d.alerts?.length ? (
+        <div role="alert" className="grid gap-1 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <strong>Needs attention</strong>
+          {d.alerts.map((al) => (
+            <Link key={al.kind} href={al.href} className="underline underline-offset-2">
+              {al.message}
+            </Link>
+          ))}
+        </div>
+      ) : null}
       {extra}
       <section className="grid gap-3" aria-labelledby="calling-h">
         <h2 id="calling-h" className="text-lg font-semibold">
