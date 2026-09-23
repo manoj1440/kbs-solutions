@@ -1,7 +1,7 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 /* Shared design tokens (F-006): shadcn variable names + KBS provenance/status extras */
-@import "@kbs/ui-tokens/css";
+@import '@kbs/ui-tokens/css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -53,5 +53,87 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+  }
+}
+
+.admin-workspace,
+.admin-login {
+  --primary: 175 77% 26%;
+  --ring: 175 77% 26%;
+  --foreground: 219 37% 17%;
+  --border: 216 24% 90%;
+  --input: 216 24% 85%;
+  --muted-foreground: 215 16% 43%;
+  --accent: 170 35% 95%;
+  --radius: 8px;
+}
+
+.admin-content > *,
+.admin-content [data-slot='card'],
+.admin-content [data-slot='card-content'] {
+  min-width: 0;
+}
+
+.admin-workspace [data-slot='card'] {
+  border-radius: 16px;
+  box-shadow: 0 2px 4px rgb(15 23 42 / 2%);
+}
+
+.admin-content h1 {
+  letter-spacing: -0.035em;
+}
+
+.admin-content select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-content [data-slot='card-title'] {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.admin-content [data-slot='card-description'] {
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.admin-content [data-slot='table-header'] {
+  background: #f8fafc;
+}
+
+.admin-content [data-slot='table-head'] {
+  height: 44px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.admin-content [data-slot='table-cell'] {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  font-size: 12px;
+}
+
+.admin-content [data-slot='table-container'] {
+  border-radius: 10px;
+  background: white;
+}
+
+.admin-workspace a:focus-visible,
+.admin-workspace summary:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 3px;
+}
+
+.admin-workspace dialog::backdrop {
+  backdrop-filter: blur(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-workspace *,
+  .admin-login * {
+    animation: none !important;
+    transition: none !important;
   }
 }
