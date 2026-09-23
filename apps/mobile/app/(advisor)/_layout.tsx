@@ -1,9 +1,14 @@
-import { Redirect, Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import { Redirect, router, Tabs } from 'expo-router';
 
+import { TabBar, type TabSpec } from '@/components/tab-bar';
 import { routeFor, useSession } from '@/lib/session';
 
-const ICONS: Record<string, string> = { index: '🏠', leads: '📋', cards: '💳', payouts: '💰', profile: '☰' };
+const TABS: TabSpec[] = [
+  { name: 'index', label: 'Home', icon: 'home-outline', iconActive: 'home' },
+  { name: 'leads', label: 'Leads', icon: 'document-text-outline', iconActive: 'document-text' },
+  { name: 'cards', label: 'Cards', icon: 'card-outline', iconActive: 'card' },
+  { name: 'payouts', label: 'Earnings', icon: 'wallet-outline', iconActive: 'wallet' },
+];
 
 /** Role area: re-checks gates on every render so a revoked gate bounces the user out (F-111). */
 export default function AdvisorLayout() {
@@ -14,18 +19,16 @@ export default function AdvisorLayout() {
   if (target !== '/(advisor)') return <Redirect href={target as never} />;
   return (
     <Tabs
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: '#16329E',
-        tabBarIcon: ({ focused }) => <Text style={{ opacity: focused ? 1 : 0.45 }}>{ICONS[route.name] ?? '•'}</Text>,
-      })}
+      backBehavior="history"
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: '#F4F6FB' } }}
+      tabBar={(props) => <TabBar {...props} tabs={TABS} center={{ icon: 'add', label: 'New lead', onPress: () => router.push('/(advisor)/cards' as never) }} />}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="leads" options={{ title: 'Leads' }} />
       <Tabs.Screen name="cards" options={{ title: 'Cards' }} />
       <Tabs.Screen name="payouts" options={{ title: 'Earnings' }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
-      <Tabs.Screen name="profile" options={{ title: 'More' }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="pending" options={{ href: null }} />
       <Tabs.Screen name="card" options={{ href: null }} />
       <Tabs.Screen name="lead-new" options={{ href: null }} />
