@@ -3,7 +3,14 @@ import { type CallingQueueRow, formatDateTime } from '@kbs/shared';
 import { ReassignForm } from '@/components/reassign-form';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 
 export interface DistributionRow {
@@ -23,10 +30,20 @@ interface Distribution {
 }
 
 /** F-305 §6 / F-307 §4: distribution + scoped records with reassignment (Manager: team; Admin: all). */
-export async function CallingDistribution({ scope, telecallerId, tab = 'active' }: { scope: 'manager' | 'admin'; telecallerId?: string; tab?: 'active' | 'followups' | 'hidden' }) {
+export async function CallingDistribution({
+  scope,
+  telecallerId,
+  tab = 'active',
+}: {
+  scope: 'manager' | 'admin';
+  telecallerId?: string;
+  tab?: 'active' | 'followups' | 'hidden';
+}) {
   const [dist, records] = await Promise.all([
     apiFetch<Distribution>('/calling/distribution'),
-    apiFetch<CallingQueueRow[]>(`/calling/records?tab=${tab}&pageSize=100${telecallerId ? `&telecallerId=${telecallerId}` : ''}`),
+    apiFetch<CallingQueueRow[]>(
+      `/calling/records?tab=${tab}&pageSize=100${telecallerId ? `&telecallerId=${telecallerId}` : ''}`,
+    ),
   ]);
   const base = scope === 'manager' ? '/manager/calling' : '/admin/calling-list/distribution';
   const eligible = dist.data.telecallers.filter((t) => t.eligible);
@@ -36,11 +53,15 @@ export async function CallingDistribution({ scope, telecallerId, tab = 'active' 
         <CardHeader>
           <CardTitle>Distribution</CardTitle>
           <CardDescription>
-            Active records per Telecaller{dist.data.unassigned !== null ? ` · ${dist.data.unassigned} accepted records unassigned (no eligible Telecaller or consent gate)` : ''}. Deactivated Telecallers still holding records are flagged — reassign them.
+            Active records per Telecaller
+            {dist.data.unassigned !== null
+              ? ` · ${dist.data.unassigned} accepted records unassigned (no eligible Telecaller or consent gate)`
+              : ''}
+            . Deactivated Telecallers still holding records are flagged — reassign them.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>Telecaller</TableHead>
@@ -48,28 +69,42 @@ export async function CallingDistribution({ scope, telecallerId, tab = 'active' 
                 <TableHead>Eligible</TableHead>
                 <TableHead>Active</TableHead>
                 <TableHead>Breakdown</TableHead>
-                <TableHead />
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {dist.data.telecallers.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell>
-                    {t.fullName} {t.employeeCode ? <span className="text-muted-foreground text-xs">· {t.employeeCode}</span> : null}
+                  <TableCell data-label="Telecaller">
+                    <div className="font-medium">{t.fullName}</div>
+                    {t.employeeCode ? (
+                      <div className="text-muted-foreground mt-1 text-xs">{t.employeeCode}</div>
+                    ) : null}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{t.status}</Badge>
+                  <TableCell data-label="Status">
+                    <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>
+                      {t.status}
+                    </Badge>
                   </TableCell>
-                  <TableCell>{t.eligible ? <Badge variant="success">trained</Badge> : <Badge variant="warning">{t.trained ? 'inactive' : 'training pending'}</Badge>}</TableCell>
-                  <TableCell>
-                    {t.active} {t.needsReassignment ? <Badge variant="destructive">needs reassignment</Badge> : null}
+                  <TableCell data-label="Eligibility">
+                    {t.eligible ? (
+                      <Badge variant="success">trained</Badge>
+                    ) : (
+                      <Badge variant="warning">{t.trained ? 'inactive' : 'training pending'}</Badge>
+                    )}
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Active records">
+                    {t.active}{' '}
+                    {t.needsReassignment ? (
+                      <Badge variant="destructive">needs reassignment</Badge>
+                    ) : null}
+                  </TableCell>
+                  <TableCell data-label="Breakdown" className="text-xs">
                     {Object.entries(t.byStatus)
                       .map(([k, n]) => `${k.toLowerCase().replace('_', ' ')} ${n}`)
                       .join(' · ') || '—'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Actions">
                     <a className="text-xs underline" href={`${base}?telecallerId=${t.id}`}>
                       view records
                     </a>
@@ -85,19 +120,23 @@ export async function CallingDistribution({ scope, telecallerId, tab = 'active' 
           <CardTitle>Records{telecallerId ? ' — selected Telecaller' : ''}</CardTitle>
           <CardDescription>
             {(['active', 'followups', 'hidden'] as const).map((t) => (
-              <a key={t} className={`mr-3 underline ${t === tab ? 'font-semibold' : ''}`} href={`${base}?tab=${t}${telecallerId ? `&telecallerId=${telecallerId}` : ''}`}>
+              <a
+                key={t}
+                className={`mr-3 underline ${t === tab ? 'font-semibold' : ''}`}
+                href={`${base}?tab=${t}${telecallerId ? `&telecallerId=${telecallerId}` : ''}`}
+              >
                 {t}
               </a>
             ))}
-            · {String(records.meta.total ?? records.data.length)} rows · mobiles masked (REQ-08 §8.3)
+            · {String(records.meta.total ?? records.data.length)} rows · mobiles masked (REQ-08
+            §8.3)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table responsive>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Mobile</TableHead>
+                <TableHead>Customer / mobile</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Assigned to</TableHead>
@@ -108,28 +147,51 @@ export async function CallingDistribution({ scope, telecallerId, tab = 'active' 
             <TableBody>
               {records.data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-muted-foreground text-center">
+                  <TableCell colSpan={6} className="text-muted-foreground text-center">
                     No records.
                   </TableCell>
                 </TableRow>
               ) : null}
               {records.data.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell>{r.fullName}</TableCell>
-                  <TableCell className="font-mono text-xs">{r.mobileMasked}</TableCell>
-                  <TableCell className="text-xs">
-                    {r.pincode} · {r.location}
+                  <TableCell data-label="Customer / mobile">
+                    <div className="font-medium">{r.fullName}</div>
+                    <div className="text-muted-foreground mt-1 font-mono text-xs">
+                      {r.mobileMasked}
+                    </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Location" className="text-xs">
+                    <div>{r.pincode}</div>
+                    <div className="text-muted-foreground mt-1">{r.location}</div>
+                  </TableCell>
+                  <TableCell data-label="Status">
                     <Badge variant="secondary">{r.interactionStatus}</Badge>
                     {r.suppressed ? <Badge variant="destructive">DNC</Badge> : null}
                   </TableCell>
-                  <TableCell className="text-xs">{r.assignedTelecaller?.fullName ?? <em>unassigned</em>}</TableCell>
-                  <TableCell className="text-xs">
-                    {r.nextFollowUpAt ? `due ${formatDateTime(r.nextFollowUpAt)}` : ''}
-                    {r.lastOutcome ? ` ${r.lastOutcome.outcome}${r.lastOutcome.remarks ? ` — ${r.lastOutcome.remarks}` : ''}` : ''}
+                  <TableCell data-label="Assigned to" className="text-xs">
+                    {r.assignedTelecaller?.fullName ?? <em>unassigned</em>}
                   </TableCell>
-                  <TableCell>{r.hiddenAt ? null : <ReassignForm recordId={r.id} currentId={r.assignedTelecaller?.id ?? null} options={eligible.map((t) => ({ id: t.id, label: t.fullName }))} />}</TableCell>
+                  <TableCell data-label="Follow-up / last outcome" className="text-xs">
+                    <div>
+                      {r.nextFollowUpAt
+                        ? `Due ${formatDateTime(r.nextFollowUpAt)}`
+                        : 'No follow-up scheduled'}
+                    </div>
+                    <div className="text-muted-foreground mt-1">
+                      {r.lastOutcome
+                        ? `${r.lastOutcome.outcome}${r.lastOutcome.remarks ? ` — ${r.lastOutcome.remarks}` : ''}`
+                        : 'No outcome recorded'}
+                    </div>
+                  </TableCell>
+                  <TableCell data-label="Reassign">
+                    {r.hiddenAt ? null : (
+                      <ReassignForm
+                        recordId={r.id}
+                        currentId={r.assignedTelecaller?.id ?? null}
+                        options={eligible.map((t) => ({ id: t.id, label: t.fullName }))}
+                      />
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
