@@ -38,3 +38,19 @@
 
 ## Definition of done for a feature file
 Status `DONE` only when: acceptance criteria checked, tests named in the file pass, docs updated (data model/api if changed), PROGRESS.md updated, committed.
+
+## Flaky tests (F-901 quarantine policy)
+- A test that fails intermittently on `main` is **quarantined**, not deleted: append ` [quarantine]` to its title and open a follow-up in the owning feature file with the failure evidence.
+- Blocking CI (`.github/workflows/ci.yml`) skips `[quarantine]` titles (Jest `--testNamePattern`, Playwright `grepInvert`); the nightly workflow runs everything twice and uploads the JSON reports.
+- A quarantined test must be fixed or removed within two weeks; quarantine never applies to invariant tests (`INV-xx`) or money paths (`PAY-xx`) — those block until fixed.
+- Root-cause races instead of adding sleeps (example: the audit interceptor now awaits its write, which removed the audit-count flakes).
+
+## Automated test layers
+| Layer | Where | Runs |
+|---|---|---|
+| Unit / contract | `packages/*/test`, `apps/*/src/**/*.spec.ts`, `apps/web/test` | `pnpm test` (CI verify; DB invariants need a baseline-seeded DB) |
+| API e2e (REQ-27 ids) | `apps/api/test/*.e2e-spec.ts` | `pnpm --filter api test:e2e` (CI api-e2e, disposable DB) |
+| Web e2e | `apps/web/e2e` (Playwright, desktop + phone widths) | `pnpm --filter web test:e2e` (CI web-e2e) |
+| Mobile flows | `apps/mobile/.maestro` | before each APK release (F-906) |
+| Performance | `perf/k6` | on demand + nightly smoke (F-905) |
+| QA matrix | `node scripts/qa-matrix.mjs --write` → `DOCS/qa/qa-matrix.md` | CI ratchet `--min` |

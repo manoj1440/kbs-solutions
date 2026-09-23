@@ -1,0 +1,88 @@
+name: Nightly
+on:
+  schedule:
+    - cron: '30 20 * * *' # 02:00 IST
+  workflow_dispatch:
+
+# F-901 nightly: full API e2e incl. [quarantine] tests, run twice to surface flakes (non-blocking report), the QA
+# matrix, and a short k6 login smoke (F-905, report only — thresholds are KBS's decision, REQ-24 §24.2).
+env:
+  REDIS_URL: redis://localhost:6379
+  JWT_ACCESS_SECRET: ci-access-secret-ci-access-secret-1234
+  JWT_REFRESH_SECRET: ci-refresh-secret-ci-refresh-secret-12
+  DATA_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  OTP_PROVIDER: console
+  OTP_DEV_MASTER_CODE: '000000'
+  BOOTSTRAP_ADMIN_MOBILE: '9999999999'
+  BOOTSTRAP_ADMIN_NAME: CI Admin
+
+jobs:
+  full-e2e:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: kbs, POSTGRES_PASSWORD: kbs, POSTGRES_DB: kbs_test }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kbs" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    env:
+      DATABASE_URL: postgresql://kbs:kbs@localhost:5432/kbs_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm --filter @kbs/db migrate:deploy
+      - run: pnpm --filter @kbs/shared build && pnpm --filter @kbs/db build
+      - name: All e2e incl. [quarantine], twice
+        run: |
+          pnpm --filter api test:e2e -- --json --outputFile=../../e2e-run1.json || true
+          pnpm --filter api test:e2e -- --json --outputFile=../../e2e-run2.json || true
+      - run: node scripts/qa-matrix.mjs > qa-matrix.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-e2e
+          path: |
+            e2e-run1.json
+            e2e-run2.json
+            qa-matrix.md
+
+  perf-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: kbs, POSTGRES_PASSWORD: kbs, POSTGRES_DB: kbs_perf }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kbs" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    env:
+      DATABASE_URL: postgresql://kbs:kbs@localhost:5432/kbs_perf
+      API_PORT: '4200'
+      STORAGE_PROVIDER: memory
+      THROTTLE_LIMIT_PER_MIN: '100000'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: grafana/setup-k6-action@v1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate && pnpm --filter @kbs/db migrate:deploy && pnpm db:seed
+      - run: pnpm build --filter=api
+      - run: (cd apps/api && nohup node dist/main.js > ../../api.log 2>&1 &) && for i in $(seq 1 60); do curl -sf localhost:4200/api/v1/health && break; sleep 2; done
+      - name: k6 login smoke (Admin only on a fresh DB)
+        run: PERF_DATABASE_URL=$DATABASE_URL perf/prepare.sh && cd perf/k6 && k6 run -e VUS=2 -e DURATION=30s -e MOBILES=9999999999 --summary-export=../../k6-auth.json auth.js
+      - uses: actions/upload-artifact@v4
+        with: { name: perf-smoke, path: k6-auth.json }

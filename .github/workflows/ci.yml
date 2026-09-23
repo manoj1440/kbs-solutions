@@ -3,26 +3,40 @@ on:
   push:
     branches: [main]
   pull_request:
+
+# F-901: blocking checks. Quarantined (known-flaky) tests are tagged "[quarantine]" in their title and excluded from
+# the blocking jobs; they still run, non-blocking, in the nightly workflow (DOCS/conventions/01-engineering-conventions.md).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REDIS_URL: redis://localhost:6379
+  JWT_ACCESS_SECRET: ci-access-secret-ci-access-secret-1234
+  JWT_REFRESH_SECRET: ci-refresh-secret-ci-refresh-secret-12
+  DATA_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  OTP_PROVIDER: console
+  OTP_DEV_MASTER_CODE: '000000'
+  BOOTSTRAP_ADMIN_MOBILE: '9999999999'
+  BOOTSTRAP_ADMIN_NAME: CI Admin
+
 jobs:
   verify:
+    name: typecheck · lint · unit · DB invariants
     runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16-alpine
-        env: { POSTGRES_USER: kbs, POSTGRES_PASSWORD: kbs, POSTGRES_DB: kbs_test }
-        ports: ["5432:5432"]
+        env: { POSTGRES_USER: kbs, POSTGRES_PASSWORD: kbs, POSTGRES_DB: kbs_base }
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U kbs" --health-interval 5s --health-timeout 3s --health-retries 20
       redis:
         image: redis:7-alpine
-        ports: ["6379:6379"]
+        ports: ['6379:6379']
     env:
-      DATABASE_URL: postgresql://kbs:kbs@localhost:5432/kbs_test
-      REDIS_URL: redis://localhost:6379
-      JWT_ACCESS_SECRET: ci-access-secret-ci-access-secret-1234
-      JWT_REFRESH_SECRET: ci-refresh-secret-ci-refresh-secret-12
-      DATA_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
-      OTP_PROVIDER: console
+      # DB invariant tests expect a baseline-seeded database (zero payout rules, draft HDFC profile) — AGENTS.md §6
+      DATABASE_URL: postgresql://kbs:kbs@localhost:5432/kbs_base
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -33,5 +47,83 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm --filter @kbs/db migrate:deploy
+      - run: pnpm db:seed
       - run: pnpm test
+      - name: REQ-27 QA matrix ratchet
+        run: node scripts/qa-matrix.mjs --min=${{ vars.QA_MATRIX_MIN || 56 }} > qa-matrix.md
+      - uses: actions/upload-artifact@v4
+        with: { name: qa-matrix, path: qa-matrix.md }
+
+  api-e2e:
+    name: API e2e (REQ-27 ids)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: kbs, POSTGRES_PASSWORD: kbs, POSTGRES_DB: kbs_test }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kbs" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    env:
+      DATABASE_URL: postgresql://kbs:kbs@localhost:5432/kbs_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm --filter @kbs/db migrate:deploy
+      - run: pnpm --filter @kbs/shared build && pnpm --filter @kbs/db build
+      - run: pnpm --filter api test:e2e -- --testNamePattern='^(?!.*\[quarantine\])'
+
+  web-e2e:
+    name: Web Playwright smoke (Admin, 1280 + 390 px)
+    runs-on: ubuntu-latest
+    needs: verify
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: kbs, POSTGRES_PASSWORD: kbs, POSTGRES_DB: kbs_e2e }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kbs" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    env:
+      DATABASE_URL: postgresql://kbs:kbs@localhost:5432/kbs_e2e
+      API_PORT: '4000'
+      WEB_ORIGIN: http://localhost:3000
+      STORAGE_PROVIDER: memory
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+      API_URL: http://localhost:4000/api/v1
+      THROTTLE_LIMIT_PER_MIN: '10000'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm --filter @kbs/db migrate:deploy && pnpm db:seed
       - run: pnpm build --filter=api --filter=web
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - name: Start API and web
+        run: |
+          (cd apps/api && nohup node dist/main.js > ../../api.log 2>&1 &)
+          (cd apps/web && nohup npx next start -p 3000 > ../../web.log 2>&1 &)
+          for i in $(seq 1 60); do curl -sf localhost:4000/api/v1/health && curl -sf -o /dev/null localhost:3000/login && break; sleep 2; done
+      - run: pnpm --filter web test:e2e
+        env: { E2E_BASE_URL: 'http://localhost:3000', E2E_DB_URL: postgresql://kbs:kbs@localhost:5432/kbs_e2e }
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-e2e
+          path: |
+            apps/web/test-results
+            api.log
+            web.log
