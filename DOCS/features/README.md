@@ -9,7 +9,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 3. **Shells** F-803, F-801, F-802 (login + role routing on both platforms).
 4. **Vertical slice 1 — Telecaller lifecycle**: F-201, F-202, F-203, F-204, F-205, F-301, F-302.
 5. **Vertical slice 2 — Calling desk**: F-306, F-304, F-303, F-305, F-403, F-404, F-308, F-307, F-312, F-309, F-310, F-311, F-313, F-314.
-6. **Vertical slice 3 — Advisor**: F-401, F-402, F-405, F-406, F-407.
+6. **Vertical slice 3 — Advisor**: F-401, F-402, F-405, F-406, F-407, F-315.
 7. **Vertical slice 4 — MIS**: F-501, F-502, F-504, F-503, F-505, F-506, F-408, F-409, F-410, F-507.
 8. **Vertical slice 5 — Payouts**: F-601, F-602, F-603, F-604, F-605, F-606.
 9. **Cross-cutting**: F-701, F-702, F-703, F-704.
@@ -65,6 +65,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-408-my-leads-and-lead-detail.md](./F-408-my-leads-and-lead-detail.md) | F-408 My Leads list, search, filters and lead detail with MIS history | Advisor | DONE | F-407, F-506 |
 | [F-409-pending-actions-and-followup-tasks.md](./F-409-pending-actions-and-followup-tasks.md) | F-409 Pending Actions and operational follow-up tasks | Advisor | DONE | F-408, F-701 |
 | [F-410-advisor-profile-and-support.md](./F-410-advisor-profile-and-support.md) | F-410 Advisor profile and support | Advisor | DONE | F-401, F-402 |
+| [F-315-manager-advisor-drilldown.md](./F-315-manager-advisor-drilldown.md) | F-315 Manager Advisor team drill-down (web + mobile) | Advisor | IN_PROGRESS | F-106, F-408, F-506, F-603, F-604, F-702 |
 | [F-501-mis-import-profiles.md](./F-501-mis-import-profiles.md) | F-501 MIS import profiles (bank/version) with HDFC v1 seed | MIS | DONE | F-104, F-403 |
 | [F-502-mis-upload-parse-map.md](./F-502-mis-upload-parse-map.md) | F-502 MIS upload, parse and map stages (raw preservation) | MIS | DONE | F-501, F-108, F-110 |
 | [F-503-mis-preview.md](./F-503-mis-preview.md) | F-503 MIS preview and anomaly report | MIS | DONE | F-502, F-504 |
