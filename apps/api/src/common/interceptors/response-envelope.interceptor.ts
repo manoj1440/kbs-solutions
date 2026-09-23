@@ -1,4 +1,4 @@
-import { type CallHandler, type ExecutionContext, Injectable, type NestInterceptor } from '@nestjs/common';
+import { type CallHandler, type ExecutionContext, Injectable, type NestInterceptor, StreamableFile } from '@nestjs/common';
 import { type Observable, map } from 'rxjs';
 
 import { RequestContextStore } from '../request-context';
@@ -22,6 +22,8 @@ export class ResponseEnvelopeInterceptor implements NestInterceptor {
       map((result) => {
         const requestId = RequestContextStore.requestId() ?? 'unknown';
         const asOf = new Date().toISOString();
+        // raw downloads (CSV export) bypass the JSON envelope
+        if (result instanceof StreamableFile) return result;
         if (result instanceof Paginated) {
           return { data: result.data, meta: { requestId, asOf, page: result.page, pageSize: result.pageSize, total: result.total, ...result.extraMeta } };
         }
