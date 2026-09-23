@@ -19,3 +19,4 @@
 
 ## Progress notes
 - 2026-09-22 (session 1): API complete: CIDR allowlist CRUD, WFH grant/revoke (team-scoped), evaluation order, access events (denials always), SSID hint header; e2e SEC-01. Pending: Admin/Manager screens.
+- Session 8: resuming — access-event listing API, HTTP-level SEC-01 tests (denials recorded, immediate revocation, XFF not trusted without proxy hops), Admin network policy page and Manager WFH controls.
