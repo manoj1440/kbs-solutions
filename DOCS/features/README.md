@@ -85,7 +85,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-802-mobile-shell.md](./F-802-mobile-shell.md) | F-802 Mobile shell: Expo Router, OTP login, gates routing, base components | UX shells | IN_PROGRESS | F-003, F-006, F-101, F-111 |
 | [F-803-status-and-provenance-components.md](./F-803-status-and-provenance-components.md) | F-803 Shared status/provenance component set (web + mobile) | UX shells | IN_PROGRESS | F-006, F-004 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | PLANNED | F-801, F-802 |
-| [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | PLANNED | F-108 |
+| [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | IN_PROGRESS | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |
 | [F-904-data-retention.md](./F-904-data-retention.md) | F-904 Data retention and deletion authority (BLOCKED) | Hardening | BLOCKED | F-104 |
 | [F-905-performance-acceptance.md](./F-905-performance-acceptance.md) | F-905 Performance acceptance harness | Hardening | PLANNED | F-505, F-307 |
