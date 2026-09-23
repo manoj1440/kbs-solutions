@@ -1,4 +1,4 @@
-import { type DashboardQuery, maskMobile } from '@kbs/shared';
+import { type AdvisorTeamResponse, type DashboardQuery, maskMobile } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -89,7 +89,7 @@ export class AdminDashboardsService {
    * F-315: per-Advisor drill-down for a Manager's own team (Admin: any team via managerId). Same F-702 engine per
    * Advisor, so the numbers equal the Manager dashboard filtered to that Advisor. Evidence only — no score or rank.
    */
-  async teamAdvisors(actor: Actor, q: DashboardQuery) {
+  async teamAdvisors(actor: Actor, q: DashboardQuery): Promise<AdvisorTeamResponse> {
     const scope = await this.metrics.scope(actor, q);
     const people = await this.prisma.client.user.findMany({
       where: { role: 'ADVISOR', ...(scope.advisorIds ? { id: { in: scope.advisorIds } } : {}) },

@@ -107,7 +107,7 @@ export default function ManagerHome() {
           )
         }
         renderItem={({ item }) => (
-          <Card className="gap-1" onTouchEnd={() => item.role === 'TELECALLER' && router.push({ pathname: '/(manager)/telecaller', params: { id: item.id } })}>
+          <Card className="gap-1" onTouchEnd={() => router.push(item.role === 'TELECALLER' ? { pathname: '/(manager)/telecaller', params: { id: item.id } } : { pathname: '/(manager)/advisor', params: { id: item.id } })}>
             <View className="flex-row items-center justify-between">
               <Text className="font-medium">{item.fullName || '(onboarding)'}</Text>
               <Badge label={item.role} variant="secondary" />

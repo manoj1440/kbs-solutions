@@ -24,6 +24,10 @@ export const PROTECTED_ROUTES: ReadonlySet<string> = new Set([
   '(manager)/telecaller',
   '(manager)/approvals',
   '(manager)/payout-request',
+  // F-315: Advisor drill-down shows customer leads and bank results
+  '(manager)/advisors',
+  '(manager)/advisor',
+  '(manager)/lead',
   // Onboarding gate collects identity and bank details
   '(gates)/onboarding',
 ]);

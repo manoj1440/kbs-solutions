@@ -12,12 +12,15 @@ export default function ManagerLayout() {
   return (
     <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="index" options={{ title: 'Team' }} />
+      <Tabs.Screen name="advisors" options={{ title: 'Advisors' }} />
       <Tabs.Screen name="approvals" options={{ title: 'Approvals' }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       <Tabs.Screen name="create-telecaller" options={{ href: null }} />
       <Tabs.Screen name="telecaller" options={{ href: null }} />
       <Tabs.Screen name="payout-request" options={{ href: null }} />
+      <Tabs.Screen name="advisor" options={{ href: null }} />
+      <Tabs.Screen name="lead" options={{ href: null }} />
     </Tabs>
   );
 }

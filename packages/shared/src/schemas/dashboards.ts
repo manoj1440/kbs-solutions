@@ -39,3 +39,29 @@ export interface Distribution {
   buckets: { value: string; count: number }[];
   denominator: { label: string; value: number };
 }
+
+// ── F-315 Manager Advisor drill-down (`GET /dashboards/manager/advisors`) ──
+export interface AdvisorTeamRow {
+  user: { id: string; fullName: string; publicRef: string; status: string; mobileMasked: string | null; joinedAt: string };
+  reporting: { source: string; since: string; parent: { id: string; fullName: string }; agentCode: string | null } | null;
+  leads: { created: Metric; misMatched: Metric; awaitingMis: Metric };
+  stage: Distribution;
+  decision: Distribution;
+  activation: Distribution;
+  bankReasons: { leadsWithReason: Metric; top: { value: string; count: number }[] };
+  payouts: { eligible: Metric; available: Metric; requested: Metric; approvedUnpaid: Metric; onHold: Metric; paid: Metric; confirmedTransfersInr: Metric };
+  /** Requests by this Advisor still waiting for a Manager decision. */
+  awaitingManagerApproval: number;
+}
+export interface AdvisorTeamResponse {
+  scope: string;
+  rows: AdvisorTeamRow[];
+  meta: { from: string | null; to: string | null; asOf: string; note: string; misFreshness: { bank: { id: string; displayName: string }; lastAppliedAt: string | null }[] };
+}
+/** How the Advisor came to report to their parent (plain words for Manager screens). */
+export const REPORTING_SOURCE_LABELS: Record<string, string> = {
+  AGENT_CODE: 'Agent Code',
+  ADMIN_DEFAULT: 'Assigned by Admin (no code)',
+  ADMIN_REASSIGNED: 'Reassigned by Admin',
+  MANAGER_CREATED_TELECALLER: 'Created by Manager',
+};

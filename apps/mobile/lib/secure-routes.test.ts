@@ -12,6 +12,9 @@ describe('F-302 screen-capture policy (REQ-09 §9.3)', () => {
       ['(advisor)', 'profile'],
       ['(manager)', 'telecaller'],
       ['(manager)', 'approvals'],
+      ['(manager)', 'advisors'],
+      ['(manager)', 'advisor'],
+      ['(manager)', 'lead'],
       ['(gates)', 'onboarding'],
     ]) {
       expect(isProtectedRoute(s)).toBe(true);

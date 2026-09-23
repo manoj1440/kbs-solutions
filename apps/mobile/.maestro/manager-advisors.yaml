@@ -1,0 +1,34 @@
+# F-315 Manager: Advisors tab → Advisor drill-down → read-only lead with separate bank badges
+appId: com.kbs.dsa
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Next.*"
+          optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: "9876500001"
+- tapOn: "Login"
+- inputText: "000000"
+- tapOn: "Verify OTP"
+- assertVisible: "My team"
+- tapOn: "Advisors"
+- assertVisible: "Advisors"
+- tapOn:
+    id: ".*"
+    text: "Open .*"
+    index: 0
+- assertVisible: "Current stage"
+- assertVisible: "Final decision"
+- assertVisible: "Card activation"
+- scrollUntilVisible:
+    element: "Leads"
+- tapOn:
+    text: "Open lead .*"
+    index: 0
+- assertVisible: "Bank status \\(from MIS only\\)"
