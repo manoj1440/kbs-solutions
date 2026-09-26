@@ -1,15 +1,14 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
+import { UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Callout, Field, IconTile, selectClass } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
-
-const sel = 'border-input bg-background h-9 rounded-md border px-2 text-sm';
 
 /** F-105: Admin creates Manager / Accounts users (Telecallers are created by Managers, Advisors self-register). */
 export function CreateUserDialog() {
@@ -44,38 +43,44 @@ export function CreateUserDialog() {
   };
   return (
     <>
-      <Button onClick={() => ref.current?.showModal()}>Create user</Button>
+      <Button onClick={() => ref.current?.showModal()}>
+        <UserPlus />
+        Create user
+      </Button>
       <dialog
         ref={ref}
         aria-label="Create user"
-        className="m-auto w-full max-w-md rounded-lg bg-white p-0 shadow-2xl backdrop:bg-slate-900/40"
+        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl bg-white p-0 shadow-2xl backdrop:bg-slate-900/40"
       >
         <form
-          className="grid gap-3 p-5"
+          className="grid gap-4 p-5 sm:p-6"
           onSubmit={(e) => {
             e.preventDefault();
             void submit();
           }}
         >
-          <h2 className="text-lg font-semibold">Create user</h2>
-          <p className="text-muted-foreground text-xs">
-            Managers create Telecallers from their team screen; Advisors register themselves. There
-            is only one Admin.
-          </p>
-          <div className="grid gap-1">
-            <Label htmlFor="cu-role">Role</Label>
+          <div className="flex items-start gap-3">
+            <IconTile icon={UserPlus} tone="violet" size="sm" />
+            <div className="min-w-0">
+              <h2 className="text-[15px] leading-6 font-semibold text-slate-900">Create user</h2>
+              <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+                Managers create Telecallers from their team screen; Advisors register themselves.
+                There is only one Admin.
+              </p>
+            </div>
+          </div>
+          <Field label="Role" htmlFor="cu-role">
             <select
               id="cu-role"
-              className={sel}
+              className={selectClass}
               value={role}
               onChange={(e) => setRole(e.target.value as 'MANAGER' | 'ACCOUNTS')}
             >
               <option value="MANAGER">Manager</option>
               <option value="ACCOUNTS">Accounts</option>
             </select>
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="cu-name">Full name</Label>
+          </Field>
+          <Field label="Full name" htmlFor="cu-name">
             <Input
               id="cu-name"
               value={fullName}
@@ -83,9 +88,8 @@ export function CreateUserDialog() {
               required
               minLength={2}
             />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="cu-mobile">Mobile</Label>
+          </Field>
+          <Field label="Mobile" htmlFor="cu-mobile">
             <Input
               id="cu-mobile"
               value={mobile}
@@ -94,18 +98,21 @@ export function CreateUserDialog() {
               placeholder="10-digit mobile"
               required
             />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="cu-email">E-mail (optional)</Label>
+          </Field>
+          <Field label="E-mail (optional)" htmlFor="cu-email">
             <Input
               id="cu-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-          </div>
-          {err ? <p className="text-destructive text-sm">{err}</p> : null}
-          <div className="flex justify-end gap-2">
+          </Field>
+          {err ? (
+            <Callout tone="danger" role="alert">
+              {err}
+            </Callout>
+          ) : null}
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <Button type="button" variant="ghost" onClick={() => ref.current?.close()}>
               Cancel
             </Button>
@@ -151,6 +158,7 @@ export function LifecycleAction({
         <Button
           size="sm"
           variant={variant}
+          className="w-full"
           disabled={Boolean(disabledReason)}
           title={disabledReason}
           onClick={() => setOpen(true)}
@@ -158,7 +166,7 @@ export function LifecycleAction({
           {label}
         </Button>
         {disabledReason ? (
-          <span className="text-muted-foreground text-xs">{disabledReason}</span>
+          <span className="text-[11.5px] leading-relaxed text-slate-500">{disabledReason}</span>
         ) : null}
         {msg ? (
           <span className={`text-xs ${msg.ok ? 'text-success' : 'text-destructive'}`}>
@@ -168,7 +176,8 @@ export function LifecycleAction({
       </div>
     );
   return (
-    <div className="grid min-w-56 gap-1 rounded-md border p-2">
+    <div className="grid min-w-0 gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+      <p className="text-[12px] font-semibold text-slate-700">{label}</p>
       {withMobile ? (
         <Input
           aria-label="New mobile"
@@ -184,10 +193,10 @@ export function LifecycleAction({
         onChange={(e) => setReason(e.target.value)}
         placeholder="Reason (required)"
       />
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1.5">
         <Button
           size="sm"
-          variant={variant}
+          variant={variant === 'outline' ? 'default' : variant}
           disabled={
             busy || reason.trim().length < minReason || (withMobile && mobile.trim().length < 10)
           }

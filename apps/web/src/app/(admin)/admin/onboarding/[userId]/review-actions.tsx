@@ -1,93 +1,125 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
+import { Check, Eye, FileImage, FileWarning, Undo2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Callout, Field } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 
-export function ReviewActions({ userId, chequeFileId, chequeName, canDecide }: { userId: string; chequeFileId: string | null; chequeName: string | null; canDecide: boolean }) {
+/**
+ * Onboarding review controls. `part` lets the page place the logged evidence buttons (reveal / cheque) next to the bank
+ * details and the decision in its own card; omitted, both render together.
+ */
+export function ReviewActions({
+  userId,
+  chequeFileId,
+  chequeName,
+  canDecide,
+  part,
+}: {
+  userId: string;
+  chequeFileId: string | null;
+  chequeName: string | null;
+  canDecide: boolean;
+  part?: 'evidence' | 'decision';
+}) {
   const router = useRouter();
   const [reason, setReason] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<string | null>(null);
   const fail = (e: unknown, fb: string) => setMsg(e instanceof ApiClientError ? e.message : fb);
   return (
-    <div className="grid gap-2 pt-2">
-      <div className="flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={async () => {
-            try {
-              const r = await clientApi.get<{ bankAccountNumber: string | null }>(`/onboarding/review/${userId}?reveal=bank`);
-              setRevealed(r.data.bankAccountNumber);
-            } catch (e) {
-              fail(e, 'Could not reveal.');
-            }
-          }}
-        >
-          Reveal account number (logged)
-        </Button>
-        {revealed ? <span className="self-center font-mono text-sm">{revealed}</span> : null}
-        {chequeFileId ? (
+    <div className="grid gap-3">
+      {part !== 'decision' ? (
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant="outline"
             onClick={async () => {
               try {
-                const r = await clientApi.get<{ url: string }>(`/files/${chequeFileId}/url`);
-                window.open(r.data.url, '_blank', 'noopener');
+                const r = await clientApi.get<{ bankAccountNumber: string | null }>(`/onboarding/review/${userId}?reveal=bank`);
+                setRevealed(r.data.bankAccountNumber);
               } catch (e) {
-                fail(e, 'Could not open the cheque.');
+                fail(e, 'Could not reveal.');
               }
             }}
           >
-            View cheque (logged) · {chequeName}
+            <Eye />
+            Reveal account number (logged)
           </Button>
-        ) : (
-          <span className="text-destructive self-center text-xs">No cheque uploaded</span>
-        )}
-      </div>
-      {canDecide ? (
-        <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
-          <Input id="review-reason" placeholder="reason (required to reject)" value={reason} onChange={(e) => setReason(e.target.value)} />
-          <Button
-            onClick={async () => {
-              try {
-                await clientApi.post(`/onboarding/review/${userId}`, { decision: 'APPROVE', reason: reason || undefined });
-                setMsg('Approved — Advisor is now active.');
-                router.refresh();
-              } catch (e) {
-                fail(e, 'Could not approve.');
-              }
-            }}
-          >
-            Approve
-          </Button>
-          <Button
-            variant="destructive"
-            disabled={reason.trim().length < 3}
-            onClick={async () => {
-              try {
-                await clientApi.post(`/onboarding/review/${userId}`, { decision: 'REJECT', reason });
-                setMsg('Sent back to the Advisor with your reason.');
-                router.refresh();
-              } catch (e) {
-                fail(e, 'Could not reject.');
-              }
-            }}
-          >
-            Request changes
-          </Button>
+          {revealed ? <span className="rounded-md bg-amber-50 px-2 py-1 font-mono text-sm text-amber-950 ring-1 ring-amber-200 ring-inset">{revealed}</span> : null}
+          {chequeFileId ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="max-w-full"
+              onClick={async () => {
+                try {
+                  const r = await clientApi.get<{ url: string }>(`/files/${chequeFileId}/url`);
+                  window.open(r.data.url, '_blank', 'noopener');
+                } catch (e) {
+                  fail(e, 'Could not open the cheque.');
+                }
+              }}
+            >
+              <FileImage />
+              <span className="truncate">View cheque (logged) · {chequeName}</span>
+            </Button>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-700">
+              <FileWarning className="size-3.5" aria-hidden="true" />
+              No cheque uploaded
+            </span>
+          )}
+        </div>
+      ) : null}
+      {canDecide && part !== 'evidence' ? (
+        <div className="grid gap-3">
+          <Field label="Reason" htmlFor="review-reason" hint="Required to request changes.">
+            <Input id="review-reason" placeholder="reason (required to reject)" value={reason} onChange={(e) => setReason(e.target.value)} />
+          </Field>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button
+              onClick={async () => {
+                try {
+                  await clientApi.post(`/onboarding/review/${userId}`, { decision: 'APPROVE', reason: reason || undefined });
+                  setMsg('Approved — Advisor is now active.');
+                  router.refresh();
+                } catch (e) {
+                  fail(e, 'Could not approve.');
+                }
+              }}
+            >
+              <Check />
+              Approve
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={reason.trim().length < 3}
+              onClick={async () => {
+                try {
+                  await clientApi.post(`/onboarding/review/${userId}`, { decision: 'REJECT', reason });
+                  setMsg('Sent back to the Advisor with your reason.');
+                  router.refresh();
+                } catch (e) {
+                  fail(e, 'Could not reject.');
+                }
+              }}
+            >
+              <Undo2 />
+              Request changes
+            </Button>
+          </div>
         </div>
       ) : null}
       {msg ? (
-        <p role="status" className="text-sm">
+        <Callout tone="neutral" role="status">
           {msg}
-        </p>
+        </Callout>
       ) : null}
     </div>
   );
