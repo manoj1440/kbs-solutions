@@ -57,6 +57,7 @@ const pages = [
 ].filter(Boolean).filter((p) => !filter || p.includes(filter));
 for (const p of pages) {
   await page.goto(`${BASE}${p}`, { waitUntil: 'networkidle' }).catch(() => undefined);
+  await page.waitForTimeout(800); // let the entrance animation settle
   const name = p.replace(/^\/admin\/?/, '').replace(/\//g, '_') || 'overview';
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   const err = await page.locator('body').innerText().then((t) => /Application error|Unhandled Runtime Error|Something went wrong/i.test(t));
