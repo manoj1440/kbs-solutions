@@ -181,6 +181,11 @@ execSync(
   `docker exec kbs-test-pg psql -U kbs -d kbs_dev -c "UPDATE \\"TrainingEnrollment\\" SET status='PASSED', \\"passedAt\\"=now(), \\"firstLoginAt\\"=now() WHERE \\"telecallerUserId\\"='${tc.id}'"`,
   { stdio: 'inherit' },
 );
+// …and give that PASSED enrollment its three passed module results, so progress views are consistent (not 0/0).
+execSync(
+  `docker exec kbs-test-pg psql -U kbs -d kbs_dev -c "INSERT INTO \\"TrainingModuleResult\\" (id, \\"enrollmentId\\", \\"moduleId\\", status, \\"passedAt\\", \\"bestScorePct\\", \\"videoCompletedAt\\", \\"attemptCount\\", \\"updatedAt\\") SELECT gen_random_uuid()::text, e.id, m.id, 'PASSED', now(), 100, now(), 1, now() FROM \\"TrainingEnrollment\\" e CROSS JOIN \\"TrainingModule\\" m WHERE e.\\"telecallerUserId\\"='${tc.id}' ON CONFLICT (\\"enrollmentId\\", \\"moduleId\\") DO UPDATE SET status='PASSED', \\"passedAt\\"=now(), \\"bestScorePct\\"=100, \\"updatedAt\\"=now()"`,
+  { stdio: 'inherit' },
+);
 const alloc = await call('POST', `/calling-list/batches/${cBatch.id}/allocate`, { token: T });
 console.log('calling list allocated', JSON.stringify(alloc).slice(0, 200));
 
