@@ -1,17 +1,21 @@
 'use client';
 
 import { ApiClientError, formatDateTime } from '@kbs/shared';
+import { CheckCircle2, Eye, FileSpreadsheet, Info, MapPin, Rows3, Save, Settings2, TriangleAlert, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { FileUploadButton } from '@/components/file-upload-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { BankMark, Callout, EmptyState, Field, humanize, PageHeader, SectionCard, selectClass } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { clientApi } from '@/lib/client-api';
+import { cn } from '@/lib/utils';
+
+const areaClass =
+  'w-full rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-[inset_0_1px_1px_rgb(15_23_42/3%)] outline-none hover:border-slate-300 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60';
 
 type Rule = { rule: 'PRESENT_PINCODE_IS_SOURCEABLE' | 'REQUIRES_BANK_MAPPING'; preserve?: string[]; note?: string; ignoreEmptyAutoHeaders?: boolean } | { rule: 'FLAG_EQUALS'; column: string; trueValues: string[]; preserve?: string[]; note?: string; ignoreEmptyAutoHeaders?: boolean };
 export interface ProfileDetail {
@@ -75,74 +79,77 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
       fail(e, 'Could not save.');
     }
   };
+  const imported = p.batches.filter((b) => b.status === 'IMPORTED').length;
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold">
-          {p.bank.displayName} — {p.name}
-        </h1>
-        <Badge variant={p.status === 'APPROVED' ? 'success' : p.status === 'DRAFT' ? 'warning' : 'unknown'}>
-          {p.status} v{p.version}
-        </Badge>
-      </div>
+      <PageHeader
+        icon={MapPin}
+        tone="violet"
+        eyebrow="Sales operations · Bank coverage"
+        title={
+          <>
+            {p.bank.displayName} — {p.name}
+          </>
+        }
+        meta={
+          <>
+            <BankMark code={p.bank.code} size="sm" />
+            <Badge variant={p.status === 'APPROVED' ? 'success' : p.status === 'DRAFT' ? 'warning' : 'unknown'}>
+              {humanize(p.status)} v{p.version}
+            </Badge>
+            <span>
+              <span className="tabular-nums">{p.batches.length}</span> batch{p.batches.length === 1 ? '' : 'es'} · <span className="tabular-nums">{imported}</span> imported
+            </span>
+          </>
+        }
+      />
       {msg ? (
-        <p role="status" className="rounded-md border p-3 text-sm">
+        <Callout tone="neutral" icon={Info} role="status">
           {msg}
-        </p>
+        </Callout>
       ) : null}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Mapping & semantics</CardTitle>
-            <CardDescription>Headers must match the bank sheet exactly. The rule decides sourceability per row; preserved columns are kept raw and never used as a filter.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <div className="grid gap-1">
-              <Label htmlFor="pp-name">Name</Label>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SectionCard icon={Settings2} tone="violet" title="Mapping & semantics" description="Headers must match the bank sheet exactly. The rule decides sourceability per row; preserved columns are kept raw and never used as a filter." className="self-start">
+          <div className="grid gap-4">
+            <Field label="Name" htmlFor="pp-name">
               <Input id="pp-name" disabled={readOnly} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="pp-sheet">Sheet name (blank = first sheet)</Label>
+            </Field>
+            <Field label="Sheet name (blank = first sheet)" htmlFor="pp-sheet">
               <Input id="pp-sheet" disabled={readOnly} value={form.sheetName} onChange={(e) => setForm({ ...form, sheetName: e.target.value })} />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="pp-headers">Expected headers (one per line)</Label>
-              <textarea id="pp-headers" disabled={readOnly} className="border-input bg-background min-h-32 rounded-md border p-2 font-mono text-xs" value={form.headers} onChange={(e) => setForm({ ...form, headers: e.target.value })} />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="pp-pincol">Pincode column</Label>
+            </Field>
+            <Field label="Expected headers (one per line)" htmlFor="pp-headers">
+              <textarea id="pp-headers" disabled={readOnly} className={cn(areaClass, 'min-h-32 font-mono text-xs')} value={form.headers} onChange={(e) => setForm({ ...form, headers: e.target.value })} />
+            </Field>
+            <Field label="Pincode column" htmlFor="pp-pincol">
               <Input id="pp-pincol" disabled={readOnly} value={form.pincodeColumn} onChange={(e) => setForm({ ...form, pincodeColumn: e.target.value })} />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="pp-rule">Rule</Label>
-              <select id="pp-rule" disabled={readOnly} className="border-input bg-background h-9 rounded-md border px-2 text-sm" value={form.rule} onChange={(e) => setForm({ ...form, rule: e.target.value as Rule['rule'] })}>
+            </Field>
+            <Field label="Rule" htmlFor="pp-rule">
+              <select id="pp-rule" disabled={readOnly} className={selectClass} value={form.rule} onChange={(e) => setForm({ ...form, rule: e.target.value as Rule['rule'] })}>
                 <option value="PRESENT_PINCODE_IS_SOURCEABLE">Present pincode is sourceable</option>
                 <option value="FLAG_EQUALS">Flag column equals one of…</option>
                 <option value="REQUIRES_BANK_MAPPING">Requires bank mapping (nothing sourceable yet)</option>
               </select>
-            </div>
+            </Field>
             {form.rule === 'FLAG_EQUALS' ? (
-              <div className="grid grid-cols-2 gap-2">
-                <div className="grid gap-1">
-                  <Label htmlFor="pp-col">Flag column</Label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Flag column" htmlFor="pp-col">
                   <Input id="pp-col" disabled={readOnly} value={form.column} onChange={(e) => setForm({ ...form, column: e.target.value })} />
-                </div>
-                <div className="grid gap-1">
-                  <Label htmlFor="pp-true">True values (comma-separated)</Label>
+                </Field>
+                <Field label="True values (comma-separated)" htmlFor="pp-true">
                   <Input id="pp-true" disabled={readOnly} value={form.trueValues} onChange={(e) => setForm({ ...form, trueValues: e.target.value })} />
-                </div>
+                </Field>
               </div>
             ) : null}
-            <div className="grid gap-1">
-              <Label htmlFor="pp-preserve">Preserved columns (comma-separated; shown in preview, never a filter)</Label>
+            <Field label="Preserved columns (comma-separated; shown in preview, never a filter)" htmlFor="pp-preserve">
               <Input id="pp-preserve" disabled={readOnly} value={form.preserve} onChange={(e) => setForm({ ...form, preserve: e.target.value })} />
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" disabled={readOnly} checked={form.padNumericPincodes} onChange={(e) => setForm({ ...form, padNumericPincodes: e.target.checked })} />
+            </Field>
+            <label className="flex items-start gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+              <input type="checkbox" className="mt-0.5 accent-teal-700" disabled={readOnly} checked={form.padNumericPincodes} onChange={(e) => setForm({ ...form, padNumericPincodes: e.target.checked })} />
               Zero-pad numeric cells to 6 digits (recorded per row as wasPadded)
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
               <Button disabled={readOnly} onClick={save}>
+                <Save />
                 {p.status === 'APPROVED' ? 'Save as new version' : 'Save'}
               </Button>
               {p.status === 'DRAFT' ? (
@@ -158,56 +165,60 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
                     }
                   }}
                 >
+                  <CheckCircle2 />
                   Approve
                 </Button>
               ) : null}
             </div>
-          </CardContent>
-        </Card>
-        <div className="grid gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Import a batch</CardTitle>
-              <CardDescription>Upload the bank workbook → header check → preview (counts, distinct flag values) → confirm. Previous batches stay for history; the latest imported batch under an approved profile is what the apps read.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3">
+          </div>
+        </SectionCard>
+        <div className="grid content-start gap-6">
+          <SectionCard icon={Upload} tone="sky" title="Import a batch" description="Upload the bank workbook → header check → preview (counts, distinct flag values) → confirm. Previous batches stay for history; the latest imported batch under an approved profile is what the apps read.">
+            <div className="grid gap-3">
               {!readOnly ? (
-                <FileUploadButton
-                  purpose="bank_pincode"
-                  accept=".xlsx,.csv"
-                  label="Upload bank sheet"
-                  onUploaded={async (f) => {
-                    setMsg(null);
-                    try {
-                      const r = await clientApi.post<BatchPreview>(`/pincode-profiles/${p.id}/batches`, { fileId: f.id });
-                      setBatch(r.data);
-                      if (r.data.duplicateOf) setMsg('Identical file already uploaded for this profile.');
-                    } catch (e) {
-                      fail(e, 'Could not create the batch.');
-                    }
-                  }}
-                />
+                <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-sky-200 bg-sky-50/40 px-4 py-5 text-center">
+                  <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-white text-sky-700 shadow-sm ring-1 ring-sky-100">
+                    <FileSpreadsheet className="size-5" aria-hidden="true" />
+                  </span>
+                  <p className="text-xs text-slate-500">Excel (.xlsx) or CSV</p>
+                  <FileUploadButton
+                    purpose="bank_pincode"
+                    accept=".xlsx,.csv"
+                    label="Upload bank sheet"
+                    onUploaded={async (f) => {
+                      setMsg(null);
+                      try {
+                        const r = await clientApi.post<BatchPreview>(`/pincode-profiles/${p.id}/batches`, { fileId: f.id });
+                        setBatch(r.data);
+                        if (r.data.duplicateOf) setMsg('Identical file already uploaded for this profile.');
+                      } catch (e) {
+                        fail(e, 'Could not create the batch.');
+                      }
+                    }}
+                  />
+                </div>
               ) : null}
               {batch?.preview ? (
-                <div className="grid gap-2 text-sm">
-                  <p>
-                    Header check:{' '}
-                    {batch.preview.headerCheck.ok ? (
-                      <Badge variant="success">ok</Badge>
-                    ) : (
-                      <>
-                        <Badge variant="destructive">mismatch</Badge> missing: {batch.preview.headerCheck.missing.join(', ') || '—'}; unknown: {batch.preview.headerCheck.unknown.join(', ') || '—'}
-                      </>
-                    )}
-                  </p>
-                  <p className="text-xs">
-                    {Object.entries(batch.preview.counts)
-                      .map(([k, v]) => `${k} ${v}`)
-                      .join(' · ')}
-                  </p>
+                <div className="grid gap-3 text-sm">
+                  {batch.preview.headerCheck.ok ? (
+                    <Callout tone="success" icon={CheckCircle2}>
+                      Header check: <Badge variant="success">ok</Badge>
+                    </Callout>
+                  ) : (
+                    <Callout tone="danger" icon={TriangleAlert}>
+                      Header check: <Badge variant="destructive">mismatch</Badge> missing: {batch.preview.headerCheck.missing.join(', ') || '—'}; unknown: {batch.preview.headerCheck.unknown.join(', ') || '—'}
+                    </Callout>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 text-xs">
+                    {Object.entries(batch.preview.counts).map(([k, v]) => (
+                      <span key={k} className="rounded-lg bg-slate-100 px-2 py-1 text-slate-600">
+                        {k} <strong className="text-slate-900 tabular-nums">{v}</strong>
+                      </span>
+                    ))}
+                  </div>
                   {Object.entries(batch.preview.distinctFlagValues).map(([col, vals]) => (
-                    <p key={col} className="text-xs">
-                      <strong>{col}</strong>:{' '}
+                    <p key={col} className="text-xs text-slate-600">
+                      <strong className="text-slate-900">{col}</strong>:{' '}
                       {Object.entries(vals)
                         .map(([v, n]) => `${v} (${n})`)
                         .join(', ')}
@@ -227,40 +238,45 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
                           }
                         }}
                       >
+                        <CheckCircle2 />
                         Confirm import
                       </Button>
                     </div>
                   ) : null}
                 </div>
               ) : null}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Batches</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
+            </div>
+          </SectionCard>
+          <SectionCard icon={FileSpreadsheet} tone="indigo" title="Batches" flush={p.batches.length > 0}>
+            {p.batches.length === 0 ? (
+              <EmptyState icon={FileSpreadsheet} title="No batches yet." />
+            ) : (
+              <Table responsive>
                 <TableHeader>
                   <TableRow>
                     <TableHead>File</TableHead>
                     <TableHead>Uploaded</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Rows</TableHead>
+                    <TableHead className="text-right">Rows</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {p.batches.map((b) => (
                     <TableRow key={b.id}>
-                      <TableCell className="text-xs">{b.file.originalName}</TableCell>
-                      <TableCell className="text-xs">
-                        {formatDateTime(b.uploadedAt)} · {b.uploader.fullName}
+                      <TableCell data-label="File" className="text-xs break-all">
+                        {b.file.originalName}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={b.status === 'IMPORTED' ? 'success' : 'unknown'}>{b.status}</Badge>
+                      <TableCell data-label="Uploaded" className="text-xs">
+                        {formatDateTime(b.uploadedAt)}
+                        <div className="text-[11px] text-slate-500">{b.uploader.fullName}</div>
                       </TableCell>
-                      <TableCell>{b.rowCount ?? '—'}</TableCell>
+                      <TableCell data-label="Status">
+                        <Badge variant={b.status === 'IMPORTED' ? 'success' : 'unknown'}>{humanize(b.status)}</Badge>
+                      </TableCell>
+                      <TableCell data-label="Rows" className="tabular-nums sm:text-right">
+                        {b.rowCount ?? '—'}
+                      </TableCell>
                       <TableCell>
                         {b.status === 'IMPORTED' ? (
                           <Button
@@ -271,65 +287,53 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
                               setRows({ batchId: b.id, data: r.data, total: Number(r.meta.total ?? r.data.length) });
                             }}
                           >
+                            <Eye />
                             Explore rows (audited)
                           </Button>
                         ) : null}
                       </TableCell>
                     </TableRow>
                   ))}
-                  {p.batches.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-muted-foreground text-center">
-                        No batches yet.
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+            )}
+          </SectionCard>
         </div>
       </div>
       {rows ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Rows (first {rows.data.length} of {rows.total})</CardTitle>
-            <CardDescription>Raw values exactly as in the sheet; this view is logged.</CardDescription>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Row</TableHead>
-                  <TableHead>Pincode</TableHead>
-                  <TableHead>Sourceability</TableHead>
+        <SectionCard icon={Rows3} tone="slate" title={`Rows (first ${rows.data.length} of ${rows.total})`} description="Raw values exactly as in the sheet; this view is logged." flush>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">Row</TableHead>
+                <TableHead>Pincode</TableHead>
+                <TableHead>Sourceability</TableHead>
+                {Object.keys(rows.data[0]?.raw ?? {}).map((h) => (
+                  <TableHead key={h}>{h}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.data.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-right text-xs tabular-nums">{r.sourceRowNumber}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {r.pincode || '(invalid)'}
+                    {r.wasPadded ? ' *' : ''}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={r.sourceability === 'SOURCEABLE' ? 'success' : r.sourceability === 'NOT_SOURCEABLE' ? 'unknown' : 'warning'}>{humanize(r.sourceability)}</Badge>
+                  </TableCell>
                   {Object.keys(rows.data[0]?.raw ?? {}).map((h) => (
-                    <TableHead key={h}>{h}</TableHead>
+                    <TableCell key={h} className="text-xs">
+                      {r.raw[h]}
+                    </TableCell>
                   ))}
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.data.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="text-xs">{r.sourceRowNumber}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {r.pincode || '(invalid)'}
-                      {r.wasPadded ? ' *' : ''}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={r.sourceability === 'SOURCEABLE' ? 'success' : r.sourceability === 'NOT_SOURCEABLE' ? 'unknown' : 'warning'}>{r.sourceability.replace(/_/g, ' ').toLowerCase()}</Badge>
-                    </TableCell>
-                    {Object.keys(rows.data[0]?.raw ?? {}).map((h) => (
-                      <TableCell key={h} className="text-xs">
-                        {r.raw[h]}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+              ))}
+            </TableBody>
+          </Table>
+        </SectionCard>
       ) : null}
     </div>
   );
