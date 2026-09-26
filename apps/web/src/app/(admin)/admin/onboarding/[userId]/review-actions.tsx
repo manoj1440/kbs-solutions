@@ -79,14 +79,16 @@ export function ReviewActions({
       ) : null}
       {canDecide && part !== 'evidence' ? (
         <div className="grid gap-3">
-          <Field label="Reason" htmlFor="review-reason" hint="Required to request changes.">
+          <Field label="Reason" htmlFor="review-reason" hint="Required to request changes; optional to approve. At least 3 characters when given.">
             <Input id="review-reason" placeholder="reason (required to reject)" value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>
           <div className="grid gap-2 sm:grid-cols-2">
             <Button
+              // the API accepts no reason or one of at least 3 characters (OnboardingReviewBody)
+              disabled={reason.trim().length > 0 && reason.trim().length < 3}
               onClick={async () => {
                 try {
-                  await clientApi.post(`/onboarding/review/${userId}`, { decision: 'APPROVE', reason: reason || undefined });
+                  await clientApi.post(`/onboarding/review/${userId}`, { decision: 'APPROVE', reason: reason.trim() || undefined });
                   setMsg('Approved — Advisor is now active.');
                   router.refresh();
                 } catch (e) {
