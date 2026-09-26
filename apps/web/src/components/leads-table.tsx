@@ -12,6 +12,7 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
+import { ArrowDown, ArrowUp, ArrowUpRight, ChevronDown, Columns3, LayoutList, ListChecks } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useState } from 'react';
 
@@ -24,6 +25,7 @@ import {
 } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Avatar, BankMark, EmptyState, KeyValueGrid } from '@/components/ui/kit';
 import {
   Table,
   TableBody,
@@ -48,19 +50,19 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       header: 'Customer / reference',
       accessorFn: (r) => r.customer.name,
       cell: ({ row }) => (
-        <div className="grid gap-1">
-          <Link
-            className="font-semibold text-primary hover:underline"
-            href={`${basePath}/${row.original.id}`}
-          >
-            {row.original.customer.name}
-          </Link>
-          <div className="text-muted-foreground text-xs">
-            {row.original.customer.mobileMasked ?? ''}
+        <div className="flex min-w-0 items-start gap-2.5">
+          <Avatar name={row.original.customer.name} size="sm" className="mt-0.5 hidden sm:inline-flex" />
+          <div className="grid min-w-0 gap-0.5">
+            <Link className="font-semibold" href={`${basePath}/${row.original.id}`}>
+              {row.original.customer.name}
+            </Link>
+            <div className="text-xs text-slate-500 tabular-nums">
+              {row.original.customer.mobileMasked ?? ''}
+            </div>
+            {!fullTable ? (
+              <code className="text-[11px] text-slate-500">{row.original.kbsRef}</code>
+            ) : null}
           </div>
-          {!fullTable ? (
-            <code className="text-muted-foreground text-[11px]">{row.original.kbsRef}</code>
-          ) : null}
         </div>
       ),
     },
@@ -69,9 +71,13 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       header: 'Bank / card',
       accessorFn: (r) => `${r.bank.displayName} ${r.card.name}`,
       cell: ({ row }) => (
-        <div className="grid gap-1">
-          <div>{row.original.bank.displayName}</div>
-          <div className="text-muted-foreground text-xs">
+        <div className="grid min-w-0 gap-0.5">
+          <div className="flex items-center gap-2 font-medium text-slate-800">
+            {/* lead rows carry no bank code; the first word of the name matches the code for current banks */}
+            <BankMark code={row.original.bank.displayName.split(' ')[0].toUpperCase()} size="sm" className="hidden h-6 min-w-6 text-[7.5px] sm:inline-flex" />
+            {row.original.bank.displayName}
+          </div>
+          <div className="text-xs text-slate-500">
             {row.original.card.name}
             {row.original.card.crosswalked &&
             row.original.card.crosswalked.id !== row.original.card.id
@@ -185,7 +191,10 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
           <Button asChild size="sm" variant="outline">
-            <Link href={`${basePath}/${row.original.id}`}>Open lead</Link>
+            <Link href={`${basePath}/${row.original.id}`}>
+              Open lead
+              <ArrowUpRight aria-hidden="true" />
+            </Link>
           </Button>
           <Button
             size="sm"
@@ -195,6 +204,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
             aria-controls={`lead-details-${row.original.id}`}
           >
             {row.getIsExpanded() ? 'Less detail' : 'More detail'}
+            <ChevronDown aria-hidden="true" className={row.getIsExpanded() ? 'rotate-180 transition-transform' : 'transition-transform'} />
           </Button>
         </div>
       ),
@@ -227,7 +237,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
   return (
     <div className="grid min-w-0 gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-slate-500">
           {fullTable
             ? 'All 13 fields. Scroll sideways for additional columns, or switch to the overview.'
             : 'Key information fits this panel. More detail shows bank references, dates and remarks.'}
@@ -238,6 +248,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           aria-pressed={fullTable}
           onClick={() => setFullTable((value) => !value)}
         >
+          {fullTable ? <LayoutList aria-hidden="true" /> : <Columns3 aria-hidden="true" />}
           {fullTable ? 'Overview layout' : 'Full table view'}
         </Button>
       </div>
@@ -257,13 +268,11 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
                       onClick={h.column.getToggleSortingHandler()}
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
-                      <span className="text-muted-foreground text-[10px]">
-                        {h.column.getIsSorted() === 'asc'
-                          ? '▲'
-                          : h.column.getIsSorted() === 'desc'
-                            ? '▼'
-                            : ''}
-                      </span>
+                      {h.column.getIsSorted() === 'asc' ? (
+                        <ArrowUp className="size-3 text-teal-700" aria-hidden="true" />
+                      ) : h.column.getIsSorted() === 'desc' ? (
+                        <ArrowDown className="size-3 text-teal-700" aria-hidden="true" />
+                      ) : null}
                     </button>
                   ) : (
                     flexRender(h.column.columnDef.header, h.getContext())
@@ -276,8 +285,12 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         <TableBody>
           {table.getRowModel().rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={visibleColumns} className="text-muted-foreground text-center">
-                No leads match.
+              <TableCell colSpan={visibleColumns} className="p-4">
+                <EmptyState
+                  icon={ListChecks}
+                  title="No leads match."
+                  description="Try clearing a filter or widening the date range."
+                />
               </TableCell>
             </TableRow>
           ) : null}
@@ -295,7 +308,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
                 ))}
               </TableRow>
               {row.getIsExpanded() ? (
-                <TableRow id={`lead-details-${row.original.id}`} className="bg-muted/30">
+                <TableRow id={`lead-details-${row.original.id}`} className="bg-slate-50/80 hover:bg-slate-50/80">
                   <TableCell colSpan={visibleColumns}>
                     <RawPanel row={row.original} />
                   </TableCell>
@@ -310,8 +323,10 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
 }
 
 function RawPanel({ row }: { row: LeadStatusRow }) {
+  const awaiting = row.matched ? 'Not reported' : 'Awaiting MIS Update';
+  const blank = <em className="text-slate-400">blank</em>;
   return (
-    <div className="grid gap-3 text-xs">
+    <div className="grid gap-4 rounded-xl border border-slate-200/80 bg-white p-4 text-xs">
       <div className="flex flex-wrap items-center gap-2">
         <ProvenanceChip
           provenance="BANK_MIS"
@@ -319,47 +334,38 @@ function RawPanel({ row }: { row: LeadStatusRow }) {
           batchRef={row.stage.batchRef}
         />
         {!row.matched ? (
-          <span className="text-muted-foreground">
+          <span className="text-slate-500">
             No accepted MIS row has matched this lead yet; nothing below is inferred.
           </span>
         ) : null}
       </div>
-      <dl className="grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <dt className="text-muted-foreground">KBS Lead ID</dt>
-        <dd>{row.kbsRef}</dd>
-        <dt className="text-muted-foreground">Bank Application No.</dt>
-        <dd>{row.bankApplicationNo ?? (row.matched ? 'Not reported' : 'Awaiting MIS Update')}</dd>
-        <dt className="text-muted-foreground">Bank Application Reference</dt>
-        <dd>
-          {row.bankApplicationReference ?? (row.matched ? 'Not reported' : 'Awaiting MIS Update')}
-        </dd>
-        <dt className="text-muted-foreground">KBS lead created</dt>
-        <dd>{formatDateTime(row.leadCreatedAt)}</dd>
-        <dt className="text-muted-foreground">Bank creation date</dt>
-        <dd>
-          {row.bankCreationDate.value
-            ? `${formatDateTime(row.bankCreationDate.value)} · ${row.bankCreationDate.source}`
-            : row.matched
-              ? 'Not reported'
-              : 'Awaiting MIS Update'}
-        </dd>
-        <dt className="text-muted-foreground">CURRENT_STAGE (raw)</dt>
-        <dd>{row.stage.raw ?? <em>blank</em>}</dd>
-        <dt className="text-muted-foreground">FINAL_DECISION (raw)</dt>
-        <dd>{row.decision.raw ?? <em>blank</em>}</dd>
-        <dt className="text-muted-foreground">Card Activation Staus (raw)</dt>
-        <dd>{row.activation.raw ?? <em>blank</em>}</dd>
-        <dt className="text-muted-foreground">Bank reason preview</dt>
-        <dd>{row.remarksPreview ?? <em>none reported</em>}</dd>
-        <dt className="text-muted-foreground">Bank reference (KBS linkage)</dt>
-        <dd>
-          {row.bankReference
-            ? `${row.bankReference.kind} ${row.bankReference.value} · ${row.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'verified by MIS match' : 'unverified'}`
-            : 'not yet available'}
-        </dd>
-        <dt className="text-muted-foreground">Authorised actions</dt>
-        <dd>{row.actions.map((a) => a.toLowerCase().replace(/_/g, ' ')).join(' · ')}</dd>
-      </dl>
+      <KeyValueGrid
+        cols={3}
+        className="[&_dd]:text-[12.5px]"
+        items={[
+          ['KBS Lead ID', <code key="k">{row.kbsRef}</code>],
+          ['Bank Application No.', row.bankApplicationNo ?? awaiting],
+          ['Bank Application Reference', row.bankApplicationReference ?? awaiting],
+          ['KBS lead created', formatDateTime(row.leadCreatedAt)],
+          [
+            'Bank creation date',
+            row.bankCreationDate.value
+              ? `${formatDateTime(row.bankCreationDate.value)} · ${row.bankCreationDate.source}`
+              : awaiting,
+          ],
+          ['CURRENT_STAGE (raw)', row.stage.raw ?? blank],
+          ['FINAL_DECISION (raw)', row.decision.raw ?? blank],
+          ['Card Activation Staus (raw)', row.activation.raw ?? blank],
+          ['Bank reason preview', row.remarksPreview ?? <em className="text-slate-400">none reported</em>],
+          [
+            'Bank reference (KBS linkage)',
+            row.bankReference
+              ? `${row.bankReference.kind} ${row.bankReference.value} · ${row.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'verified by MIS match' : 'unverified'}`
+              : 'not yet available',
+          ],
+          ['Authorised actions', row.actions.map((a) => a.toLowerCase().replace(/_/g, ' ')).join(' · ')],
+        ]}
+      />
     </div>
   );
 }
