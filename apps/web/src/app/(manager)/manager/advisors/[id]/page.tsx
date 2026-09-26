@@ -1,14 +1,59 @@
 import { formatDate, formatDateTime, type LeadStatusRow } from '@kbs/shared';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  FileCheck2,
+  GitBranch,
+  Info,
+  ListChecks,
+  type LucideIcon,
+  MessageSquareWarning,
+  PauseCircle,
+  Scale,
+  SearchCheck,
+  Send,
+  Wallet,
+} from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import type { EntitlementDto } from '@/components/entitlements-ledger';
 import { ActivationBadge, DecisionBadge, PayoutStateBadge, StageBadge } from '@/components/status';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { type AdvisorTeamResponse, type Distribution, inr, type Metric, REPORTING_LABEL, SOURCE_LABEL } from '@/lib/advisor-team';
+import {
+  Avatar,
+  BankMark,
+  Callout,
+  EmptyState,
+  humanize,
+  KeyValueGrid,
+  Meter,
+  PageHeader,
+  SectionCard,
+  StatCard,
+  StatGrid,
+  StatusDot,
+  type Tone,
+} from '@/components/ui/kit';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  type AdvisorTeamResponse,
+  type Distribution,
+  inr,
+  type Metric,
+  REPORTING_LABEL,
+  SOURCE_LABEL,
+} from '@/lib/advisor-team';
 import { ApiError, apiFetch } from '@/lib/api';
 
 interface RequestRow {
@@ -22,55 +67,106 @@ interface RequestRow {
   paidAt: string | null;
 }
 
-function Tile({ label, m, money }: { label: string; m: Metric; money?: boolean }) {
+function Tile({
+  label,
+  m,
+  money,
+  icon,
+  tone,
+  emphasis,
+}: {
+  label: string;
+  m: Metric;
+  money?: boolean;
+  icon: LucideIcon;
+  tone: Tone;
+  emphasis?: boolean;
+}) {
   return (
-    <div className="bg-card min-w-0 rounded-lg border p-3">
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <p className="text-2xl font-semibold tabular-nums">{m.value}</p>
-      <p className="text-muted-foreground text-xs">
-        {money ? `${inr(m.amountInr)} · ` : ''}
-        {m.denominator ? `of ${m.denominator.value} ${m.denominator.label} · ` : ''}
-        {SOURCE_LABEL[m.source] ?? m.source}
-      </p>
-    </div>
+    <StatCard
+      label={label}
+      value={m.value}
+      hint={
+        money || m.denominator ? (
+          <>
+            {money ? <span className="font-medium tabular-nums">{inr(m.amountInr)}</span> : null}
+            {money && m.denominator ? ' · ' : null}
+            {m.denominator ? `of ${m.denominator.value} ${m.denominator.label}` : null}
+          </>
+        ) : null
+      }
+      source={SOURCE_LABEL[m.source] ?? m.source}
+      icon={icon}
+      tone={tone}
+      emphasis={emphasis}
+    />
   );
 }
 
-function Dist({ title, d }: { title: string; d: Distribution }) {
+function Dist({ title, d, icon }: { title: string; d: Distribution; icon: LucideIcon }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>
-          Bank MIS values verbatim · {d.denominator.value} {d.denominator.label}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {d.buckets.length ? (
-          <ul className="grid gap-1 text-sm">
-            {d.buckets.map((b) => (
-              <li key={b.value} className="flex justify-between gap-2">
-                <span className={b.value === 'Awaiting MIS' || b.value === 'Not reported' ? 'text-muted-foreground italic' : 'min-w-0 font-mono break-all'}>{b.value}</span>
-                <span className="tabular-nums">{b.count}</span>
+    <SectionCard
+      icon={icon}
+      tone="indigo"
+      title={title}
+      description={
+        <>
+          Bank MIS values verbatim · <span className="tabular-nums">{d.denominator.value}</span>{' '}
+          {d.denominator.label}
+        </>
+      }
+    >
+      {d.buckets.length ? (
+        <ul className="grid gap-3 text-sm">
+          {d.buckets.map((b) => {
+            const muted = b.value === 'Awaiting MIS' || b.value === 'Not reported';
+            return (
+              <li key={b.value} className="grid gap-1.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span
+                    className={
+                      muted
+                        ? 'text-slate-500 italic'
+                        : 'min-w-0 font-mono text-[13px] break-words text-slate-800'
+                    }
+                  >
+                    {b.value}
+                  </span>
+                  <span className="font-semibold text-slate-900 tabular-nums">{b.count}</span>
+                </div>
+                <Meter
+                  value={b.count}
+                  max={d.denominator.value}
+                  tone={muted ? 'slate' : 'indigo'}
+                  className="h-1.5"
+                  label={`${b.value}: ${b.count} of ${d.denominator.value}`}
+                />
               </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted-foreground text-sm">No leads in this range.</p>
-        )}
-      </CardContent>
-    </Card>
+            );
+          })}
+        </ul>
+      ) : (
+        <EmptyState icon={icon} title="No leads in this range." className="py-6" />
+      )}
+    </SectionCard>
   );
 }
 
 /** F-315: one Advisor's leads, bank results and payout history for their Manager (REQ-15 §15.3). Read-only evidence. */
-export default async function ManagerAdvisorPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
+export default async function ManagerAdvisorPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const qs = new URLSearchParams({ advisorId: id });
   for (const k of ['from', 'to', 'bankId'] as const) if (sp[k]) qs.set(k, sp[k] as string);
   let data: AdvisorTeamResponse;
   try {
-    data = (await apiFetch<AdvisorTeamResponse>(`/dashboards/manager/advisors?${qs.toString()}`)).data;
+    data = (await apiFetch<AdvisorTeamResponse>(`/dashboards/manager/advisors?${qs.toString()}`))
+      .data;
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound();
     throw e;
@@ -84,75 +180,131 @@ export default async function ManagerAdvisorPage({ params, searchParams }: { par
   ]);
   const p = row.payouts;
   return (
-    <div className="grid min-w-0 gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link href="/manager/advisors" className="text-muted-foreground text-sm hover:underline">
-            ← Advisors
-          </Link>
-          <h1 className="text-2xl font-semibold">{row.user.fullName || '(onboarding)'}</h1>
-          <p className="text-muted-foreground text-sm">
-            {row.user.publicRef} · {row.user.mobileMasked ?? ''} · joined {formatDate(row.user.joinedAt)}
-            {row.reporting ? ` · ${REPORTING_LABEL[row.reporting.source] ?? row.reporting.source}${row.reporting.agentCode ? ` ${row.reporting.agentCode}` : ''} since ${formatDate(row.reporting.since)}` : ''}
-          </p>
+    <div className="grid min-w-0 gap-6">
+      <Link
+        href="/manager/advisors"
+        className="inline-flex w-fit items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        Advisors
+      </Link>
+
+      <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)] sm:p-6">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgb(139_92_246/10%),transparent_65%)]"
+        />
+        <div className="relative grid gap-6">
+          <div className="flex min-w-0 items-start gap-4">
+            <Avatar
+              name={row.user.fullName || row.user.publicRef}
+              size="lg"
+              className="shadow-sm ring-4 ring-white"
+            />
+            <PageHeader
+              eyebrow="Team · Advisor"
+              tone="violet"
+              title={row.user.fullName || '(onboarding)'}
+              meta={
+                <>
+                  <StatusDot tone={row.user.status === 'ACTIVE' ? 'emerald' : 'slate'}>
+                    {humanize(row.user.status)}
+                  </StatusDot>
+                  <span className="font-mono text-slate-500">{row.user.publicRef}</span>
+                </>
+              }
+            />
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+            <KeyValueGrid
+              cols={4}
+              className="grid-cols-2"
+              items={[
+                [
+                  'Mobile',
+                  <span key="m" className="font-mono">
+                    {row.user.mobileMasked ?? '—'}
+                  </span>,
+                ],
+                ['Joined', formatDate(row.user.joinedAt)],
+                [
+                  'Reporting line',
+                  row.reporting
+                    ? `${REPORTING_LABEL[row.reporting.source] ?? row.reporting.source}${row.reporting.agentCode ? ` ${row.reporting.agentCode}` : ''}`
+                    : '—',
+                ],
+                ['Since', row.reporting ? formatDate(row.reporting.since) : '—'],
+              ]}
+            />
+          </div>
         </div>
-        <Badge variant={row.user.status === 'ACTIVE' ? 'success' : 'unknown'}>{row.user.status}</Badge>
-      </div>
+      </section>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Tile label="Leads created" m={row.leads.created} />
-        <Tile label="Matched in bank MIS" m={row.leads.misMatched} />
-        <Tile label="Eligible card events" m={p.eligible} money />
-        <Tile label="Paid card events" m={p.paid} money />
-        <Tile label="Available to claim" m={p.available} money />
-        <Tile label="Requested" m={p.requested} money />
-        <Tile label="Approved, unpaid" m={p.approvedUnpaid} money />
-        <Tile label="On hold" m={p.onHold} money />
-      </div>
-      <p className="text-muted-foreground text-xs">
-        {data.meta.note} Leads are dated by KBS lead creation; payout events by the MIS evidence that made them eligible. {row.awaitingManagerApproval ? `${row.awaitingManagerApproval} request(s) are waiting for a Manager decision.` : ''}
-      </p>
+      <StatGrid>
+        <Tile label="Leads created" m={row.leads.created} icon={ListChecks} tone="teal" emphasis />
+        <Tile
+          label="Matched in bank MIS"
+          m={row.leads.misMatched}
+          icon={FileCheck2}
+          tone="indigo"
+        />
+        <Tile label="Eligible card events" m={p.eligible} money icon={SearchCheck} tone="indigo" />
+        <Tile label="Paid card events" m={p.paid} money icon={CheckCircle2} tone="emerald" />
+        <Tile label="Available to claim" m={p.available} money icon={Wallet} tone="teal" />
+        <Tile label="Requested" m={p.requested} money icon={Send} tone="sky" />
+        <Tile label="Approved, unpaid" m={p.approvedUnpaid} money icon={Clock} tone="amber" />
+        <Tile label="On hold" m={p.onHold} money icon={PauseCircle} tone="slate" />
+      </StatGrid>
+      <Callout tone={row.awaitingManagerApproval ? 'warning' : 'neutral'} icon={Info}>
+        {data.meta.note} Leads are dated by KBS lead creation; payout events by the MIS evidence
+        that made them eligible.{' '}
+        {row.awaitingManagerApproval
+          ? `${row.awaitingManagerApproval} request(s) are waiting for a Manager decision.`
+          : ''}
+      </Callout>
 
-      <div className="grid gap-3 lg:grid-cols-3">
-        <Dist title="Current stage" d={row.stage} />
-        <Dist title="Final decision" d={row.decision} />
-        <Dist title="Card activation" d={row.activation} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Dist title="Current stage" d={row.stage} icon={GitBranch} />
+        <Dist title="Final decision" d={row.decision} icon={Scale} />
+        <Dist title="Card activation" d={row.activation} icon={CreditCard} />
       </div>
 
       {row.bankReasons.top.length ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Bank reasons</CardTitle>
-            <CardDescription>
-              {row.bankReasons.leadsWithReason.value} of {row.bankReasons.leadsWithReason.denominator?.value ?? 0} MIS-matched leads carry a bank remark or decline field (verbatim).
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid gap-1 text-sm">
-              {row.bankReasons.top.map((r) => (
-                <li key={r.value} className="flex justify-between gap-2">
-                  <span className="min-w-0 break-words">{r.value}</span>
-                  <span className="tabular-nums">{r.count}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <SectionCard
+          icon={MessageSquareWarning}
+          tone="amber"
+          title="Bank reasons"
+          description={`${row.bankReasons.leadsWithReason.value} of ${row.bankReasons.leadsWithReason.denominator?.value ?? 0} MIS-matched leads carry a bank remark or decline field (verbatim).`}
+        >
+          <ul className="divide-y divide-slate-100 text-sm">
+            {row.bankReasons.top.map((r) => (
+              <li
+                key={r.value}
+                className="flex items-baseline justify-between gap-3 py-2 first:pt-0 last:pb-0"
+              >
+                <span className="min-w-0 break-words text-slate-800">{r.value}</span>
+                <span className="font-semibold text-slate-900 tabular-nums">{r.count}</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
       ) : null}
 
-      <Card>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
-          <div>
-            <CardTitle>Recent leads</CardTitle>
-            <CardDescription>
-              Latest {leads.data.length} of {Number(leads.meta.total ?? leads.data.length)} · stage, decision and activation shown separately.
-            </CardDescription>
-          </div>
+      <SectionCard
+        icon={ListChecks}
+        tone="sky"
+        title="Recent leads"
+        description={`Latest ${leads.data.length} of ${Number(leads.meta.total ?? leads.data.length)} · stage, decision and activation shown separately.`}
+        actions={
           <Button asChild size="sm" variant="outline">
             <Link href={`/manager/leads?advisorId=${id}`}>All leads with filters</Link>
           </Button>
-        </CardHeader>
-        <CardContent>
+        }
+        flush={leads.data.length > 0}
+      >
+        {leads.data.length === 0 ? (
+          <EmptyState icon={ListChecks} title="No leads yet." />
+        ) : (
           <Table responsive>
             <TableHeader>
               <TableRow>
@@ -166,14 +318,19 @@ export default async function ManagerAdvisorPage({ params, searchParams }: { par
               {leads.data.map((l) => (
                 <TableRow key={l.id}>
                   <TableCell data-label="Customer">
-                    <Link className="font-medium underline-offset-2 hover:underline" href={`/manager/leads/${l.id}`}>
+                    <Link className="font-medium" href={`/manager/leads/${l.id}`}>
                       {l.customer.name}
                     </Link>
-                    <div className="text-muted-foreground font-mono text-xs">{l.kbsRef}</div>
+                    <div className="font-mono text-[11px] text-slate-500">{l.kbsRef}</div>
                   </TableCell>
-                  <TableCell data-label="Bank / card" className="text-xs">
-                    {l.bank.displayName}
-                    <div className="text-muted-foreground">{l.card.name}</div>
+                  <TableCell data-label="Bank / card">
+                    <div className="flex items-center gap-2.5">
+                      <BankMark code={l.bank.code} size="sm" />
+                      <div className="min-w-0 text-xs">
+                        <div className="font-medium text-slate-800">{l.bank.displayName}</div>
+                        <div className="text-slate-500">{l.card.name}</div>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell data-label="Bank status (MIS)">
                     <div className="flex flex-wrap gap-1">
@@ -181,37 +338,41 @@ export default async function ManagerAdvisorPage({ params, searchParams }: { par
                       <DecisionBadge field={l.decision} />
                       <ActivationBadge field={l.activation} />
                     </div>
-                    {l.remarksPreview ? <div className="text-muted-foreground mt-1 line-clamp-2 text-xs">{l.remarksPreview}</div> : null}
+                    {l.remarksPreview ? (
+                      <div className="mt-1 line-clamp-2 text-xs text-slate-500">
+                        {l.remarksPreview}
+                      </div>
+                    ) : null}
                   </TableCell>
-                  <TableCell data-label="Created" className="text-xs">
+                  <TableCell
+                    data-label="Created"
+                    className="text-xs whitespace-nowrap text-slate-600 tabular-nums"
+                  >
                     {formatDate(l.leadCreatedAt)}
                   </TableCell>
                 </TableRow>
               ))}
-              {leads.data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-muted-foreground text-center">
-                    No leads yet.
-                  </TableCell>
-                </TableRow>
-              ) : null}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        )}
+      </SectionCard>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Payout requests</CardTitle>
-            <CardDescription>Newest first. Open a request to see both approvals and the Accounts payment record.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table responsive>
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+        <SectionCard
+          icon={Wallet}
+          tone="teal"
+          title="Payout requests"
+          description="Newest first. Open a request to see both approvals and the Accounts payment record."
+          flush={requests.data.length > 0}
+        >
+          {requests.data.length === 0 ? (
+            <EmptyState icon={Wallet} title="No payout requests yet." />
+          ) : (
+            <Table responsive="compact">
               <TableHeader>
                 <TableRow>
                   <TableHead>Request</TableHead>
-                  <TableHead>Amount</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                   <TableHead>State</TableHead>
                 </TableRow>
               </TableHeader>
@@ -219,85 +380,103 @@ export default async function ManagerAdvisorPage({ params, searchParams }: { par
                 {requests.data.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell data-label="Request">
-                      <Link className="font-mono text-xs underline-offset-2 hover:underline" href={`/manager/payouts/requests/${r.id}`}>
+                      <Link
+                        className="font-mono text-xs"
+                        href={`/manager/payouts/requests/${r.id}`}
+                      >
                         {r.publicRef}
                       </Link>
-                      <div className="text-muted-foreground text-xs">submitted {formatDateTime(r.submittedAt)}</div>
+                      <div className="text-xs text-slate-500 tabular-nums">
+                        submitted {formatDateTime(r.submittedAt)}
+                      </div>
                     </TableCell>
-                    <TableCell data-label="Amount" className="text-xs">
-                      {inr(r.totalAmountInr)}
-                      <div className="text-muted-foreground">{r.itemCount} card event(s)</div>
+                    <TableCell
+                      data-label="Amount"
+                      className="text-xs tabular-nums @min-[701px]:text-right"
+                    >
+                      <div className="text-sm font-semibold whitespace-nowrap text-slate-900">
+                        {inr(r.totalAmountInr)}
+                      </div>
+                      <div className="text-slate-500">{r.itemCount} card event(s)</div>
                     </TableCell>
                     <TableCell data-label="State">
                       <PayoutStateBadge state={r.state} />
-                      {r.outstanding.length ? <div className="text-muted-foreground text-xs">Waiting: {r.outstanding.join(' + ').toLowerCase()}</div> : null}
-                      {r.paidAt ? <div className="text-muted-foreground text-xs">Paid {formatDate(r.paidAt)}</div> : null}
+                      {r.outstanding.length ? (
+                        <div className="mt-1 text-xs text-slate-500">
+                          Waiting: {r.outstanding.join(' + ').toLowerCase()}
+                        </div>
+                      ) : null}
+                      {r.paidAt ? (
+                        <div className="mt-1 text-xs text-slate-500 tabular-nums">
+                          Paid {formatDate(r.paidAt)}
+                        </div>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}
-                {requests.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-muted-foreground text-center">
-                      No payout requests yet.
-                    </TableCell>
-                  </TableRow>
-                ) : null}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Eligible card events</CardTitle>
-            <CardDescription>Payout entitlements created from applied bank MIS under the approved rule. Paid events cannot be claimed again.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table responsive>
+          )}
+        </SectionCard>
+        <SectionCard
+          icon={BadgeCheck}
+          tone="emerald"
+          title="Eligible card events"
+          description="Payout entitlements created from applied bank MIS under the approved rule. Paid events cannot be claimed again."
+          flush={ents.data.length > 0}
+        >
+          {ents.data.length === 0 ? (
+            <EmptyState icon={BadgeCheck} title="No eligible card events yet." />
+          ) : (
+            <Table responsive="compact">
               <TableHeader>
                 <TableRow>
                   <TableHead>Lead</TableHead>
                   <TableHead>MIS evidence</TableHead>
-                  <TableHead>Amount / state</TableHead>
+                  <TableHead className="text-right">Amount / state</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {ents.data.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell data-label="Lead">
-                      <Link className="underline-offset-2 hover:underline" href={`/manager/leads/${e.lead.id}`}>
-                        {e.lead.customerFullName}
-                      </Link>
-                      <div className="text-muted-foreground text-xs">
-                        {e.bank.displayName} · {e.card}
+                      <div className="flex items-center gap-2.5">
+                        <BankMark code={e.bank.code} size="sm" />
+                        <div className="min-w-0">
+                          <Link className="font-medium" href={`/manager/leads/${e.lead.id}`}>
+                            {e.lead.customerFullName}
+                          </Link>
+                          <div className="text-xs text-slate-500">
+                            {e.bank.displayName} · {e.card}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell data-label="MIS evidence" className="text-xs">
-                      <span className="font-mono">
+                      <span className="font-mono break-words text-slate-800">
                         {e.triggerField} = {e.triggerFieldValue}
                       </span>
-                      <div className="text-muted-foreground">
+                      <div className="text-slate-500 tabular-nums">
                         batch {e.evidence.batchRef} · {formatDate(e.eligibleAt)}
                       </div>
                     </TableCell>
-                    <TableCell data-label="Amount / state" className="text-xs">
-                      {inr(e.amountInr)}
-                      <div>
-                        <Badge variant="secondary">{e.state.replaceAll('_', ' ').toLowerCase()}</Badge>
+                    <TableCell
+                      data-label="Amount / state"
+                      className="text-xs @min-[701px]:text-right"
+                    >
+                      <div className="text-sm font-semibold whitespace-nowrap text-slate-900 tabular-nums">
+                        {inr(e.amountInr)}
+                      </div>
+                      <div className="mt-1">
+                        <PayoutStateBadge state={e.state} />
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
-                {ents.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-muted-foreground text-center">
-                      No eligible card events yet.
-                    </TableCell>
-                  </TableRow>
-                ) : null}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          )}
+        </SectionCard>
       </div>
     </div>
   );
