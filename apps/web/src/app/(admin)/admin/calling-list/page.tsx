@@ -1,8 +1,10 @@
 import { formatDateTime } from '@kbs/shared';
+import { CheckCircle2, FileSpreadsheet, ListChecks, Phone, ShieldAlert, Users } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { EmptyState, humanize, PageHeader, SectionCard, StatCard, StatGrid } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 
@@ -25,60 +27,104 @@ const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'destructi
 /** F-303 Admin: customer calling-list batches (REQ-06 §6.2 batch list). */
 export default async function CallingListPage() {
   const b = await apiFetch<BatchRow[]>('/calling-list/batches?pageSize=50');
+  const total = Number(b.meta.total ?? b.data.length);
+  const imported = b.data.filter((r) => r.status === 'IMPORTED');
+  const records = imported.reduce((n, r) => n + (r.totals?.imported ?? 0), 0);
+  const review = imported.reduce((n, r) => n + (r.totals?.needsReview ?? 0), 0);
+  const blocked = imported.filter((r) => !r.allocatedAt && !r.attested).length;
+  const inProgress = b.data.filter((r) => r.status === 'UPLOADED' || r.status === 'VALIDATED').length;
+  const scope = total > b.data.length ? `Of the latest ${b.data.length} batches` : 'Across all batches';
   return (
     <div className="grid gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Customer calling lists</h1>
-        <p className="text-muted-foreground text-sm">Upload → map columns → validate → confirm. Every batch keeps its file, uploader and time; rows are never redistributed automatically.</p>
-      </div>
+      <PageHeader
+        icon={Phone}
+        eyebrow="Sales operations"
+        title="Customer calling lists"
+        description="Upload → map columns → validate → confirm. Every batch keeps its file, uploader and time; rows are never redistributed automatically."
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/admin/calling-list/distribution">
+              <Users />
+              Calling allocation
+            </Link>
+          </Button>
+        }
+      >
+        <StatGrid>
+          <StatCard label="Batches" value={total} hint={inProgress ? `${inProgress} still being mapped or validated` : 'All uploads, newest first'} icon={FileSpreadsheet} tone="sky" />
+          <StatCard label="Records imported" value={records} hint={`${scope} · ${imported.length} imported batch${imported.length === 1 ? '' : 'es'}`} icon={CheckCircle2} tone="emerald" />
+          <StatCard label="Rows in review" value={review} hint={`${scope} · accept or exclude with a reason`} icon={ListChecks} tone={review ? 'amber' : 'slate'} />
+          <StatCard label="Allocation blocked" value={blocked} hint={`${scope} · consent not confirmed`} icon={ShieldAlert} tone={blocked ? 'rose' : 'slate'} />
+        </StatGrid>
+      </PageHeader>
       <NewBatchCard />
-      <Card>
-        <CardHeader>
-          <CardTitle>Batches</CardTitle>
-          <CardDescription>{String(b.meta.total ?? b.data.length)} batches.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
+      <SectionCard icon={FileSpreadsheet} tone="sky" title="Batches" description={`${String(b.meta.total ?? b.data.length)} batches.`} flush={b.data.length > 0}>
+        {b.data.length === 0 ? (
+          <EmptyState icon={FileSpreadsheet} title="No batches yet." description="Upload the first customer list above. Nothing is allocated until the mapping is validated and the import is confirmed." />
+        ) : (
+          <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>Ref</TableHead>
                 <TableHead>File</TableHead>
                 <TableHead>Uploaded</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Imported / review / excluded</TableHead>
+                <TableHead className="sm:text-right">Imported / review / excluded</TableHead>
                 <TableHead>Allocation</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {b.data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-muted-foreground text-center">
-                    No batches yet.
-                  </TableCell>
-                </TableRow>
-              ) : null}
               {b.data.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell>
-                    <Link className="font-mono text-xs underline" href={`/admin/calling-list/${r.id}`}>
+                  <TableCell data-label="Ref">
+                    <Link className="font-mono text-xs" href={`/admin/calling-list/${r.id}`}>
                       {r.publicRef}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-xs">{r.file}</TableCell>
-                  <TableCell className="text-xs">
-                    {formatDateTime(r.uploadedAt)} · {r.uploader}
+                  <TableCell data-label="File">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-700">
+                      <FileSpreadsheet className="size-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                      <span className="break-all">{r.file}</span>
+                    </span>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_VARIANT[r.status] ?? 'unknown'}>{r.status}</Badge>
+                  <TableCell data-label="Uploaded" className="text-xs">
+                    {formatDateTime(r.uploadedAt)}
+                    <div className="text-[11px] text-slate-500">by {r.uploader}</div>
                   </TableCell>
-                  <TableCell className="text-xs">{r.status === 'IMPORTED' ? `${r.totals?.imported ?? 0} / ${r.totals?.needsReview ?? 0} / ${r.totals?.excluded ?? 0}` : r.totals?.rows ? `${r.totals.rows} rows` : '—'}</TableCell>
-                  <TableCell className="text-xs">{r.allocatedAt ? `allocated ${formatDateTime(r.allocatedAt)}` : r.status === 'IMPORTED' ? (r.attested ? 'pending' : 'blocked: consent not confirmed') : '—'}</TableCell>
+                  <TableCell data-label="Status">
+                    <Badge variant={STATUS_VARIANT[r.status] ?? 'unknown'}>{humanize(r.status)}</Badge>
+                  </TableCell>
+                  <TableCell data-label="Imported / review / excluded" className="text-xs tabular-nums sm:text-right">
+                    {r.status === 'IMPORTED' ? (
+                      <span className="inline-flex items-center gap-1">
+                        <span className="font-semibold text-emerald-700">{r.totals?.imported ?? 0}</span>/<span className="font-semibold text-amber-700">{r.totals?.needsReview ?? 0}</span>/
+                        <span className="text-slate-500">{r.totals?.excluded ?? 0}</span>
+                      </span>
+                    ) : r.totals?.rows ? (
+                      `${r.totals.rows} rows`
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
+                  <TableCell data-label="Allocation" className="text-xs">
+                    {r.allocatedAt ? (
+                      <span className="text-slate-700">allocated {formatDateTime(r.allocatedAt)}</span>
+                    ) : r.status === 'IMPORTED' ? (
+                      r.attested ? (
+                        <Badge variant="warning">pending</Badge>
+                      ) : (
+                        <Badge variant="destructive">blocked: consent not confirmed</Badge>
+                      )
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        )}
+      </SectionCard>
     </div>
   );
 }

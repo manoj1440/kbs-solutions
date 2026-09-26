@@ -1,6 +1,7 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
+import { Play } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -10,10 +11,10 @@ import { clientApi } from '@/lib/client-api';
 export function PlayRecordingButton({ callId }: { callId: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex flex-wrap items-center gap-1">
       <Button
         size="sm"
-        variant="ghost"
+        variant="soft"
         onClick={async () => {
           try {
             const r = await clientApi.get<{ url: string }>(`/calls/${callId}/recording-url`);
@@ -23,6 +24,7 @@ export function PlayRecordingButton({ callId }: { callId: string }) {
           }
         }}
       >
+        <Play aria-hidden="true" />
         Play
       </Button>
       {msg ? <span className="text-destructive text-xs">{msg}</span> : null}

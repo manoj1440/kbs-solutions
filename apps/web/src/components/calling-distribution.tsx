@@ -1,17 +1,12 @@
-import { type CallingQueueRow, formatDateTime } from '@kbs/shared';
+import { type CallingQueueRow, type CallOutcome, formatDateTime, OUTCOME_LABELS } from '@kbs/shared';
+import { CalendarClock, CircleAlert, CircleCheck, Contact, Inbox, TriangleAlert, Users } from 'lucide-react';
 
 import { ReassignForm } from '@/components/reassign-form';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Avatar, Callout, EmptyState, humanize, Meter, PillNav, SectionCard } from '@/components/ui/kit';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 export interface DistributionRow {
   id: string;
@@ -28,6 +23,17 @@ interface Distribution {
   telecallers: DistributionRow[];
   unassigned: number | null;
 }
+
+const TAB_LABEL = { active: 'Active', followups: 'Follow-ups', hidden: 'Hidden' } as const;
+const INTERACTION_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'unknown' | 'secondary'> = {
+  UNTOUCHED: 'secondary',
+  FOLLOW_UP: 'info',
+  INTERESTED: 'success',
+  LINK_SHARED: 'success',
+  COMPLETED: 'success',
+  DECLINED: 'unknown',
+  UNREACHABLE: 'warning',
+};
 
 /** F-305 §6 / F-307 §4: distribution + scoped records with reassignment (Manager: team; Admin: all). */
 export async function CallingDistribution({
@@ -47,92 +53,109 @@ export async function CallingDistribution({
   ]);
   const base = scope === 'manager' ? '/manager/calling' : '/admin/calling-list/distribution';
   const eligible = dist.data.telecallers.filter((t) => t.eligible);
+  const totalActive = dist.data.telecallers.reduce((n, t) => n + t.active, 0);
+  const unassigned = dist.data.unassigned;
+  const tabHref = (t: keyof typeof TAB_LABEL) => `${base}?tab=${t}${telecallerId ? `&telecallerId=${telecallerId}` : ''}`;
+  const recordCount = Number(records.meta.total ?? records.data.length);
   return (
     <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Distribution</CardTitle>
-          <CardDescription>
-            Active records per Telecaller
-            {dist.data.unassigned !== null
-              ? ` · ${dist.data.unassigned} accepted records unassigned (no eligible Telecaller or consent gate)`
-              : ''}
-            . Deactivated Telecallers still holding records are flagged — reassign them.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Telecaller</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Eligible</TableHead>
-                <TableHead>Active</TableHead>
-                <TableHead>Breakdown</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dist.data.telecallers.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell data-label="Telecaller">
-                    <div className="font-medium">{t.fullName}</div>
-                    {t.employeeCode ? (
-                      <div className="text-muted-foreground mt-1 text-xs">{t.employeeCode}</div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell data-label="Status">
-                    <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>
-                      {t.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell data-label="Eligibility">
-                    {t.eligible ? (
-                      <Badge variant="success">trained</Badge>
-                    ) : (
-                      <Badge variant="warning">{t.trained ? 'inactive' : 'training pending'}</Badge>
+      <SectionCard
+        icon={Users}
+        tone="violet"
+        title="Distribution"
+        description="Active records per Telecaller. Deactivated Telecallers still holding records are flagged — reassign them."
+      >
+        <div className="grid gap-4">
+          {unassigned !== null ? (
+            <Callout tone={unassigned > 0 ? 'warning' : 'success'} icon={unassigned > 0 ? TriangleAlert : CircleCheck}>
+              <span className="font-semibold tabular-nums">{unassigned}</span> accepted records unassigned (no eligible Telecaller or consent gate)
+            </Callout>
+          ) : null}
+          {dist.data.telecallers.length === 0 ? (
+            <EmptyState icon={Users} title="No Telecallers yet" description="Records are allocated only to active, training-complete Telecallers." />
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {dist.data.telecallers.map((t) => {
+                const breakdown = Object.entries(t.byStatus);
+                return (
+                  <li
+                    key={t.id}
+                    className={cn(
+                      'flex min-w-0 flex-col gap-3 rounded-xl border bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]',
+                      t.needsReassignment ? 'border-rose-200' : telecallerId === t.id ? 'border-teal-300 ring-2 ring-teal-100' : 'border-slate-200/80',
                     )}
-                  </TableCell>
-                  <TableCell data-label="Active records">
-                    {t.active}{' '}
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      <Avatar name={t.fullName} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium text-slate-900">{t.fullName}</div>
+                        {t.employeeCode ? <div className="truncate text-xs text-slate-500">{t.employeeCode}</div> : null}
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(t.status)}</Badge>
+                          {t.eligible ? (
+                            <Badge variant="success">trained</Badge>
+                          ) : (
+                            <Badge variant="warning">{t.trained ? 'inactive' : 'training pending'}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-[12px] font-medium text-slate-600">Active records</span>
+                        <span className="text-lg font-semibold text-slate-900 tabular-nums">{t.active}</span>
+                      </div>
+                      <Meter value={t.active} max={totalActive} tone={t.needsReassignment ? 'rose' : 'violet'} label={`${t.fullName} active records`} />
+                      <p className="text-[11px] text-slate-500">
+                        {totalActive > 0 ? `${Math.round((t.active / totalActive) * 100)}% of ${totalActive} active records` : 'No active records'}
+                      </p>
+                    </div>
                     {t.needsReassignment ? (
-                      <Badge variant="destructive">needs reassignment</Badge>
+                      <Badge variant="destructive">
+                        <CircleAlert />
+                        needs reassignment
+                      </Badge>
                     ) : null}
-                  </TableCell>
-                  <TableCell data-label="Breakdown" className="text-xs">
-                    {Object.entries(t.byStatus)
-                      .map(([k, n]) => `${k.toLowerCase().replace('_', ' ')} ${n}`)
-                      .join(' · ') || '—'}
-                  </TableCell>
-                  <TableCell data-label="Actions">
-                    <a className="text-xs underline" href={`${base}?telecallerId=${t.id}`}>
-                      view records
-                    </a>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Records{telecallerId ? ' — selected Telecaller' : ''}</CardTitle>
-          <CardDescription>
-            {(['active', 'followups', 'hidden'] as const).map((t) => (
-              <a
-                key={t}
-                className={`mr-3 underline ${t === tab ? 'font-semibold' : ''}`}
-                href={`${base}?tab=${t}${telecallerId ? `&telecallerId=${telecallerId}` : ''}`}
-              >
-                {t}
-              </a>
-            ))}
-            · {String(records.meta.total ?? records.data.length)} rows · mobiles masked (REQ-08
-            §8.3)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+                    <div className="flex flex-wrap gap-1 text-[11px]">
+                      {breakdown.length ? (
+                        breakdown.map(([k, n]) => (
+                          <span key={k} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-slate-600">
+                            {k.toLowerCase().replace('_', ' ')} <span className="font-semibold tabular-nums">{n}</span>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </div>
+                    <div className="mt-auto border-t border-slate-100 pt-3">
+                      <a className="text-[13px] font-medium text-teal-700 hover:text-teal-800" href={`${base}?telecallerId=${t.id}`}>
+                        view records
+                      </a>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </SectionCard>
+      <SectionCard
+        icon={Contact}
+        tone="sky"
+        title={`Records${telecallerId ? ' — selected Telecaller' : ''}`}
+        description={`${String(records.meta.total ?? records.data.length)} rows · mobiles masked (REQ-08 §8.3)`}
+        actions={
+          <PillNav
+            label="Record tabs"
+            active={tabHref(tab)}
+            items={(['active', 'followups', 'hidden'] as const).map((t) => ({ href: tabHref(t), label: TAB_LABEL[t], count: t === tab ? recordCount : null }))}
+          />
+        }
+        flush={records.data.length > 0}
+      >
+        {records.data.length === 0 ? (
+          <EmptyState icon={Inbox} title="No records." description="Nothing in this tab for the current selection." />
+        ) : (
           <Table responsive>
             <TableHeader>
               <TableRow>
@@ -145,42 +168,48 @@ export async function CallingDistribution({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {records.data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-muted-foreground text-center">
-                    No records.
-                  </TableCell>
-                </TableRow>
-              ) : null}
               {records.data.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell data-label="Customer / mobile">
-                    <div className="font-medium">{r.fullName}</div>
-                    <div className="text-muted-foreground mt-1 font-mono text-xs">
-                      {r.mobileMasked}
-                    </div>
+                    <div className="font-medium text-slate-900">{r.fullName}</div>
+                    <div className="mt-0.5 font-mono text-xs text-slate-500">{r.mobileMasked}</div>
                   </TableCell>
                   <TableCell data-label="Location" className="text-xs">
-                    <div>{r.pincode}</div>
-                    <div className="text-muted-foreground mt-1">{r.location}</div>
+                    <div className="font-mono">{r.pincode}</div>
+                    <div className="mt-0.5 text-slate-500">{r.location}</div>
                   </TableCell>
                   <TableCell data-label="Status">
-                    <Badge variant="secondary">{r.interactionStatus}</Badge>
-                    {r.suppressed ? <Badge variant="destructive">DNC</Badge> : null}
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant={INTERACTION_VARIANT[r.interactionStatus] ?? 'secondary'}>{humanize(r.interactionStatus)}</Badge>
+                      {r.suppressed ? <Badge variant="destructive">DNC</Badge> : null}
+                    </div>
                   </TableCell>
                   <TableCell data-label="Assigned to" className="text-xs">
-                    {r.assignedTelecaller?.fullName ?? <em>unassigned</em>}
+                    {r.assignedTelecaller ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Avatar name={r.assignedTelecaller.fullName} size="sm" />
+                        <span className="font-medium text-slate-800">{r.assignedTelecaller.fullName}</span>
+                      </span>
+                    ) : (
+                      <em className="text-slate-500">unassigned</em>
+                    )}
                   </TableCell>
                   <TableCell data-label="Follow-up / last outcome" className="text-xs">
-                    <div>
-                      {r.nextFollowUpAt
-                        ? `Due ${formatDateTime(r.nextFollowUpAt)}`
-                        : 'No follow-up scheduled'}
+                    <div className={cn('inline-flex items-center gap-1', r.nextFollowUpAt ? 'font-medium text-slate-800' : 'text-slate-500')}>
+                      {r.nextFollowUpAt ? <CalendarClock className="size-3.5 text-sky-600" aria-hidden="true" /> : null}
+                      {r.nextFollowUpAt ? `Due ${formatDateTime(r.nextFollowUpAt)}` : 'No follow-up scheduled'}
                     </div>
-                    <div className="text-muted-foreground mt-1">
-                      {r.lastOutcome
-                        ? `${r.lastOutcome.outcome}${r.lastOutcome.remarks ? ` — ${r.lastOutcome.remarks}` : ''}`
-                        : 'No outcome recorded'}
+                    <div className="mt-1 text-slate-500">
+                      {r.lastOutcome ? (
+                        <>
+                          <Badge variant="outline" title={r.lastOutcome.outcome} className="whitespace-normal">
+                            {OUTCOME_LABELS[r.lastOutcome.outcome as CallOutcome] ?? r.lastOutcome.outcome}
+                          </Badge>
+                          {r.lastOutcome.remarks ? <span className="ml-1">— {r.lastOutcome.remarks}</span> : null}
+                        </>
+                      ) : (
+                        'No outcome recorded'
+                      )}
                     </div>
                   </TableCell>
                   <TableCell data-label="Reassign">
@@ -196,8 +225,8 @@ export async function CallingDistribution({
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        )}
+      </SectionCard>
     </div>
   );
 }

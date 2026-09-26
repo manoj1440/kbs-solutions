@@ -2,10 +2,12 @@
 
 import { ApiClientError } from '@kbs/shared';
 import { useRouter } from 'next/navigation';
+import { ArrowRightLeft, Info, TriangleAlert } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Callout, Field, IconTile, selectClass } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 
 /** F-305 §4: manual reassignment with mandatory reason (Manager within team, Admin any). */
@@ -35,12 +37,13 @@ export function ReassignForm({
           dialog.current?.showModal();
         }}
       >
+        <ArrowRightLeft aria-hidden="true" />
         Reassign
       </Button>
       <dialog
         ref={dialog}
         aria-labelledby={`reassign-title-${recordId}`}
-        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border bg-white p-6 text-foreground shadow-xl backdrop:bg-slate-950/40"
+        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 text-foreground shadow-xl backdrop:bg-slate-950/40 backdrop:backdrop-blur-[2px]"
       >
         <form
           className="grid gap-4"
@@ -65,28 +68,31 @@ export function ReassignForm({
             }
           }}
         >
-          <div>
-            <h2 id={`reassign-title-${recordId}`} className="text-lg font-semibold">
-              Reassign calling record
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Choose an eligible telecaller and provide a reason. This change is logged.
-            </p>
+          <div className="flex items-start gap-3">
+            <IconTile icon={ArrowRightLeft} tone="violet" />
+            <div className="min-w-0">
+              <h2
+                id={`reassign-title-${recordId}`}
+                className="text-lg font-semibold tracking-tight text-slate-900"
+              >
+                Reassign calling record
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Choose an eligible telecaller and provide a reason. This change is logged.
+              </p>
+            </div>
           </div>
           {!targets.length ? (
-            <p className="rounded-lg bg-muted p-3 text-sm">
+            <Callout tone="warning" icon={Info}>
               No other eligible telecaller is available. Review team eligibility before reassigning.
-            </p>
+            </Callout>
           ) : null}
-          <div className="grid gap-2">
-            <label htmlFor={`reassign-to-${recordId}`} className="text-sm font-medium">
-              New telecaller
-            </label>
+          <Field label="New telecaller" htmlFor={`reassign-to-${recordId}`}>
             <select
               id={`reassign-to-${recordId}`}
               required
               disabled={busy || !targets.length}
-              className="border-input bg-background h-10 w-full min-w-0 rounded-md border px-2 text-sm"
+              className={selectClass}
               value={to}
               onChange={(e) => setTo(e.target.value)}
             >
@@ -97,11 +103,8 @@ export function ReassignForm({
                 </option>
               ))}
             </select>
-          </div>
-          <div className="grid gap-2">
-            <label htmlFor={`reassign-reason-${recordId}`} className="text-sm font-medium">
-              Reason (required)
-            </label>
+          </Field>
+          <Field label="Reason (required)" htmlFor={`reassign-reason-${recordId}`}>
             <Input
               id={`reassign-reason-${recordId}`}
               required
@@ -111,13 +114,13 @@ export function ReassignForm({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
-          </div>
+          </Field>
           {msg ? (
-            <p role="alert" className="text-destructive text-sm">
+            <Callout tone="danger" icon={TriangleAlert} role="alert">
               {msg}
-            </p>
+            </Callout>
           ) : null}
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
             <Button
               type="button"
               variant="outline"
