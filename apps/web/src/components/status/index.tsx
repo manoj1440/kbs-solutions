@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 function StatusBadge({ kind, field, label }: { kind: StatusKind; field: StatusField; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="text-muted-foreground text-xs">{label}:</span>
+      <span className="text-[11px] font-medium text-slate-500">{label}:</span>
       <Badge variant={statusTone(kind, field)} title={field.raw ?? undefined}>
         {field.display}
       </Badge>
@@ -25,14 +25,15 @@ export const DecisionBadge = (p: { field: StatusField }) => <StatusBadge kind="d
 export const ActivationBadge = (p: { field: StatusField }) => <StatusBadge kind="activation" label="Activation" field={p.field} />;
 
 const PROVENANCE_CLASS: Record<Provenance, string> = {
-  BANK_MIS: 'bg-provenance-bank-mis text-provenance-bank-mis-foreground',
-  KBS_OPERATIONAL: 'bg-provenance-kbs-operational text-provenance-kbs-operational-foreground',
-  KBS_PAYMENT: 'bg-provenance-kbs-payment text-provenance-kbs-payment-foreground',
+  BANK_MIS: 'bg-provenance-bank-mis/10 text-provenance-bank-mis ring-provenance-bank-mis/25',
+  KBS_OPERATIONAL: 'bg-provenance-kbs-operational/10 text-provenance-kbs-operational ring-provenance-kbs-operational/25',
+  KBS_PAYMENT: 'bg-provenance-kbs-payment/10 text-provenance-kbs-payment ring-provenance-kbs-payment/25',
 };
 
 export function ProvenanceChip({ provenance, asOf, batchRef }: { provenance: Provenance; asOf?: string | null; batchRef?: string | null }) {
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium', PROVENANCE_CLASS[provenance])}>
+    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset', PROVENANCE_CLASS[provenance])}>
+      <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
       {PROVENANCE_LABEL[provenance]}
       {asOf ? <span className="opacity-80">· as of {formatDateTime(asOf)}</span> : null}
       {batchRef ? <span className="opacity-80">· {batchRef}</span> : null}

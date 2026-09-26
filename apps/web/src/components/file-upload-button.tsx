@@ -1,13 +1,14 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
+import { Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { clientApi } from '@/lib/client-api';
 
 /** Uploads to `POST /files/:purpose` then hands the stored file id to `onUploaded`. */
-export function FileUploadButton({ purpose, accept, label, onUploaded }: { purpose: string; accept: string; label: string; onUploaded: (file: { id: string; originalName: string }) => void | Promise<void> }) {
+export function FileUploadButton({ purpose, accept, label, onUploaded, variant = 'outline' }: { purpose: string; accept: string; label: string; variant?: 'outline' | 'default'; onUploaded: (file: { id: string; originalName: string }) => void | Promise<void> }) {
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +37,8 @@ export function FileUploadButton({ purpose, accept, label, onUploaded }: { purpo
           }
         }}
       />
-      <Button type="button" variant="outline" disabled={busy} onClick={() => ref.current?.click()}>
+      <Button type="button" variant={variant} disabled={busy} onClick={() => ref.current?.click()}>
+        <Upload className={busy ? 'animate-bounce' : undefined} />
         {busy ? 'Uploading…' : label}
       </Button>
       {error ? (
