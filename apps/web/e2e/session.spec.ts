@@ -30,7 +30,7 @@ test.describe('web session continuity', () => {
   });
 
   test('a session that really ended goes to login with an explanation, then back to the page', async ({ page, context, request }) => {
-    test.skip(!DB, 'needs E2E_DB_URL to clear OTP cooldowns');
+    test.skip(!DB && !process.env.E2E_PG_CONTAINER, 'needs E2E_DB_URL or E2E_PG_CONTAINER to clear OTP cooldowns');
     const mobile = await freshManager(request);
     await login(page, mobile);
     await page.goto('/manager/account');

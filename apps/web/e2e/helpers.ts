@@ -2,10 +2,17 @@ import { execSync } from 'node:child_process';
 
 import { expect, type Page } from '@playwright/test';
 
-/** Dev/test only: clears OTP history for a mobile so repeated logins are not blocked by the resend cooldown. */
+/**
+ * Dev/test only: clears OTP history for a mobile so repeated logins are not blocked by the resend cooldown.
+ * `E2E_DB_URL` uses a host `psql`; without one, `E2E_PG_CONTAINER` (+ optional `E2E_PG_DB`, default kbs_dev) runs it
+ * inside the Postgres container.
+ */
 export function clearOtp(mobile: string) {
+  const sql = `DELETE FROM \\"OtpChallenge\\" WHERE mobile = '+91${mobile}'`;
   const db = process.env.E2E_DB_URL;
-  if (db) execSync(`psql "${db}" -qc "DELETE FROM \\"OtpChallenge\\" WHERE mobile = '+91${mobile}'"`);
+  const container = process.env.E2E_PG_CONTAINER;
+  if (db) execSync(`psql "${db}" -qc "${sql}"`);
+  else if (container) execSync(`docker exec ${container} psql -U kbs -d ${process.env.E2E_PG_DB ?? 'kbs_dev'} -qc "${sql}"`);
 }
 
 export async function login(page: Page, mobile: string) {
