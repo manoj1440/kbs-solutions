@@ -1,7 +1,11 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { LogIn, RefreshCw, RotateCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+
+import { StatusScreen } from '@/components/status-screen';
+import { Button } from '@/components/ui/button';
 
 import { loginUrlFor, safeNext } from '@/lib/session-paths';
 
@@ -38,21 +42,30 @@ export function SessionHop() {
     })();
   }, [next]);
   return (
-    <div role="status" aria-live="polite" className="grid max-w-sm gap-3 text-center">
-      <p className="text-lg font-semibold">Restoring your session…</p>
-      {slow ? (
-        <>
-          <p className="text-muted-foreground text-sm">We couldn&apos;t reach KBS. Check your connection and try again.</p>
-          <div className="flex justify-center gap-2">
-            <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => window.location.reload()}>
+    <StatusScreen
+      icon={RefreshCw}
+      busy={!slow}
+      tone={slow ? 'amber' : 'teal'}
+      role="status"
+      title="Restoring your session…"
+      actions={
+        slow ? (
+          <>
+            <Button type="button" onClick={() => window.location.reload()}>
+              <RotateCw />
               Try again
-            </button>
-            <a className="rounded-md border px-3 py-2 text-sm" href={loginUrlFor(null, next)}>
-              Sign in
-            </a>
-          </div>
-        </>
-      ) : null}
-    </div>
+            </Button>
+            <Button asChild variant="outline">
+              <a href={loginUrlFor(null, next)}>
+                <LogIn />
+                Sign in
+              </a>
+            </Button>
+          </>
+        ) : null
+      }
+    >
+      {slow ? <p>We couldn&apos;t reach KBS. Check your connection and try again.</p> : <p>One moment — keeping you signed in.</p>}
+    </StatusScreen>
   );
 }

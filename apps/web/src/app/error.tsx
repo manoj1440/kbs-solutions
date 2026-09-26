@@ -1,8 +1,10 @@
 'use client';
 
+import { Home, RotateCw, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
+import { StatusScreen } from '@/components/status-screen';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -14,20 +16,30 @@ export default function ErrorScreen({ error, reset }: { error: Error & { digest?
     console.error('[KBS] page render failed', error.digest ?? '');
   }, [error]);
   return (
-    <main className="flex min-h-[60dvh] items-center justify-center p-4">
-      <div role="alert" className="grid max-w-md gap-3 rounded-xl border bg-white p-6 text-center shadow-sm">
-        <h1 className="text-xl font-semibold">We couldn&apos;t reach KBS right now</h1>
-        <p className="text-muted-foreground text-sm">
-          The page could not load. Check your internet connection and try again. If it keeps happening, the KBS service may be down — nothing you entered is lost on the server.
-        </p>
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button onClick={() => reset()}>Try again</Button>
-          <Button variant="outline" asChild>
-            <Link href="/">Go to my home</Link>
+    <StatusScreen
+      icon={WifiOff}
+      tone="rose"
+      role="alert"
+      title="We couldn't reach KBS right now"
+      actions={
+        <>
+          <Button onClick={() => reset()}>
+            <RotateCw />
+            Try again
           </Button>
-        </div>
-        {error.digest ? <p className="text-muted-foreground text-xs">Reference: {error.digest}</p> : null}
-      </div>
-    </main>
+          <Button variant="outline" asChild>
+            <Link href="/">
+              <Home />
+              Go to my home
+            </Link>
+          </Button>
+        </>
+      }
+      footer={error.digest ? <>Reference: {error.digest}</> : null}
+    >
+      <p>
+        The page could not load. Check your internet connection and try again. If it keeps happening, the KBS service may be down — nothing you entered is lost on the server.
+      </p>
+    </StatusScreen>
   );
 }
