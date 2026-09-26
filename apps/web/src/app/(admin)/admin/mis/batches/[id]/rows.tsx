@@ -1,15 +1,17 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
+import { Ban, Eye, EyeOff, Rows3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { EmptyState, humanize, SectionCard, selectClass } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { clientApi } from '@/lib/client-api';
+import { cn } from '@/lib/utils';
 
 import { Resolve } from '@/components/mis-resolve';
 
@@ -41,20 +43,24 @@ export function BatchRows({ batchId, stage }: { batchId: string; stage: string }
       setMsg(e instanceof ApiClientError ? e.message : 'Could not load rows.');
     }
   };
-  const [loadedStage, setLoadedStage] = useState<string | null>(null);
-  if (loadedStage !== stage) {
-    setLoadedStage(stage);
-    setTimeout(() => void load(), 0);
-  }
+  // (re)load after mount and whenever the batch stage moves; scheduling this during render raced React's mount
+  useEffect(() => {
+    const t = setTimeout(() => void load(), 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keep the current reveal/filter; only the stage triggers a reload
+  }, [stage]);
+  const blank = <em className="text-slate-400">blank</em>;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Rows</CardTitle>
-        <CardDescription>Customer name, company and capture link are masked by default; revealing is logged as a sensitive access.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-3">
+    <SectionCard
+      icon={Rows3}
+      tone="indigo"
+      title="Rows"
+      description="Customer name, company and capture link are masked by default; revealing is logged as a sensitive access."
+      flush={Boolean(rows && rows.length)}
+    >
+      <div className={cn('grid gap-3', rows && rows.length ? 'px-5 pb-4 sm:px-6' : '')}>
         <div className="flex flex-wrap items-center gap-2">
-          <select aria-label="match state" className="border-input bg-background h-8 rounded-md border px-2 text-xs" value={state} onChange={(e) => { setState(e.target.value); void load(reveal, e.target.value); }}>
+          <select aria-label="match state" className={cn(selectClass, 'h-9 w-auto min-w-40')} value={state} onChange={(e) => { setState(e.target.value); void load(reveal, e.target.value); }}>
             <option value="">all states</option>
             {['PENDING', 'MATCHED', 'UNMATCHED', 'CONFLICT', 'INVALID', 'IGNORED'].map((s) => (
               <option key={s} value={s}>
@@ -62,15 +68,17 @@ export function BatchRows({ batchId, stage }: { batchId: string; stage: string }
               </option>
             ))}
           </select>
-          <Button size="sm" variant="outline" onClick={() => { setReveal(!reveal); void load(!reveal, state); }}>
+          <Button size="sm" variant="outline" className="h-9" onClick={() => { setReveal(!reveal); void load(!reveal, state); }}>
+            {reveal ? <EyeOff /> : <Eye />}
             {reveal ? 'Mask PII' : 'Reveal PII (logged)'}
           </Button>
           {stage !== 'APPLIED' && stage !== 'REJECTED' ? (
-            <>
-              <Input className="h-8 max-w-xs text-xs" placeholder="reject reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+              <Input className="h-9 min-w-0 flex-1 text-[13px] sm:w-56 sm:flex-none" placeholder="reject reason" value={reason} onChange={(e) => setReason(e.target.value)} />
               <Button
                 size="sm"
                 variant="destructive"
+                className="h-9"
                 disabled={reason.trim().length < 3}
                 onClick={async () => {
                   try {
@@ -81,57 +89,71 @@ export function BatchRows({ batchId, stage }: { batchId: string; stage: string }
                   }
                 }}
               >
+                <Ban />
                 Reject batch
               </Button>
-            </>
+            </div>
           ) : null}
         </div>
         {msg ? <p className="text-destructive text-sm">{msg}</p> : null}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Row</TableHead>
-                <TableHead>State</TableHead>
-                <TableHead>References</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Decision</TableHead>
-                <TableHead>Activation</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Explanation</TableHead>
+        {rows && rows.length === 0 ? <EmptyState icon={Rows3} title="No rows." description={state ? 'No row in this batch has that match state.' : undefined} /> : null}
+      </div>
+      {rows && rows.length ? (
+        <Table responsive>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-right">Row</TableHead>
+              <TableHead>State</TableHead>
+              <TableHead>References</TableHead>
+              <TableHead>Stage</TableHead>
+              <TableHead>Decision</TableHead>
+              <TableHead>Activation</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Explanation</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell data-label="Row" className="text-xs text-slate-500 tabular-nums sm:text-right">
+                  {r.sourceRowNumber}
+                </TableCell>
+                <TableCell data-label="State">
+                  <Badge variant={STATE[r.matchState] ?? 'unknown'}>{humanize(r.matchState)}</Badge>
+                  {r.matchedLead ? <div className="mt-1 font-mono text-[11px] whitespace-nowrap text-slate-600">{r.matchedLead.publicRef}</div> : null}
+                </TableCell>
+                <TableCell data-label="References">
+                  {r.referenceValues.length ? (
+                    <div className="grid gap-1">
+                      {r.referenceValues.map((x) => (
+                        <span key={`${x.kind}-${x.value}`} className="min-w-0 font-mono text-[11px] text-slate-700">
+                          <span className="block text-[10px] text-slate-400">{x.kind.replace('APPLICATION_', 'APP ').replace('_', ' ')}:</span>
+                          <span className="break-all">{x.value}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
+                <TableCell data-label="Stage" className="text-xs text-slate-800">{r.mapped.currentStage || blank}</TableCell>
+                <TableCell data-label="Decision" className="text-xs text-slate-800">{r.mapped.finalDecision || blank}</TableCell>
+                <TableCell data-label="Activation" className="text-xs text-slate-800">{r.mapped.cardActivationStatus || blank}</TableCell>
+                <TableCell data-label="Customer" className="text-xs">{r.mapped.customerName}</TableCell>
+                <TableCell data-label="Explanation" className="text-xs text-slate-500">
+                  {r.matchExplanation}
+                  {r.matchState === 'UNMATCHED' || r.matchState === 'CONFLICT' ? (
+                    <div className="mt-1.5">
+                      <Resolve rowId={r.id} refs={r.referenceValues} onDone={() => void load()} />
+                    </div>
+                  ) : null}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(rows ?? []).map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="text-xs">{r.sourceRowNumber}</TableCell>
-                  <TableCell>
-                    <Badge variant={STATE[r.matchState] ?? 'unknown'}>{r.matchState}</Badge>
-                    {r.matchedLead ? <div className="font-mono text-xs">{r.matchedLead.publicRef}</div> : null}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{r.referenceValues.map((x) => `${x.kind.replace('APPLICATION_', 'APP ').replace('_', ' ')}: ${x.value}`).join(' · ') || '—'}</TableCell>
-                  <TableCell className="text-xs">{r.mapped.currentStage || <em className="text-muted-foreground">blank</em>}</TableCell>
-                  <TableCell className="text-xs">{r.mapped.finalDecision || <em className="text-muted-foreground">blank</em>}</TableCell>
-                  <TableCell className="text-xs">{r.mapped.cardActivationStatus || <em className="text-muted-foreground">blank</em>}</TableCell>
-                  <TableCell className="text-xs">{r.mapped.customerName}</TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
-                    {r.matchExplanation}
-                    {r.matchState === 'UNMATCHED' || r.matchState === 'CONFLICT' ? <Resolve rowId={r.id} refs={r.referenceValues} onDone={() => void load()} /> : null}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rows && rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-muted-foreground text-center">
-                    No rows.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </TableBody>
+        </Table>
+      ) : null}
+    </SectionCard>
   );
 }
 

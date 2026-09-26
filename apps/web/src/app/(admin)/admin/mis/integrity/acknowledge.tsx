@@ -1,11 +1,12 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
+import { Check, Info, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Callout, SectionCard } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 
 /** F-507: acknowledge verbatim new bank values into the approved profile's knownValues (F-501). Values are never translated. */
@@ -27,28 +28,44 @@ export function AcknowledgeValues({ bank, profileId, pending }: { bank: { id: st
     }
   };
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{bank.displayName} · new values pending acknowledgement</CardTitle>
-        <CardDescription>Exactly as the bank wrote them. Acknowledging only stops them being flagged as new; display never changes.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-2 text-sm">
-        {pending.map((p) => (
-          <div key={p.field} className="flex flex-wrap items-center gap-2">
-            <strong>{p.field}</strong>
-            <span>{p.values.join(' · ')}</span>
-            <Button size="sm" variant="ghost" disabled={busy || !profileId} onClick={() => void ack(p.field, p.values)}>
-              Acknowledge
-            </Button>
-          </div>
-        ))}
-        {!profileId ? <p className="text-muted-foreground text-xs">No approved profile for this bank — approve one under Bank MIS first.</p> : null}
+    <SectionCard
+      icon={Sparkles}
+      tone="violet"
+      title={`${bank.displayName} · new values pending acknowledgement`}
+      description="Exactly as the bank wrote them. Acknowledging only stops them being flagged as new; display never changes."
+    >
+      <div className="grid gap-3">
+        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200/80">
+          {pending.map((p) => (
+            <li key={p.field} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div className="grid min-w-0 gap-1.5">
+                <span className="font-mono text-xs font-semibold text-slate-700">{p.field}</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {p.values.map((v) => (
+                    <span key={v} className="rounded-md bg-violet-50 px-1.5 py-0.5 text-xs text-slate-800 ring-1 ring-violet-100">
+                      {v}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <Button size="sm" variant="soft" disabled={busy || !profileId} onClick={() => void ack(p.field, p.values)}>
+                <Check />
+                Acknowledge
+              </Button>
+            </li>
+          ))}
+        </ul>
+        {!profileId ? (
+          <Callout tone="warning" icon={Info}>
+            No approved profile for this bank — approve one under Bank MIS first.
+          </Callout>
+        ) : null}
         {msg ? (
-          <p role="status" className="text-xs">
+          <p role="status" className="text-xs text-slate-600">
             {msg}
           </p>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   );
 }
