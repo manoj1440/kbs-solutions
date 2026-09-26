@@ -67,7 +67,7 @@ export default async function MisPage() {
       </PageHeader>
       <div className="grid gap-6 lg:grid-cols-[1.25fr_1fr]">
         <SectionCard icon={Layers} tone="indigo" title="Import profiles" description="One per bank and version; imports run only under an approved profile." flush>
-          <Table>
+          <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>Profile</TableHead>
@@ -79,7 +79,7 @@ export default async function MisPage() {
             <TableBody>
               {profiles.data.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell>
+                  <TableCell data-label="Profile">
                     <div className="flex items-center gap-3">
                       <BankMark code={p.bank.code} size="sm" />
                       <div className="min-w-0">
@@ -90,11 +90,11 @@ export default async function MisPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Status">
                     <Badge variant={p.status === 'APPROVED' ? 'success' : p.status === 'DRAFT' ? 'warning' : 'unknown'}>{humanize(p.status)}</Badge>
                   </TableCell>
-                  <TableCell className="text-slate-600">{humanize(p.snapshotMode)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{p._count.batches}</TableCell>
+                  <TableCell data-label="Mode" className="text-slate-600">{humanize(p.snapshotMode)}</TableCell>
+                  <TableCell data-label="Batches" className="tabular-nums sm:text-right">{p._count.batches}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -106,7 +106,7 @@ export default async function MisPage() {
         {batches.data.length === 0 ? (
           <EmptyState icon={FileSpreadsheet} title="No MIS uploads yet" description="Upload the first bank workbook above. Nothing changes on any lead until a batch is previewed and applied." />
         ) : (
-          <Table>
+          <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>Batch</TableHead>
@@ -119,7 +119,7 @@ export default async function MisPage() {
             <TableBody>
               {batches.data.map((b) => (
                 <TableRow key={b.id}>
-                  <TableCell>
+                  <TableCell data-label="Batch">
                     <Link className="font-mono text-xs" href={`/admin/mis/batches/${b.id}`}>
                       {b.publicRef}
                     </Link>
@@ -128,7 +128,7 @@ export default async function MisPage() {
                       {b.file.originalName}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Bank · profile">
                     <div className="flex items-center gap-2.5">
                       <BankMark code={b.bank.code} size="sm" />
                       <div className="min-w-0">
@@ -139,15 +139,15 @@ export default async function MisPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Uploaded">
                     {formatDateTime(b.uploadedAt)}
                     <div className="text-[11px] text-slate-500">by {b.uploader.fullName}</div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Stage">
                     <Badge variant={STAGE[b.stage] ?? 'unknown'}>{humanize(b.stage)}</Badge>
                     {b.rejectReason ? <div className="mt-1 text-[11px] text-slate-500">{b.rejectReason}</div> : null}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{b.totals?.rows ?? '—'}</TableCell>
+                  <TableCell data-label="Rows" className="tabular-nums sm:text-right">{b.totals?.rows ?? '—'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

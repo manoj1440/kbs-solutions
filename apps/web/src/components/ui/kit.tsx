@@ -86,7 +86,7 @@ export function PageHeader({
 }
 
 export function StatGrid({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-4', className)}>{children}</div>;
+  return <div className={cn('grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4', className)}>{children}</div>;
 }
 
 /** KPI tile: value first, label and source second. `href` makes the whole tile a link. */
@@ -121,11 +121,11 @@ export function StatCard({
               {React.createElement(icon, { 'aria-hidden': true })}
             </span>
           ) : (
-            <IconTile icon={icon} tone={tone} size="sm" className="size-9" />
+            <IconTile icon={icon} tone={tone} size="sm" className="size-8 sm:size-9" />
           )
         ) : null}
       </div>
-      <div className="mt-2 truncate text-[28px] leading-9 font-semibold tracking-tight tabular-nums">{value}</div>
+      <div className="mt-2 truncate text-2xl font-semibold tracking-tight tabular-nums sm:text-[28px] sm:leading-9">{value}</div>
       {hint ? <p className={cn('mt-1 text-xs leading-relaxed', emphasis ? 'text-teal-50/90' : 'text-slate-500')}>{hint}</p> : null}
       {source || href ? (
         <div
@@ -141,7 +141,7 @@ export function StatCard({
     </>
   );
   const cls = cn(
-    'group relative min-w-0 overflow-hidden rounded-2xl border p-5',
+    'group relative min-w-0 overflow-hidden rounded-2xl border p-4 sm:p-5',
     emphasis
       ? 'border-transparent bg-[linear-gradient(135deg,#0f766e_0%,#115e59_55%,#134e4a_100%)] text-white shadow-[0_12px_30px_-14px_rgb(15_118_110/70%)]'
       : 'border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]',
