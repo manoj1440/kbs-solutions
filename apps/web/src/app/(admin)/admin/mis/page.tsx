@@ -1,8 +1,10 @@
 import { formatDateTime } from '@kbs/shared';
+import { CheckCircle2, FileSpreadsheet, Layers, ShieldCheck, TriangleAlert, Upload } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { BankMark, EmptyState, humanize, PageHeader, SectionCard, StatCard, StatGrid } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 
@@ -35,102 +37,123 @@ const STAGE: Record<string, 'info' | 'warning' | 'success' | 'destructive' | 'un
 export default async function MisPage() {
   const [profiles, batches] = await Promise.all([apiFetch<Profile[]>('/mis/profiles'), apiFetch<Batch[]>('/mis/batches?pageSize=50')]);
   const approved = profiles.data.filter((p) => p.status === 'APPROVED');
+  const total = Number(batches.meta.total ?? batches.data.length);
+  const applied = batches.data.filter((b) => b.stage === 'APPLIED').length;
+  const inFlight = batches.data.filter((b) => !['APPLIED', 'FAILED', 'REJECTED'].includes(b.stage)).length;
+  const problems = batches.data.filter((b) => b.stage === 'FAILED' || b.stage === 'REJECTED').length;
+  const scope = total > batches.data.length ? `Of the latest ${batches.data.length} uploads` : 'Across all uploads';
   return (
     <div className="grid gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Bank MIS</h1>
-        <p className="text-muted-foreground text-sm">Upload, preview and apply bank-reported application files. Files are kept immutable; every cell is stored as text exactly as received.</p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Import profiles</CardTitle>
-            <CardDescription>One per bank and version; imports run only under an APPROVED profile.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Bank</TableHead>
-                  <TableHead>Profile</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Mode</TableHead>
-                  <TableHead>Batches</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {profiles.data.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="text-xs">{p.bank.displayName}</TableCell>
-                    <TableCell>
-                      <Link className="underline" href={`/admin/mis/profiles/${p.id}`}>
-                        {p.name}
-                      </Link>{' '}
-                      <span className="text-muted-foreground text-xs">v{p.version}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={p.status === 'APPROVED' ? 'success' : p.status === 'DRAFT' ? 'warning' : 'unknown'}>{p.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{p.snapshotMode}</TableCell>
-                    <TableCell>{p._count.batches}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-        <NewMisBatch profiles={approved.map((p) => ({ id: p.id, bankId: p.bank.id, label: `${p.bank.displayName} — ${p.name} v${p.version}` }))} />
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Batches</CardTitle>
-          <CardDescription>{String(batches.meta.total ?? batches.data.length)} uploads.</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <PageHeader
+        icon={FileSpreadsheet}
+        eyebrow="Bank data & finance"
+        title="Bank MIS"
+        description="Upload, preview and apply bank-reported application files. Files are kept immutable; every cell is stored as text exactly as received."
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/admin/mis/integrity">
+              <ShieldCheck />
+              Data integrity
+            </Link>
+          </Button>
+        }
+      >
+        <StatGrid>
+          <StatCard label="Approved profiles" value={approved.length} hint={`${profiles.data.length} profile${profiles.data.length === 1 ? '' : 's'} in total`} icon={Layers} tone="indigo" />
+          <StatCard label="Uploads" value={total} hint="All batches, newest first" icon={Upload} tone="sky" />
+          <StatCard label="Applied" value={applied} hint={scope} icon={CheckCircle2} tone="emerald" />
+          <StatCard label={inFlight ? 'In progress' : 'Failed or rejected'} value={inFlight || problems} hint={`${scope} · ${inFlight ? 'not yet applied' : 'nothing applied from these'}`} icon={TriangleAlert} tone={inFlight || problems ? 'amber' : 'slate'} />
+        </StatGrid>
+      </PageHeader>
+      <div className="grid gap-6 lg:grid-cols-[1.25fr_1fr]">
+        <SectionCard icon={Layers} tone="indigo" title="Import profiles" description="One per bank and version; imports run only under an approved profile." flush>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Ref</TableHead>
+                <TableHead>Profile</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Mode</TableHead>
+                <TableHead className="text-right">Batches</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {profiles.data.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <BankMark code={p.bank.code} size="sm" />
+                      <div className="min-w-0">
+                        <Link href={`/admin/mis/profiles/${p.id}`}>{p.name}</Link>
+                        <div className="text-[11px] text-slate-500">
+                          {p.bank.displayName} · v{p.version}
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={p.status === 'APPROVED' ? 'success' : p.status === 'DRAFT' ? 'warning' : 'unknown'}>{humanize(p.status)}</Badge>
+                  </TableCell>
+                  <TableCell className="text-slate-600">{humanize(p.snapshotMode)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{p._count.batches}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </SectionCard>
+        <NewMisBatch profiles={approved.map((p) => ({ id: p.id, bankId: p.bank.id, label: `${p.bank.displayName} — ${p.name} v${p.version}` }))} />
+      </div>
+      <SectionCard icon={FileSpreadsheet} tone="sky" title="Batches" description={`${total} upload${total === 1 ? '' : 's'}. Open a batch to parse, map, preview and apply.`} flush={batches.data.length > 0}>
+        {batches.data.length === 0 ? (
+          <EmptyState icon={FileSpreadsheet} title="No MIS uploads yet" description="Upload the first bank workbook above. Nothing changes on any lead until a batch is previewed and applied." />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Batch</TableHead>
                 <TableHead>Bank · profile</TableHead>
-                <TableHead>File</TableHead>
                 <TableHead>Uploaded</TableHead>
                 <TableHead>Stage</TableHead>
-                <TableHead>Rows</TableHead>
+                <TableHead className="text-right">Rows</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {batches.data.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell>
-                    <Link className="font-mono text-xs underline" href={`/admin/mis/batches/${b.id}`}>
+                    <Link className="font-mono text-xs" href={`/admin/mis/batches/${b.id}`}>
                       {b.publicRef}
                     </Link>
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {b.bank.displayName} · {b.profile.name} v{b.profile.version}
-                  </TableCell>
-                  <TableCell className="text-xs">{b.file.originalName}</TableCell>
-                  <TableCell className="text-xs">
-                    {formatDateTime(b.uploadedAt)} · {b.uploader.fullName}
+                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500">
+                      <FileSpreadsheet className="size-3" />
+                      {b.file.originalName}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STAGE[b.stage] ?? 'unknown'}>{b.stage}</Badge>
-                    {b.rejectReason ? <div className="text-muted-foreground text-xs">{b.rejectReason}</div> : null}
+                    <div className="flex items-center gap-2.5">
+                      <BankMark code={b.bank.code} size="sm" />
+                      <div className="min-w-0">
+                        <div className="font-medium text-slate-800">{b.bank.displayName}</div>
+                        <div className="text-[11px] text-slate-500">
+                          {b.profile.name} v{b.profile.version}
+                        </div>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-xs">{b.totals?.rows ?? '—'}</TableCell>
+                  <TableCell>
+                    {formatDateTime(b.uploadedAt)}
+                    <div className="text-[11px] text-slate-500">by {b.uploader.fullName}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={STAGE[b.stage] ?? 'unknown'}>{humanize(b.stage)}</Badge>
+                    {b.rejectReason ? <div className="mt-1 text-[11px] text-slate-500">{b.rejectReason}</div> : null}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{b.totals?.rows ?? '—'}</TableCell>
                 </TableRow>
               ))}
-              {batches.data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-muted-foreground text-center">
-                    No MIS uploads yet.
-                  </TableCell>
-                </TableRow>
-              ) : null}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        )}
+      </SectionCard>
     </div>
   );
 }
