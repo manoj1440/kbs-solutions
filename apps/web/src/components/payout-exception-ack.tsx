@@ -1,6 +1,7 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
+import { CheckCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -18,11 +19,12 @@ export function AcknowledgeException({ kind, subjectId }: { kind: string; subjec
   if (!open)
     return (
       <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+        <CheckCheck />
         Acknowledge
       </Button>
     );
   return (
-    <div className="grid min-w-48 gap-1">
+    <div className="grid min-w-48 gap-1.5">
       <Input aria-label="Resolution reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (required)" />
       <div className="flex gap-1">
         <Button

@@ -1,9 +1,9 @@
-import { formatDateTime, formatInr } from '@kbs/shared';
+import { formatDateTime, formatInr, payoutStateLabel } from '@kbs/shared';
+import { CalendarClock, CheckCircle2, Inbox, ListChecks, SearchCheck, ShieldAlert, Wallet, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 
 import { PayoutStateBadge } from '@/components/status';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, BankMark, EmptyState, PageHeader, PillNav, SectionCard, StatCard, StatGrid, type Tone } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 
@@ -47,44 +47,65 @@ export async function EntitlementsLedger({ basePath, leadHref, sp, title, descri
   const r = await apiFetch<EntitlementDto[]>(`/payouts/entitlements?${qs.toString()}`);
   const counts = r.meta.counts as LedgerCounts;
   const amounts = r.meta.amounts as Record<string, number>;
-  const tiles: [string, number | string][] = [
-    ['Eligible (unique card events)', counts.eligible],
-    ['Available to claim', `${counts.availableToClaim} · ${formatInr(amounts.available)}`],
-    ['Reserved in requests', `${counts.reserved} · ${formatInr(amounts.reserved)}`],
-    ['Paid', `${counts.paid} · ${formatInr(amounts.paid)}`],
-    ['Pending hold', counts.pendingHold],
-    ['Under review (corrections)', counts.underReview],
+  const tiles: { label: string; count: number; amount?: number; icon: LucideIcon; tone: Tone }[] = [
+    {
+      label: 'Eligible (unique card events)',
+      count: counts.eligible,
+      icon: SearchCheck,
+      tone: 'indigo',
+    },
+    {
+      label: 'Available to claim',
+      count: counts.availableToClaim,
+      amount: amounts.available,
+      icon: Wallet,
+      tone: 'teal',
+    },
+    {
+      label: 'Reserved in requests',
+      count: counts.reserved,
+      amount: amounts.reserved,
+      icon: Inbox,
+      tone: 'sky',
+    },
+    {
+      label: 'Paid',
+      count: counts.paid,
+      amount: amounts.paid,
+      icon: CheckCircle2,
+      tone: 'emerald',
+    },
+    { label: 'Pending hold', count: counts.pendingHold, icon: CalendarClock, tone: 'slate' },
+    {
+      label: 'Under review (corrections)',
+      count: counts.underReview,
+      icon: ShieldAlert,
+      tone: counts.underReview ? 'amber' : 'slate',
+    },
   ];
+  const total = Number(r.meta.total ?? 0);
   return (
-    <div className="grid gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold">{title}</h1>
-        <p className="text-muted-foreground text-sm">{description}</p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {tiles.map(([label, value]) => (
-          <Card key={label}>
-            <CardHeader className="pb-1">
-              <CardDescription>{label}</CardDescription>
-              <CardTitle className="text-xl">{value}</CardTitle>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {STATES.map((s) => (
-          <Button key={s || 'all'} asChild size="sm" variant={(sp.state ?? '') === s ? 'default' : 'outline'}>
-            <Link href={`${basePath}${s ? `?state=${s}` : ''}`}>{s ? s.toLowerCase().replace(/_/g, ' ') : 'all'}</Link>
-          </Button>
-        ))}
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>{Number(r.meta.total ?? 0)} entitlement(s)</CardTitle>
-          <CardDescription>Created only by MIS evidence matching an approved bank rule; amounts are snapshotted at eligibility and never rewritten.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
+    <div className="grid gap-6">
+      <PageHeader icon={ListChecks} eyebrow={basePath.startsWith('/admin') ? 'Bank data & finance' : 'Team payouts'} title={title} description={description}>
+        <StatGrid className="lg:grid-cols-3 xl:grid-cols-6">
+          {tiles.map((x) => (
+            <StatCard key={x.label} label={x.label} value={x.count} icon={x.icon} tone={x.tone} hint={x.amount !== undefined ? <span className="font-semibold text-slate-700 tabular-nums">{formatInr(x.amount)}</span> : 'Card events'} />
+          ))}
+        </StatGrid>
+      </PageHeader>
+      <PillNav
+        label="Entitlement states"
+        items={STATES.map((s) => ({
+          href: `${basePath}${s ? `?state=${s}` : ''}`,
+          label: s ? payoutStateLabel(s) : 'All',
+        }))}
+        active={`${basePath}${sp.state ? `?state=${sp.state}` : ''}`}
+      />
+      <SectionCard icon={ListChecks} tone="teal" title={`${total} entitlement(s)`} description="Created only by MIS evidence matching an approved bank rule; amounts are snapshotted at eligibility and never rewritten." flush={r.data.length > 0}>
+        {r.data.length === 0 ? (
+          <EmptyState icon={ListChecks} title="No entitlements." description="Entitlements appear once bank MIS evidence matches an approved payout rule." />
+        ) : (
+          <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>State</TableHead>
@@ -93,52 +114,60 @@ export async function EntitlementsLedger({ basePath, leadHref, sp, title, descri
                 <TableHead>Bank / card</TableHead>
                 <TableHead>Bank value (exact)</TableHead>
                 <TableHead>Rule</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Eligible at</TableHead>
                 <TableHead>Evidence</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {r.data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-muted-foreground text-center">
-                    No entitlements.
-                  </TableCell>
-                </TableRow>
-              ) : null}
               {r.data.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell>
+                  <TableCell data-label="State">
                     <PayoutStateBadge state={e.state} />
-                    {e.reviewReason ? <div className="text-muted-foreground max-w-56 text-xs">{e.reviewReason}</div> : null}
+                    {e.reviewReason ? <div className="mt-1 max-w-56 text-[11px] whitespace-normal text-slate-500">{e.reviewReason}</div> : null}
                   </TableCell>
-                  <TableCell>
-                    <Link className="underline" href={leadHref(e.lead.id)}>
+                  <TableCell data-label="Lead" className="whitespace-nowrap">
+                    <Link className="font-mono text-xs font-semibold" href={leadHref(e.lead.id)}>
                       {e.lead.publicRef}
                     </Link>
-                    <div className="text-muted-foreground text-xs">{e.lead.customerFullName}</div>
+                    <div className="text-[11px] text-slate-500">{e.lead.customerFullName}</div>
                   </TableCell>
-                  <TableCell>{e.advisor.fullName}</TableCell>
-                  <TableCell className="text-xs">
-                    {e.bank.displayName} · {e.card}
+                  <TableCell data-label="Advisor">
+                    <div className="flex items-center gap-2">
+                      <Avatar name={e.advisor.fullName} size="sm" />
+                      <span className="whitespace-nowrap text-slate-800">{e.advisor.fullName}</span>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Bank / card" className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <BankMark code={e.bank.code} size="sm" />
+                      <div className="min-w-0">
+                        <div className="font-medium text-slate-800">{e.bank.displayName}</div>
+                        <div className="text-[11px] text-slate-500">{e.card}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell data-label="Bank value (exact)" className="text-xs">
                     <code>{e.triggerField}</code> = “{e.triggerFieldValue}”
                   </TableCell>
-                  <TableCell className="text-xs">
-                    {e.rule.name} v{e.rule.version}
+                  <TableCell data-label="Rule" className="text-xs">
+                    {e.rule.name} <span className="text-slate-500">v{e.rule.version}</span>
                   </TableCell>
-                  <TableCell>{formatInr(e.amountInr)}</TableCell>
-                  <TableCell className="text-xs">{formatDateTime(e.eligibleAt)}</TableCell>
-                  <TableCell className="text-xs">
-                    {e.evidence.batchRef} · {formatDateTime(e.evidence.uploadedAt)}
+                  <TableCell data-label="Amount" className="font-semibold whitespace-nowrap text-slate-900 tabular-nums sm:text-right">
+                    {formatInr(e.amountInr)}
+                  </TableCell>
+                  <TableCell data-label="Eligible at" className="text-xs text-slate-600">
+                    {formatDateTime(e.eligibleAt)}
+                  </TableCell>
+                  <TableCell data-label="Evidence" className="text-xs text-slate-600">
+                    <span className="font-mono">{e.evidence.batchRef}</span> · {formatDateTime(e.evidence.uploadedAt)}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        )}
+      </SectionCard>
     </div>
   );
 }

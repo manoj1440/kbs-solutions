@@ -1,18 +1,18 @@
 'use client';
 
 import { ApiClientError, amountInput, formatDateTime, formatInr, PAYMENT_METHODS } from '@kbs/shared';
+import { AlertTriangle, Banknote, Eye, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { FileUploadButton } from '@/components/file-upload-button';
 import type { PayoutRequestDto } from '@/components/payout-request-detail';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Callout, SectionCard, selectClass } from '@/components/ui/kit';
 import { Label } from '@/components/ui/label';
 import { clientApi } from '@/lib/client-api';
 
-const sel = 'border-input bg-background h-9 w-full min-w-0 rounded-md border px-2 text-sm';
 const istDate = (ms: number) => new Date(ms + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const todayIst = () => istDate(Date.now());
 /** Date picked in IST → an instant on that IST day: now for today (never in the future), noon IST for earlier days. */
@@ -100,7 +100,7 @@ function PaymentForm({ request, mode, onDone }: { request: PayoutRequestDto; mod
         </div>
         <div className="grid gap-1">
           <Label htmlFor={id('method')}>Method</Label>
-          <select id={id('method')} className={sel} value={method} onChange={(e) => setMethod(e.target.value)}>
+          <select id={id('method')} className={selectClass} value={method} onChange={(e) => setMethod(e.target.value)}>
             {PAYMENT_METHODS.map((m) => (
               <option key={m} value={m}>
                 {m}
@@ -110,9 +110,9 @@ function PaymentForm({ request, mode, onDone }: { request: PayoutRequestDto; mod
         </div>
       </div>
       {mismatch ? (
-        <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
+        <Callout tone="warning" icon={AlertTriangle}>
           This differs from the approved {formatInr(request.totalAmountInr)}. It will be recorded as an exception and the request held for Admin review — partial or excess payments are never marked Paid.
-        </p>
+        </Callout>
       ) : null}
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <FileUploadButton purpose="payment_proof" accept="image/png,image/jpeg,application/pdf" label={proof ? 'Replace proof' : 'Upload proof (PDF/PNG/JPG)'} onUploaded={(f) => setProof(f)} />
@@ -193,12 +193,7 @@ export function PaymentActions({ request }: { request: PayoutRequestDto }) {
   const any = f.canRecord || f.canAttachProof || f.canCorrect || f.canDecideCorrection || f.canFlag || f.canResolve;
   if (!any) return null;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{f.canRecord ? 'Record external payment' : 'Payment actions'}</CardTitle>
-        <CardDescription>Pay using your bank or finance tools outside KBS, then record exactly what the bank shows. KBS never transfers money.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-5">
+    <SectionCard icon={Banknote} tone="emerald" title={f.canRecord ? 'Record external payment' : 'Payment actions'} description="Pay using your bank or finance tools outside KBS, then record exactly what the bank shows. KBS never transfers money." bodyClassName="grid gap-5 [&>*+*]:border-t [&>*+*]:border-slate-100 [&>*+*]:pt-5">
         {f.canRecord ? <PaymentForm request={request} mode="record" /> : null}
         {f.canAttachProof ? <AttachProof request={request} /> : null}
         {f.canDecideCorrection ? <CorrectionDecision request={request} /> : null}
@@ -226,8 +221,7 @@ export function PaymentActions({ request }: { request: PayoutRequestDto }) {
             <ReasonAction label={request.state === 'ON_HOLD' ? 'Release to Accounts' : 'Resolve exception'} placeholder="Resolution note (required)" path={`/payouts/requests/${request.id}/payment/resolve`} ok="Resolved." variant="default" />
           </div>
         ) : null}
-      </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -250,6 +244,7 @@ export function PayeeReveal({ requestId }: { requestId: string }) {
           }
         }}
       >
+        <Eye />
         Reveal account (logged)
       </Button>
       {err ? <span className="text-destructive text-xs">{err}</span> : null}
@@ -274,6 +269,7 @@ export function ProofLink({ fileId }: { fileId: string }) {
           }
         }}
       >
+        <FileText />
         View proof
       </Button>
       {err ? <span className="text-destructive text-xs">{err}</span> : null}

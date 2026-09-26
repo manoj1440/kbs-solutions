@@ -1,12 +1,13 @@
 'use client';
 
 import { ApiClientError, amountInput, digitsOnly, type PayoutRuleView } from '@kbs/shared';
+import { Archive, BadgeCheck, Check, Gavel, PencilLine, Plus, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { SectionCard } from '@/components/ui/kit';
 import { Label } from '@/components/ui/label';
 import { clientApi } from '@/lib/client-api';
 
@@ -37,24 +38,25 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
   };
   const draftRates = rule.rates.filter((x) => x.status === 'DRAFT');
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Actions</CardTitle>
-        <CardDescription>Approvals need a reason and are audited. Editing an approved rule creates a new draft version.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4 md:grid-cols-2">
-        <div className="grid gap-2">
+    <SectionCard icon={Gavel} tone="teal" title="Actions" description="Approvals need a reason and are audited. Editing an approved rule creates a new draft version." bodyClassName="grid gap-4 md:grid-cols-2">
+        <div className="grid content-start gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
+          <div className="mb-1 flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+            <BadgeCheck className="size-4 text-teal-700" aria-hidden="true" />
+            Approve or retire
+          </div>
           <Label htmlFor="ra-reason">Reason (for approvals / retirement)</Label>
           <Input id="ra-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. signed commission sheet Sep-2026" />
           <div className="flex flex-wrap gap-2">
             {rule.status === 'DRAFT' ? (
               <Button disabled={busy || reason.trim().length < 3 || !rule.rates.some((x) => x.status === 'APPROVED')} onClick={() => void run(() => clientApi.post(`/payouts/rules/${rule.id}/approve`, { reason }), 'Rule approved.')}>
+                <Check />
                 Approve rule
               </Button>
             ) : null}
             {rule.status === 'DRAFT' && !rule.rates.some((x) => x.status === 'APPROVED') ? <span className="text-muted-foreground self-center text-xs">Approve a rate first.</span> : null}
             {rule.status !== 'RETIRED' ? (
               <Button variant="destructive" disabled={busy || reason.trim().length < 3} onClick={() => void run(() => clientApi.post(`/payouts/rules/${rule.id}/retire`, { reason }), 'Rule retired.')}>
+                <Archive />
                 Retire
               </Button>
             ) : null}
@@ -66,13 +68,18 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
           </div>
         </div>
         {rule.status !== 'RETIRED' ? (
-          <div className="grid gap-2">
+          <div className="grid content-start gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
+            <div className="mb-1 flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+              <PencilLine className="size-4 text-teal-700" aria-hidden="true" />
+              Edit trigger, hold and rates
+            </div>
             <Label htmlFor="ra-values">Trigger values (separate with |)</Label>
             <Input id="ra-values" value={values} onChange={(e) => setValues(e.target.value)} />
             <Label htmlFor="ra-hold">Hold days</Label>
             <Input id="ra-hold" inputMode="numeric" min={0} value={holdDays} onChange={(e) => setHoldDays(Number(digitsOnly(e.target.value, 3)))} />
             <Button
               variant="outline"
+              className="justify-self-start"
               disabled={busy}
               onClick={() =>
                 void run(
@@ -82,24 +89,27 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
                 )
               }
             >
+              <Save />
               {rule.status === 'APPROVED' ? 'Save as new version' : 'Save draft'}
             </Button>
-            <Label htmlFor="ra-amount">New rate (₹)</Label>
-            <div className="flex gap-2">
+            <Label htmlFor="ra-amount" className="mt-2 border-t border-slate-200/80 pt-3">
+              New rate (₹)
+            </Label>
+            <div className="flex flex-wrap gap-2 sm:flex-nowrap">
               <Input id="ra-amount" inputMode="decimal" min={1} value={amount} onChange={(e) => setAmount(amountInput(e.target.value))} placeholder="1500" />
               <Input type="date" value={rateFrom} onChange={(e) => setRateFrom(e.target.value)} aria-label="rate effective from" />
               <Button variant="outline" disabled={busy || !amount} onClick={() => void run(() => clientApi.post(`/payouts/rules/${rule.id}/rates`, { amountInr: Number(amount), effectiveFrom: new Date(`${rateFrom}T00:00:00+05:30`).toISOString() }), 'Draft rate added.').then(() => setAmount(''))}>
+                <Plus />
                 Add rate
               </Button>
             </div>
           </div>
         ) : null}
         {msg ? (
-          <p role="status" className="text-sm md:col-span-2">
+          <p role="status" className="text-sm text-slate-700 md:col-span-2">
             {msg}
           </p>
         ) : null}
-      </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

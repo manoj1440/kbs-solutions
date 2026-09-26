@@ -1,12 +1,13 @@
-import { formatDateTime, formatInr } from '@kbs/shared';
+import { formatDateTime, formatInr, payoutStateLabel } from '@kbs/shared';
+import { AlertTriangle, Check, CheckCircle2, Clock, Inbox, Minus, UserCheck, Users, Wallet, X, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 
 import { PayoutStateBadge } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, EmptyState, humanize, IconTile, PageHeader, PillNav, SectionCard, StatCard, StatGrid } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface Row {
   id: string;
@@ -30,9 +31,9 @@ interface Queues {
   asOf: string;
 }
 const QUEUES = [
-  { key: 'awaiting', label: 'Awaiting payment' },
-  { key: 'paid', label: 'Paid' },
-  { key: 'exceptions', label: 'Exceptions / needs correction' },
+  { key: 'awaiting', label: 'Awaiting payment', icon: Clock, tone: 'amber' },
+  { key: 'paid', label: 'Paid', icon: CheckCircle2, tone: 'emerald' },
+  { key: 'exceptions', label: 'Exceptions / needs correction', icon: AlertTriangle, tone: 'rose' },
 ] as const;
 const STATES = ['', 'PENDING_APPROVALS', 'APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'REJECTED', 'CANCELLED', 'ON_HOLD'];
 
@@ -42,79 +43,136 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, descripti
   const sp = mode === 'accounts' && !rawSp.queue && !rawSp.state ? { ...rawSp, queue: 'awaiting' } : rawSp;
   for (const [k, v] of Object.entries(sp)) if (v) qs.set(k, v);
   qs.set('pageSize', '50');
-  const [r, queues] = await Promise.all([apiFetch<Row[]>(`/payouts/requests?${qs.toString()}`), mode === 'accounts' || sp.queue ? apiFetch<Queues>('/payouts/payments/queues').then((x) => x.data).catch(() => null) : Promise.resolve(null)]);
+  const [r, queues] = await Promise.all([
+    apiFetch<Row[]>(`/payouts/requests?${qs.toString()}`),
+    mode === 'accounts' || sp.queue
+      ? apiFetch<Queues>('/payouts/payments/queues')
+          .then((x) => x.data)
+          .catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  const total = Number(r.meta.total ?? 0);
+  const scope = total > r.data.length ? `Of the ${r.data.length} shown` : 'In this view';
+  const awaitingRole = (role: string) => r.data.filter((x) => x.outstanding.includes(role)).length;
+  const corrections = r.data.filter((x) => x.correctionPending).length;
+  const queueItems = [
+    { href: `${basePath}?awaitingMe=true`, label: 'Awaiting my approval', icon: UserCheck },
+    {
+      href: `${basePath}?queue=exceptions`,
+      label: 'Payment exceptions',
+      icon: AlertTriangle,
+      count: queues?.exceptions.count,
+    },
+  ];
+  const stateItems = STATES.map((s) => ({
+    href: `${basePath}${s ? `?state=${s}` : ''}`,
+    label: s ? payoutStateLabel(s) : 'All',
+  }));
+  const active = sp.awaitingMe === 'true' ? `${basePath}?awaitingMe=true` : sp.queue === 'exceptions' ? `${basePath}?queue=exceptions` : `${basePath}${sp.state ? `?state=${sp.state}` : ''}`;
   return (
-    <div className="grid gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold">{title}</h1>
-        <p className="text-muted-foreground text-sm">{description}</p>
-      </div>
-      {mode === 'accounts' ? (
-        <div className="grid gap-2 sm:grid-cols-3">
-          {QUEUES.map((q) => (
-            <Link key={q.key} href={`${basePath}?queue=${q.key}`} className={`rounded-lg border p-3 transition-colors ${sp.queue === q.key ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`} aria-current={sp.queue === q.key ? 'page' : undefined}>
-              <div className="text-muted-foreground text-xs">{q.label}</div>
-              <div className="text-xl font-semibold">{queues ? queues[q.key].count : '—'}</div>
-              <div className="text-muted-foreground text-xs">{queues ? (q.key === 'paid' ? `${formatInr(queues.paid.confirmedTransferInr)} confirmed transfers` : formatInr(queues[q.key].amountInr)) : 'unavailable'}</div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-      <div className="flex flex-wrap gap-1">
-        <Button asChild size="sm" variant={sp.awaitingMe === 'true' ? 'default' : 'outline'}>
-          <Link href={`${basePath}?awaitingMe=true`}>Awaiting my approval</Link>
-        </Button>
-        {STATES.map((s) => (
-          <Button key={s || 'all'} asChild size="sm" variant={!sp.awaitingMe && (sp.state ?? '') === s ? 'default' : 'outline'}>
-            <Link href={`${basePath}${s ? `?state=${s}` : ''}`}>{s ? s.toLowerCase().replace(/_/g, ' ') : 'all'}</Link>
-          </Button>
-        ))}
-        <Button asChild size="sm" variant={sp.queue === 'exceptions' ? 'default' : 'outline'}>
-          <Link href={`${basePath}?queue=exceptions`}>payment exceptions</Link>
-        </Button>
-      </div>
-      )}
-      <Card>
-        <CardHeader>
-          <CardTitle>{Number(r.meta.total ?? 0)} request(s)</CardTitle>
-          <CardDescription>{mode === 'accounts' ? 'Only requests approved by both the Manager and the Admin reach Accounts. Pay outside KBS, then record the transfer.' : 'A submitted request is not an approval; Accounts sees a request only after both approvals.'}</CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="grid gap-6">
+      <PageHeader
+        icon={sp.queue === 'exceptions' && mode !== 'accounts' ? AlertTriangle : Wallet}
+        tone={sp.queue === 'exceptions' && mode !== 'accounts' ? 'rose' : 'teal'}
+        eyebrow={basePath.startsWith('/admin') ? 'Bank data & finance' : mode === 'accounts' ? 'Accounts' : 'Team payouts'}
+        title={title}
+        description={description}
+      >
+        {mode === 'accounts' ? (
+          <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+            {QUEUES.map((q) => {
+              const on = sp.queue === q.key;
+              return (
+                <Link
+                  key={q.key}
+                  href={`${basePath}?queue=${q.key}`}
+                  prefetch={false}
+                  aria-current={on ? 'page' : undefined}
+                  className={cn(
+                    'lift group min-w-0 rounded-2xl border bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 sm:p-5',
+                    on ? 'border-teal-600 ring-2 ring-teal-600/15' : 'border-slate-200/80 hover:border-slate-300',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-[12.5px] font-medium text-slate-600">{q.label}</span>
+                    <IconTile icon={q.icon} tone={q.tone} size="sm" />
+                  </div>
+                  <div className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums sm:text-[28px] sm:leading-9">{queues ? queues[q.key].count : '—'}</div>
+                  <div className="mt-1 text-xs text-slate-500 tabular-nums">{queues ? (q.key === 'paid' ? `${formatInr(queues.paid.confirmedTransferInr)} confirmed transfers` : formatInr(queues[q.key].amountInr)) : 'unavailable'}</div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <>
+            <div className="flex min-w-0 flex-wrap items-start gap-2">
+              <PillNav label="My queues" items={queueItems} active={active} className="max-w-full min-w-0" />
+              <PillNav label="Payout request states" items={stateItems} active={active} className="max-w-full min-w-0" />
+            </div>
+            {r.data.length ? (
+              <StatGrid>
+                <StatCard label="Requests" value={total} hint="Matching this queue" icon={Inbox} tone="teal" />
+                <StatCard label="Manager approval outstanding" value={awaitingRole('MANAGER')} hint={scope} icon={Users} tone={awaitingRole('MANAGER') ? 'amber' : 'slate'} />
+                <StatCard label="Admin approval outstanding" value={awaitingRole('ADMIN')} hint={scope} icon={UserCheck} tone={awaitingRole('ADMIN') ? 'amber' : 'slate'} />
+                <StatCard label="Correction awaiting Admin" value={corrections} hint={scope} icon={AlertTriangle} tone={corrections ? 'rose' : 'slate'} />
+              </StatGrid>
+            ) : null}
+          </>
+        )}
+      </PageHeader>
+      <SectionCard
+        icon={mode === 'accounts' ? Wallet : Inbox}
+        tone={mode === 'accounts' ? 'emerald' : 'teal'}
+        title={`${total} request(s)`}
+        description={mode === 'accounts' ? 'Only requests approved by both the Manager and the Admin reach Accounts. Pay outside KBS, then record the transfer.' : 'A submitted request is not an approval; Accounts sees a request only after both approvals.'}
+        flush={r.data.length > 0}
+      >
+        {r.data.length === 0 ? (
+          <EmptyState icon={Inbox} title="No requests." description="Nothing matches this queue right now." />
+        ) : (
           <Table responsive>
             <TableHeader>
               <TableRow>
                 <TableHead>Request</TableHead>
                 <TableHead>Advisor</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
                 <TableHead>State</TableHead>
                 <TableHead>{mode === 'accounts' ? 'Payment' : 'Approvals'}</TableHead>
                 <TableHead>Submitted</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {r.data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-muted-foreground text-center">
-                    No requests.
-                  </TableCell>
-                </TableRow>
-              ) : null}
               {r.data.map((x) => (
                 <TableRow key={x.id}>
                   <TableCell data-label="Request">
-                    <Link className="underline" href={`${basePath}/${x.id}`}>
+                    <Link className="font-mono text-xs font-semibold" href={`${basePath}/${x.id}`}>
                       {x.publicRef}
                     </Link>
-                    <div className="text-muted-foreground text-xs">{x.itemCount} card event(s)</div>
+                    <div className="mt-0.5 text-[11px] text-slate-500">{x.itemCount} card event(s)</div>
                   </TableCell>
-                  <TableCell data-label="Advisor">{x.advisor.fullName}</TableCell>
-                  <TableCell data-label="Amount" className="whitespace-nowrap">{formatInr(x.totalAmountInr)}</TableCell>
+                  <TableCell data-label="Advisor">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={x.advisor.fullName} size="sm" />
+                      <span className="font-medium text-slate-800">{x.advisor.fullName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell data-label="Amount" className="text-[15px] font-semibold whitespace-nowrap text-slate-900 tabular-nums sm:text-right">
+                    {formatInr(x.totalAmountInr)}
+                  </TableCell>
                   <TableCell data-label="State">
                     <PayoutStateBadge state={x.state} />
                   </TableCell>
                   {mode === 'accounts' ? (
                     <TableCell data-label="Payment" className="text-xs">
-                      {x.payment ? `${x.payment.state.toLowerCase().replace(/_/g, ' ')} · ${formatInr(x.payment.amountInr)}` : x.state === 'APPROVED' ? 'not yet recorded' : '—'}
+                      {x.payment ? (
+                        <span className="text-slate-700">
+                          {humanize(x.payment.state)} · <span className="tabular-nums">{formatInr(x.payment.amountInr)}</span>
+                        </span>
+                      ) : x.state === 'APPROVED' ? (
+                        <span className="text-slate-500">Not yet recorded</span>
+                      ) : (
+                        '—'
+                      )}
                       {x.correctionPending ? (
                         <Badge variant="warning" className="ml-1">
                           correction awaiting Admin
@@ -123,28 +181,64 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, descripti
                       {x.holdReason ? <div className="text-destructive mt-1 whitespace-normal">{x.holdReason}</div> : null}
                     </TableCell>
                   ) : (
-                  <TableCell data-label="Approvals" className="text-xs">
-                    {x.approvals.map((a) => (
-                      <Badge key={a.role} variant={a.decision === 'APPROVED' ? 'success' : 'destructive'} className="mr-1">
-                        {a.role.toLowerCase()} {a.decision.toLowerCase()}
-                      </Badge>
-                    ))}
-                    {x.outstanding.map((o) => (
-                      <Badge key={o} variant="warning" className="mr-1">
-                        {o.toLowerCase()} pending
-                      </Badge>
-                    ))}
-                    {x.payment ? <div className="text-muted-foreground mt-1">payment {x.payment.state.toLowerCase().replace(/_/g, ' ')}</div> : null}
-                    {x.correctionPending ? <Badge variant="warning">correction awaiting Admin</Badge> : null}
-                  </TableCell>
+                    <TableCell data-label="Approvals" className="text-xs">
+                      <ApprovalSteps row={x} />
+                      {x.payment ? <div className="mt-1.5 text-[11px] text-slate-500">Payment {humanize(x.payment.state).toLowerCase()}</div> : null}
+                      {x.correctionPending ? (
+                        <Badge variant="warning" className="mt-1.5">
+                          correction awaiting Admin
+                        </Badge>
+                      ) : null}
+                    </TableCell>
                   )}
-                  <TableCell data-label="Submitted" className="text-xs">{formatDateTime(x.submittedAt)}</TableCell>
+                  <TableCell data-label="Submitted" className="text-xs whitespace-nowrap text-slate-600">
+                    {formatDateTime(x.submittedAt)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        )}
+      </SectionCard>
     </div>
+  );
+}
+
+const STEP: Record<'approved' | 'rejected' | 'pending' | 'none', { icon: LucideIcon; cls: string; text: string }> = {
+  approved: { icon: Check, cls: 'bg-emerald-500 text-white', text: 'approved' },
+  rejected: { icon: X, cls: 'bg-rose-500 text-white', text: 'rejected' },
+  pending: {
+    icon: Clock,
+    cls: 'bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-300',
+    text: 'pending',
+  },
+  none: { icon: Minus, cls: 'bg-slate-100 text-slate-400', text: '—' },
+};
+
+/** Two-step approval trail (Manager → Admin) built from the row's approval records; text is always rendered. */
+function ApprovalSteps({ row }: { row: Row }) {
+  const steps = (['MANAGER', 'ADMIN'] as const).map((role) => {
+    const a = row.approvals.find((x) => x.role === role);
+    const status: keyof typeof STEP = a ? (a.decision === 'APPROVED' ? 'approved' : 'rejected') : row.outstanding.includes(role) ? 'pending' : 'none';
+    return { role, status };
+  });
+  return (
+    <ol className="flex items-center gap-1.5" aria-label="Approvals">
+      {steps.map(({ role, status }, i) => {
+        const s = STEP[status];
+        return (
+          <li key={role} className="flex items-center gap-1.5">
+            {i > 0 ? <span className={cn('h-px w-3 sm:w-4', steps[0].status === 'approved' ? 'bg-emerald-300' : 'bg-slate-200')} aria-hidden="true" /> : null}
+            <span className={cn('inline-flex size-5 shrink-0 items-center justify-center rounded-full', s.cls)} aria-hidden="true">
+              <s.icon className="size-3" strokeWidth={3} />
+            </span>
+            <span className="leading-tight">
+              <span className="block text-[12px] font-medium text-slate-800">{humanize(role)}</span>
+              <span className="block text-[10.5px] text-slate-500">{s.text}</span>
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
