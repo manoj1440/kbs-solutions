@@ -202,7 +202,7 @@ export default async function RetentionPage() {
           obligation (payout proofs, live cheques and ID cards, MIS files still being processed,
           quarantined uploads).
         </p>
-        <Table responsive>
+        <Table responsive="compact">
           <TableHeader>
             <TableRow>
               <TableHead>Category</TableHead>

@@ -6,11 +6,15 @@ function Table({
   className,
   responsive = false,
   ...props
-}: React.ComponentProps<'table'> & { responsive?: boolean }) {
+}: React.ComponentProps<'table'> & {
+  /** below 700px rows become labelled cards; 'compact' lays the labelled values out two per line */
+  responsive?: boolean | 'compact';
+}) {
   return (
     <div
       data-slot="table-container"
       data-responsive={responsive || undefined}
+      data-compact={responsive === 'compact' || undefined}
       className="relative w-full min-w-0 overflow-x-auto"
     >
       <table

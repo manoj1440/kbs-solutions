@@ -305,6 +305,16 @@ select:not([multiple]):not([size]) {
     white-space: normal;
   }
 
+  [data-compact] [data-slot='table-body'] > [data-slot='table-row'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+  }
+
+  [data-compact] [data-slot='table-cell']:first-child,
+  [data-compact] [data-slot='table-cell']:not([data-label]) {
+    grid-column: 1 / -1;
+  }
+
   [data-responsive] [data-slot='table-cell'][data-label]::before {
     display: block;
     margin-bottom: 4px;
