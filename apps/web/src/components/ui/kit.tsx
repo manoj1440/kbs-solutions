@@ -192,7 +192,7 @@ export function SectionCard({
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5 pb-4 sm:px-6">
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 flex-1 basis-64 items-start gap-3">
           {icon ? <IconTile icon={icon} tone={tone} size="sm" /> : null}
           <div className="min-w-0">
             <h2 className="text-[15px] leading-6 font-semibold tracking-tight text-slate-900">{title}</h2>

@@ -41,7 +41,10 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/kit';
 import { cn } from '@/lib/utils';
 
-const GROUPS: { label: string; items: { href: string; label: string; icon: LucideIcon }[] }[] = [
+const GROUPS: {
+  label: string;
+  items: { href: string; label: string; icon: LucideIcon; also?: string[] }[];
+}[] = [
   {
     label: 'Workspace',
     items: [
@@ -67,7 +70,12 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
     label: 'Dashboards',
     items: [
       { href: '/admin/dashboards', label: 'Executive dashboard', icon: LayoutDashboard },
-      { href: '/admin/dashboards/telecallers', label: 'Team performance', icon: Users },
+      {
+        href: '/admin/dashboards/telecallers',
+        label: 'Team performance',
+        icon: Users,
+        also: ['/admin/dashboards/managers', '/admin/dashboards/advisors'],
+      },
       { href: '/admin/dashboards/bank-card-mix', label: 'Bank / card mix', icon: CreditCard },
       { href: '/admin/audit', label: 'Audit trail', icon: ShieldCheck },
     ],
@@ -113,9 +121,17 @@ export function AdminShell({
   const search = useRef<HTMLDialogElement>(null);
   const mobileNav = useRef<HTMLDialogElement>(null);
   const active =
-    ITEMS.filter(
-      (n) => pathname === n.href || (n.href !== '/admin' && pathname.startsWith(`${n.href}/`)),
-    ).sort((a, b) => b.href.length - a.href.length)[0] ?? ITEMS[0];
+    ITEMS.map((n) => ({
+      n,
+      len: Math.max(
+        0,
+        ...[n.href, ...(n.also ?? [])].map((h) =>
+          pathname === h || (h !== '/admin' && pathname.startsWith(`${h}/`)) ? h.length : 0,
+        ),
+      ),
+    }))
+      .filter((m) => m.len > 0)
+      .sort((a, b) => b.len - a.len)[0]?.n ?? ITEMS[0];
   const name = session.user.fullName || session.user.mobileMasked;
   const q = query.trim().toLowerCase();
   const matches = ITEMS.filter(
