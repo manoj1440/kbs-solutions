@@ -1,4 +1,4 @@
-// Dev-only visual sweep: logs in as the demo Admin and screenshots admin pages.
+// Dev-only visual sweep: logs in as the demo Admin and screenshots Admin, Manager and Accounts pages.
 // Usage: node test/admin-shots.mjs <outDir> [width] [pathFilter]
 import { execSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -42,6 +42,8 @@ const ids = {
   req: await first('/payouts/requests?pageSize=1'),
   pin: await first('/pincode-profiles'),
   list: await first('/calling-list/batches?pageSize=1'),
+  advisor: await first('/users?role=ADVISOR&pageSize=1'),
+  telecaller: await first('/users?role=TELECALLER&pageSize=1'),
 };
 const pages = [
   '/admin', '/admin/leads', ids.lead && `/admin/leads/${ids.lead}`, '/admin/onboarding', '/admin/users',
@@ -54,11 +56,17 @@ const pages = [
   '/admin/mis/integrity', '/admin/payouts/liability', '/admin/payouts/requests', ids.req && `/admin/payouts/requests/${ids.req}`,
   '/admin/payouts/entitlements', '/admin/payouts/rules', ids.rule && `/admin/payouts/rules/${ids.rule}`,
   '/admin/compliance', '/admin/network', '/admin/config', '/admin/retention', '/admin/notifications', '/admin/account',
+  // an Admin may open the Manager and Accounts areas too (requireRole allows ADMIN)
+  '/manager', '/manager/dashboard', '/manager/calling', ids.telecaller && `/manager/calling/telecaller/${ids.telecaller}`,
+  '/manager/advisors', ids.advisor && `/manager/advisors/${ids.advisor}`, '/manager/leads', ids.lead && `/manager/leads/${ids.lead}`,
+  '/manager/pending-actions', '/manager/payouts', '/manager/payouts/requests', '/manager/payouts/liability',
+  ids.telecaller && `/manager/telecallers/${ids.telecaller}`, '/manager/telecallers/new',
+  '/accounts', '/accounts?queue=paid', '/accounts/reconciliation', ids.req && `/accounts/requests/${ids.req}`,
 ].filter(Boolean).filter((p) => !filter || p.includes(filter));
 for (const p of pages) {
   await page.goto(`${BASE}${p}`, { waitUntil: 'networkidle' }).catch(() => undefined);
   await page.waitForTimeout(800); // let the entrance animation settle
-  const name = p.replace(/^\/admin\/?/, '').replace(/\//g, '_') || 'overview';
+  const name = p.replace(/^\/admin\/?/, '').replace(/[/?=]/g, '_') || 'overview';
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   const err = await page.locator('body').innerText().then((t) => /Application error|Unhandled Runtime Error|Something went wrong/i.test(t));
   await page.screenshot({ path: `${out}/${name}.png`, fullPage: true });

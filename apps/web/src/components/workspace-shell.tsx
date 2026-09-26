@@ -4,11 +4,15 @@ import type { MeResponse } from '@kbs/shared';
 import {
   AlertTriangle,
   Archive,
-  Bell,
   ArrowRight,
+  BadgeCheck,
+  Bell,
   Building2,
+  CheckCircle2,
   ChevronRight,
   ClipboardCheck,
+  ClipboardList,
+  Clock3,
   CreditCard,
   FileSpreadsheet,
   GraduationCap,
@@ -19,9 +23,11 @@ import {
   Phone,
   PhoneCall,
   RefreshCw,
+  Scale,
   Search,
   Settings2,
   ShieldCheck,
+  UserPlus,
   UserRound,
   Users,
   Wallet,
@@ -32,19 +38,22 @@ import {
 import Link from 'next/link';
 
 import { NotificationBell } from '@/components/notification-bell';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
 import { LogoutButton } from '@/components/logout-button';
 import { SessionKeepAlive } from '@/components/session-keep-alive';
 import { Button } from '@/components/ui/button';
-import { Avatar } from '@/components/ui/kit';
+import { Avatar, humanize } from '@/components/ui/kit';
 import { cn } from '@/lib/utils';
 
-const GROUPS: {
+type NavGroup = {
   label: string;
   items: { href: string; label: string; icon: LucideIcon; also?: string[] }[];
-}[] = [
+};
+export type WorkspaceArea = 'admin' | 'manager' | 'accounts';
+
+const ADMIN_GROUPS: NavGroup[] = [
   {
     label: 'Workspace',
     items: [
@@ -104,16 +113,100 @@ const GROUPS: {
     ],
   },
 ];
-const ITEMS = GROUPS.flatMap((g) => g.items.map((i) => ({ ...i, group: g.label })));
+const MANAGER_GROUPS: NavGroup[] = [
+  {
+    label: 'Team',
+    items: [
+      { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/manager', label: 'Team', icon: Users },
+      { href: '/manager/calling', label: 'Team calling', icon: PhoneCall },
+      { href: '/manager/advisors', label: 'Advisors', icon: UserRound },
+      { href: '/manager/telecallers/new', label: 'Create Telecaller', icon: UserPlus },
+    ],
+  },
+  {
+    label: 'Leads',
+    items: [
+      { href: '/manager/leads', label: 'Team leads', icon: ListChecks },
+      { href: '/manager/pending-actions', label: 'Pending actions', icon: ClipboardList },
+    ],
+  },
+  {
+    label: 'Payouts',
+    items: [
+      { href: '/manager/payouts', label: 'Team payouts', icon: Wallet },
+      { href: '/manager/payouts/requests', label: 'Payout approvals', icon: BadgeCheck },
+      { href: '/manager/payouts/liability', label: 'Payout liability', icon: Scale },
+    ],
+  },
+];
 
-export function AdminShell({
+const ACCOUNTS_GROUPS: NavGroup[] = [
+  {
+    label: 'Payments',
+    items: [
+      { href: '/accounts?queue=awaiting', label: 'Awaiting payment', icon: Clock3 },
+      { href: '/accounts?queue=paid', label: 'Paid', icon: CheckCircle2 },
+      { href: '/accounts?queue=exceptions', label: 'Exceptions', icon: AlertTriangle },
+    ],
+  },
+  {
+    label: 'Reports',
+    items: [{ href: '/accounts/reconciliation', label: 'Reconciliation', icon: Scale }],
+  },
+];
+
+const AREA: Record<WorkspaceArea, { home: string; subtitle: string; groups: NavGroup[] }> = {
+  admin: { home: '/admin', subtitle: 'Business workspace', groups: ADMIN_GROUPS },
+  manager: { home: '/manager', subtitle: 'Manager workspace', groups: MANAGER_GROUPS },
+  accounts: { home: '/accounts', subtitle: 'Accounts workspace', groups: ACCOUNTS_GROUPS },
+};
+
+/** Does `href` (optionally with a query) describe the current location? Returns the match length for ranking. */
+function matchLength(href: string, pathname: string, params: URLSearchParams, root: string) {
+  const [path, query] = href.split('?');
+  if (query) {
+    if (pathname !== path) return 0;
+    for (const [k, v] of new URLSearchParams(query)) if (params.get(k) !== v) return 0;
+    return href.length;
+  }
+  return pathname === path || (path !== root && pathname.startsWith(`${path}/`)) ? path.length : 0;
+}
+
+/**
+ * F-801 / F-806 workspace shell for every web area (Admin, Manager, Accounts): gradient sidebar grouped by area,
+ * group › page breadcrumb, keyboard page search, notifications, refresh and the account menu.
+ */
+export function WorkspaceShell({
   session,
+  area,
   children,
 }: {
   session: MeResponse;
+  area: WorkspaceArea;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const params = useSearchParams();
+  // the viewer's own area owns their account pages and notifications (an Admin visiting /manager keeps /admin ones)
+  const own: WorkspaceArea = session.user.role === 'ACCOUNTS' ? 'accounts' : session.user.role === 'ADMIN' ? 'admin' : 'manager';
+  const accountBase = AREA[own].home;
+  const roleLabel = session.user.role === 'ADMIN' ? 'Administrator' : humanize(session.user.role);
+  const { home, subtitle } = AREA[area];
+  const GROUPS: NavGroup[] =
+    area === 'admin'
+      ? AREA.admin.groups
+      : [
+          ...AREA[area].groups,
+          {
+            label: 'You',
+            items: [
+              { href: `${accountBase}/notifications`, label: 'Notifications', icon: Bell },
+              { href: `${accountBase}/account`, label: 'Account & support', icon: UserRound },
+            ],
+          },
+        ];
+  const ITEMS = GROUPS.flatMap((g) => g.items.map((i) => ({ ...i, group: g.label })));
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [query, setQuery] = useState('');
@@ -125,9 +218,7 @@ export function AdminShell({
       n,
       len: Math.max(
         0,
-        ...[n.href, ...(n.also ?? [])].map((h) =>
-          pathname === h || (h !== '/admin' && pathname.startsWith(`${h}/`)) ? h.length : 0,
-        ),
+        ...[n.href, ...(n.also ?? [])].map((h) => matchLength(h, pathname, params, home)),
       ),
     }))
       .filter((m) => m.len > 0)
@@ -202,7 +293,7 @@ export function AdminShell({
   }
 
   const brand = (
-    <Link href="/admin" className="flex items-center gap-3">
+    <Link href={home} className="flex items-center gap-3">
       <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-300 to-emerald-400 text-[#0b1a2e] shadow-[0_6px_20px_-6px_rgb(45_212_191/70%)]">
         <Building2 className="size-5" />
       </span>
@@ -211,7 +302,7 @@ export function AdminShell({
           KBS<span className="font-normal text-slate-400"> Solutions</span>
         </span>
         <span className="text-[9.5px] tracking-[0.22em] text-slate-500 uppercase">
-          Business workspace
+          {subtitle}
         </span>
       </span>
     </Link>
@@ -229,20 +320,20 @@ export function AdminShell({
         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(220px_120px_at_30%_0%,rgb(45_212_191/16%),transparent)]" />
         <div className="relative flex h-20 shrink-0 items-center px-6">{brand}</div>
         <nav
-          aria-label="Admin navigation"
+          aria-label={`${humanize(area)} navigation`}
           className="relative min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-5"
         >
           {navigation()}
         </nav>
         <Link
-          href="/admin/account"
+          href={`${accountBase}/account`}
           className="relative flex items-center gap-3 border-t border-white/10 px-5 py-4 hover:bg-white/5"
         >
           <Avatar name={name} className="bg-teal-300/15 text-teal-200 ring-1 ring-teal-300/30" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px] font-semibold text-slate-100">{name}</span>
             <span className="flex items-center gap-1 text-[11px] text-slate-400">
-              <ShieldCheck className="size-3 text-teal-300" /> Administrator
+              <ShieldCheck className="size-3 text-teal-300" /> {roleLabel}
             </span>
           </span>
           <ChevronRight className="size-4 text-slate-500" />
@@ -280,7 +371,7 @@ export function AdminShell({
                 ⌘K
               </kbd>
             </Button>
-            <NotificationBell area="admin" />
+            <NotificationBell area={own} />
             <Button
               variant="ghost"
               size="icon"
@@ -299,7 +390,7 @@ export function AdminShell({
                 <Avatar name={name} className="bg-gradient-to-br from-teal-600 to-teal-800 text-white" />
                 <span className="hidden text-left sm:block">
                   <span className="block max-w-32 truncate text-xs font-semibold">{name}</span>
-                  <span className="text-[11px] text-slate-500">Administrator</span>
+                  <span className="text-[11px] text-slate-500">{roleLabel}</span>
                 </span>
               </summary>
               <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_20px_50px_-20px_rgb(15_23_42/35%)]">
@@ -312,13 +403,13 @@ export function AdminShell({
                 </div>
                 <div className="grid p-1.5">
                   <Link
-                    href="/admin/account"
+                    href={`${accountBase}/account`}
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
                   >
                     <UserRound className="size-4 text-slate-400" /> Account & support
                   </Link>
                   <Link
-                    href="/admin/notifications"
+                    href={`${accountBase}/notifications`}
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
                   >
                     <Bell className="size-4 text-slate-400" /> All notifications
@@ -342,7 +433,7 @@ export function AdminShell({
       </div>
       <dialog
         ref={mobileNav}
-        aria-label="Admin navigation menu"
+        aria-label={`${humanize(area)} navigation menu`}
         className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] bg-[#0b1a2e] p-4 text-white backdrop:bg-slate-950/50 backdrop:backdrop-blur-sm"
       >
         <div className="mb-6 flex items-center justify-between pl-2">
@@ -356,7 +447,7 @@ export function AdminShell({
             <X className="size-5" />
           </button>
         </div>
-        <nav aria-label="Mobile admin navigation" className="pl-4">
+        <nav aria-label={`Mobile ${area} navigation`} className="pl-4">
           {navigation()}
         </nav>
       </dialog>

@@ -1,18 +1,11 @@
-import { AppShell } from '@/components/app-shell';
+import { WorkspaceShell } from '@/components/workspace-shell';
 import { requireRole } from '@/lib/require-role';
-
-const NAV = [
-  { href: '/accounts?queue=awaiting', label: 'Awaiting payment' },
-  { href: '/accounts?queue=paid', label: 'Paid' },
-  { href: '/accounts?queue=exceptions', label: 'Exceptions' },
-  { href: '/accounts/reconciliation', label: 'Reconciliation' },
-];
 
 export default async function AccountsLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole('ACCOUNTS', 'ADMIN');
   return (
-    <AppShell session={session} nav={NAV} title="Accounts workspace">
+    <WorkspaceShell session={session} area="accounts">
       {children}
-    </AppShell>
+    </WorkspaceShell>
   );
 }

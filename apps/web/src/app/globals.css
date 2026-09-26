@@ -370,12 +370,12 @@ html:has(.admin-workspace)::-webkit-scrollbar-thumb:hover,
 }
 
 .admin-workspace aside ::-webkit-scrollbar-track,
-.admin-workspace dialog[aria-label='Admin navigation menu']::-webkit-scrollbar-track {
+.admin-workspace dialog[aria-label$='navigation menu']::-webkit-scrollbar-track {
   background: #111e30;
 }
 
 .admin-workspace aside ::-webkit-scrollbar-thumb,
-.admin-workspace dialog[aria-label='Admin navigation menu']::-webkit-scrollbar-thumb {
+.admin-workspace dialog[aria-label$='navigation menu']::-webkit-scrollbar-thumb {
   border-color: #111e30;
   background: #94a3b8;
 }

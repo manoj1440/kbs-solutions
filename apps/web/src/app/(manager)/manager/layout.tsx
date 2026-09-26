@@ -1,24 +1,11 @@
-import { AppShell } from '@/components/app-shell';
+import { WorkspaceShell } from '@/components/workspace-shell';
 import { requireRole } from '@/lib/require-role';
-
-const NAV = [
-  { href: '/manager/dashboard', label: 'Dashboard' },
-  { href: '/manager', label: 'Team' },
-  { href: '/manager/calling', label: 'Team calling' },
-  { href: '/manager/advisors', label: 'Advisors' },
-  { href: '/manager/leads', label: 'Team leads' },
-  { href: '/manager/pending-actions', label: 'Pending actions' },
-  { href: '/manager/payouts', label: 'Team payouts' },
-  { href: '/manager/payouts/requests', label: 'Payout approvals' },
-  { href: '/manager/payouts/liability', label: 'Payout liability' },
-  { href: '/manager/telecallers/new', label: 'Create Telecaller' },
-];
 
 export default async function ManagerLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole('MANAGER', 'ADMIN');
   return (
-    <AppShell session={session} nav={NAV} title="Manager workspace">
+    <WorkspaceShell session={session} area="manager">
       {children}
-    </AppShell>
+    </WorkspaceShell>
   );
 }
