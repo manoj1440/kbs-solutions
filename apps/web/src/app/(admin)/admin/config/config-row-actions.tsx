@@ -1,11 +1,13 @@
 'use client';
 
 import { ApiClientError, type ConfigEntry, formatDateTime } from '@kbs/shared';
+import { History, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmptyState, selectClass } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 
 interface HistoryRow {
@@ -99,11 +101,14 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
   return (
     <div className="grid gap-1">
       {editing ? (
-        <div className="grid min-w-64 gap-1">
+        <div
+          data-editing=""
+          className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:min-w-64"
+        >
           {entry.valueType === 'BOOL' ? (
             <select
               aria-label={`New value for ${entry.key}`}
-              className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+              className={selectClass}
               value={text}
               onChange={(e) => setText(e.target.value)}
             >
@@ -114,7 +119,7 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
           ) : entry.valueType === 'JSON' ? (
             <textarea
               aria-label={`New value for ${entry.key}`}
-              className="border-input bg-background min-h-24 rounded-md border p-2 font-mono text-xs"
+              className="min-h-28 rounded-lg border border-slate-200 bg-white p-2.5 font-mono text-xs leading-relaxed text-slate-900"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
@@ -135,8 +140,9 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Reason (required)"
+            className="bg-white"
           />
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             <Button size="sm" disabled={busy || reason.trim().length < 3} onClick={save}>
               Save
             </Button>
@@ -157,9 +163,11 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
       ) : (
         <div className="flex gap-1">
           <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+            <Pencil />
             Edit
           </Button>
           <Button size="sm" variant="ghost" onClick={openHistory}>
+            <History />
             History
           </Button>
         </div>
@@ -172,9 +180,14 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
       >
         <div className="grid gap-4 p-5">
           <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold">Change history</h2>
-              <p className="text-muted-foreground font-mono text-xs break-all">{entry.key}</p>
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700 ring-1 ring-sky-100 ring-inset">
+                <History className="size-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-slate-900">Change history</h2>
+                <p className="font-mono text-xs break-all text-slate-500">{entry.key}</p>
+              </div>
             </div>
             <Button size="sm" variant="ghost" onClick={() => drawer.current?.close()}>
               Close
@@ -183,20 +196,22 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
           {history === null ? (
             <p className="text-muted-foreground text-sm">Loading…</p>
           ) : history.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              Never changed — the default is in effect ({show(entry.defaultValue)}).
-            </p>
+            <EmptyState
+              icon={History}
+              title="No changes recorded"
+              description={`Never changed — the default is in effect (${show(entry.defaultValue)}).`}
+            />
           ) : (
             <ol className="grid gap-3">
               {history.map((h) => (
-                <li key={h.id} className="rounded-md border p-3 text-sm">
-                  <div className="text-muted-foreground text-xs">
+                <li key={h.id} className="rounded-xl border border-slate-200 p-3 text-sm">
+                  <div className="text-xs text-slate-500">
                     {`${formatDateTime(h.at)} · ${h.changedBy?.fullName ?? h.changedBy?.publicRef ?? 'unknown'} (${h.changedBy?.role ?? '—'})`}
                   </div>
-                  <div className="mt-1 font-mono text-xs break-all">
+                  <div className="mt-2 rounded-md bg-slate-50 px-2 py-1 font-mono text-xs break-all text-slate-800 ring-1 ring-slate-200 ring-inset">
                     {show(h.oldValue)} → {show(h.newValue)}
                   </div>
-                  <div className="mt-1">{h.reason}</div>
+                  <div className="mt-2 text-slate-700">{h.reason}</div>
                 </li>
               ))}
             </ol>

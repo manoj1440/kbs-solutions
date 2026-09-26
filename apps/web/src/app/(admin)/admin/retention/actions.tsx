@@ -1,11 +1,13 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
+import { Lock, LockOpen, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { selectClass } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 
 function useAction() {
@@ -28,19 +30,43 @@ function useAction() {
 }
 
 /** F-904: run one category. The API refuses (CONFIG_MISSING) until KBS sets the duration and enables execution. */
-export function RunRetention({ category, label, runnable }: { category: string; label: string; runnable: boolean }) {
+export function RunRetention({
+  category,
+  label,
+  runnable,
+}: {
+  category: string;
+  label: string;
+  runnable: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const { busy, msg, run } = useAction();
   if (!open)
     return (
-      <Button size="sm" variant="outline" disabled={!runnable} onClick={() => setOpen(true)} title={runnable ? undefined : 'Blocked until KBS sets the retention duration and enables execution'}>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={!runnable}
+        onClick={() => setOpen(true)}
+        title={
+          runnable
+            ? undefined
+            : 'Blocked until KBS sets the retention duration and enables execution'
+        }
+      >
+        <Play />
         Run
       </Button>
     );
   return (
-    <div className="grid min-w-56 gap-1">
-      <Input aria-label={`Policy reference for ${label}`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Policy / approval reference" />
+    <div className="grid min-w-56 gap-1.5 text-left">
+      <Input
+        aria-label={`Policy reference for ${label}`}
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Policy / approval reference"
+      />
       <div className="flex gap-1">
         <Button
           size="sm"
@@ -48,7 +74,10 @@ export function RunRetention({ category, label, runnable }: { category: string; 
           disabled={busy || reason.trim().length < 10}
           onClick={() =>
             run(async () => {
-              const { data: r } = await clientApi.post<{ processed: number; failed: number }>('/retention/execute', { category, reason: reason.trim() });
+              const { data: r } = await clientApi.post<{ processed: number; failed: number }>(
+                '/retention/execute',
+                { category, reason: reason.trim() },
+              );
               return `${r.processed} processed${r.failed ? `, ${r.failed} failed (will retry)` : ''}.`;
             })
           }
@@ -59,7 +88,11 @@ export function RunRetention({ category, label, runnable }: { category: string; 
           Cancel
         </Button>
       </div>
-      {msg ? <span className={msg.ok ? 'text-success text-xs' : 'text-destructive text-xs'}>{msg.text}</span> : null}
+      {msg ? (
+        <span className={msg.ok ? 'text-success text-xs' : 'text-destructive text-xs'}>
+          {msg.text}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -72,25 +105,52 @@ export function LegalHoldForm() {
   const { busy, msg, run } = useAction();
   const submit = (hold: boolean) =>
     run(async () => {
-      await clientApi.post('/retention/legal-holds', { subject, id: id.trim(), hold, reason: reason.trim() });
+      await clientApi.post('/retention/legal-holds', {
+        subject,
+        id: id.trim(),
+        hold,
+        reason: reason.trim(),
+      });
       return hold ? 'Legal hold placed.' : 'Legal hold released.';
     });
   const valid = /^[0-9a-f-]{36}$/i.test(id.trim()) && reason.trim().length >= 5;
   return (
-    <div className="grid gap-2 sm:grid-cols-[10rem_1fr_1fr_auto_auto] sm:items-center">
-      <select aria-label="Subject" className="border-input bg-background h-9 rounded-md border px-2 text-sm" value={subject} onChange={(e) => setSubject(e.target.value as 'FILE' | 'CALLING_RECORD')}>
+    <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4 md:grid-cols-[10rem_1fr_1fr_auto_auto] md:items-center">
+      <select
+        aria-label="Subject"
+        className={selectClass}
+        value={subject}
+        onChange={(e) => setSubject(e.target.value as 'FILE' | 'CALLING_RECORD')}
+      >
         <option value="FILE">File</option>
         <option value="CALLING_RECORD">Calling record</option>
       </select>
-      <Input aria-label="Record id" value={id} onChange={(e) => setId(e.target.value)} placeholder="Id (UUID)" className="font-mono text-xs" />
-      <Input aria-label="Hold reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (required)" />
+      <Input
+        aria-label="Record id"
+        value={id}
+        onChange={(e) => setId(e.target.value)}
+        placeholder="Id (UUID)"
+        className="font-mono text-xs"
+      />
+      <Input
+        aria-label="Hold reason"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason (required)"
+      />
       <Button size="sm" disabled={busy || !valid} onClick={() => submit(true)}>
+        <Lock />
         Place hold
       </Button>
       <Button size="sm" variant="outline" disabled={busy || !valid} onClick={() => submit(false)}>
+        <LockOpen />
         Release
       </Button>
-      {msg ? <span className={`sm:col-span-5 text-xs ${msg.ok ? 'text-success' : 'text-destructive'}`}>{msg.text}</span> : null}
+      {msg ? (
+        <span className={`md:col-span-5 text-xs ${msg.ok ? 'text-success' : 'text-destructive'}`}>
+          {msg.text}
+        </span>
+      ) : null}
     </div>
   );
 }

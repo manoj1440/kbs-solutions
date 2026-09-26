@@ -1,36 +1,46 @@
 'use client';
 
 import { ApiClientError, isValidE164India, mobileInput } from '@kbs/shared';
+import { Ban, CircleAlert, CircleCheck, MapPin, PhoneOff, Undo2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { FileUploadButton } from '@/components/file-upload-button';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Callout, Field, SectionCard } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 
 export function ComplianceActions() {
   const router = useRouter();
   const [mobile, setMobile] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const say = (m: string) => {
-    setMsg(m);
+    setMsg({ ok: true, text: m });
     router.refresh();
   };
-  const fail = (e: unknown, fallback: string) => setMsg(e instanceof ApiClientError ? e.message : fallback);
+  const fail = (e: unknown, fallback: string) =>
+    setMsg({ ok: false, text: e instanceof ApiClientError ? e.message : fallback });
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <Card>
-        <CardHeader>
-          <CardTitle>Suppress a mobile</CardTitle>
-          <CardDescription>Customer request or compliance decision.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          <Label htmlFor="sup-mobile">Mobile</Label>
-          <Input id="sup-mobile" inputMode="tel" value={mobile} onChange={(e) => setMobile(mobileInput(e.target.value))} placeholder="98765 43210" />
+    <div className="grid gap-4 lg:grid-cols-3">
+      <SectionCard
+        icon={Ban}
+        tone="rose"
+        title="Suppress a mobile"
+        description="Customer request or compliance decision."
+      >
+        <div className="grid gap-3">
+          <Field label="Mobile" htmlFor="sup-mobile">
+            <Input
+              id="sup-mobile"
+              inputMode="tel"
+              value={mobile}
+              onChange={(e) => setMobile(mobileInput(e.target.value))}
+              placeholder="98765 43210"
+            />
+          </Field>
           <Button
+            className="justify-self-start"
             disabled={!isValidE164India(mobile)}
             onClick={async () => {
               try {
@@ -42,56 +52,66 @@ export function ComplianceActions() {
               }
             }}
           >
+            <Ban />
             Suppress
           </Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Import DND list</CardTitle>
-          <CardDescription>CSV/XLSX with a mobile column. Every number is suppressed.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FileUploadButton
-            purpose="dnd_list"
-            accept=".csv,.xlsx"
-            label="Upload DND list"
-            onUploaded={async (f) => {
-              try {
-                const r = await clientApi.post<{ added: number; invalid: number }>('/suppressions/import', { fileId: f.id });
-                say(`DND import: ${r.data.added} added, ${r.data.invalid} invalid.`);
-              } catch (e) {
-                fail(e, 'Import failed.');
-              }
-            }}
-          />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Pincode master</CardTitle>
-          <CardDescription>India Post directory (Pincode, OfficeName, District, StateName) for city/state resolution.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FileUploadButton
-            purpose="pincode_master"
-            accept=".csv,.xlsx"
-            label="Upload pincode CSV"
-            onUploaded={async (f) => {
-              try {
-                const r = await clientApi.post<{ upserted: number; invalid: number }>('/pincodes/import', { fileId: f.id });
-                say(`Pincode master: ${r.data.upserted} rows upserted, ${r.data.invalid} invalid.`);
-              } catch (e) {
-                fail(e, 'Import failed.');
-              }
-            }}
-          />
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
+      <SectionCard
+        icon={PhoneOff}
+        tone="amber"
+        title="Import DND list"
+        description="CSV/XLSX with a mobile column. Every number is suppressed."
+      >
+        <FileUploadButton
+          purpose="dnd_list"
+          accept=".csv,.xlsx"
+          label="Upload DND list"
+          onUploaded={async (f) => {
+            try {
+              const r = await clientApi.post<{ added: number; invalid: number }>(
+                '/suppressions/import',
+                { fileId: f.id },
+              );
+              say(`DND import: ${r.data.added} added, ${r.data.invalid} invalid.`);
+            } catch (e) {
+              fail(e, 'Import failed.');
+            }
+          }}
+        />
+      </SectionCard>
+      <SectionCard
+        icon={MapPin}
+        tone="sky"
+        title="Pincode master"
+        description="India Post directory (Pincode, OfficeName, District, StateName) for city/state resolution."
+      >
+        <FileUploadButton
+          purpose="pincode_master"
+          accept=".csv,.xlsx"
+          label="Upload pincode CSV"
+          onUploaded={async (f) => {
+            try {
+              const r = await clientApi.post<{ upserted: number; invalid: number }>(
+                '/pincodes/import',
+                { fileId: f.id },
+              );
+              say(`Pincode master: ${r.data.upserted} rows upserted, ${r.data.invalid} invalid.`);
+            } catch (e) {
+              fail(e, 'Import failed.');
+            }
+          }}
+        />
+      </SectionCard>
       {msg ? (
-        <p role="status" className="text-sm md:col-span-3">
-          {msg}
-        </p>
+        <Callout
+          role="status"
+          tone={msg.ok ? 'success' : 'danger'}
+          icon={msg.ok ? CircleCheck : CircleAlert}
+          className="lg:col-span-3"
+        >
+          {msg.text}
+        </Callout>
       ) : null}
     </div>
   );
@@ -117,6 +137,7 @@ export function LiftButton({ id }: { id: string }) {
         }
       }}
     >
+      <Undo2 />
       Lift
     </Button>
   );

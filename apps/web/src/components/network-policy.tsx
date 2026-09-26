@@ -1,12 +1,14 @@
 'use client';
 
 import { ApiClientError, formatDateTime } from '@kbs/shared';
+import { House, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { selectClass } from '@/components/ui/kit';
 import { Label } from '@/components/ui/label';
 import { clientApi } from '@/lib/client-api';
 import { type WfhRow, wfhActive, wfhOpen } from '@/lib/wfh';
@@ -41,7 +43,7 @@ export function AddNetworkForm() {
   const { busy, err, run } = useSubmit();
   return (
     <form
-      className="grid gap-2 md:grid-cols-[1fr_1fr_1.5fr_auto] md:items-end"
+      className="grid gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4 md:grid-cols-[1fr_1fr_1.5fr_auto] md:items-end"
       onSubmit={(e) => {
         e.preventDefault();
         void run(
@@ -93,6 +95,7 @@ export function AddNetworkForm() {
           busy || label.trim().length < 2 || cidr.trim().length < 7 || reason.trim().length < 3
         }
       >
+        <Plus />
         Add network
       </Button>
       {err ? <p className="text-destructive text-sm md:col-span-4">{err}</p> : null}
@@ -199,7 +202,7 @@ export function GrantWfhForm({
   const { busy, err, run } = useSubmit();
   return (
     <form
-      className="grid gap-2 md:grid-cols-[repeat(3,minmax(0,1fr))_auto] md:items-end"
+      className="grid gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4 md:grid-cols-[repeat(3,minmax(0,1fr))_auto] md:items-end"
       onSubmit={(e) => {
         e.preventDefault();
         void run(
@@ -221,7 +224,7 @@ export function GrantWfhForm({
           <Label htmlFor="wfh-tc">Telecaller</Label>
           <select
             id="wfh-tc"
-            className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+            className={selectClass}
             value={target}
             onChange={(e) => setTarget(e.target.value)}
           >
@@ -253,6 +256,7 @@ export function GrantWfhForm({
         />
       </div>
       <Button type="submit" disabled={busy || !target || reason.trim().length < 3}>
+        <House />
         Grant WFH
       </Button>
       {err ? <p className="text-destructive text-sm md:col-span-4">{err}</p> : null}
@@ -267,7 +271,7 @@ export function WfhPanel({ telecallerId, rows }: { telecallerId: string; rows: W
   return (
     <div className="grid gap-3">
       {active ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-200 bg-sky-50/60 p-3">
           <div className="text-sm">
             <Badge variant="info">WFH {wfhActive(active) ? 'active' : 'scheduled'}</Badge> from{' '}
             {formatDateTime(active.startsAt)}{' '}
