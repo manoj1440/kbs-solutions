@@ -7,7 +7,7 @@ const base: LeadStatusRowInput = {
   publicRef: 'KBS-L-ABC123',
   customerFullName: 'Ramesh Kumar',
   customerMobile: '+919876543210',
-  bank: { id: 'B', displayName: 'HDFC Bank' },
+  bank: { id: 'B', code: 'HDFC', displayName: 'HDFC Bank' },
   card: { id: 'C', name: 'Millennia' },
   createdAt: '2026-09-01T04:00:00.000Z',
   snapshot: null,

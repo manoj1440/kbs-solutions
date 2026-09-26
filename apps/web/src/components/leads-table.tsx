@@ -73,8 +73,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       cell: ({ row }) => (
         <div className="grid min-w-0 gap-0.5">
           <div className="flex items-center gap-2 font-medium text-slate-800">
-            {/* lead rows carry no bank code; the first word of the name matches the code for current banks */}
-            <BankMark code={row.original.bank.displayName.split(' ')[0].toUpperCase()} size="sm" className="hidden h-6 min-w-6 text-[7.5px] sm:inline-flex" />
+            <BankMark code={row.original.bank.code} size="sm" className="hidden h-6 min-w-6 text-[7.5px] sm:inline-flex" />
             {row.original.bank.displayName}
           </div>
           <div className="text-xs text-slate-500">

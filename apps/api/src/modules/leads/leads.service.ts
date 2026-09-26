@@ -48,7 +48,7 @@ interface RowSource {
   createdAt: Date;
   possibleCollision: boolean;
   card: { id: string; name: string };
-  bank: { id: string; displayName: string };
+  bank: { id: string; code: string; displayName: string };
   statusSnapshot: (Record<string, unknown> & { productCode: string | null; lastMatchedAt: Date; lastMatchedBatch: { publicRef: string } }) | null;
   linkages: Array<{ referenceKind: string; referenceValue: string; verificationStatus: string }>;
 }
@@ -294,7 +294,7 @@ export class LeadsService {
 
   private readonly rowInclude = {
     card: { select: { id: true, name: true } },
-    bank: { select: { id: true, displayName: true } },
+    bank: { select: { id: true, code: true, displayName: true } },
     statusSnapshot: { include: { lastMatchedBatch: { select: { publicRef: true } } } },
     linkages: { where: { supersededAt: null }, take: 1 },
   } as const;

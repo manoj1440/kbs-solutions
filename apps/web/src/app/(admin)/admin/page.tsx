@@ -553,8 +553,7 @@ export default async function AdminOverview() {
                   </TableCell>
                   <TableCell data-label="Bank & card">
                     <div className="flex items-center gap-2.5">
-                      {/* lead rows carry no bank code; first word of the name matches the code for current banks */}
-                      <BankMark code={lead.bank.displayName.split(' ')[0].toUpperCase()} size="sm" />
+                      <BankMark code={lead.bank.code} size="sm" />
                       <div className="min-w-0">
                         <p className="font-medium text-slate-800">{lead.bank.displayName}</p>
                         <p className="mt-0.5 text-xs text-slate-500">{lead.card.name}</p>

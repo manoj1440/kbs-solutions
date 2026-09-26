@@ -45,8 +45,7 @@ const CHANGE_LABEL: Record<string, string> = { SET: 'set', CHANGED: 'changed', C
 export async function LeadDetail({ id, backHref, eyebrow = 'Workspace' }: { id: string; backHref: string; eyebrow?: string }) {
   const [d, h, ents] = await Promise.all([apiFetch<LeadDetailDto>(`/leads/${id}`), apiFetch<MisHistoryGroup[]>(`/leads/${id}/mis-history`), apiFetch<EntitlementDto[]>(`/payouts/entitlements?leadId=${id}`)]);
   const l = d.data;
-  // lead rows carry no bank code; the first word of the name matches the code for current banks
-  const bankCode = l.bank.displayName.split(' ')[0].toUpperCase();
+  const bankCode = l.bank.code;
   const earlier = l.referenceHistory.filter((r) => r.supersededAt);
   return (
     <div className="grid gap-6">

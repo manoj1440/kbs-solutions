@@ -16,6 +16,7 @@ exports[`F-506 LeadStatusRow shaping (REQ-14 §14.2–§14.4) > never matched �
     "value": null,
   },
   "bank": {
+    "code": "HDFC",
     "displayName": "HDFC Bank",
     "id": "B",
   },
@@ -78,6 +79,7 @@ exports[`F-506 LeadStatusRow shaping (REQ-14 §14.2–§14.4) > §14.4: decision
     "value": "INACTIVE",
   },
   "bank": {
+    "code": "HDFC",
     "displayName": "HDFC Bank",
     "id": "B",
   },

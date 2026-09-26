@@ -56,7 +56,7 @@ export interface LeadStatusRowInput {
   publicRef: string;
   customerFullName: string;
   customerMobile: string | null;
-  bank: { id: string; displayName: string };
+  bank: { id: string; code: string; displayName: string };
   card: { id: string; name: string };
   createdAt: Date | string;
   snapshot: SnapshotLike | null;
@@ -74,7 +74,7 @@ export interface LeadStatusRow {
   id: string;
   kbsRef: string;
   customer: { name: string; mobileMasked: string | null };
-  bank: { id: string; displayName: string };
+  bank: { id: string; code: string; displayName: string };
   card: { id: string; name: string; crosswalked: { id: string; name: string; productCode: string } | null };
   bankApplicationNo: string | null;
   bankApplicationReference: string | null;
