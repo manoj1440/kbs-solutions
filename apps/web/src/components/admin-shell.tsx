@@ -38,7 +38,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { LogoutButton } from '@/components/logout-button';
 import { SessionKeepAlive } from '@/components/session-keep-alive';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Avatar } from '@/components/ui/kit';
 import { cn } from '@/lib/utils';
 
 const GROUPS: { label: string; items: { href: string; label: string; icon: LucideIcon }[] }[] = [
@@ -96,7 +96,7 @@ const GROUPS: { label: string; items: { href: string; label: string; icon: Lucid
     ],
   },
 ];
-const ITEMS = GROUPS.flatMap((g) => g.items);
+const ITEMS = GROUPS.flatMap((g) => g.items.map((i) => ({ ...i, group: g.label })));
 
 export function AdminShell({
   session,
@@ -109,6 +109,7 @@ export function AdminShell({
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [query, setQuery] = useState('');
+  const [cursor, setCursor] = useState(0);
   const search = useRef<HTMLDialogElement>(null);
   const mobileNav = useRef<HTMLDialogElement>(null);
   const active =
@@ -116,12 +117,10 @@ export function AdminShell({
       (n) => pathname === n.href || (n.href !== '/admin' && pathname.startsWith(`${n.href}/`)),
     ).sort((a, b) => b.href.length - a.href.length)[0] ?? ITEMS[0];
   const name = session.user.fullName || session.user.mobileMasked;
-  const initials = name
-    .split(' ')
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase();
+  const q = query.trim().toLowerCase();
+  const matches = ITEMS.filter(
+    (n) => n.label.toLowerCase().includes(q) || n.group.toLowerCase().includes(q),
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -134,78 +133,108 @@ export function AdminShell({
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  function go(href: string) {
+    search.current?.close();
+    setQuery('');
+    setCursor(0);
+    router.push(href);
+  }
+
   function navigation() {
     return GROUPS.map((group) => (
       <div key={group.label} className="mb-5">
-        <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.16em] text-slate-400 uppercase">
+        <p className="mb-1.5 px-3 text-[10px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
           {group.label}
         </p>
         <div className="grid gap-0.5">
-          {group.items.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              prefetch={false}
-              onClick={() => mobileNav.current?.close()}
-              aria-current={active.href === href ? 'page' : undefined}
-              className={cn(
-                'flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300',
-                active.href === href
-                  ? 'bg-teal-400/15 text-teal-200 ring-1 ring-inset ring-teal-300/20'
-                  : 'text-slate-300 hover:bg-white/5 hover:text-white',
-              )}
-            >
-              <Icon className="size-4 shrink-0" aria-hidden="true" />
-              {label}
-              {active.href === href ? (
-                <span className="ml-auto size-1.5 rounded-full bg-teal-300" />
-              ) : null}
-            </Link>
-          ))}
+          {group.items.map(({ href, label, icon: Icon }) => {
+            const on = active.href === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                prefetch={false}
+                onClick={() => mobileNav.current?.close()}
+                aria-current={on ? 'page' : undefined}
+                className={cn(
+                  'group relative flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300',
+                  on
+                    ? 'bg-gradient-to-r from-teal-400/20 to-teal-400/5 text-white'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-100',
+                )}
+              >
+                {on ? (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-1.5 -left-4 w-1 rounded-r-full bg-teal-300 shadow-[0_0_12px_rgb(94_234_212/70%)]"
+                  />
+                ) : null}
+                <Icon
+                  className={cn(
+                    'size-4 shrink-0 transition-colors',
+                    on ? 'text-teal-300' : 'text-slate-500 group-hover:text-slate-300',
+                  )}
+                  aria-hidden="true"
+                />
+                {label}
+              </Link>
+            );
+          })}
         </div>
       </div>
     ));
   }
 
+  const brand = (
+    <Link href="/admin" className="flex items-center gap-3">
+      <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-300 to-emerald-400 text-[#0b1a2e] shadow-[0_6px_20px_-6px_rgb(45_212_191/70%)]">
+        <Building2 className="size-5" />
+      </span>
+      <span>
+        <span className="block text-[17px] font-bold tracking-tight text-white">
+          KBS<span className="font-normal text-slate-400"> Solutions</span>
+        </span>
+        <span className="text-[9.5px] tracking-[0.22em] text-slate-500 uppercase">
+          Business workspace
+        </span>
+      </span>
+    </Link>
+  );
+
   return (
-    <div className="admin-workspace min-h-screen bg-[#f4f6f9] text-slate-900">
+    <div className="admin-workspace admin-canvas min-h-screen text-slate-900">
       <a
         href="#admin-content"
         className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-white p-3 text-sm focus:not-sr-only"
       >
         Skip to content
       </a>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-[#111e30] text-white lg:flex">
-        <Link
-          href="/admin"
-          className="flex h-24 shrink-0 items-center gap-3 border-b border-white/10 px-6"
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-[linear-gradient(180deg,#0b1a2e_0%,#0e2236_60%,#0b1a2e_100%)] text-white lg:flex">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(220px_120px_at_30%_0%,rgb(45_212_191/16%),transparent)]" />
+        <div className="relative flex h-20 shrink-0 items-center px-6">{brand}</div>
+        <nav
+          aria-label="Admin navigation"
+          className="relative min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-5"
         >
-          <span className="flex size-10 items-center justify-center rounded-xl bg-teal-300 text-[#111e30]">
-            <Building2 className="size-6" />
-          </span>
-          <span>
-            <span className="block text-xl font-bold tracking-tight">
-              KBS<span className="font-normal text-slate-300"> Solutions</span>
-            </span>
-            <span className="text-[10px] tracking-[0.2em] text-slate-400 uppercase">
-              Business workspace
-            </span>
-          </span>
-        </Link>
-        <nav aria-label="Admin navigation" className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
           {navigation()}
         </nav>
-        <div className="flex items-center gap-3 border-t border-white/10 px-6 py-5 text-xs text-slate-300">
-          <ShieldCheck className="size-5 text-teal-300" />
-          <span>
-            Admin workspace
-            <span className="mt-1 block text-[11px] text-slate-400">Role-controlled access</span>
+        <Link
+          href="/admin/account"
+          className="relative flex items-center gap-3 border-t border-white/10 px-5 py-4 hover:bg-white/5"
+        >
+          <Avatar name={name} className="bg-teal-300/15 text-teal-200 ring-1 ring-teal-300/30" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-semibold text-slate-100">{name}</span>
+            <span className="flex items-center gap-1 text-[11px] text-slate-400">
+              <ShieldCheck className="size-3 text-teal-300" /> Administrator
+            </span>
           </span>
-        </div>
+          <ChevronRight className="size-4 text-slate-500" />
+        </Link>
       </aside>
       <div className="min-w-0 lg:pl-64">
-        <header className="sticky top-0 z-20 flex min-h-20 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur-md sm:px-8">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur-xl sm:px-8">
+          <div className="flex min-w-0 items-center gap-2.5">
             <Button
               variant="ghost"
               size="icon"
@@ -215,21 +244,24 @@ export function AdminShell({
             >
               <Menu />
             </Button>
-            <span className="hidden text-sm text-slate-500 sm:inline">Workspace</span>
-            <ChevronRight className="hidden size-3.5 text-slate-400 sm:block" />
-            <span className="truncate text-sm font-semibold">{active.label}</span>
+            <span className="hidden text-[13px] text-slate-500 sm:inline">{active.group}</span>
+            <ChevronRight className="hidden size-3.5 text-slate-300 sm:block" />
+            <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-800">
+              <active.icon className="size-4 shrink-0 text-teal-700" aria-hidden="true" />
+              <span className="truncate">{active.label}</span>
+            </span>
           </div>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Button
               variant="outline"
-              className="gap-2 text-slate-500 xl:min-w-64 xl:justify-start"
+              className="gap-2 rounded-lg text-slate-500 xl:min-w-72 xl:justify-start"
               aria-label="Search workspace"
               onClick={() => search.current?.showModal()}
             >
               <Search />
-              <span className="hidden xl:inline">Find a workspace…</span>
-              <kbd className="ml-auto hidden rounded border px-1.5 text-[10px] xl:inline">
-                ⌘ / Ctrl K
+              <span className="hidden font-normal xl:inline">Jump to a page…</span>
+              <kbd className="ml-auto hidden rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-sans text-[10px] font-medium xl:inline">
+                ⌘K
               </kbd>
             </Button>
             <NotificationBell area="admin" />
@@ -237,6 +269,7 @@ export function AdminShell({
               variant="ghost"
               size="icon"
               aria-label="Refresh business data"
+              title="Refresh data"
               disabled={refreshing}
               onClick={() => startRefresh(() => router.refresh())}
             >
@@ -244,27 +277,40 @@ export function AdminShell({
             </Button>
             <details className="relative">
               <summary
-                className="flex cursor-pointer list-none items-center gap-2 rounded-lg p-1 focus-visible:outline-2 focus-visible:outline-teal-700"
+                className="flex cursor-pointer list-none items-center gap-2 rounded-full p-0.5 pr-1 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-teal-700 sm:pr-2"
                 aria-label="Account menu"
               >
-                <span className="flex size-9 items-center justify-center rounded-full bg-teal-50 text-xs font-bold text-teal-800">
-                  {initials}
-                </span>
+                <Avatar name={name} className="bg-gradient-to-br from-teal-600 to-teal-800 text-white" />
                 <span className="hidden text-left sm:block">
                   <span className="block max-w-32 truncate text-xs font-semibold">{name}</span>
                   <span className="text-[11px] text-slate-500">Administrator</span>
                 </span>
               </summary>
-              <div className="absolute right-0 mt-3 grid w-56 gap-3 rounded-xl border bg-white p-4 shadow-xl">
-                <span className="text-sm font-medium">{name}</span>
-                <span className="text-xs text-slate-500">{session.user.mobileMasked}</span>
-                <Link href="/admin/account" className="text-sm text-teal-800 hover:underline">
-                  Account & support
-                </Link>
-                <Link href="/admin/notifications" className="text-sm text-teal-800 hover:underline">
-                  All notifications
-                </Link>
-                <LogoutButton />
+              <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_20px_50px_-20px_rgb(15_23_42/35%)]">
+                <div className="flex items-center gap-3 bg-slate-50 px-4 py-3">
+                  <Avatar name={name} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{name}</p>
+                    <p className="text-xs text-slate-500">{session.user.mobileMasked}</p>
+                  </div>
+                </div>
+                <div className="grid p-1.5">
+                  <Link
+                    href="/admin/account"
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                  >
+                    <UserRound className="size-4 text-slate-400" /> Account & support
+                  </Link>
+                  <Link
+                    href="/admin/notifications"
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                  >
+                    <Bell className="size-4 text-slate-400" /> All notifications
+                  </Link>
+                </div>
+                <div className="border-t border-slate-100 p-3">
+                  <LogoutButton />
+                </div>
               </div>
             </details>
           </div>
@@ -273,7 +319,7 @@ export function AdminShell({
         <main
           id="admin-content"
           tabIndex={-1}
-          className="admin-content mx-auto min-w-0 max-w-[1680px] p-4 outline-none sm:p-8"
+          className="admin-content mx-auto min-w-0 max-w-[1600px] p-4 outline-none sm:p-8"
         >
           {children}
         </main>
@@ -281,30 +327,60 @@ export function AdminShell({
       <dialog
         ref={mobileNav}
         aria-label="Admin navigation menu"
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] bg-[#111e30] p-4 text-white backdrop:bg-slate-950/50"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] bg-[#0b1a2e] p-4 text-white backdrop:bg-slate-950/50 backdrop:backdrop-blur-sm"
       >
-        <div className="mb-6 flex items-center justify-between px-3">
-          <span className="text-lg font-bold">KBS Solutions</span>
+        <div className="mb-6 flex items-center justify-between pl-2">
+          {brand}
           <button
             type="button"
             aria-label="Close navigation"
-            className="rounded p-2 hover:bg-white/10"
+            className="rounded-lg p-2 hover:bg-white/10"
             onClick={() => mobileNav.current?.close()}
           >
             <X className="size-5" />
           </button>
         </div>
-        <nav aria-label="Mobile admin navigation">{navigation()}</nav>
+        <nav aria-label="Mobile admin navigation" className="pl-4">
+          {navigation()}
+        </nav>
       </dialog>
       <dialog
         ref={search}
         aria-labelledby="workspace-search-title"
-        className="fixed inset-0 m-auto w-[min(560px,calc(100%-32px))] max-w-none rounded-2xl border bg-white p-0 shadow-2xl backdrop:bg-slate-950/40"
+        onClose={() => {
+          setQuery('');
+          setCursor(0);
+        }}
+        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-[0_30px_80px_-20px_rgb(15_23_42/45%)] backdrop:bg-slate-950/40 backdrop:backdrop-blur-sm"
       >
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <h2 id="workspace-search-title" className="font-semibold">
-            Find your workspace
-          </h2>
+        <h2 id="workspace-search-title" className="sr-only">
+          Find your workspace
+        </h2>
+        <div className="flex items-center gap-3 border-b border-slate-100 px-4">
+          <Search className="size-5 text-slate-400" />
+          <input
+            autoFocus
+            aria-label="Search pages"
+            placeholder="Search pages — leads, payouts, training…"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setCursor(0);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setCursor((c) => Math.min(c + 1, matches.length - 1));
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setCursor((c) => Math.max(c - 1, 0));
+              } else if (e.key === 'Enter' && matches[cursor]) {
+                e.preventDefault();
+                go(matches[cursor].href);
+              }
+            }}
+            className="h-14 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-slate-400"
+          />
           <Button
             variant="ghost"
             size="icon"
@@ -314,39 +390,46 @@ export function AdminShell({
             <X />
           </Button>
         </div>
-        <div className="p-4">
-          <Input
-            autoFocus
-            aria-label="Search pages"
-            placeholder="Try leads, payouts, training…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        <div className="max-h-[50vh] overflow-y-auto px-3 pb-3">
-          {ITEMS.filter((n) => n.label.toLowerCase().includes(query.trim().toLowerCase())).map(
-            ({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                prefetch={false}
-                onClick={() => {
-                  search.current?.close();
-                  setQuery('');
-                }}
-                className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm hover:bg-teal-50 focus-visible:bg-teal-50"
-              >
-                <Icon className="size-4 text-teal-700" />
-                {label}
-                <ArrowRight className="ml-auto size-4 text-slate-400" />
-              </Link>
-            ),
-          )}
-          {!ITEMS.some((n) => n.label.toLowerCase().includes(query.trim().toLowerCase())) ? (
-            <p className="p-6 text-center text-sm text-slate-500">
+        <div className="max-h-[55vh] overflow-y-auto p-2">
+          {matches.map(({ href, label, group, icon: Icon }, i) => (
+            <Link
+              key={href}
+              href={href}
+              prefetch={false}
+              onMouseEnter={() => setCursor(i)}
+              onClick={() => {
+                search.current?.close();
+              }}
+              data-active={i === cursor || undefined}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 data-[active]:bg-teal-50 data-[active]:text-teal-900"
+            >
+              <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <Icon className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium">{label}</span>
+                <span className="text-[11px] text-slate-400">{group}</span>
+              </span>
+              <ArrowRight className="size-4 text-slate-300" />
+            </Link>
+          ))}
+          {matches.length === 0 ? (
+            <p className="p-8 text-center text-sm text-slate-500">
               No workspace matches. Try “MIS” or “payout”.
             </p>
           ) : null}
+        </div>
+        <div className="flex items-center gap-4 border-t border-slate-100 bg-slate-50 px-4 py-2 text-[11px] text-slate-500">
+          <span>
+            <kbd className="rounded border bg-white px-1">↑</kbd>{' '}
+            <kbd className="rounded border bg-white px-1">↓</kbd> to move
+          </span>
+          <span>
+            <kbd className="rounded border bg-white px-1">Enter</kbd> to open
+          </span>
+          <span>
+            <kbd className="rounded border bg-white px-1">Esc</kbd> to close
+          </span>
         </div>
       </dialog>
     </div>
