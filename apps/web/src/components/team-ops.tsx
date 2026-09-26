@@ -1,8 +1,22 @@
 import { formatDateTime, OUTCOME_LABELS } from '@kbs/shared';
+import {
+  ArrowLeftRight,
+  CalendarClock,
+  Filter,
+  ListChecks,
+  MessageSquareText,
+  PhoneCall,
+  Share2,
+  StickyNote,
+  UserRound,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { PlayRecordingButton } from '@/components/play-recording-button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Avatar, EmptyState, humanize, PageHeader, SectionCard, StatCard, StatGrid, type Tone } from '@/components/ui/kit';
 import {
   Table,
   TableBody,
@@ -38,6 +52,21 @@ function rangeParams(sp: { from?: string; to?: string }) {
   return q.toString();
 }
 
+/** Small neutral "label count" chips for per-person breakdowns. */
+function Chips({ items }: { items: [string, number][] }) {
+  if (!items.length) return <span className="text-slate-400">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {items.map(([k, n]) => (
+        <span key={k} className="inline-flex items-baseline gap-1 rounded-md bg-slate-50 px-1.5 py-0.5 text-[11.5px] text-slate-700 ring-1 ring-slate-200 ring-inset">
+          {k}
+          <span className="font-semibold text-slate-900 tabular-nums">{n}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** F-313 §1: team overview — evidence counts with denominators, no ranking. */
 export async function TeamOverview({
   base,
@@ -49,16 +78,19 @@ export async function TeamOverview({
   const ov = await apiFetch<{ range: { from: string; to: string }; telecallers: OverviewRow[] }>(
     `/calling/team/overview?${rangeParams(sp)}`,
   );
+  const rows = ov.data.telecallers;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Team activity</CardTitle>
-        <CardDescription>
-          {formatDateTime(ov.data.range.from)} → {formatDateTime(ov.data.range.to)} · attempts =
-          call rows; connected = provider-confirmed only. <RangeForm base={base} sp={sp} />
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <SectionCard
+      icon={Users}
+      tone="violet"
+      title="Team activity"
+      description={`${formatDateTime(ov.data.range.from)} → ${formatDateTime(ov.data.range.to)} · attempts = call rows; connected = provider-confirmed only.`}
+      actions={<RangeForm base={base} sp={sp} />}
+      flush={rows.length > 0}
+    >
+      {rows.length === 0 ? (
+        <EmptyState icon={Users} title="No Telecallers." />
+      ) : (
         <Table responsive>
           <TableHeader>
             <TableRow>
@@ -67,105 +99,83 @@ export async function TeamOverview({
               <TableHead>Call activity</TableHead>
               <TableHead>Outcomes</TableHead>
               <TableHead>Shares</TableHead>
-              <TableHead>Interests</TableHead>
+              <TableHead className="sm:text-right">Interests</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {ov.data.telecallers.map((t) => (
+            {rows.map((t) => (
               <TableRow key={t.id}>
                 <TableCell data-label="Telecaller / status">
-                  <a
-                    className="font-medium underline"
-                    href={`${base}/telecaller/${t.id}?${rangeParams(sp)}`}
-                  >
-                    {t.fullName}
-                  </a>
-                  {t.employeeCode ? (
-                    <div className="text-muted-foreground mt-1 text-xs">{t.employeeCode}</div>
-                  ) : null}
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>
-                      {t.status}
-                    </Badge>
-                    <Badge variant={t.training === 'PASSED' ? 'success' : 'warning'}>
-                      {t.training === 'PASSED'
-                        ? 'trained'
-                        : t.training.toLowerCase().replace(/_/g, ' ')}
-                    </Badge>
-                    {t.wfhActive ? <Badge variant="info">WFH</Badge> : null}
+                  <div className="flex min-w-40 items-start gap-2.5">
+                    <Avatar name={t.fullName} size="sm" />
+                    <div className="min-w-0">
+                      <a className="font-medium" href={`${base}/telecaller/${t.id}?${rangeParams(sp)}`}>
+                        {t.fullName}
+                      </a>
+                      {t.employeeCode ? <div className="font-mono text-[11px] text-slate-500">{t.employeeCode}</div> : null}
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(t.status)}</Badge>
+                        <Badge variant={t.training === 'PASSED' ? 'success' : 'warning'}>
+                          {t.training === 'PASSED' ? 'trained' : t.training.toLowerCase().replace(/_/g, ' ')}
+                        </Badge>
+                        {t.wfhActive ? <Badge variant="info">WFH</Badge> : null}
+                      </div>
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell data-label="Queue / follow-ups">
-                  <div>{t.queueSize} in queue</div>
+                  <div>
+                    <span className="font-semibold text-slate-900 tabular-nums">{t.queueSize}</span> in queue
+                  </div>
                   <div className="mt-1">
                     {t.followUpsDue ? (
                       <Badge variant="destructive">{t.followUpsDue} follow-ups due</Badge>
                     ) : (
-                      <span className="text-muted-foreground text-xs">No follow-ups due</span>
+                      <span className="text-xs text-slate-500">No follow-ups due</span>
                     )}
                   </div>
                 </TableCell>
                 <TableCell data-label="Call activity">
-                  <div>
-                    {t.attempts} attempts · {t.connected} connected
+                  <div className="tabular-nums">
+                    <span className="font-semibold text-slate-900">{t.attempts}</span> attempts ·{' '}
+                    <span className="font-semibold text-slate-900">{t.connected}</span> connected
                   </div>
-                  <div className="text-muted-foreground mt-1 text-xs">
-                    {Math.round(t.talkTimeSec / 60)} min talk time
-                  </div>
+                  <div className="mt-1 text-xs text-slate-500 tabular-nums">{Math.round(t.talkTimeSec / 60)} min talk time</div>
                 </TableCell>
-                <TableCell data-label="Outcomes" className="text-xs">
-                  {Object.entries(t.outcomes)
-                    .map(
-                      ([k, n]) => `${OUTCOME_LABELS[k as keyof typeof OUTCOME_LABELS] ?? k}: ${n}`,
-                    )
-                    .join(' · ') || '—'}
+                <TableCell data-label="Outcomes">
+                  <Chips items={Object.entries(t.outcomes).map(([k, n]) => [OUTCOME_LABELS[k as keyof typeof OUTCOME_LABELS] ?? k, n])} />
                 </TableCell>
-                <TableCell data-label="Shares" className="text-xs">
-                  {Object.entries(t.shares)
-                    .map(([k, n]) => `${k.toLowerCase().replace(/_/g, ' ')} ${n}`)
-                    .join(' · ') || '—'}
+                <TableCell data-label="Shares">
+                  <Chips items={Object.entries(t.shares).map(([k, n]) => [k.toLowerCase().replace(/_/g, ' '), n])} />
                 </TableCell>
-                <TableCell data-label="Interests">{t.interests}</TableCell>
+                <TableCell data-label="Interests" className="font-semibold tabular-nums sm:text-right">
+                  {t.interests}
+                </TableCell>
               </TableRow>
             ))}
-            {ov.data.telecallers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground text-center">
-                  No Telecallers.
-                </TableCell>
-              </TableRow>
-            ) : null}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      )}
+    </SectionCard>
   );
 }
 
 function RangeForm({ base, sp }: { base: string; sp: { from?: string; to?: string } }) {
+  const date = 'h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900';
   return (
-    <form action={base} method="get" className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-      <label>
-        From{' '}
-        <input
-          type="date"
-          name="from"
-          defaultValue={sp.from?.slice(0, 10)}
-          className="border-input bg-background h-7 rounded-md border px-1"
-        />
+    <form action={base} method="get" className="flex flex-wrap items-end gap-2 text-xs">
+      <label className="grid gap-1 font-medium text-slate-600">
+        From
+        <input type="date" name="from" defaultValue={sp.from?.slice(0, 10)} className={date} />
       </label>
-      <label>
-        To{' '}
-        <input
-          type="date"
-          name="to"
-          defaultValue={sp.to?.slice(0, 10)}
-          className="border-input bg-background h-7 rounded-md border px-1"
-        />
+      <label className="grid gap-1 font-medium text-slate-600">
+        To
+        <input type="date" name="to" defaultValue={sp.to?.slice(0, 10)} className={date} />
       </label>
-      <button type="submit" className="border-input h-7 rounded-md border px-2">
+      <Button type="submit" variant="outline" size="sm" className="h-9">
+        <Filter />
         Apply
-      </button>
+      </Button>
     </form>
   );
 }
@@ -233,48 +243,54 @@ export async function TelecallerActivity({
   id,
   base,
   sp,
+  eyebrow,
+  icon = UserRound,
 }: {
   id: string;
   base: string;
   sp: { from?: string; to?: string };
+  eyebrow?: string;
+  icon?: LucideIcon;
 }) {
   const a = (
     await apiFetch<Activity>(`/calling/team/telecallers/${id}/activity?${rangeParams(sp)}`)
   ).data;
-  const section = (title: string, desc: string, body: React.ReactNode) => (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{desc}</CardDescription>
-      </CardHeader>
-      <CardContent>{body}</CardContent>
-    </Card>
+  const section = (title: string, desc: string, body: React.ReactNode, sIcon: LucideIcon, tone: Tone, n: number) => (
+    <SectionCard icon={sIcon} tone={tone} title={title} description={desc} flush={n > 0}>
+      {n > 0 ? body : <EmptyState icon={sIcon} title="Nothing in this range." className="py-6" />}
+    </SectionCard>
   );
-  const empty = (n: number, cols: number) =>
-    n === 0 ? (
-      <TableRow>
-        <TableCell colSpan={cols} className="text-muted-foreground text-center">
-          Nothing in this range.
-        </TableCell>
-      </TableRow>
-    ) : null;
+  const connected = a.attempts.filter((x) => x.providerState === 'ENDED').length;
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold">{a.telecaller.fullName}</h1>
-        <Badge variant={a.telecaller.status === 'ACTIVE' ? 'success' : 'unknown'}>
-          {a.telecaller.status}
-        </Badge>
-        <span className="text-muted-foreground text-sm">
-          {a.telecaller.employeeCode} · queue {a.queueSize} · {formatDateTime(a.range.from)} →{' '}
-          {formatDateTime(a.range.to)}
-        </span>
-        <RangeForm base={`${base}/telecaller/${id}`} sp={sp} />
-      </div>
+      <PageHeader
+        icon={icon}
+        eyebrow={eyebrow}
+        tone="violet"
+        title={a.telecaller.fullName}
+        meta={
+          <>
+            <Badge variant={a.telecaller.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(a.telecaller.status)}</Badge>
+            {a.telecaller.employeeCode ? <span className="font-mono">{a.telecaller.employeeCode}</span> : null}
+            <span>queue {a.queueSize}</span>
+            <span>
+              {formatDateTime(a.range.from)} → {formatDateTime(a.range.to)}
+            </span>
+          </>
+        }
+        actions={<RangeForm base={`${base}/telecaller/${id}`} sp={sp} />}
+      >
+        <StatGrid>
+          <StatCard label="Queue" value={a.queueSize} hint="Records currently assigned" icon={ListChecks} tone="violet" />
+          <StatCard label="Open follow-ups" value={a.followUps.length} hint={`${a.followUps.filter((f) => f.overdue).length} overdue · all time`} icon={CalendarClock} tone="amber" />
+          <StatCard label="Call attempts" value={a.attempts.length} hint={`${connected} connected (provider-confirmed) · in this range`} icon={PhoneCall} tone="sky" />
+          <StatCard label="Materials shared" value={a.shares.length} hint="In this range" icon={Share2} tone="teal" />
+        </StatGrid>
+      </PageHeader>
       {section(
         'Follow-ups',
         'Open follow-ups on this queue (all time).',
-        <Table>
+        <Table responsive>
           <TableHeader>
             <TableRow>
               <TableHead>Customer</TableHead>
@@ -285,47 +301,49 @@ export async function TelecallerActivity({
           <TableBody>
             {a.followUps.map((f) => (
               <TableRow key={f.id}>
-                <TableCell>
-                  {f.fullName}{' '}
-                  <span className="text-muted-foreground font-mono text-xs">{f.mobileMasked}</span>
+                <TableCell data-label="Customer">
+                  <span className="font-medium text-slate-800">{f.fullName}</span>{' '}
+                  <span className="font-mono text-xs text-slate-500">{f.mobileMasked}</span>
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell data-label="Due" className="text-xs">
                   {f.dueAt ? formatDateTime(f.dueAt) : '—'}{' '}
                   {f.overdue ? <Badge variant="destructive">overdue</Badge> : null}
                 </TableCell>
-                <TableCell>
+                <TableCell data-label="Status">
                   <Badge variant="secondary">{f.interactionStatus}</Badge>
                 </TableCell>
               </TableRow>
             ))}
-            {empty(a.followUps.length, 3)}
           </TableBody>
         </Table>,
+        CalendarClock,
+        'amber',
+        a.followUps.length,
       )}
       {section(
         'Calls',
-        `${a.attempts.length} attempts · ${a.attempts.filter((x) => x.providerState === 'ENDED').length} connected (provider-confirmed). Recording chip reflects the provider's recording row; playback is logged.`,
-        <Table>
+        `${a.attempts.length} attempts · ${connected} connected (provider-confirmed). Recording chip reflects the provider's recording row; playback is logged.`,
+        <Table responsive>
           <TableHeader>
             <TableRow>
               <TableHead>When</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>State</TableHead>
-              <TableHead>Duration</TableHead>
+              <TableHead className="sm:text-right">Duration</TableHead>
               <TableHead>Recording</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {a.attempts.map((c) => (
               <TableRow key={c.id}>
-                <TableCell className="text-xs">{formatDateTime(c.at)}</TableCell>
-                <TableCell>
-                  {c.customer.fullName}{' '}
-                  <span className="text-muted-foreground font-mono text-xs">
-                    {c.customer.mobileMasked}
-                  </span>
+                <TableCell data-label="When" className="text-xs whitespace-nowrap text-slate-600">
+                  {formatDateTime(c.at)}
                 </TableCell>
-                <TableCell>
+                <TableCell data-label="Customer">
+                  <span className="font-medium text-slate-800">{c.customer.fullName}</span>{' '}
+                  <span className="font-mono text-xs text-slate-500">{c.customer.mobileMasked}</span>
+                </TableCell>
+                <TableCell data-label="State">
                   <Badge
                     variant={
                       c.providerState === 'ENDED'
@@ -337,37 +355,39 @@ export async function TelecallerActivity({
                   >
                     {c.providerState}
                   </Badge>
-                  {c.failureReason ? (
-                    <span className="text-muted-foreground ml-1 text-xs">{c.failureReason}</span>
-                  ) : null}
+                  {c.failureReason ? <span className="ml-1 text-xs text-slate-500">{c.failureReason}</span> : null}
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell data-label="Duration" className="text-xs tabular-nums sm:text-right">
                   {c.durationSec !== null ? `${c.durationSec}s` : '—'}
                 </TableCell>
-                <TableCell className="text-xs">
-                  <Badge
-                    variant={
-                      c.recording === 'Recording available'
-                        ? 'success'
-                        : c.recording === 'Recording unavailable'
-                          ? 'destructive'
-                          : 'unknown'
-                    }
-                  >
-                    {c.recording}
-                  </Badge>{' '}
-                  {c.canPlay ? <PlayRecordingButton callId={c.id} /> : null}
+                <TableCell data-label="Recording" className="text-xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant={
+                        c.recording === 'Recording available'
+                          ? 'success'
+                          : c.recording === 'Recording unavailable'
+                            ? 'destructive'
+                            : 'unknown'
+                      }
+                    >
+                      {c.recording}
+                    </Badge>
+                    {c.canPlay ? <PlayRecordingButton callId={c.id} /> : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
-            {empty(a.attempts.length, 5)}
           </TableBody>
         </Table>,
+        PhoneCall,
+        'sky',
+        a.attempts.length,
       )}
       {section(
         'Outcomes',
         'Operational outcomes as recorded by the Telecaller — never a bank stage.',
-        <Table>
+        <Table responsive>
           <TableHeader>
             <TableRow>
               <TableHead>When</TableHead>
@@ -379,29 +399,35 @@ export async function TelecallerActivity({
           <TableBody>
             {a.outcomes.map((o) => (
               <TableRow key={o.id}>
-                <TableCell className="text-xs">{formatDateTime(o.at)}</TableCell>
-                <TableCell>{o.customer.fullName}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">
-                    {OUTCOME_LABELS[o.outcome as keyof typeof OUTCOME_LABELS] ?? o.outcome}
-                  </Badge>
-                  {o.card ? <span className="ml-1 text-xs">{o.card}</span> : null}
-                  {o.doNotContact ? <Badge variant="destructive">DNC</Badge> : null}
+                <TableCell data-label="When" className="text-xs whitespace-nowrap text-slate-600">
+                  {formatDateTime(o.at)}
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell data-label="Customer" className="font-medium text-slate-800">
+                  {o.customer.fullName}
+                </TableCell>
+                <TableCell data-label="Outcome">
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Badge variant="secondary">{OUTCOME_LABELS[o.outcome as keyof typeof OUTCOME_LABELS] ?? o.outcome}</Badge>
+                    {o.card ? <span className="text-xs text-slate-600">{o.card}</span> : null}
+                    {o.doNotContact ? <Badge variant="destructive">DNC</Badge> : null}
+                  </div>
+                </TableCell>
+                <TableCell data-label="Notes" className="text-xs text-slate-600">
                   {o.remarks ?? '—'}
                   {o.followUpAt ? ` · follow-up ${formatDateTime(o.followUpAt)}` : ''}
                 </TableCell>
               </TableRow>
             ))}
-            {empty(a.outcomes.length, 4)}
           </TableBody>
         </Table>,
+        MessageSquareText,
+        'violet',
+        a.outcomes.length,
       )}
       {section(
         'Materials shared',
         '"Share sheet opened" is a hand-off, not a delivery confirmation.',
-        <Table>
+        <Table responsive>
           <TableHeader>
             <TableRow>
               <TableHead>When</TableHead>
@@ -413,18 +439,18 @@ export async function TelecallerActivity({
           <TableBody>
             {a.shares.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="text-xs">{formatDateTime(s.at)}</TableCell>
-                <TableCell>
-                  {s.customer?.fullName ?? '—'}{' '}
-                  <span className="text-muted-foreground font-mono text-xs">
-                    {s.targetMobileMasked}
-                  </span>
+                <TableCell data-label="When" className="text-xs whitespace-nowrap text-slate-600">
+                  {formatDateTime(s.at)}
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell data-label="Customer">
+                  <span className="font-medium text-slate-800">{s.customer?.fullName ?? '—'}</span>{' '}
+                  <span className="font-mono text-xs text-slate-500">{s.targetMobileMasked}</span>
+                </TableCell>
+                <TableCell data-label="What" className="text-xs">
                   {s.kind.toLowerCase().replace(/_/g, ' ')}
                   {s.card ? ` · ${s.card}` : ''}
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell data-label="Result" className="text-xs">
                   {s.deliveryStatus === 'DELIVERED'
                     ? 'Delivered'
                     : s.deliveryStatus === 'SENT'
@@ -437,45 +463,49 @@ export async function TelecallerActivity({
                 </TableCell>
               </TableRow>
             ))}
-            {empty(a.shares.length, 4)}
           </TableBody>
         </Table>,
+        Share2,
+        'teal',
+        a.shares.length,
       )}
       <div className="grid gap-6 md:grid-cols-2">
-        {section(
-          'Remarks',
-          'Operational remarks by this Telecaller.',
-          <ul className="grid gap-1 text-sm">
-            {a.remarks.map((r) => (
-              <li key={r.id} className="border-b py-1">
-                <span className="text-muted-foreground text-xs">{formatDateTime(r.at)}</span>{' '}
-                {r.text}
-                {r.editedAt ? (
-                  <span className="text-muted-foreground text-xs"> (edited)</span>
-                ) : null}
-              </li>
-            ))}
-            {a.remarks.length === 0 ? (
-              <li className="text-muted-foreground">Nothing in this range.</li>
-            ) : null}
-          </ul>,
-        )}
-        {section(
-          'Allocation history',
-          'Records moved in or out of this queue.',
-          <ul className="grid gap-1 text-sm">
-            {a.allocations.map((e) => (
-              <li key={e.id} className="border-b py-1">
-                <span className="text-muted-foreground text-xs">{formatDateTime(e.at)}</span>{' '}
-                <Badge variant={e.direction === 'IN' ? 'success' : 'unknown'}>{e.direction}</Badge>{' '}
-                {e.customer.fullName} · {e.reason}
-              </li>
-            ))}
-            {a.allocations.length === 0 ? (
-              <li className="text-muted-foreground">Nothing in this range.</li>
-            ) : null}
-          </ul>,
-        )}
+        <SectionCard icon={StickyNote} tone="slate" title="Remarks" description="Operational remarks by this Telecaller.">
+          {a.remarks.length === 0 ? (
+            <EmptyState icon={StickyNote} title="Nothing in this range." className="py-6" />
+          ) : (
+            <ul className="grid divide-y divide-slate-100 text-sm">
+              {a.remarks.map((r) => (
+                <li key={r.id} className="py-2 first:pt-0 last:pb-0">
+                  <div className="text-[11px] text-slate-500">
+                    {formatDateTime(r.at)}
+                    {r.editedAt ? ' (edited)' : ''}
+                  </div>
+                  <div className="text-slate-800">{r.text}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+        <SectionCard icon={ArrowLeftRight} tone="violet" title="Allocation history" description="Records moved in or out of this queue.">
+          {a.allocations.length === 0 ? (
+            <EmptyState icon={ArrowLeftRight} title="Nothing in this range." className="py-6" />
+          ) : (
+            <ul className="grid divide-y divide-slate-100 text-sm">
+              {a.allocations.map((e) => (
+                <li key={e.id} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">
+                  <Badge variant={e.direction === 'IN' ? 'success' : 'unknown'}>{e.direction}</Badge>
+                  <div className="min-w-0">
+                    <div className="text-slate-800">
+                      {e.customer.fullName} · {e.reason}
+                    </div>
+                    <div className="text-[11px] text-slate-500">{formatDateTime(e.at)}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
       </div>
     </div>
   );
