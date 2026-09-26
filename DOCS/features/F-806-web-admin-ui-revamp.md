@@ -1,6 +1,6 @@
 # F-806 Web Admin UI revamp — rich design system and every Admin page
 
-- Group: UX shells · Status: **IN_PROGRESS** · Depends on: F-801, F-803, F-804
+- Group: UX shells · Status: **DONE** · Depends on: F-801, F-803, F-804
 - PRD refs: REQ-20 (shared tokens §20.1, text never colour-only §20.2, adaptive states §20.3, accessibility §20.5), REQ-25 §25.4 (Admin screen inventory)
 - Origin: user request (2026-09-26) — "improve the visual appearance of the admin web app … very rich, impressive, intuitive and engaging. Deep analysis first, then a solid plan, then implement."
 
@@ -79,11 +79,18 @@ Shared components used by Admin *and* Manager/Accounts (leads browser, payout li
 - Screenshot sweep of every Admin route at 1440 and 390 (no page overflow, no framework error), visual review against this audit.
 
 ## Acceptance criteria
-- [ ] D1–D7 fixed.
-- [ ] Every Admin page uses `PageHeader` and the kit; no raw KBS enum constants shown; no underlined black table links.
-- [ ] Bank status still three separate labelled badges with provenance; bank values verbatim; unit test VIEW-01 green.
-- [ ] No new dependencies; reduced-motion respected; focus visible.
-- [ ] typecheck, lint, unit tests, build pass; all Admin routes render at 1440 and 390 with no page overflow.
+- [x] D1–D7 fixed.
+- [x] Every Admin page uses `PageHeader` and the kit; no raw KBS enum constants shown; no underlined black table links.
+- [x] Bank status still three separate labelled badges with provenance; bank values verbatim; unit test VIEW-01 green.
+- [x] No new dependencies; reduced-motion respected; focus visible.
+- [x] typecheck, lint, unit tests, build pass; all Admin routes render at 1440 and 390 with no page overflow.
 
 ## Progress notes
-- Session 13: audit + plan written.
+- Session 13: audit + plan written, then built. Commits: `docs(F-806): start` → design system (soft badges, primitives, `ui/kit.tsx`, `card-art.tsx`, D1 table word-break fix, global select chevron, canvas + entrance motion) → shell (gradient sidebar with active indicator, group › page breadcrumb, command palette with ↑/↓/Enter, account menu) → MIS reference page → one commit per area (calling, people, overview + leads, dashboards + audit, MIS detail + integrity, admin settings, payouts, catalogue + coverage + training).
+- Guide for future pages: `apps/web/src/components/ui/README.md`. Reference page: `app/(admin)/admin/mis/page.tsx`.
+- Page work was split across parallel helpers by disjoint file groups; every group was checked for behavioural drift (API paths, hrefs, form `name`/`id`/`htmlFor` compared to HEAD) before committing — only new navigation links, label associations and PillNav items (same hrefs) differ.
+- Shared components (leads browser/table/detail, payout list/detail/dashboard, entitlements ledger, team ops, operations dashboard, notification centre, account page, training table, calling distribution) take optional `eyebrow`/`icon` props, so Manager and Accounts pages get the new look inside their existing `AppShell` (the shell itself was not redesigned — candidate follow-up).
+- Deliberate presentation changes: Leads/Executive filters keep one GET form but move less-used fields into a native "More filters" `<details>` (opens automatically when one is set) plus removable active-filter chips; catalogue is a card-art grid; onboarding queue is review cards sorted longest-waiting first; configuration has a section index and value pills; payout requests show a Manager → Admin stepper; lead detail has a hero with the three bank badges as separate tiles. Two new explanatory lines: "Illustration only — not the bank's card artwork." and "Try clearing a filter or widening the date range."
+- Bugs fixed on the way (render-time fetches — React rejected the state update and the first load could be lost): calling-list review queue, MIS batch rows, MIS quarantine, new payout rule known values now load in effects. Sidebar highlighted "Executive dashboard" on the managers/advisors dashboards (now "Team performance").
+- Verification (Mac, dev servers on :3200/:4200, demo data): web typecheck + lint (existing TanStack warning only) + unit 11/11; `next build` passes; screenshot sweep `node apps/web/test/admin-shots.mjs <dir> 1440|390` → 39 Admin routes, overflow 0, no errors, reviewed visually; Playwright `admin-smoke` 30/30 desktop + 30/30 phone, `manager-advisors` pass, `session` specs pass (they flake on the OTP resend cooldown when run back-to-back without `E2E_DB_URL`/`psql`).
+- Follow-ups noticed, not changed: (1) onboarding Approve accepts a 1–2 character optional reason the API rejects (<3); (2) `LeadStatusRow.bank` has no `code`, so lead pages derive the bank mark from the first word of the name — add `bank.code` to the DTO; (3) the demo seed stamps config `updatedAt` without history rows ("last change" shown but History says never changed); (4) the demo Telecaller is PASSED without module attempt rows; (5) retention dry-run cards are tall on phones; (6) Manager/Accounts `AppShell` still the plain F-801 shell.

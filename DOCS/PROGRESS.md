@@ -2,9 +2,9 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-09-23, end of session 12)
+## Current state (as of 2026-09-26, end of session 13)
 
-- **Feature status:** 74 of 76 features **DONE** (session 12 added and finished **F-805 mobile UI revamp** — premium design system + every mobile screen; guide in `apps/mobile/components/ui/README.md`)
+- **Feature status:** 75 of 77 features **DONE** (session 13 added and finished **F-806 web Admin UI revamp** — design kit + shell + every Admin page; guide in `apps/web/src/components/ui/README.md`; session 12 finished **F-805 mobile UI revamp**, guide in `apps/mobile/components/ui/README.md`)
 - Earlier: 73 of 75 features **DONE** (sessions 9–11 added and finished F-314 Admin calls & delivery oversight, F-315 Manager Advisor drill-down and F-804 web session continuity + account screens, all found by REQ-15/REQ-25 gap checks) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
   - **F-302** Android protected screens — code complete; stays IN_PROGRESS only for the **SEC-02 manual run on a physical Android 12+ device** (checklist in `DOCS/runbooks/02-mobile-security-limits.md`).
   - **F-904** Data retention — **BLOCKED** on KBS durations (REQ-21 §21.5 OPEN). Structure is built and fails closed (`/retention/plan` dry run, legal holds, `/retention/execute` → `CONFIG_MISSING` until `retention.*Days` and `retention.executionEnabled` are set).
@@ -38,6 +38,12 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 ```
 
 ## Session log
+
+### 2026-09-26 — Session 13 (F-806 web Admin UI revamp, on the Mac)
+- User asked for a rich, impressive, intuitive Admin web UI with a deep analysis and plan first. Rendered all 38 Admin routes, wrote the audit (7 defects incl. mid-word breaks in tables, raw enums, solid badges, native selects) and plan into `DOCS/features/F-806-web-admin-ui-revamp.md`, then built it: design kit, shell with command palette, every Admin page. Presentation only; bank values/three-badge rule untouched; no new dependencies.
+- Also fixed four render-time fetches (review queue, MIS rows, quarantine, new-rule) and the dashboards sidebar highlight.
+- Local environment note: the Mac DB `kbs_dev` was 8 migrations behind and the API failed to compile on stale Prisma/shared builds — `pnpm install`, `pnpm db:generate`, `pnpm --filter @kbs/shared --filter @kbs/ui-tokens --filter @kbs/db build`, `pnpm db:migrate` fixed it (no data reset). Colima must be running (`colima start`, then `docker start kbs-test-pg kbs-test-redis`). `.claude/launch.json` starts api :4200 / web :3200.
+- Checks: web typecheck/lint/unit/build green; 39-route screenshot sweep at 1440/390 clean; Playwright admin-smoke 60/60, manager-advisors and session specs pass (session flakes on OTP cooldown without `E2E_DB_URL`). Follow-ups listed in F-806.
 
 ### 2026-09-23 — Session 12 (F-805 mobile UI revamp)
 - User asked for a complete, impressive mobile UI revamp; chose "premium fintech" and "every screen, all roles". Audited all 45 screens first (DOCS/features/F-805: 6 real defects — no safe areas, Manager rows opening on scroll, icon-less tabs, status bar, scrolling back buttons, no loading states — plus hierarchy/emoji/filter-UX problems).
