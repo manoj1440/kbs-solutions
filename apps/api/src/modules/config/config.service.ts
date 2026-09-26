@@ -87,7 +87,8 @@ export class ConfigService implements OnModuleInit {
         defaultValue: def.defaultValue,
         description: def.description,
         requiresValueBeforeProd: def.requiresValueBeforeProd,
-        updatedAt: r?.updatedAt?.toISOString() ?? null,
+        // a seeded row (no updater) was never changed by anyone: report no last change rather than the seed time
+        updatedAt: r?.updatedByUserId ? r.updatedAt.toISOString() : null,
         updatedBy: r?.updatedByUserId ?? null,
       };
     });

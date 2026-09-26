@@ -231,16 +231,16 @@ export default async function ConfigPage() {
             tone="indigo"
           />
           <StatCard
-            label="With a last change"
+            label="Changed by an Admin"
             value={changed}
-            hint="Keys showing a last-change time"
+            hint="Each change has a reason in its history"
             icon={History}
             tone="sky"
           />
           <StatCard
-            label="On defaults"
+            label="Never changed"
             value={cfg.data.length - changed}
-            hint="Last change shows “default”"
+            hint="Still the seeded default"
             icon={Settings2}
             tone="slate"
           />
