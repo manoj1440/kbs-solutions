@@ -202,7 +202,8 @@ export function GrantWfhForm({
   const { busy, err, run } = useSubmit();
   return (
     <form
-      className="grid gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4 md:grid-cols-[repeat(3,minmax(0,1fr))_auto] md:items-end"
+      // wraps by its own width: it sits full-width on Office network and half-width beside training on a Telecaller page
+      className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4"
       onSubmit={(e) => {
         e.preventDefault();
         void run(
@@ -220,7 +221,7 @@ export function GrantWfhForm({
       }}
     >
       {telecallers ? (
-        <div className="grid gap-1">
+        <div className="grid min-w-48 flex-1 gap-1">
           <Label htmlFor="wfh-tc">Telecaller</Label>
           <select
             id="wfh-tc"
@@ -237,7 +238,7 @@ export function GrantWfhForm({
           </select>
         </div>
       ) : null}
-      <div className="grid gap-1">
+      <div className="grid min-w-52 flex-1 gap-1">
         <Label htmlFor="wfh-end">Ends (optional)</Label>
         <Input
           id="wfh-end"
@@ -246,7 +247,7 @@ export function GrantWfhForm({
           onChange={(e) => setEndsAt(e.target.value)}
         />
       </div>
-      <div className={`grid gap-1 ${telecallers ? '' : 'md:col-span-2'}`}>
+      <div className="grid min-w-56 flex-[2] gap-1">
         <Label htmlFor="wfh-reason">Reason</Label>
         <Input
           id="wfh-reason"
@@ -259,7 +260,7 @@ export function GrantWfhForm({
         <House />
         Grant WFH
       </Button>
-      {err ? <p className="text-destructive text-sm md:col-span-4">{err}</p> : null}
+      {err ? <p className="text-destructive basis-full text-sm">{err}</p> : null}
     </form>
   );
 }

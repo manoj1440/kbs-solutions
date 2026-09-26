@@ -118,7 +118,8 @@ const MANAGER_GROUPS: NavGroup[] = [
     label: 'Team',
     items: [
       { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/manager', label: 'Team', icon: Users },
+      // a Telecaller's page belongs to the team (Create Telecaller still wins on /new: longer match)
+      { href: '/manager', label: 'Team', icon: Users, also: ['/manager/telecallers'] },
       { href: '/manager/calling', label: 'Team calling', icon: PhoneCall },
       { href: '/manager/advisors', label: 'Advisors', icon: UserRound },
       { href: '/manager/telecallers/new', label: 'Create Telecaller', icon: UserPlus },

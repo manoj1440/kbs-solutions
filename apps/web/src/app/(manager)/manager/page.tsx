@@ -1,7 +1,8 @@
+import { CheckCircle2, GraduationCap, TriangleAlert, UserPlus, UserRound, Users } from 'lucide-react';
 import Link from 'next/link';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Avatar, EmptyState, humanize, PageHeader, SectionCard, StatCard, StatGrid, StatusDot, type Tone } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TrainingTeamTable } from '@/components/training-team-table';
 import { apiFetch } from '@/lib/api';
@@ -18,63 +19,81 @@ interface TeamUser {
   createdAt: string;
 }
 
+/** F-806: dot tone per KBS user status (the humanised text carries the meaning). */
+const userStatusTone = (s: string): Tone => (s === 'ACTIVE' ? 'emerald' : s === 'PENDING_ONBOARDING' ? 'amber' : s === 'BLOCKED' ? 'rose' : 'slate');
+
 /** F-201/F-105: Manager team list. Training columns arrive with F-205. */
 export default async function ManagerTeam() {
   const [users, team] = await Promise.all([apiFetch<TeamUser[]>('/users?pageSize=200'), apiFetch<TrainingTeamRow[]>('/training/team')]);
   const telecallers = users.data.filter((u) => u.role === 'TELECALLER');
   const advisors = users.data.filter((u) => u.role === 'ADVISOR');
+  const passed = team.data.filter((r) => r.status === 'PASSED').length;
+  const expired = team.data.filter((r) => r.status === 'EXPIRED_DEACTIVATED').length;
+  const activeAdvisors = advisors.filter((u) => u.status === 'ACTIVE').length;
   return (
-    <div className="grid gap-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">My team</h1>
-          <p className="text-muted-foreground text-sm">
-            {telecallers.length} Telecallers · {advisors.length} Advisors reporting to you.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/manager/telecallers/new">Create Telecaller</Link>
-        </Button>
-      </div>
-      <section className="grid gap-2">
-        <h2 className="text-lg font-medium">Telecallers</h2>
+    <div className="grid gap-6">
+      <PageHeader
+        icon={Users}
+        tone="violet"
+        eyebrow="Team"
+        title="My team"
+        description={`${telecallers.length} Telecallers · ${advisors.length} Advisors reporting to you.`}
+        actions={
+          <Button asChild>
+            <Link href="/manager/telecallers/new">
+              <UserPlus />
+              Create Telecaller
+            </Link>
+          </Button>
+        }
+      >
+        <StatGrid>
+          <StatCard label="Telecallers" value={telecallers.length} hint="Reporting to you" icon={Users} emphasis />
+          <StatCard label="Training passed" value={passed} hint={`All three modules passed, of ${team.data.length} enrolled`} icon={CheckCircle2} tone="emerald" />
+          <StatCard label="Deadline passed" value={expired} hint="72-hour window ended before passing" icon={TriangleAlert} tone={expired ? 'rose' : 'slate'} />
+          <StatCard label="Advisors" value={advisors.length} hint={`${activeAdvisors} active`} icon={UserRound} tone="sky" href="/manager/advisors" source="Advisor results" />
+        </StatGrid>
+      </PageHeader>
+
+      <SectionCard icon={GraduationCap} tone="violet" title="Telecallers" description="Training status, deadline and best score per module. Open a Telecaller for details." flush={team.data.length > 0}>
         <TrainingTeamTable rows={team.data} linkBase="/manager/telecallers" />
-      </section>
-      <section className="grid gap-2">
-        <h2 className="text-lg font-medium">Advisors</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Mobile</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {advisors.length === 0 ? (
+      </SectionCard>
+
+      <SectionCard icon={UserRound} tone="sky" title="Advisors" description="Advisors who applied one of your Agent Codes." flush={advisors.length > 0}>
+        {advisors.length === 0 ? (
+          <EmptyState icon={UserRound} title="No Advisors yet" description="Advisors join your team when they apply one of your Agent Codes." />
+        ) : (
+          <Table responsive>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={3} className="text-muted-foreground">
-                  Advisors join your team when they apply one of your Agent Codes.
-                </TableCell>
+                <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Mobile</TableHead>
               </TableRow>
-            ) : (
-              advisors.map((u) => (
+            </TableHeader>
+            <TableBody>
+              {advisors.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell>
-                    <Link className="underline-offset-2 hover:underline" href={`/manager/advisors/${u.id}`}>
-                      {u.fullName || '(onboarding)'}
-                    </Link>
+                  <TableCell data-label="Name">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={u.fullName || '?'} size="sm" />
+                      <Link href={`/manager/advisors/${u.id}`} className="font-medium">
+                        {u.fullName || '(onboarding)'}
+                      </Link>
+                    </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={u.status === 'ACTIVE' ? 'success' : 'warning'}>{u.status}</Badge>
+                  <TableCell data-label="Status">
+                    <StatusDot tone={userStatusTone(u.status)}>{humanize(u.status)}</StatusDot>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{u.mobileMasked}</TableCell>
+                  <TableCell data-label="Mobile" className="font-mono text-xs">
+                    {u.mobileMasked}
+                  </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </section>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </SectionCard>
     </div>
   );
 }

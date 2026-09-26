@@ -11,7 +11,7 @@ import { remaining, STATUS_LABEL, statusTone, type TrainingTeamRow } from '@/lib
 export function TrainingTeamTable({ rows, linkBase }: { rows: TrainingTeamRow[]; linkBase: string }) {
   if (rows.length === 0) return <EmptyState icon={GraduationCap} title="No Telecallers enrolled yet." />;
   return (
-    <Table responsive>
+    <Table responsive="compact">
       <TableHeader>
         <TableRow>
           <TableHead>Telecaller</TableHead>
