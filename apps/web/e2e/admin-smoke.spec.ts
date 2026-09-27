@@ -56,6 +56,27 @@ test.describe('Admin workspace smoke', () => {
     });
   }
 
+  test('F-807: executive dashboard URL lands on the Business overview with its filters', async () => {
+    await page.goto('/admin/dashboards?from=2026-01-01&to=2026-01-31');
+    await expect(page).toHaveURL(/\/admin\?from=2026-01-01&to=2026-01-31$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Business overview' })).toBeVisible();
+    await page.getByRole('navigation', { name: 'Period' }).getByRole('link', { name: '7 days' }).click();
+    await expect(page).toHaveURL(/\/admin\?period=7d$/);
+    await expect(page.getByRole('link', { name: '7 days' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('F-807: sidebar lists each page once, grouped by responsibility', async () => {
+    test.skip((page.viewportSize()?.width ?? 0) < 1024, 'desktop sidebar');
+    await page.goto('/admin');
+    const nav = page.getByRole('navigation', { name: 'Admin navigation' });
+    const hrefs = await nav.getByRole('link').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(hrefs).not.toContain('/admin/dashboards');
+    expect(hrefs).not.toContain('/admin/account');
+    for (const group of ['Overview', 'Sales', 'Calling', 'People', 'Products', 'Bank MIS', 'Payouts', 'Reports', 'Settings'])
+      await expect(nav.getByText(group, { exact: true })).toBeVisible();
+  });
+
   test('notification drawer opens and closes', async () => {
     await page.goto('/admin');
     await page.getByRole('button', { name: /^Notifications/ }).click();
