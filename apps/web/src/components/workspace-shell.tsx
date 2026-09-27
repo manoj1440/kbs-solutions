@@ -32,7 +32,6 @@ import {
   Search,
   Settings2,
   ShieldCheck,
-  Shuffle,
   SlidersHorizontal,
   UserPlus,
   UserRound,
@@ -73,9 +72,13 @@ const ADMIN_GROUPS: NavGroup[] = [
   {
     label: 'Calling',
     items: [
-      { href: '/admin/calling-list', label: 'Calling lists', icon: Phone },
-      { href: '/admin/calling-list/distribution', label: 'Allocation', icon: Shuffle },
-      { href: '/admin/calling-list/oversight', label: 'Calls & delivery', icon: PhoneCall },
+      { href: '/admin/calling-list', label: 'Calling records', icon: Phone },
+      {
+        href: '/admin/calling-list/performance',
+        label: 'Caller performance',
+        icon: BarChart3,
+        also: ['/admin/calling-list/oversight'],
+      },
     ],
   },
   {
@@ -116,7 +119,7 @@ const ADMIN_GROUPS: NavGroup[] = [
       {
         href: '/admin/dashboards/telecallers',
         label: 'Team performance',
-        icon: BarChart3,
+        icon: Users,
         also: ['/admin/dashboards/managers', '/admin/dashboards/advisors'],
       },
       { href: '/admin/dashboards/bank-card-mix', label: 'Bank / card mix', icon: PieChart },
@@ -359,7 +362,7 @@ export function WorkspaceShell({
         </Link>
       </aside>
       <div className="min-w-0 lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur-xl sm:px-8">
+        <header className="sticky top-0 z-20 flex h-12 items-center justify-between gap-3 border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur-xl sm:px-8">
           <div className="flex min-w-0 items-center gap-2.5">
             <Button
               variant="ghost"
@@ -445,7 +448,7 @@ export function WorkspaceShell({
         <main
           id="admin-content"
           tabIndex={-1}
-          className="admin-content mx-auto min-w-0 max-w-[1600px] p-4 outline-none sm:p-8"
+          className="admin-content mx-auto min-w-0 max-w-[1600px] p-4 outline-none sm:p-6"
         >
           {children}
         </main>

@@ -5,17 +5,20 @@ import { cn } from '@/lib/utils';
 function Table({
   className,
   responsive = false,
+  containerClassName,
   ...props
 }: React.ComponentProps<'table'> & {
   /** below 700px rows become labelled cards; 'compact' lays the labelled values out two per line */
   responsive?: boolean | 'compact';
+  /** e.g. a fixed height + overflow-y-auto so the table scrolls inside the page */
+  containerClassName?: string;
 }) {
   return (
     <div
       data-slot="table-container"
       data-responsive={responsive || undefined}
       data-compact={responsive === 'compact' || undefined}
-      className="relative w-full min-w-0 overflow-x-auto"
+      className={cn('relative w-full min-w-0 overflow-x-auto', containerClassName)}
     >
       <table
         role="table"

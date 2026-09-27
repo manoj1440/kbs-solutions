@@ -235,6 +235,48 @@ export function EmptyState({
   );
 }
 
+/** F-808 compact KPI for dense workspaces: label, value and one short line; `href` makes it a filter link, `active` marks the applied one. */
+export function MiniStat({
+  label,
+  value,
+  hint,
+  href,
+  tone = 'slate',
+  active,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+  href?: string;
+  tone?: Tone;
+  active?: boolean;
+}) {
+  const body = (
+    <>
+      <span className="flex items-start gap-1.5 text-[11.5px] leading-tight font-medium text-slate-600">
+        <span className={cn('mt-1 size-1.5 shrink-0 rounded-full', TONE[tone].bar)} aria-hidden="true" />
+        {label}
+      </span>
+      <span className="mt-0.5 block text-xl leading-7 font-semibold tracking-tight text-slate-900 tabular-nums">{value}</span>
+      {hint ? <span className="line-clamp-2 block text-[10.5px] leading-snug text-slate-500">{hint}</span> : null}
+    </>
+  );
+  const cls = cn(
+    'block min-w-0 rounded-xl border bg-white px-3 py-2 shadow-[0_1px_2px_rgb(15_23_42/4%)]',
+    active ? 'border-teal-600 ring-2 ring-teal-600/15' : 'border-slate-200/80',
+    href && 'transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700',
+  );
+  return href ? (
+    <Link href={href} prefetch={false} title={hint} aria-current={active ? 'true' : undefined} className={cls}>
+      {body}
+    </Link>
+  ) : (
+    <div title={hint} className={cls}>
+      {body}
+    </div>
+  );
+}
+
 /** Segmented link navigation (tabs, queues). Server-safe: the caller passes the active href. */
 export function PillNav({
   items,
