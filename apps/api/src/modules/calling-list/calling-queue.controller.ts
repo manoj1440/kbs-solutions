@@ -31,6 +31,13 @@ export class CallingQueueController {
     return this.queue.list(actor, QueueQuery.parse(raw));
   }
 
+  /** F-808 record counts per status (Manager: team; Admin: all). */
+  @Get('records/summary')
+  @RequirePermission('CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
+  summary(@CurrentActor() actor: Actor) {
+    return this.queue.summary(actor);
+  }
+
   @Get('records/:id')
   @RequirePermission('CALLING_QUEUE_OWN', 'CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
   @RequireGates('training', 'network')

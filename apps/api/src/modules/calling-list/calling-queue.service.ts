@@ -1,4 +1,4 @@
-import { type CallingQueueRow, maskMobile, type QueueQuery } from '@kbs/shared';
+import { type CallingQueueRow, type CallingRecordsSummary, maskMobile, type QueueQuery, RECORD_STATUSES, type RecordStatus, recordStatusOf } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -40,14 +40,28 @@ export class CallingQueueService {
     return { hiddenAt: null, suppressed: false, interactionStatus: { in: [...ACTIVE_STATUSES] } };
   }
 
+  /** F-808: Prisma filter for one derived status — the same precedence as `recordStatusOf`. */
+  private statusWhere(status: RecordStatus) {
+    if (status === 'EXCLUDED' || status === 'NEEDS_REVIEW') return { reviewStatus: status };
+    const accepted = { reviewStatus: 'ACCEPTED' as const };
+    if (status === 'DO_NOT_CONTACT') return { ...accepted, suppressed: true };
+    if (status === 'UNASSIGNED') return { ...accepted, suppressed: false, assignedTelecallerUserId: null };
+    return { ...accepted, suppressed: false, assignedTelecallerUserId: { not: null }, interactionStatus: status };
+  }
+
+  private scopeWhere(ids: string[] | null) {
+    return ids ? { assignedTelecallerUserId: { in: ids } } : {};
+  }
+
   async list(actor: Actor, q: QueueQuery) {
     const ids = this.scope(actor, q.telecallerId);
+    const statusWhere = q.status ? this.statusWhere(q.status) : this.tabWhere(q.tab);
     const where = {
-      ...(ids ? { assignedTelecallerUserId: { in: ids } } : {}),
-      ...this.tabWhere(q.tab),
+      AND: [this.scopeWhere(ids), statusWhere],
+      ...(q.pincode ? { pincode: { startsWith: q.pincode } } : {}),
       ...(q.search ? { OR: [{ fullName: { contains: q.search, mode: 'insensitive' as const } }, { pincode: { startsWith: q.search } }, { resolvedCity: { contains: q.search, mode: 'insensitive' as const } }] } : {}),
     };
-    const orderBy = q.tab === 'followups' ? [{ nextFollowUpAt: 'asc' as const }] : q.tab === 'hidden' ? [{ hiddenAt: 'desc' as const }] : [{ nextFollowUpAt: { sort: 'asc' as const, nulls: 'last' as const } }, { assignedAt: 'asc' as const }, { sourceRowNumber: 'asc' as const }];
+    const orderBy = q.status ? [{ updatedAt: 'desc' as const }, { sourceRowNumber: 'asc' as const }] : q.tab === 'followups' ? [{ nextFollowUpAt: 'asc' as const }] : q.tab === 'hidden' ? [{ hiddenAt: 'desc' as const }] : [{ nextFollowUpAt: { sort: 'asc' as const, nulls: 'last' as const } }, { assignedAt: 'asc' as const }, { sourceRowNumber: 'asc' as const }];
     const [rows, total] = await Promise.all([
       this.prisma.client.callingRecord.findMany({
         where,
@@ -60,6 +74,31 @@ export class CallingQueueService {
     ]);
     const counts = actor.role === 'TELECALLER' && !q.search ? await this.counts(actor.userId) : undefined;
     return new Paginated(rows.map(toRow), q.page, q.pageSize, total, counts ? { counts } : {});
+  }
+
+  /** F-808: system-wide (Admin) or team (Manager) record counts; statuses are exclusive so they sum to `total`. */
+  async summary(actor: Actor): Promise<CallingRecordsSummary> {
+    const scope = this.scopeWhere(this.scope(actor));
+    const count = (where: object) => this.prisma.client.callingRecord.count({ where: { AND: [scope, where] } });
+    const [total, statusCounts, attempted, connected, followUpsDue, batches, needingAction] = await Promise.all([
+      count({}),
+      Promise.all(RECORD_STATUSES.map((s) => count(this.statusWhere(s)))),
+      count({ callAttempts: { some: {} } }),
+      count({ callAttempts: { some: { connectedAt: { not: null } } } }),
+      count({ hiddenAt: null, suppressed: false, nextFollowUpAt: { lte: new Date() } }),
+      actor.role === 'ADMIN' ? this.prisma.client.customerImportBatch.count() : 0,
+      // batches an Admin still has to act on: mapping/validation not finished, or imported but never allocated
+      actor.role === 'ADMIN' ? this.prisma.client.customerImportBatch.count({ where: { OR: [{ status: { in: ['UPLOADED', 'VALIDATED'] } }, { status: 'IMPORTED', allocatedAt: null }] } }) : 0,
+    ]);
+    return {
+      total,
+      byStatus: Object.fromEntries(RECORD_STATUSES.map((s, i) => [s, statusCounts[i]])) as Record<RecordStatus, number>,
+      attempted,
+      connected,
+      followUpsDue,
+      batches: { total: batches, needingAction },
+      asOf: new Date().toISOString(),
+    };
   }
 
   /** Tab badges for the Telecaller home. */
@@ -98,6 +137,8 @@ export class CallingQueueService {
 
 type RecordWithRefs = {
   id: string;
+  reviewStatus: string;
+  assignedTelecallerUserId: string | null;
   fullName: string;
   mobile: string;
   pincode: string;
@@ -134,5 +175,6 @@ function toRow(r: RecordWithRefs): CallingQueueRow {
     hiddenReason: r.hiddenReason,
     canCall: !r.suppressed && !r.hiddenAt && r.mobile.startsWith('+'),
     batchRef: r.batch.publicRef,
+    recordStatus: recordStatusOf(r),
   };
 }

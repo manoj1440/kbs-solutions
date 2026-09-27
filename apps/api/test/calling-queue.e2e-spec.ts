@@ -147,4 +147,45 @@ describe('F-307 calling queue / F-305 reassignment (RBAC-01, CUST-04)', () => {
     const b = a.body.data.telecallers.find((t: { id: string }) => t.id === teamB.telecallerId);
     expect(b).toMatchObject({ eligible: true, active: 3 });
   });
+
+  it('F-808: summary statuses are exclusive and sum to the total; status / pincode filters use the same definition', async () => {
+    // extra rows: one needing review, one excluded, one suppressed, one unassigned, one elsewhere by pincode
+    await prisma.callingRecord.createMany({
+      data: [
+        { batchId, sourceRowNumber: 20, fullName: 'Review Row', mobile: '+919555600020', pincode: '302001', reviewStatus: 'NEEDS_REVIEW' },
+        { batchId, sourceRowNumber: 21, fullName: 'Excluded Row', mobile: '+919555600021', pincode: '302001', reviewStatus: 'EXCLUDED' },
+        { batchId, sourceRowNumber: 22, fullName: 'Dnc Row', mobile: '+919555600022', pincode: '302001', suppressed: true },
+        { batchId, sourceRowNumber: 23, fullName: 'Waiting Row', mobile: '+919555600023', pincode: '110001' },
+      ],
+    });
+    const assigned = await prisma.callingRecord.findFirstOrThrow({ where: { batchId, assignedTelecallerUserId: { not: null }, interactionStatus: 'UNTOUCHED' } });
+    await prisma.callAttempt.create({ data: { callingRecordId: assigned.id, telecallerUserId: assigned.assignedTelecallerUserId as string, providerKey: 'mock', targetMobileMasked: '+91••••••0001', idempotencyKey: idem(), providerState: 'ENDED', initiatedAt: new Date(), connectedAt: new Date() } });
+
+    const s = (await api().get('/api/v1/calling/records/summary').set(auth(adminToken)).expect(200)).body.data;
+    const all = await prisma.callingRecord.count();
+    expect(s.total).toBe(all);
+    expect(Object.values(s.byStatus as Record<string, number>).reduce((a, b) => a + b, 0)).toBe(all);
+    expect(s.byStatus).toMatchObject({ NEEDS_REVIEW: 1, EXCLUDED: 1, DO_NOT_CONTACT: 1, UNASSIGNED: 1, FOLLOW_UP: 1, DECLINED: 1 });
+    expect(s.attempted).toBeGreaterThanOrEqual(1);
+    expect(s.connected).toBeGreaterThanOrEqual(1);
+    expect(s.batches.total).toBeGreaterThanOrEqual(1);
+
+    for (const [status, n] of Object.entries(s.byStatus as Record<string, number>)) {
+      const list = await api().get(`/api/v1/calling/records?status=${status}&pageSize=100`).set(auth(adminToken)).expect(200);
+      expect([status, list.body.meta.total]).toEqual([status, n]);
+      expect(list.body.data.every((r: { recordStatus: string }) => r.recordStatus === status)).toBe(true);
+    }
+    const byPin = await api().get('/api/v1/calling/records?status=UNASSIGNED&pincode=110').set(auth(adminToken)).expect(200);
+    expect(byPin.body.data.map((r: { fullName: string }) => r.fullName)).toEqual(['Waiting Row']);
+    expect(JSON.stringify(byPin.body)).not.toContain('+919555600023');
+    await api().get('/api/v1/calling/records?pincode=abc').set(auth(adminToken)).expect(400);
+
+    // Manager: team scope only (no unassigned, no other team)
+    const m = (await api().get('/api/v1/calling/records/summary').set(auth(teamA.manager.accessToken)).expect(200)).body.data;
+    expect(m.byStatus.UNASSIGNED).toBe(0);
+    expect(m.total).toBe(await prisma.callingRecord.count({ where: { assignedTelecallerUserId: { in: [teamA.telecallerId, teamA2.telecallerId] } } }));
+    expect(m.batches).toEqual({ total: 0, needingAction: 0 });
+    const t = await loginAs(app, prisma, teamA.telecallerMobile);
+    await api().get('/api/v1/calling/records/summary').set(auth(t.accessToken)).expect(403);
+  });
 });
