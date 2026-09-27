@@ -1,45 +1,40 @@
-import { formatDateTime, formatInr, type LeadStatusRow } from '@kbs/shared';
+import { formatDateTime, formatInr } from '@kbs/shared';
 import {
   ArrowDownToLine,
   ArrowRight,
   ArrowUpRight,
-  Building2,
-  CheckCircle2,
+  BadgeCheck,
+  CalendarRange,
   ChevronDown,
   CircleAlert,
   Clock3,
-  FileCheck2,
-  FileSpreadsheet,
-  Headset,
+  CreditCard,
+  Filter,
+  Landmark,
   LayoutDashboard,
   ListChecks,
   Phone,
+  PhoneCall,
   ShieldCheck,
   TriangleAlert,
-  UserCog,
   Users,
   Wallet,
+  type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import {
-  ActivationBadge,
-  DecisionBadge,
-  FreshnessLabel,
-  ProvenanceChip,
-  StageBadge,
-} from '@/components/status';
+import { OpsFilters, OpsSections, opsQuery, type OpsDashboard } from '@/components/operations-dashboard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Avatar,
   BankMark,
   Callout,
   EmptyState,
   IconTile,
   Meter,
   PageHeader,
+  PillNav,
   SectionCard,
   StatCard,
   StatGrid,
@@ -47,31 +42,91 @@ import {
   type Tone,
 } from '@/components/ui/kit';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { payoutSummarySchema, summarizeBanks, type BankOverview } from '@/lib/admin-overview';
+  countSuccess,
+  payoutSummarySchema,
+  percentChange,
+  PERIODS,
+  resolvePeriod,
+  type Range,
+} from '@/lib/admin-overview';
 import { ApiError, apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 export const metadata = { title: 'Business overview · KBS Solutions' };
 
-interface LaunchGate {
-  key: string;
-  description: string;
-  isSet: boolean;
+type Tot = { count: number; amountInr: number };
+interface MixRow {
+  bank: { id: string; code: string; displayName: string };
+  leads: number;
+  misMatched: number;
+  payoutEligible: Tot;
+  payoutPaid: Tot;
 }
 interface Distribution {
-  telecallers: { id: string; eligible: boolean; active: number; needsReassignment: boolean }[];
+  telecallers: { needsReassignment: boolean }[];
   unassigned: number | null;
 }
+type Advisors = OpsDashboard['advisors'];
+
 const number = (value: number | null | undefined) =>
   value == null ? 'Unavailable' : value.toLocaleString('en-IN');
 const total = (response: { meta: Record<string, unknown> } | null) =>
   typeof response?.meta.total === 'number' ? response.meta.total : null;
+const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : null);
+const day = (d: string) =>
+  new Date(`${d}T00:00:00+05:30`).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Asia/Kolkata',
+  });
+const rangeLabel = (r: Partial<Range>) =>
+  r.from || r.to ? `${r.from ? day(r.from) : '…'} – ${r.to ? day(r.to) : 'today'}` : 'All time';
+
+/** Business figures from one executive response (same cohort: leads created in the window). */
+function figures(a: Advisors) {
+  return {
+    leads: a.leads.created.value,
+    matched: a.leads.misMatched.value,
+    approved: countSuccess('decision', a.decision.buckets),
+    activated: countSuccess('activation', a.activation.buckets),
+    earned: a.payouts.eligible.amountInr ?? 0,
+    earnedEvents: a.payouts.eligible.value,
+  };
+}
+
+/** Change vs the comparison window: arrow + % in text (never colour alone, REQ-20 §20.2). */
+function Delta({
+  current,
+  previous,
+  against,
+  money,
+  light,
+}: {
+  current: number;
+  previous: number | null;
+  against: string;
+  money?: boolean;
+  light?: boolean;
+}) {
+  if (previous == null) return null;
+  const change = percentChange(current, previous) ?? (current ? null : 0);
+  const text = change == null ? 'New' : change === 0 ? 'No change' : `${change > 0 ? '▲' : '▼'} ${Math.abs(change)}%`;
+  const tone = light
+    ? 'bg-white/15 text-white'
+    : change == null || change === 0
+      ? 'bg-slate-100 text-slate-600'
+      : change > 0
+        ? 'bg-emerald-50 text-emerald-700'
+        : 'bg-rose-50 text-rose-700';
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <span className={cn('rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums', tone)}>{text}</span>
+      <span>
+        vs {money ? formatInr(previous) : previous.toLocaleString('en-IN')} · {against}
+      </span>
+    </span>
+  );
+}
 
 function SectionLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -85,8 +140,18 @@ function SectionLink({ href, children }: { href: string; children: React.ReactNo
   );
 }
 
-/** Executive overview placeholder: the REQ-28 §28.2 launch-gate checklist is live from day one (F-104). */
-export default async function AdminOverview() {
+/**
+ * F-807 Business overview: the Admin home and the executive dashboard in one (REQ-16 §16.2). Business first —
+ * period KPIs with change, the lead → bank funnel, bank performance and open queues; operational detail below.
+ * Bank figures are the latest accepted MIS values as reported (INV-01..03); every figure names its source.
+ */
+export default async function AdminOverview({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const sp = await searchParams;
+  const period = resolvePeriod(sp);
   const unavailable: string[] = [];
   async function load<T>(path: string, label: string) {
     try {
@@ -97,78 +162,67 @@ export default async function AdminOverview() {
       return null;
     }
   }
-  const [
-    integrity,
-    ledger,
-    recent,
-    approvals,
-    approved,
-    onboarding,
-    distribution,
-    advisors,
-    managers,
-    gates,
-  ] = await Promise.all([
-    load<{ generatedAt: string; banks: BankOverview[] }>('/dashboards/mis-integrity', 'Bank MIS'),
+  const scoped = { ...sp, from: undefined, to: undefined };
+  const q = opsQuery({ ...scoped, ...period.current });
+  const [cur, prev, mix, ledger, approvals, approved, onboarding, distribution] = await Promise.all([
+    load<OpsDashboard>(`/dashboards/admin/executive?${q}`, 'Business metrics'),
+    period.previous
+      ? load<OpsDashboard>(`/dashboards/admin/executive?${opsQuery({ ...scoped, ...period.previous })}`, 'Comparison period')
+      : null,
+    load<{ rows: MixRow[] }>(`/dashboards/admin/bank-card-mix?${q}`, 'Bank performance'),
     load<unknown[]>('/payouts/entitlements?pageSize=1', 'Payout ledger'),
-    load<LeadStatusRow[]>('/leads?pageSize=5&sort=createdAt_desc', 'Recent leads'),
     load<unknown[]>('/payouts/requests?awaitingMe=true&pageSize=1', 'Payout approvals'),
     load<unknown[]>('/payouts/requests?state=APPROVED&pageSize=1', 'Approved requests'),
     load<{ userId: string }[]>('/onboarding/review', 'Advisor reviews'),
     load<Distribution>('/calling/distribution', 'Calling operations'),
-    load<unknown[]>('/users?role=ADVISOR&status=ACTIVE&pageSize=1', 'Active advisors'),
-    load<unknown[]>('/users?role=MANAGER&status=ACTIVE&pageSize=1', 'Active managers'),
-    load<LaunchGate[]>('/config/launch-gates', 'Launch readiness'),
   ]);
-  const summary = integrity ? summarizeBanks(integrity.data.banks) : null;
+  const d = cur?.data;
+  const now = d ? figures(d.advisors) : null;
+  const was = prev ? figures(prev.data.advisors) : null;
+  const against = period.previous ? rangeLabel(period.previous) : '';
   const parsed = payoutSummarySchema.safeParse(ledger?.meta);
   const payouts = parsed.success ? parsed.data : null;
   if (ledger && !payouts) unavailable.push('Payout totals');
-  const banks = integrity?.data.banks
-    .slice()
-    .sort((a, b) => b.leads.total - a.leads.total || a.bank.code.localeCompare(b.bank.code));
-  const workingBanks = banks?.filter((b) => b.leads.total > 0 || b.lastUploadAt);
-  const inactiveBanks = banks?.filter((b) => b.leads.total === 0 && !b.lastUploadAt);
-  const unset = gates?.data.filter((g) => !g.isSet);
-  const counts = payouts?.counts;
-  const amounts = payouts?.amounts;
-  const eligibleCallers = distribution?.data.telecallers.filter((t) => t.eligible).length;
-  const assignedRecords = distribution?.data.telecallers.reduce((sum, t) => sum + t.active, 0);
-  const fetchedAt = new Date().toISOString();
-  const attention = [
-    {
-      label: 'MIS exceptions',
-      detail: 'Unmatched or conflicting rows',
-      count: summary?.quarantine,
-      href: '/admin/mis/integrity',
-      icon: FileSpreadsheet,
-      tone: 'rose' as Tone,
-    },
-    {
-      label: 'Payout approvals',
-      detail: 'Awaiting your decision',
-      count: total(approvals),
-      href: '/admin/payouts/requests?awaitingMe=true',
-      icon: Wallet,
-      tone: 'amber' as Tone,
-    },
-    {
-      label: 'Advisor reviews',
-      detail: 'Onboarding awaiting review',
-      count: onboarding?.data.length,
-      href: '/admin/onboarding',
-      icon: Users,
-      tone: 'violet' as Tone,
-    },
-    {
-      label: 'Unassigned records',
-      detail: 'Calling records needing allocation',
-      count: distribution?.data.unassigned,
-      href: '/admin/calling-list/distribution',
-      icon: Phone,
-      tone: 'sky' as Tone,
-    },
+
+  // ── period chips keep every other filter; explicit dates are dropped so the chip wins ──
+  const keep = opsQuery(scoped);
+  const chipHref = (key: string) => `/admin?${keep ? `${keep}&` : ''}period=${key}`;
+  const filterCount = ['managerId', 'telecallerId', 'advisorId', 'bankId', 'cardId', 'pincode', 'state', 'misRecency'].filter(
+    (k) => sp[k],
+  ).length;
+
+  const funnel = now
+    ? [
+        { label: 'Leads created', value: now.leads, source: 'KBS leads', tone: 'violet' as Tone },
+        { label: 'Matched in bank MIS', value: now.matched, source: 'Bank MIS', tone: 'indigo' as Tone },
+        { label: 'Bank approved', value: now.approved, source: 'Bank MIS · decision', tone: 'teal' as Tone },
+        { label: 'Card activated', value: now.activated, source: 'Bank MIS · activation', tone: 'emerald' as Tone },
+      ]
+    : [];
+
+  const banks = [
+    ...(mix?.data.rows ?? [])
+      .reduce((map, r) => {
+        const b = map.get(r.bank.id) ?? { bank: r.bank, leads: 0, matched: 0, eligible: 0, events: 0, paid: 0 };
+        b.leads += r.leads;
+        b.matched += r.misMatched;
+        b.eligible += r.payoutEligible.amountInr;
+        b.events += r.payoutEligible.count;
+        b.paid += r.payoutPaid.amountInr;
+        return map.set(r.bank.id, b);
+      }, new Map<string, { bank: MixRow['bank']; leads: number; matched: number; eligible: number; events: number; paid: number }>())
+      .values(),
+  ].sort((a, b) => b.leads - a.leads || a.bank.displayName.localeCompare(b.bank.displayName));
+  const freshness = new Map(d?.meta.misFreshness.map((f) => [f.bank.code, f.lastAppliedAt]) ?? []);
+
+  const queues: { label: string; detail: string; count: number | null | undefined; href: string; icon: LucideIcon; tone: Tone }[] = [
+    { label: 'Payout approvals', detail: 'Awaiting your decision', count: total(approvals), href: '/admin/payouts/requests?awaitingMe=true', icon: Wallet, tone: 'amber' },
+    { label: 'Advisor reviews', detail: 'Onboarding awaiting review', count: onboarding?.data.length, href: '/admin/onboarding', icon: Users, tone: 'violet' },
+    { label: 'Unassigned records', detail: 'Calling records needing allocation', count: distribution?.data.unassigned, href: '/admin/calling-list/distribution', icon: Phone, tone: 'sky' },
+    { label: 'Approved, awaiting payment', detail: 'Both approvals done · not yet paid', count: total(approved), href: '/admin/payouts/requests?state=APPROVED', icon: BadgeCheck, tone: 'teal' },
   ];
+  const alerts = d?.alerts ?? [];
+  const open = queues.filter((x) => x.count).length + alerts.length;
 
   const payoutRows = [
     { label: 'Available to claim', key: 'available', state: 'ELIGIBLE_AVAILABLE', tone: 'teal' },
@@ -177,16 +231,17 @@ export default async function AdminOverview() {
     { label: 'Pending hold', key: 'pendingHold', state: 'PENDING_HOLD', tone: 'amber' },
     { label: 'Under review', key: 'underReview', state: 'UNDER_REVIEW', tone: 'rose' },
   ] as const;
+  const amounts = payouts?.amounts;
+  const counts = payouts?.counts;
   const largestAmount = amounts ? Math.max(...payoutRows.map((r) => amounts[r.key])) : 0;
-  const openAttention = attention.filter((a) => a.count).length;
 
   return (
     <div className="grid gap-6">
       <PageHeader
         icon={LayoutDashboard}
-        eyebrow="Workspace"
+        eyebrow="Overview"
         title="Business overview"
-        description="A clear view of your leads, bank data, people and payouts."
+        description="How the business is doing: leads, bank results and payouts for the selected period."
         actions={
           <>
             <Button variant="outline" asChild>
@@ -205,17 +260,40 @@ export default async function AdminOverview() {
         }
         meta={
           <>
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-600">
-              <Building2 className="size-3.5" />
-              All banks<span className="text-slate-300">/</span>All time
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-700">
+              <CalendarRange className="size-3.5" />
+              {rangeLabel(period.current)}
             </span>
+            {period.previous ? <span>compared with {against}</span> : null}
+            {d ? <Badge variant="secondary">{d.scope}</Badge> : null}
             <span className="inline-flex items-center gap-1.5">
               <Clock3 className="size-3.5" />
-              Snapshot fetched {formatDateTime(fetchedAt)} · IST
+              as of {formatDateTime(d?.meta.asOf ?? new Date().toISOString())} · IST
             </span>
           </>
         }
       >
+        <div className="flex min-w-0 flex-wrap items-start gap-2">
+          <PillNav
+            label="Period"
+            items={PERIODS.map((p) => ({ href: chipHref(p.key), label: p.label }))}
+            active={period.key === 'custom' ? '' : chipHref(period.key)}
+            className="max-w-full min-w-0"
+          />
+          <details className="group/filters min-w-0 flex-1 basis-full [&[open]]:basis-full sm:basis-auto" open={period.key === 'custom' || filterCount > 0}>
+            <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 text-[13px] font-medium text-slate-700 shadow-[0_1px_2px_rgb(15_23_42/4%)] hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+              <Filter className="size-3.5" aria-hidden="true" />
+              Custom dates & filters
+              {filterCount ? (
+                <span className="rounded-full bg-teal-50 px-1.5 text-[10.5px] font-semibold text-teal-700 tabular-nums">{filterCount}</span>
+              ) : null}
+              <ChevronDown className="size-3.5 transition-transform group-open/filters:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="mt-3">
+              <OpsFilters basePath="/admin" sp={sp} />
+            </div>
+          </details>
+        </div>
         {unavailable.length > 0 ? (
           <Callout tone="warning" icon={TriangleAlert} role="alert" title="Some data could not be loaded.">
             {unavailable.join(', ')}. Unavailable figures are not zero. Use the refresh button to retry.
@@ -224,194 +302,222 @@ export default async function AdminOverview() {
         <StatGrid>
           <StatCard
             label="Leads created"
-            value={number(summary?.leads)}
-            hint="All submitted advisor leads"
-            source="KBS activity"
+            value={number(now?.leads)}
+            hint={now ? <Delta current={now.leads} previous={was?.leads ?? null} against={against} /> : undefined}
+            source="KBS leads · created date"
             href="/admin/leads"
             icon={Users}
-            tone="sky"
+            tone="violet"
           />
           <StatCard
-            label="MIS-matched leads"
-            value={number(summary?.matched)}
+            label="Bank approved"
+            value={number(now?.approved)}
             hint={
-              summary
-                ? `${number(summary.neverMatched)} still awaiting their first match`
-                : 'Matching summary unavailable'
+              now ? (
+                <>
+                  <span className="block">{pct(now.approved, now.leads) ?? 0}% of leads</span>
+                  <Delta current={now.approved} previous={was?.approved ?? null} against={against} />
+                </>
+              ) : undefined
             }
-            source="Bank MIS"
-            href="/admin/mis/integrity"
-            icon={FileCheck2}
-            tone="indigo"
-          />
-          <StatCard
-            label="Eligible card events"
-            value={number(counts?.eligible)}
-            hint={
-              counts
-                ? `${number(counts.availableToClaim)} available to claim`
-                : 'Eligibility summary unavailable'
-            }
-            source="MIS + approved payout rules"
-            href="/admin/payouts/entitlements"
+            source="Bank MIS · final decision"
+            href="/admin/leads"
             icon={ShieldCheck}
+            tone="teal"
+          />
+          <StatCard
+            label="Cards activated"
+            value={number(now?.activated)}
+            hint={
+              now ? (
+                <>
+                  <span className="block">{pct(now.activated, now.leads) ?? 0}% of leads</span>
+                  <Delta current={now.activated} previous={was?.activated ?? null} against={against} />
+                </>
+              ) : undefined
+            }
+            source="Bank MIS · activation"
+            href="/admin/leads"
+            icon={CreditCard}
             tone="emerald"
           />
           <StatCard
-            label="Reserved payout value"
-            value={amounts ? formatInr(amounts.reserved) : 'Unavailable'}
+            label="Payout earned"
+            value={now ? formatInr(now.earned) : 'Unavailable'}
             hint={
-              counts
-                ? `${number(counts.reserved)} card event${counts.reserved === 1 ? '' : 's'} in active requests`
-                : 'Reservation summary unavailable'
+              now ? (
+                <>
+                  <span className="block">
+                    {number(now.earnedEvents)} eligible card event{now.earnedEvents === 1 ? '' : 's'}
+                  </span>
+                  <Delta current={now.earned} previous={was?.earned ?? null} against={against} money light />
+                </>
+              ) : undefined
             }
-            source="KBS payout ledger · not paid"
-            href="/admin/payouts/requests"
+            source="Payout ledger · eligible date"
+            href="/admin/payouts/entitlements"
             icon={Wallet}
             emphasis
           />
         </StatGrid>
       </PageHeader>
 
-      <section
-        aria-labelledby="attention-title"
-        className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)]"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <IconTile icon={CircleAlert} tone={openAttention ? 'amber' : 'emerald'} size="sm" />
-            <div>
-              <h2 id="attention-title" className="text-[15px] leading-6 font-semibold tracking-tight text-slate-900">
-                Needs your attention
-              </h2>
-              <p className="text-[12.5px] text-slate-500">Review exceptions before making decisions</p>
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <SectionCard
+          icon={Landmark}
+          tone="indigo"
+          title="Lead to card funnel"
+          description="Leads created in the period and their latest bank MIS result, as reported. A match is not an approval."
+          bodyClassName="grid gap-5"
+        >
+          {funnel.length ? (
+            <ol className="grid gap-3.5">
+              {funnel.map((step, i) => {
+                const ofPrev = i ? pct(step.value, funnel[i - 1].value) : null;
+                return (
+                  <li key={step.label} className="grid gap-1.5">
+                    <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                      <span className="font-medium text-slate-800">
+                        {step.label}
+                        <span className="ml-2 text-[11px] font-normal text-slate-400">{step.source}</span>
+                      </span>
+                      <span className="flex items-baseline gap-2 tabular-nums">
+                        {ofPrev != null ? <span className="text-[11px] text-slate-500">{ofPrev}% of previous</span> : null}
+                        <span className="text-base font-semibold text-slate-900">{number(step.value)}</span>
+                      </span>
+                    </div>
+                    <Meter value={step.value} max={Math.max(1, funnel[0].value)} tone={step.tone} className="h-2.5" label={step.label} />
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <EmptyState icon={Landmark} title="Funnel unavailable" description="Business metrics could not be loaded. Refresh to retry." />
+          )}
+          {d ? (
+            <div className="grid gap-2 border-t border-slate-100 pt-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+                <PhoneCall className="size-3.5" aria-hidden="true" />
+                Calling activity · same period
+              </p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {(
+                  [
+                    ['Call attempts', d.calling.calls.attempts.value],
+                    ['Connected', d.calling.calls.connected.value],
+                    ['Customers contacted', d.calling.calls.uniqueCustomersContacted.value],
+                    ['Shares recorded', d.calling.shares.total.value],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label} className="rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-100">
+                    <p className="text-lg font-semibold tabular-nums">{number(value)}</p>
+                    <p className="text-[11px] text-slate-500">{label}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10.5px] text-slate-400">
+                Telecaller calls are a separate population from Advisor leads; they are not a funnel step.
+              </p>
             </div>
+          ) : null}
+        </SectionCard>
+
+        <section
+          aria-labelledby="attention-title"
+          className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)]"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <IconTile icon={CircleAlert} tone={open ? 'amber' : 'emerald'} size="sm" />
+              <div>
+                <h2 id="attention-title" className="text-[15px] leading-6 font-semibold tracking-tight text-slate-900">
+                  Needs your attention
+                </h2>
+                <p className="text-[12.5px] text-slate-500">Open work queues and system alerts</p>
+              </div>
+            </div>
+            <Badge variant={open ? 'warning' : 'success'}>{open ? `${open} open` : 'All clear'}</Badge>
           </div>
-          <Badge variant={openAttention ? 'warning' : 'success'}>
-            {openAttention ? `${openAttention} of ${attention.length} queues open` : 'All queues clear'}
-          </Badge>
-        </div>
-        <div className="grid grid-cols-1 gap-px bg-slate-100 sm:grid-cols-2 xl:grid-cols-4">
-          {attention.map(({ label, detail, count, href, icon, tone }) => (
-            <Link
-              key={label}
-              href={href}
-              prefetch={false}
-              className="group relative flex items-start gap-3 bg-white p-5 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700"
-            >
-              {count ? <span className={`absolute inset-x-0 top-0 h-0.5 ${TONE[tone].bar}`} aria-hidden="true" /> : null}
-              <IconTile icon={icon} tone={count ? tone : 'slate'} size="sm" />
-              <div className="min-w-0 flex-1">
-                <span className="text-sm font-medium text-slate-800">{label}</span>
-                <p className="mt-0.5 text-[11px] text-slate-500">{detail}</p>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <span
-                  className={`text-xl leading-7 font-semibold tabular-nums ${count ? TONE[tone].text : 'text-slate-400'}`}
+          <ul className="divide-y divide-slate-100">
+            {queues.map(({ label, detail, count, href, icon, tone }) => (
+              <li key={label}>
+                <Link
+                  href={href}
+                  prefetch={false}
+                  className="group flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700"
                 >
-                  {number(count)}
-                </span>
-                <ArrowUpRight className="size-3.5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-teal-700" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+                  <IconTile icon={icon} tone={count ? tone : 'slate'} size="sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-slate-800">{label}</span>
+                    <span className="text-[11px] text-slate-500">{detail}</span>
+                  </span>
+                  <span className={cn('text-lg font-semibold tabular-nums', count ? TONE[tone].text : 'text-slate-400')}>
+                    {number(count)}
+                  </span>
+                  <ArrowUpRight className="size-3.5 shrink-0 text-slate-400 group-hover:text-teal-700" />
+                </Link>
+              </li>
+            ))}
+            {alerts.map((al) => (
+              <li key={al.kind}>
+                <Link
+                  href={al.href}
+                  prefetch={false}
+                  className="group flex items-center gap-3 bg-amber-50/50 px-5 py-3 text-[13px] text-amber-950 hover:bg-amber-50"
+                >
+                  <TriangleAlert className="size-4 shrink-0 text-amber-700" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">{al.message}</span>
+                  <ArrowUpRight className="size-3.5 shrink-0 text-amber-700" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {distribution?.data.telecallers.some((t) => t.needsReassignment) ? (
+            <Callout tone="warning" icon={TriangleAlert} className="m-4">
+              Some telecallers hold records that need reassignment. Review allocation.
+            </Callout>
+          ) : null}
+        </section>
+      </div>
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.4fr_1fr]">
         <SectionCard
-          icon={FileSpreadsheet}
+          icon={Landmark}
           tone="indigo"
-          title="Bank data & coverage"
-          description="Matched leads and latest uploads, bank by bank."
-          actions={<SectionLink href="/admin/mis/integrity">View integrity</SectionLink>}
-          bodyClassName="grid gap-5"
+          title="Bank performance"
+          description="Leads created in the period, bank by bank, with MIS coverage and payout events for those leads."
+          actions={<SectionLink href={`/admin/dashboards/bank-card-mix${q ? `?${q}` : ''}`}>Bank / card mix</SectionLink>}
         >
-          <div className="flex flex-wrap items-center gap-5 rounded-xl bg-gradient-to-br from-slate-50 to-indigo-50/40 p-4 ring-1 ring-slate-100">
-            <div
-              className="relative flex size-24 shrink-0 items-center justify-center rounded-full"
-              style={{
-                background: `conic-gradient(#0f766e ${(summary?.coverage ?? 0) * 3.6}deg, #e2e8f0 0deg)`,
-              }}
-            >
-              <div className="flex size-[76px] flex-col items-center justify-center rounded-full bg-white">
-                <span className="text-xl font-semibold tabular-nums">
-                  {summary?.coverage == null ? '—' : `${summary.coverage}%`}
-                </span>
-                <span className="text-[9px] font-medium tracking-wider text-slate-500 uppercase">
-                  Matched
-                </span>
-              </div>
-            </div>
-            <div className="min-w-0 flex-1 basis-56">
-              <p className="text-sm font-semibold text-slate-900">
-                {summary
-                  ? `${number(summary.matched)} of ${number(summary.leads)} leads have MIS evidence`
-                  : 'MIS summary unavailable'}
-              </p>
-              <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-                A match is not an approval. Each bank value stays separate and reflects only the
-                last matched MIS.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <Link
-                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-800 ring-1 ring-amber-200 ring-inset hover:bg-amber-100"
-                  href="/admin/leads?misFreshness=older7d"
-                >
-                  <Clock3 className="size-3" />
-                  {number(summary?.stale)} matched over 7 days ago
-                </Link>
-                <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-slate-600 ring-1 ring-slate-200 ring-inset">
-                  {number(summary?.invalid)} invalid rows
-                </span>
-              </div>
-            </div>
-          </div>
-          {workingBanks?.length ? (
+          {banks.length ? (
             <ul className="divide-y divide-slate-100">
-              {workingBanks.map((b) => {
-                const matched = b.leads.total - b.leads.neverMatched;
+              {banks.map((b) => {
+                const applied = freshness.get(b.bank.code);
                 return (
-                  <li key={b.bank.id} className="grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[1fr_auto]">
+                  <li key={b.bank.id} className="grid items-center gap-x-4 gap-y-2 py-3.5 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                     <div className="flex min-w-0 items-center gap-3">
                       <BankMark code={b.bank.code} />
                       <div className="min-w-0 flex-1">
-                        <Link
-                          className="text-sm font-semibold text-slate-900 hover:text-teal-700"
-                          href={`/admin/leads?bankId=${b.bank.id}`}
-                        >
+                        <Link href={`/admin/leads?bankId=${b.bank.id}`} className="text-sm font-semibold text-slate-900 hover:text-teal-700">
                           {b.bank.displayName}
                         </Link>
                         <div className="mt-1.5 flex items-center gap-2">
-                          <Meter
-                            value={matched}
-                            max={b.leads.total}
-                            tone="indigo"
-                            className="h-1.5 max-w-40"
-                            label={`${b.bank.displayName} leads matched`}
-                          />
-                          <span className="shrink-0 text-[11px] text-slate-500 tabular-nums">
-                            {number(matched)} / {number(b.leads.total)} leads matched
-                          </span>
+                          <Meter value={b.matched} max={Math.max(1, b.leads)} tone="indigo" className="h-1.5 max-w-32" label={`${b.bank.displayName} MIS matched`} />
+                          <span className="shrink-0 text-[11px] text-slate-500 tabular-nums">{pct(b.matched, b.leads) ?? 0}% matched</span>
                         </div>
+                        <p className="mt-1 text-[11px] text-slate-400">
+                          {applied ? `Last MIS applied ${formatDateTime(applied)}` : 'No MIS applied yet'}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-xs sm:text-right">
-                      <p className="text-slate-600">
-                        {b.lastUploadAt ? `Uploaded ${formatDateTime(b.lastUploadAt)}` : 'No MIS uploaded'}
-                      </p>
-                      <p className="mt-1 text-[11px] text-slate-500">
-                        {b.lastAppliedAt ? `Applied ${formatDateTime(b.lastAppliedAt)}` : 'No batch applied'}
-                      </p>
-                      {b.quarantine > 0 ? (
-                        <Link
-                          href={`/admin/mis/integrity?bankId=${b.bank.id}`}
-                          className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-200 ring-inset"
-                        >
-                          {b.quarantine} {b.quarantine === 1 ? 'row needs' : 'rows need'} resolution
-                          →
-                        </Link>
-                      ) : null}
+                    <div className="text-sm sm:text-right">
+                      <span className="font-semibold tabular-nums">{number(b.leads)}</span>
+                      <span className="ml-1 text-[11px] text-slate-500 sm:ml-0 sm:block">lead{b.leads === 1 ? '' : 's'}</span>
+                    </div>
+                    <div className="text-sm sm:min-w-36 sm:text-right">
+                      <span className="font-semibold tabular-nums">{formatInr(b.eligible)}</span>
+                      <span className="block text-[11px] text-slate-500 tabular-nums">
+                        {b.events} event{b.events === 1 ? '' : 's'} · {formatInr(b.paid)} paid
+                      </span>
                     </div>
                   </li>
                 );
@@ -419,57 +525,24 @@ export default async function AdminOverview() {
             </ul>
           ) : (
             <EmptyState
-              icon={FileSpreadsheet}
-              title={integrity ? 'No bank activity yet' : 'Bank coverage unavailable'}
-              description={
-                integrity
-                  ? 'No bank activity yet. Import an MIS to begin matching leads.'
-                  : 'Bank coverage could not be loaded.'
-              }
+              icon={Landmark}
+              title={mix ? 'No leads in this period' : 'Bank performance unavailable'}
+              description={mix ? 'Pick a longer period to see bank results.' : 'Refresh to retry.'}
             />
           )}
-          {inactiveBanks?.length ? (
-            <details className="group rounded-xl border border-slate-200/80 px-3 py-2">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs text-slate-500">
-                {inactiveBanks.length} banks with no leads or MIS uploads
-                <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {inactiveBanks.map((b) => (
-                  <Link
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 py-1 pr-2.5 pl-1 text-xs text-slate-600 hover:bg-teal-50"
-                    key={b.bank.id}
-                    href={`/admin/mis/integrity?bankId=${b.bank.id}`}
-                  >
-                    <BankMark code={b.bank.code} size="sm" className="h-6 min-w-6 opacity-70" />
-                    {b.bank.displayName} · No upload
-                  </Link>
-                ))}
-              </div>
-            </details>
-          ) : null}
-          <div className="border-t border-slate-100 pt-3 text-[10px] text-slate-500">
-            Source: Bank MIS · Summary{' '}
-            {integrity ? formatDateTime(integrity.data.generatedAt) : 'unavailable'}. Upload time is
-            not a bank event date.
-          </div>
         </SectionCard>
 
         <SectionCard
           icon={Wallet}
           tone="teal"
-          title="Payout positions"
-          description="Card-event balances. Approval is not payment."
+          title="Payout position"
+          description="Current ledger balances (all time). Approval is not payment."
           actions={<SectionLink href="/admin/payouts/entitlements">Open ledger</SectionLink>}
           bodyClassName="grid gap-4"
         >
           <div className="divide-y divide-slate-100">
             {payoutRows.map(({ label, key, state, tone }) => (
-              <Link
-                key={key}
-                href={`/admin/payouts/entitlements?state=${state}`}
-                className="group grid gap-2 py-3 first:pt-0"
-              >
+              <Link key={key} href={`/admin/payouts/entitlements?state=${state}`} className="group grid gap-2 py-3 first:pt-0">
                 <span className="flex items-center gap-2.5">
                   <span className={`size-2 shrink-0 rounded-full ${TONE[tone].bar}`} />
                   <span className="flex-1 text-sm text-slate-800 group-hover:text-teal-700">
@@ -478,9 +551,7 @@ export default async function AdminOverview() {
                       {number(counts?.[key])} {counts?.[key] === 1 ? 'event' : 'events'}
                     </span>
                   </span>
-                  <span className="text-sm font-semibold tabular-nums">
-                    {amounts ? formatInr(amounts[key]) : 'Unavailable'}
-                  </span>
+                  <span className="text-sm font-semibold tabular-nums">{amounts ? formatInr(amounts[key]) : 'Unavailable'}</span>
                 </span>
                 {amounts?.[key] ? (
                   <Meter value={amounts[key]} max={largestAmount} tone={tone} className="ml-4.5 h-1 w-auto" label={label} />
@@ -488,223 +559,39 @@ export default async function AdminOverview() {
               </Link>
             ))}
           </div>
-          <Link
-            href="/admin/payouts/requests?state=APPROVED"
-            className="group flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 p-3.5 hover:bg-sky-100/70"
-          >
-            <IconTile icon={Wallet} tone="sky" size="sm" className="bg-white" />
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-sky-950">
-                {number(total(approved))} approved{' '}
-                {total(approved) === 1 ? 'request' : 'requests'} awaiting payment
-              </p>
-              <p className="mt-1 text-[11px] text-sky-800">
-                Both approvals complete. Not yet recorded as paid.
-              </p>
-            </div>
-            <ArrowRight className="size-4 shrink-0 text-sky-700 transition-transform group-hover:translate-x-0.5" />
-          </Link>
           <p className="text-[11px] leading-relaxed text-slate-500">
-            Eligible events include hold, available, reserved and paid positions; they are not
-            extra balances to add together. Corrections under review remain separate.
+            Positions overlap with eligible events; they are not extra balances to add together.
           </p>
           <div className="border-t border-slate-100 pt-3 text-[10px] text-slate-500">
-            Source: KBS payout ledger + bank MIS / approved rules ·{' '}
+            Source: KBS payout ledger ·{' '}
             {ledger?.meta.asOf ? formatDateTime(String(ledger.meta.asOf)) : 'Snapshot time unavailable'}
           </div>
         </SectionCard>
       </div>
 
-      <SectionCard
-        icon={ListChecks}
-        tone="sky"
-        title="Recent leads"
-        description="Latest 5 by KBS creation date. Bank stage, decision and activation are independent."
-        actions={<SectionLink href="/admin/leads">View all leads</SectionLink>}
-        flush={!!recent?.data.length}
-      >
-        {recent?.data.length ? (
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-6">Customer / reference</TableHead>
-                <TableHead>Bank & card</TableHead>
-                <TableHead>Bank stage</TableHead>
-                <TableHead>Decision / activation</TableHead>
-                <TableHead className="pr-6">MIS evidence</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recent.data.map((lead) => (
-                <TableRow key={lead.id}>
-                  <TableCell className="pl-6" data-label="Customer / reference">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={lead.customer.name} size="sm" />
-                      <div className="min-w-0">
-                        <Link
-                          href={`/admin/leads/${lead.id}`}
-                          className="font-semibold text-slate-800 hover:text-teal-700"
-                        >
-                          {lead.customer.name}
-                        </Link>
-                        <p className="mt-0.5 font-mono text-[11px] text-slate-500">{lead.kbsRef}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Bank & card">
-                    <div className="flex items-center gap-2.5">
-                      <BankMark code={lead.bank.code} size="sm" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-800">{lead.bank.displayName}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">{lead.card.name}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Bank stage">
-                    <div className="max-w-56">
-                      <StageBadge field={lead.stage} />
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Decision / activation">
-                    <div className="grid justify-items-start gap-2">
-                      <DecisionBadge field={lead.decision} />
-                      <ActivationBadge field={lead.activation} />
-                    </div>
-                  </TableCell>
-                  <TableCell className="pr-6" data-label="MIS evidence">
-                    <div className="grid justify-items-start gap-2">
-                      <ProvenanceChip provenance="BANK_MIS" />
-                      <FreshnessLabel lastMatchedAt={lead.lastMatchedAt} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <EmptyState
-            icon={ListChecks}
-            title={recent ? 'No leads yet' : 'Recent leads unavailable'}
-            description={
-              recent
-                ? 'No leads yet. Your submitted leads will appear here.'
-                : 'Recent leads could not be loaded. Refresh to retry.'
-            }
-          />
-        )}
-      </SectionCard>
+      {d ? (
+        <details className="group grid gap-6 rounded-2xl border border-slate-200/80 bg-white/60 p-4 sm:p-5">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <span>
+              <span className="block text-[15px] font-semibold text-slate-900">Operational detail</span>
+              <span className="text-[12.5px] text-slate-500">
+                Calling records, calls, callbacks, shares, bank value breakdowns and payout events — each with its source and date basis.
+              </span>
+            </span>
+            <ChevronDown className="size-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-6 grid gap-6">
+            <OpsSections d={d} />
+          </div>
+        </details>
+      ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <SectionCard
-          icon={Users}
-          tone="violet"
-          title="People & sales operations"
-          description="Current staffing and active calling assignments."
-          actions={<SectionLink href="/admin/users">View team</SectionLink>}
-        >
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {(
-              [
-                { label: 'Active advisors', value: total(advisors), href: '/admin/users', icon: Users, tone: 'violet' },
-                { label: 'Active managers', value: total(managers), href: '/admin/users', icon: UserCog, tone: 'indigo' },
-                {
-                  label: 'Eligible telecallers',
-                  value: eligibleCallers,
-                  href: '/admin/calling-list/distribution',
-                  icon: Headset,
-                  tone: 'sky',
-                },
-                {
-                  label: 'Assigned records',
-                  value: assignedRecords,
-                  href: '/admin/calling-list/distribution',
-                  icon: Phone,
-                  tone: 'teal',
-                },
-              ] as const
-            ).map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="lift grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 hover:bg-white"
-              >
-                <IconTile icon={item.icon} tone={item.tone} size="sm" className="size-7 [&>svg]:size-3.5" />
-                <span className="text-2xl font-semibold tabular-nums">{number(item.value)}</span>
-                <span className="text-[11px] leading-relaxed text-slate-500">{item.label}</span>
-              </Link>
-            ))}
-          </div>
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs">
-            <SectionLink href="/admin/calling-list">Import calling list</SectionLink>
-            <SectionLink href="/admin/training/team">Training progress</SectionLink>
-            <SectionLink href="/admin/catalogue">Manage card catalogue</SectionLink>
-          </div>
-          {distribution?.data.telecallers.some((t) => t.needsReassignment) ? (
-            <Callout tone="warning" icon={TriangleAlert} className="mt-4">
-              Some telecallers hold records that need reassignment. Review allocation.
-            </Callout>
-          ) : null}
-        </SectionCard>
-        <SectionCard
-          icon={ShieldCheck}
-          tone={unset?.length === 0 ? 'emerald' : 'amber'}
-          title="Launch readiness"
-          description="Required configuration remains visible—not hidden behind business totals."
-          actions={
-            <Badge variant={unset?.length === 0 ? 'success' : 'warning'}>
-              {unset ? `${unset.length} pending` : 'Unavailable'}
-            </Badge>
-          }
-          bodyClassName="grid gap-4"
-        >
-          <div className="grid gap-2.5 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
-            <p className="text-sm leading-relaxed text-slate-600">
-              {gates && unset
-                ? `${gates.data.length - unset.length} of ${gates.data.length} requirements configured. Review remaining policies before production.`
-                : 'Launch gates could not be loaded.'}
-            </p>
-            {gates && unset ? (
-              <Meter
-                value={gates.data.length - unset.length}
-                max={gates.data.length}
-                tone={unset.length === 0 ? 'emerald' : 'teal'}
-                label="Requirements configured"
-              />
-            ) : null}
-          </div>
-          <details className="group rounded-xl border border-slate-200">
-            <summary className="flex cursor-pointer list-none items-center justify-between p-3 text-xs font-semibold">
-              View configuration checklist
-              <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
-            </summary>
-            <ul className="grid max-h-72 gap-4 overflow-auto border-t p-4">
-              {gates?.data.map((gate) => (
-                <li key={gate.key} className="flex gap-2 text-xs">
-                  {gate.isSet ? (
-                    <CheckCircle2 className="size-4 shrink-0 text-teal-700" />
-                  ) : (
-                    <CircleAlert className="size-4 shrink-0 text-amber-700" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="mb-1 font-medium break-all">
-                      {gate.key} · {gate.isSet ? 'Configured' : 'Needs configuration'}
-                    </p>
-                    <p className="leading-relaxed text-slate-500">{gate.description}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </details>
-          <SectionLink href="/admin/config">Review configuration</SectionLink>
-        </SectionCard>
-      </div>
       <footer className="flex flex-wrap items-start justify-between gap-3 border-t border-slate-200 pt-4 text-[11px] leading-relaxed text-slate-500">
         <span className="inline-flex max-w-3xl items-start gap-2">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
-          Statuses reflect the latest uploaded bank file. Blank values mean “Not reported”; a lead
-          without a match is “Awaiting MIS Update”.
+          Bank figures reflect the latest accepted MIS for leads created in the period — not live bank status. Recent
+          leads may still be in process; blank values mean “Not reported”.
         </span>
-        <span>All-time snapshot · Not live bank status</span>
       </footer>
     </div>
   );

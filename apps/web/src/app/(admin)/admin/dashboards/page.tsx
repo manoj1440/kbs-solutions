@@ -1,16 +1,8 @@
-import { AdminDashboardNav } from '@/components/admin-dashboard-nav';
-import { OperationsDashboard } from '@/components/operations-dashboard';
+import { redirect } from 'next/navigation';
 
-/** F-703 executive overview: same engine as the Manager dashboard; alerts are never hidden (REQ-20 §20.4). */
-export default async function ExecutiveDashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  return (
-    <OperationsDashboard
-      basePath="/admin/dashboards"
-      endpoint="/dashboards/admin/executive"
-      sp={await searchParams}
-      title="Executive dashboard"
-      eyebrow="Dashboards"
-      nav={<AdminDashboardNav active="/admin/dashboards" />}
-    />
-  );
+/** F-807: the executive view is the Business overview; old links and filtered drill-downs keep working. */
+export default async function ExecutiveDashboardRedirect({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(await searchParams)) if (typeof v === 'string') qs.set(k, v);
+  redirect(qs.size ? `/admin?${qs.toString()}` : '/admin');
 }
