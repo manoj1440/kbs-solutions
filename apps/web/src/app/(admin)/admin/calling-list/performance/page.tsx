@@ -36,8 +36,8 @@ export default async function CallerPerformancePage({ searchParams }: { searchPa
       <h1 className="sr-only">Caller performance</h1>
       <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
         <MiniStat label="Callers" value={rows.length} hint={`${rows.filter((t) => t.status === 'ACTIVE').length} active · ${dist.telecallers.filter((t) => t.eligible).length} can take records`} tone="violet" />
-        <MiniStat label="Records held" value={sum((t) => t.queueSize)} hint={`${dist.unassigned ?? 0} waiting for a caller`} href="/admin/calling-list?status=UNASSIGNED" tone="sky" />
-        <MiniStat label="Follow-ups due now" value={sum((t) => t.followUpsDue)} hint="Across all callers" href="/admin/calling-list?status=FOLLOW_UP" tone="amber" />
+        <MiniStat label="Records held" value={sum((t) => t.queueSize)} hint={`${dist.unassigned ?? 0} waiting for a caller`} tone="sky" />
+        <MiniStat label="Follow-ups due now" value={sum((t) => t.followUpsDue)} hint="Across all callers" tone="amber" />
         <MiniStat label="Call attempts" value={attempts} hint="In the period" tone="indigo" />
         <MiniStat label="Connected" value={connected} hint={`${attempts ? Math.round((connected / attempts) * 100) : 0}% · ${Math.round(sum((t) => t.talkTimeSec) / 60)} min talk`} tone="emerald" />
         <MiniStat label="Outcomes recorded" value={outcomes} hint={`${sum((t) => t.interests)} interests`} tone="teal" />

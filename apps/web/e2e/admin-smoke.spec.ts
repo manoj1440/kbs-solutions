@@ -79,8 +79,13 @@ test.describe('Admin workspace smoke', () => {
       await expect(nav.getByText(group, { exact: true })).toBeVisible();
   });
 
-  test('F-808: calling records filters by status and old allocation URL lands on caller performance', async () => {
+  test('F-808: calling records filters by status, upload opens a dialog, old allocation URL lands on caller performance', async () => {
     await page.goto('/admin/calling-list');
+    await page.getByRole('button', { name: 'Upload customer list' }).click();
+    const upload = page.getByRole('dialog', { name: 'Upload customer list' });
+    await expect(upload).toBeVisible();
+    await upload.getByRole('button', { name: 'Cancel' }).click();
+    await expect(upload).toBeHidden();
     const total = Number((await page.getByLabel('Current status').locator('option').first().textContent())?.match(/\((\d+)\)/)?.[1]);
     await page.getByLabel('Current status').selectOption('UNTOUCHED');
     await page.getByRole('button', { name: 'Apply' }).click();

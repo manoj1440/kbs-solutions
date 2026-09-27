@@ -123,13 +123,13 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
         </div>
       ) : null}
       <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
-        <MiniStat label="Customer records" value={summary.total.toLocaleString('en-IN')} hint={`${summary.batches.total} upload${summary.batches.total === 1 ? '' : 's'}`} href={statusHref('ALL')} tone="sky" active={status === 'ALL'} />
-        <MiniStat label="Waiting for a caller" value={by.UNASSIGNED} hint="Accepted, not assigned" href={statusHref('UNASSIGNED')} tone="amber" active={status === 'UNASSIGNED'} />
-        <MiniStat label="Not yet called" value={by.UNTOUCHED} hint={`Assigned, no outcome · ${pct(by.UNTOUCHED)}`} href={statusHref('UNTOUCHED')} tone="violet" active={status === 'UNTOUCHED'} />
+        <MiniStat label="Customer records" value={summary.total.toLocaleString('en-IN')} hint={`${summary.batches.total} upload${summary.batches.total === 1 ? '' : 's'}`} tone="sky" />
+        <MiniStat label="Waiting for a caller" value={by.UNASSIGNED} hint="Accepted, not assigned" tone="amber" />
+        <MiniStat label="Not yet called" value={by.UNTOUCHED} hint={`Assigned, no outcome · ${pct(by.UNTOUCHED)}`} tone="violet" />
         <MiniStat label="Called at least once" value={summary.attempted} hint={`${summary.connected} connected (provider)`} tone="indigo" />
         <MiniStat label="Outcome recorded" value={worked} hint={`${by.UNREACHABLE} not reachable · ${by.FOLLOW_UP} follow-up`} tone="teal" />
-        <MiniStat label="Interested / link shared" value={positive} hint={`${by.INTERESTED} interested · ${by.LINK_SHARED} shared`} href={statusHref('LINK_SHARED')} tone="emerald" active={status === 'LINK_SHARED' || status === 'INTERESTED'} />
-        <MiniStat label="Follow-ups due now" value={summary.followUpsDue} hint={`${by.FOLLOW_UP} scheduled`} href={statusHref('FOLLOW_UP')} tone="amber" active={status === 'FOLLOW_UP'} />
+        <MiniStat label="Interested / link shared" value={positive} hint={`${by.INTERESTED} interested · ${by.LINK_SHARED} shared`} tone="emerald" />
+        <MiniStat label="Follow-ups due now" value={summary.followUpsDue} hint={`${by.FOLLOW_UP} scheduled`} tone="amber" />
         <MiniStat label="Closed or blocked" value={closed} hint={`${by.DECLINED + by.COMPLETED} closed · ${by.DO_NOT_CONTACT + by.EXCLUDED} blocked`} tone="slate" />
       </div>
 
@@ -246,7 +246,7 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-xs">
           <span className="text-slate-500 tabular-nums">
-            {total ? `${((page - 1) * PAGE_SIZE + 1).toLocaleString('en-IN')}–${Math.min(page * PAGE_SIZE, total).toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')}` : '0 records'} · page {page} of {pages} · mobiles masked
+            {total ? `${((page - 1) * PAGE_SIZE + 1).toLocaleString('en-IN')}–${Math.min(page * PAGE_SIZE, total).toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')}` : '0 records'} · page {page} of {pages}
           </span>
           <div className="flex gap-2">
             {page > 1 ? (

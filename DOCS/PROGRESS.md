@@ -45,6 +45,7 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 - Local note: the `next dev` on :3200 had hung (curl timed out), so it was stopped. Verification ran on `next start -p 3200`, because the API CORS only allows :3200. Restart dev with `.claude/launch.json` if you want it.
 - Checks: typecheck, lint, web unit 15, build, Playwright 75 passed / 1 skipped, 57-route sweep.
 - Then F-808 (user request): Calling reduced to two pages. One derived status per calling record (shared), `GET /calling/records/summary` and status/pincode filters (API + e2e), Calling records and Caller performance as one-screen pages with in-table scroll; after user feedback removed page titles/extra text/upload history, compact tiles, top bar 48 px.
+- Round-2 user feedback applied: tiles display-only, upload via modal, "mobiles masked" caption removed; oversight page and telecaller drill-down put on the same compact one-screen layout. Verified: web typecheck/lint clean, Playwright smoke+role-routing 73 passed / 1 skipped (includes a new upload-dialog check).
 - Found (not fixed): concurrent web refreshes can trip refresh-reuse detection (phone `session.spec` test). Details and options in F-808 notes.
 - Checks: API e2e 147/147; Playwright 80/82 (1 skipped, 1 = the refresh race).
 - Not pushed — waiting for the user.

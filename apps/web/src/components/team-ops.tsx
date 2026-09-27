@@ -3,12 +3,10 @@ import {
   ArrowLeftRight,
   CalendarClock,
   Filter,
-  ListChecks,
   MessageSquareText,
   PhoneCall,
   Share2,
   StickyNote,
-  UserRound,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -16,7 +14,7 @@ import {
 import { PlayRecordingButton } from '@/components/play-recording-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, EmptyState, humanize, PageHeader, SectionCard, StatCard, StatGrid, type Tone } from '@/components/ui/kit';
+import { Avatar, EmptyState, humanize, MiniStat, SectionCard, type Tone } from '@/components/ui/kit';
 import {
   Table,
   TableBody,
@@ -263,13 +261,11 @@ export async function TelecallerActivity({
   base,
   sp,
   eyebrow,
-  icon = UserRound,
 }: {
   id: string;
   base: string;
   sp: { from?: string; to?: string };
   eyebrow?: string;
-  icon?: LucideIcon;
 }) {
   const a = (
     await apiFetch<Activity>(`/calling/team/telecallers/${id}/activity?${rangeParams(sp)}`)
@@ -281,31 +277,30 @@ export async function TelecallerActivity({
   );
   const connected = a.attempts.filter((x) => x.providerState === 'ENDED').length;
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={icon}
-        eyebrow={eyebrow}
-        tone="violet"
-        title={a.telecaller.fullName}
-        meta={
-          <>
-            <Badge variant={a.telecaller.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(a.telecaller.status)}</Badge>
-            {a.telecaller.employeeCode ? <span className="font-mono">{a.telecaller.employeeCode}</span> : null}
-            <span>queue {a.queueSize}</span>
-            <span>
-              {formatDateTime(a.range.from)} → {formatDateTime(a.range.to)}
-            </span>
-          </>
-        }
-        actions={<RangeForm base={`${base}/telecaller/${id}`} sp={sp} />}
-      >
-        <StatGrid>
-          <StatCard label="Queue" value={a.queueSize} hint="Records currently assigned" icon={ListChecks} tone="violet" />
-          <StatCard label="Open follow-ups" value={a.followUps.length} hint={`${a.followUps.filter((f) => f.overdue).length} overdue · all time`} icon={CalendarClock} tone="amber" />
-          <StatCard label="Call attempts" value={a.attempts.length} hint={`${connected} connected (provider-confirmed) · in this range`} icon={PhoneCall} tone="sky" />
-          <StatCard label="Materials shared" value={a.shares.length} hint="In this range" icon={Share2} tone="teal" />
-        </StatGrid>
-      </PageHeader>
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar name={a.telecaller.fullName} size="lg" />
+          <div className="min-w-0">
+            {eyebrow ? <div className="text-[10.5px] font-semibold tracking-[0.16em] text-violet-700 uppercase">{eyebrow}</div> : null}
+            <h1 className="text-xl font-semibold tracking-tight text-slate-900">{a.telecaller.fullName}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <Badge variant={a.telecaller.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(a.telecaller.status)}</Badge>
+              {a.telecaller.employeeCode ? <span className="font-mono">{a.telecaller.employeeCode}</span> : null}
+              <span>
+                {formatDateTime(a.range.from)} → {formatDateTime(a.range.to)}
+              </span>
+            </div>
+          </div>
+        </div>
+        <RangeForm base={`${base}/telecaller/${id}`} sp={sp} />
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <MiniStat label="Queue" value={a.queueSize} hint="Records currently assigned" tone="violet" />
+        <MiniStat label="Open follow-ups" value={a.followUps.length} hint={`${a.followUps.filter((f) => f.overdue).length} overdue · all time`} tone="amber" />
+        <MiniStat label="Call attempts" value={a.attempts.length} hint={`${connected} connected (provider) · in range`} tone="sky" />
+        <MiniStat label="Materials shared" value={a.shares.length} hint="In this range" tone="teal" />
+      </div>
       {section(
         'Follow-ups',
         'Open follow-ups on this queue (all time).',
