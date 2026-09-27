@@ -72,7 +72,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
       <PageHeader
         icon={Users}
         tone="violet"
-        eyebrow="Workspace"
+        eyebrow="People"
         title="Users & teams"
         description="Deactivation revokes sessions immediately and keeps every assignment, training record, lead and payout (nothing is deleted)."
         actions={<CreateUserDialog />}

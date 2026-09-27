@@ -86,7 +86,7 @@ export default async function RetentionPage() {
     <div className="grid gap-6">
       <PageHeader
         icon={Archive}
-        eyebrow="Administration"
+        eyebrow="Settings"
         title="Data retention & legal hold"
         tone="amber"
         description="Files past their retention period are purged from storage (the record of the file stays). Calling records are restricted — personal details removed and hidden from queues — never deleted."

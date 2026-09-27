@@ -27,7 +27,7 @@ export default async function PayoutRulePage({ params }: { params: Promise<{ id:
     <div className="grid gap-6">
       <PageHeader
         icon={Settings2}
-        eyebrow="Bank data & finance"
+        eyebrow="Payouts"
         title={rule.name}
         meta={
           <>

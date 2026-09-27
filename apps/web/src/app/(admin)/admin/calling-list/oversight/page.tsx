@@ -120,7 +120,7 @@ export default async function OversightPage({ searchParams }: { searchParams: Pr
       <PageHeader
         icon={PhoneCall}
         tone="sky"
-        eyebrow="Sales operations"
+        eyebrow="Calling"
         title="Calls & delivery oversight"
         description={`Every call attempt, recording and WhatsApp share across the organisation for ${summary.range.fromDay} → ${summary.range.toDay} (IST; calls by ${summary.dateBasis.calls}, shares by ${summary.dateBasis.shares}). Only provider events can mark a call connected, a recording available or a message delivered.`}
         actions={

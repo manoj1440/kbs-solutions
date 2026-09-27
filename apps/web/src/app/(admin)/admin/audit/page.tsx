@@ -2,7 +2,6 @@ import { formatDateTime } from '@kbs/shared';
 import { ArrowRight, Bot, ChevronLeft, ChevronRight, Download, Eye, Filter, History, Lock, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
-import { AdminDashboardNav } from '@/components/admin-dashboard-nav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, EmptyState, Field, humanize, PageHeader, PillNav, SectionCard, selectClass } from '@/components/ui/kit';
@@ -122,12 +121,11 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     <div className="grid gap-6">
       <PageHeader
         icon={ShieldCheck}
-        eyebrow="Dashboards"
+        eyebrow="Settings"
         tone="indigo"
         title="Data & permissions audit"
         description="Every accepted or rejected upload, mapping revision, lead reference linkage, bank status change, assignment/WFH grant, training reactivation, payout decision and manual payment with actor, time and source. Read-only."
       />
-      <AdminDashboardNav active="/admin/audit" />
       <div className="grid gap-3">
         <PillNav
           label="Audit views"

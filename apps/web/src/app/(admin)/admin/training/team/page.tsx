@@ -16,7 +16,7 @@ export default async function AdminTrainingTeam() {
   const inProgress = (by.IN_PROGRESS ?? 0) + (by.REACTIVATED_IN_PROGRESS ?? 0);
   return (
     <div className="grid gap-6">
-      <PageHeader icon={ListChecks} eyebrow="Sales operations" tone="violet" title="Training progress" description={`${meta.population ?? 0} Telecallers enrolled across all Managers.`}>
+      <PageHeader icon={ListChecks} eyebrow="People" tone="violet" title="Training progress" description={`${meta.population ?? 0} Telecallers enrolled across all Managers.`}>
         <StatGrid>
           <StatCard label="Enrolled" value={meta.population ?? 0} hint="Telecallers across all Managers" icon={Users} tone="violet" />
           <StatCard label={STATUS_LABEL.PASSED} value={by.PASSED ?? 0} hint="All three modules passed" icon={CheckCircle2} tone="emerald" />

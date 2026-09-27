@@ -14,7 +14,7 @@ export default async function AdminDistributionPage({ searchParams }: { searchPa
       <PageHeader
         icon={Users}
         tone="violet"
-        eyebrow="Sales operations"
+        eyebrow="Calling"
         title="Allocation & distribution"
         description="Organisation totals per Telecaller; reassign across teams with a reason (logged as an allocation event)."
         actions={

@@ -116,7 +116,7 @@ export default async function MisBatchPage({ params }: { params: Promise<{ id: s
     <div className="grid gap-6">
       <PageHeader
         icon={FileSpreadsheet}
-        eyebrow="Bank data & finance"
+        eyebrow="Bank MIS"
         title={`MIS batch ${b.publicRef}`}
         description={`${b.bank.displayName} · ${b.profile.name} v${b.profile.version}`}
         meta={

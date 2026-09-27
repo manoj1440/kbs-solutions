@@ -166,7 +166,7 @@ export async function PayoutDashboard({ basePath, requestHref, sp, title, canAck
     <div className="grid gap-6">
       <PageHeader
         icon={LayoutDashboard}
-        eyebrow={basePath.startsWith('/admin') ? 'Bank data & finance' : 'Payouts'}
+        eyebrow="Payouts"
         title={title}
         description={
           <>

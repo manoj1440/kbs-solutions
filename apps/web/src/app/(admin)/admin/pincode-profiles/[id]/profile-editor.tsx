@@ -85,7 +85,7 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
       <PageHeader
         icon={MapPin}
         tone="violet"
-        eyebrow="Sales operations · Bank coverage"
+        eyebrow="Products · Bank coverage"
         title={
           <>
             {p.bank.displayName} — {p.name}

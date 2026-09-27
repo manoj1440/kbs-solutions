@@ -41,7 +41,7 @@ export default async function OnboardingQueuePage() {
       <PageHeader
         icon={ClipboardCheck}
         tone="violet"
-        eyebrow="Workspace"
+        eyebrow="People"
         title="Advisor onboarding review"
         description="Identity shows the provider result only; bank details are masked and every reveal is logged."
       >

@@ -46,7 +46,7 @@ export default async function MisPage() {
     <div className="grid gap-6">
       <PageHeader
         icon={FileSpreadsheet}
-        eyebrow="Bank data & finance"
+        eyebrow="Bank MIS"
         title="Bank MIS"
         description="Upload, preview and apply bank-reported application files. Files are kept immutable; every cell is stored as text exactly as received."
         actions={

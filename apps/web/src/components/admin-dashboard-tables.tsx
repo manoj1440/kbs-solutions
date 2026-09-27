@@ -90,7 +90,7 @@ function Frame({
     <div className="grid gap-6">
       <PageHeader
         icon={icon}
-        eyebrow="Dashboards"
+        eyebrow="Reports"
         title={title}
         description={`${description} ${meta.note}`}
         meta={

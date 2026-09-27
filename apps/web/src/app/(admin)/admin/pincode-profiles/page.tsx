@@ -31,7 +31,7 @@ export default async function PincodeProfilesPage() {
     <div className="grid gap-6">
       <PageHeader
         icon={MapPin}
-        eyebrow="Sales operations"
+        eyebrow="Products"
         tone="violet"
         title="Bank pincode profiles"
         description="One profile per bank sheet structure (REQ-07 §7.2). A bank only becomes sourceable for a pincode once its profile is APPROVED and a batch is imported under it. Rules marked “requires bank mapping” never make a pincode available."

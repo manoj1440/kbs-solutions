@@ -181,7 +181,7 @@ export default async function MisIntegrityPage({
     <div className="grid gap-6">
       <PageHeader
         icon={ShieldCheck}
-        eyebrow="Bank data & finance"
+        eyebrow="Bank MIS"
         title="MIS integrity & freshness"
         description="Per-bank upload/apply recency, row outcomes, verbatim new values awaiting acknowledgement, duplicate keys, corrections under review. Freshness is measured per lead, never as one global date."
         actions={

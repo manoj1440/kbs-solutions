@@ -38,7 +38,7 @@ export default async function CallingListPage() {
     <div className="grid gap-6">
       <PageHeader
         icon={Phone}
-        eyebrow="Sales operations"
+        eyebrow="Calling"
         title="Customer calling lists"
         description="Upload → map columns → validate → confirm. Every batch keeps its file, uploader and time; rows are never redistributed automatically."
         actions={

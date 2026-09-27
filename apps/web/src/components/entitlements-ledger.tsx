@@ -86,7 +86,7 @@ export async function EntitlementsLedger({ basePath, leadHref, sp, title, descri
   const total = Number(r.meta.total ?? 0);
   return (
     <div className="grid gap-6">
-      <PageHeader icon={ListChecks} eyebrow={basePath.startsWith('/admin') ? 'Bank data & finance' : 'Team payouts'} title={title} description={description}>
+      <PageHeader icon={ListChecks} eyebrow={basePath.startsWith('/admin') ? 'Payouts' : 'Team payouts'} title={title} description={description}>
         <StatGrid className="lg:grid-cols-3 xl:grid-cols-6">
           {tiles.map((x) => (
             <StatCard key={x.label} label={x.label} value={x.count} icon={x.icon} tone={x.tone} hint={x.amount !== undefined ? <span className="font-semibold text-slate-700 tabular-nums">{formatInr(x.amount)}</span> : 'Card events'} />

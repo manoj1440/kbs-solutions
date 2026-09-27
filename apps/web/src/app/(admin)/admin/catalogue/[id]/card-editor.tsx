@@ -138,7 +138,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
           <CreditCardArt bankCode={c.bank.code} bankName={c.bank.displayName} cardName={c.name} muted={c.status !== 'PUBLISHED'} className="max-w-[19rem]" />
           <div className="grid min-w-0 gap-5">
             <PageHeader
-              eyebrow="Sales operations · Card catalogue"
+              eyebrow="Products · Card catalogue"
               title={c.name}
               meta={
                 <>

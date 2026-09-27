@@ -125,7 +125,7 @@ export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: stri
     <div className="grid gap-6">
       <PageHeader
         icon={Wallet}
-        eyebrow={backHref.startsWith('/admin') ? 'Bank data & finance' : backHref.startsWith('/accounts') ? 'Accounts' : 'Team payouts'}
+        eyebrow={backHref.startsWith('/admin') ? 'Payouts' : backHref.startsWith('/accounts') ? 'Accounts' : 'Team payouts'}
         title={<span className="tabular-nums">{formatInr(r.totalAmountInr)}</span>}
         meta={
           <>

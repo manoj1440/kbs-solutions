@@ -28,7 +28,7 @@ export default async function PayoutRulesPage() {
   const uncovered = banks.data.filter((b) => !approvedBanks.has(b.id)).length;
   return (
     <div className="grid gap-6">
-      <PageHeader icon={Settings2} eyebrow="Bank data & finance" title="Payout rules" description="A bank pays out only when an approved rule says which exact MIS value triggers it and an approved rate prices it. Banks without an approved rule never produce entitlements.">
+      <PageHeader icon={Settings2} eyebrow="Payouts" title="Payout rules" description="A bank pays out only when an approved rule says which exact MIS value triggers it and an approved rate prices it. Banks without an approved rule never produce entitlements.">
         <StatGrid>
           <StatCard label="Rules (all versions)" value={rules.data.length} hint="Every version is kept" icon={ListChecks} tone="teal" />
           <StatCard label="Approved" value={approved} hint="In force for eligibility" icon={CheckCircle2} tone="emerald" />

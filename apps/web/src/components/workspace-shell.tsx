@@ -6,7 +6,9 @@ import {
   Archive,
   ArrowRight,
   BadgeCheck,
+  BarChart3,
   Bell,
+  BookOpenCheck,
   Building2,
   CheckCircle2,
   ChevronRight,
@@ -16,17 +18,22 @@ import {
   CreditCard,
   FileSpreadsheet,
   GraduationCap,
+  History,
   LayoutDashboard,
   ListChecks,
   MapPin,
   Menu,
   Phone,
   PhoneCall,
+  PieChart,
   RefreshCw,
   Scale,
+  ScanSearch,
   Search,
   Settings2,
   ShieldCheck,
+  Shuffle,
+  SlidersHorizontal,
   UserPlus,
   UserRound,
   Users,
@@ -53,63 +60,76 @@ type NavGroup = {
 };
 export type WorkspaceArea = 'admin' | 'manager' | 'accounts';
 
+// F-807: one group = one responsibility; every page appears once (payment exceptions is a tab of Payout requests).
 const ADMIN_GROUPS: NavGroup[] = [
   {
-    label: 'Workspace',
-    items: [
-      { href: '/admin', label: 'Business overview', icon: LayoutDashboard },
-      { href: '/admin/leads', label: 'Leads & applications', icon: ListChecks },
-      { href: '/admin/onboarding', label: 'Advisor approvals', icon: ClipboardCheck },
-      { href: '/admin/users', label: 'People & teams', icon: Users },
-    ],
+    label: 'Overview',
+    items: [{ href: '/admin', label: 'Business overview', icon: LayoutDashboard }],
   },
   {
-    label: 'Sales operations',
+    label: 'Sales',
+    items: [{ href: '/admin/leads', label: 'Leads & applications', icon: ListChecks }],
+  },
+  {
+    label: 'Calling',
     items: [
       { href: '/admin/calling-list', label: 'Calling lists', icon: Phone },
-      { href: '/admin/calling-list/distribution', label: 'Calling allocation', icon: Users },
+      { href: '/admin/calling-list/distribution', label: 'Allocation', icon: Shuffle },
       { href: '/admin/calling-list/oversight', label: 'Calls & delivery', icon: PhoneCall },
-      { href: '/admin/catalogue', label: 'Card catalogue', icon: CreditCard },
-      { href: '/admin/pincode-profiles', label: 'Bank coverage', icon: MapPin },
-      { href: '/admin/training', label: 'Training content', icon: GraduationCap },
-      { href: '/admin/training/team', label: 'Training progress', icon: ListChecks },
     ],
   },
   {
-    label: 'Dashboards',
+    label: 'People',
     items: [
-      { href: '/admin/dashboards', label: 'Executive dashboard', icon: LayoutDashboard },
+      { href: '/admin/users', label: 'Users & teams', icon: Users },
+      { href: '/admin/onboarding', label: 'Advisor approvals', icon: ClipboardCheck },
+      { href: '/admin/training', label: 'Training content', icon: GraduationCap },
+      { href: '/admin/training/team', label: 'Training progress', icon: BookOpenCheck },
+    ],
+  },
+  {
+    label: 'Products',
+    items: [
+      { href: '/admin/catalogue', label: 'Card catalogue', icon: CreditCard },
+      { href: '/admin/pincode-profiles', label: 'Bank coverage', icon: MapPin },
+    ],
+  },
+  {
+    label: 'Bank MIS',
+    items: [
+      { href: '/admin/mis', label: 'MIS imports', icon: FileSpreadsheet },
+      { href: '/admin/mis/integrity', label: 'Data integrity', icon: ScanSearch },
+    ],
+  },
+  {
+    label: 'Payouts',
+    items: [
+      { href: '/admin/payouts/requests', label: 'Payout requests', icon: Wallet },
+      { href: '/admin/payouts/entitlements', label: 'Entitlement ledger', icon: ListChecks },
+      { href: '/admin/payouts/liability', label: 'Payout liability', icon: Scale },
+      { href: '/admin/payouts/rules', label: 'Payout rules', icon: SlidersHorizontal },
+    ],
+  },
+  {
+    label: 'Reports',
+    items: [
       {
         href: '/admin/dashboards/telecallers',
         label: 'Team performance',
-        icon: Users,
+        icon: BarChart3,
         also: ['/admin/dashboards/managers', '/admin/dashboards/advisors'],
       },
-      { href: '/admin/dashboards/bank-card-mix', label: 'Bank / card mix', icon: CreditCard },
-      { href: '/admin/audit', label: 'Audit trail', icon: ShieldCheck },
+      { href: '/admin/dashboards/bank-card-mix', label: 'Bank / card mix', icon: PieChart },
     ],
   },
   {
-    label: 'Bank data & finance',
+    label: 'Settings',
     items: [
-      { href: '/admin/mis', label: 'MIS imports', icon: FileSpreadsheet },
-      { href: '/admin/mis/integrity', label: 'Data integrity', icon: ShieldCheck },
-      { href: '/admin/payouts/liability', label: 'Payout liability', icon: LayoutDashboard },
-      { href: '/admin/payouts/requests', label: 'Payout requests', icon: Wallet },
-      { href: '/admin/payouts/requests?queue=exceptions', label: 'Payment exceptions', icon: AlertTriangle },
-      { href: '/admin/payouts/entitlements', label: 'Entitlement ledger', icon: ListChecks },
-      { href: '/admin/payouts/rules', label: 'Payout rules', icon: Settings2 },
-    ],
-  },
-  {
-    label: 'Administration',
-    items: [
+      { href: '/admin/config', label: 'Configuration', icon: Settings2 },
       { href: '/admin/compliance', label: 'Compliance', icon: ShieldCheck },
       { href: '/admin/network', label: 'Office network', icon: Wifi },
-      { href: '/admin/config', label: 'Configuration', icon: Settings2 },
       { href: '/admin/retention', label: 'Retention & legal hold', icon: Archive },
-      { href: '/admin/notifications', label: 'Notifications', icon: Bell },
-      { href: '/admin/account', label: 'Account & support', icon: UserRound },
+      { href: '/admin/audit', label: 'Audit trail', icon: History },
     ],
   },
 ];
@@ -194,20 +214,18 @@ export function WorkspaceShell({
   const accountBase = AREA[own].home;
   const roleLabel = session.user.role === 'ADMIN' ? 'Administrator' : humanize(session.user.role);
   const { home, subtitle } = AREA[area];
-  const GROUPS: NavGroup[] =
-    area === 'admin'
-      ? AREA.admin.groups
-      : [
-          ...AREA[area].groups,
-          {
-            label: 'You',
-            items: [
-              { href: `${accountBase}/notifications`, label: 'Notifications', icon: Bell },
-              { href: `${accountBase}/account`, label: 'Account & support', icon: UserRound },
-            ],
-          },
-        ];
-  const ITEMS = GROUPS.flatMap((g) => g.items.map((i) => ({ ...i, group: g.label })));
+  const you: NavGroup = {
+    label: 'You',
+    items: [
+      { href: `${accountBase}/notifications`, label: 'Notifications', icon: Bell },
+      { href: `${accountBase}/account`, label: 'Account & support', icon: UserRound },
+    ],
+  };
+  // Admin reaches "You" pages from the bell / avatar menu only; they stay in ITEMS for breadcrumb and search
+  const GROUPS: NavGroup[] = area === 'admin' ? AREA.admin.groups : [...AREA[area].groups, you];
+  const ITEMS = [...GROUPS, ...(area === 'admin' ? [you] : [])].flatMap((g) =>
+    g.items.map((i) => ({ ...i, group: g.label })),
+  );
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [query, setQuery] = useState('');

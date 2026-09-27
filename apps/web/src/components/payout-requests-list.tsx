@@ -74,7 +74,7 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, descripti
       <PageHeader
         icon={sp.queue === 'exceptions' && mode !== 'accounts' ? AlertTriangle : Wallet}
         tone={sp.queue === 'exceptions' && mode !== 'accounts' ? 'rose' : 'teal'}
-        eyebrow={basePath.startsWith('/admin') ? 'Bank data & finance' : mode === 'accounts' ? 'Accounts' : 'Team payouts'}
+        eyebrow={basePath.startsWith('/admin') ? 'Payouts' : mode === 'accounts' ? 'Accounts' : 'Team payouts'}
         title={title}
         description={description}
       >

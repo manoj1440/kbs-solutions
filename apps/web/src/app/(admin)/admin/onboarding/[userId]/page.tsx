@@ -29,7 +29,7 @@ export default async function OnboardingReviewPage({ params }: { params: Promise
           <div className="flex min-w-0 items-start gap-4">
             <Avatar name={d.personal.fullName || userId} size="lg" className="shadow-sm ring-4 ring-white" />
             <PageHeader
-              eyebrow="Workspace · Advisor approvals"
+              eyebrow="People · Advisor approvals"
               tone="violet"
               title={d.personal.fullName || '(no name)'}
               meta={

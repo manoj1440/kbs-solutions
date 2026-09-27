@@ -70,7 +70,7 @@ export function MisProfileEditor({ initial }: { initial: MisProfile }) {
     <div className="grid gap-6">
       <PageHeader
         icon={FileSpreadsheet}
-        eyebrow="Bank data & finance"
+        eyebrow="Bank MIS"
         title={
           <>
             {p.bank.displayName} — {p.name}

@@ -92,7 +92,7 @@ export default async function NetworkPolicyPage({
     <div className="grid gap-6">
       <PageHeader
         icon={Wifi}
-        eyebrow="Administration"
+        eyebrow="Settings"
         title="Office network policy"
         tone="sky"
         description="Telecallers can use calling screens only from an office egress IP or with an active work-from-home exception. The check runs on the server from the request IP; the Wi-Fi name the app reports is stored as a hint and never trusted. Advisors are never checked."

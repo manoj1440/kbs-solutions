@@ -43,7 +43,7 @@ export default async function CataloguePage() {
     <div className="grid gap-6">
       <PageHeader
         icon={CreditCard}
-        eyebrow="Sales operations"
+        eyebrow="Products"
         title="Card catalogue"
         description="Only PUBLISHED cards with an effective application link are offered to Telecallers and Advisors. Copy that promises approval is blocked at publish (REQ-11 §11.3)."
       >

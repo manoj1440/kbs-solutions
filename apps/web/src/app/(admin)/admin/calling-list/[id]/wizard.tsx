@@ -191,7 +191,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
     <div className="grid gap-6">
       <PageHeader
         icon={Phone}
-        eyebrow="Sales operations"
+        eyebrow="Calling"
         title={`Batch ${batch.publicRef}`}
         description="Upload → map columns → validate → confirm. Every batch keeps its file, uploader and time; rows are never redistributed automatically."
         actions={

@@ -87,7 +87,7 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
       <PageHeader
         icon={GraduationCap}
         tone="sky"
-        eyebrow="Sales operations · Training content"
+        eyebrow="People · Training content"
         title={`Module ${initial.sequence}`}
         description={
           <>

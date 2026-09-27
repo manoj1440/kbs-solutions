@@ -49,7 +49,7 @@ export default async function CompliancePage() {
     <div className="grid gap-6">
       <PageHeader
         icon={ShieldCheck}
-        eyebrow="Administration"
+        eyebrow="Settings"
         title="Compliance & reference data"
         tone="rose"
         description="Do-not-contact suppression applies to every import and blocks call initiation server-side. Records are hidden, never deleted (INV-07)."

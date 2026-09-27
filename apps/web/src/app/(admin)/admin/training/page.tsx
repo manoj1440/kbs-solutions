@@ -21,7 +21,7 @@ export default async function TrainingAdmin() {
     <div className="grid gap-6">
       <PageHeader
         icon={GraduationCap}
-        eyebrow="Sales operations"
+        eyebrow="People"
         tone="sky"
         title="Training modules"
         description="Telecallers must pass all three (video + questions) within their 72-hour window. Edits are drafts until you publish."

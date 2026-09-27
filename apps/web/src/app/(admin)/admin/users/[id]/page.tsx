@@ -105,7 +105,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
               className="ring-4 ring-white shadow-sm"
             />
             <PageHeader
-              eyebrow="Workspace · People & teams"
+              eyebrow="People · Users & teams"
               tone="violet"
               title={u.fullName || '(onboarding)'}
               meta={

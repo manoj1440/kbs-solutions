@@ -186,7 +186,7 @@ export default async function ConfigPage() {
     <div className="grid gap-6">
       <PageHeader
         icon={Settings2}
-        eyebrow="Administration"
+        eyebrow="Settings"
         title="Configuration"
         tone="slate"
         description={
