@@ -4,7 +4,7 @@
 
 ## Current state (as of 2026-09-27, end of session 14)
 
-- **Feature status:** 76 of 78 features **DONE** (session 14 added and finished **F-807 Admin navigation by responsibility + business-first home** — `/admin` now merges the executive dashboard; `/admin/dashboards` redirects). Earlier: 75 of 77 (session 13 added and finished **F-806 web Admin UI revamp** — design kit + shell + every Admin page; guide in `apps/web/src/components/ui/README.md`; session 12 finished **F-805 mobile UI revamp**, guide in `apps/mobile/components/ui/README.md`)
+- **Feature status:** 77 of 79 features **DONE** (session 14 also added and finished **F-808 Admin Calling: one records page + one caller performance page** — `/admin/calling-list` and `/admin/calling-list/performance`, one screen each; open issue: web refresh race, see F-808 notes). Before that, session 14 added **F-807 Admin navigation by responsibility + business-first home** — `/admin` now merges the executive dashboard; `/admin/dashboards` redirects). Earlier: 75 of 77 (session 13 added and finished **F-806 web Admin UI revamp** — design kit + shell + every Admin page; guide in `apps/web/src/components/ui/README.md`; session 12 finished **F-805 mobile UI revamp**, guide in `apps/mobile/components/ui/README.md`)
 - Earlier: 73 of 75 features **DONE** (sessions 9–11 added and finished F-314 Admin calls & delivery oversight, F-315 Manager Advisor drill-down and F-804 web session continuity + account screens, all found by REQ-15/REQ-25 gap checks) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
   - **F-302** Android protected screens — code complete; stays IN_PROGRESS only for the **SEC-02 manual run on a physical Android 12+ device** (checklist in `DOCS/runbooks/02-mobile-security-limits.md`).
   - **F-904** Data retention — **BLOCKED** on KBS durations (REQ-21 §21.5 OPEN). Structure is built and fails closed (`/retention/plan` dry run, legal holds, `/retention/execute` → `CONFIG_MISSING` until `retention.*Days` and `retention.executionEnabled` are set).
@@ -44,6 +44,9 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 - Built: sidebar/eyebrows, report-only tabs, the period helpers with tests, reusable `OpsFilters`/`OpsSections`, the new home, the redirect, and e2e checks. Web only; no API or data-model change.
 - Local note: the `next dev` on :3200 had hung (curl timed out), so it was stopped. Verification ran on `next start -p 3200`, because the API CORS only allows :3200. Restart dev with `.claude/launch.json` if you want it.
 - Checks: typecheck, lint, web unit 15, build, Playwright 75 passed / 1 skipped, 57-route sweep.
+- Then F-808 (user request): Calling reduced to two pages. One derived status per calling record (shared), `GET /calling/records/summary` and status/pincode filters (API + e2e), Calling records and Caller performance as one-screen pages with in-table scroll; after user feedback removed page titles/extra text/upload history, compact tiles, top bar 48 px.
+- Found (not fixed): concurrent web refreshes can trip refresh-reuse detection (phone `session.spec` test). Details and options in F-808 notes.
+- Checks: API e2e 147/147; Playwright 80/82 (1 skipped, 1 = the refresh race).
 - Not pushed — waiting for the user.
 
 ### 2026-09-26 — Session 13 (F-806 web Admin UI revamp, on the Mac)
