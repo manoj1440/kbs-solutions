@@ -73,12 +73,8 @@ const ADMIN_GROUPS: NavGroup[] = [
     label: 'Calling',
     items: [
       { href: '/admin/calling-list', label: 'Calling records', icon: Phone },
-      {
-        href: '/admin/calling-list/performance',
-        label: 'Caller performance',
-        icon: BarChart3,
-        also: ['/admin/calling-list/oversight'],
-      },
+      { href: '/admin/calling-list/performance', label: 'Caller performance', icon: BarChart3 },
+      { href: '/admin/calling-list/oversight', label: 'Calls & delivery', icon: PhoneCall },
     ],
   },
   {

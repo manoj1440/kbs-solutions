@@ -100,6 +100,8 @@ export interface CallingQueueRow {
   batchId: string;
   /** F-808 derived current status. */
   recordStatus: RecordStatus;
+  /** F-808: latest call attempt on this record (duration + recording handle for the audited play endpoint). */
+  lastCall: { id: string; at: string; durationSec: number | null; connected: boolean; recordingStatus: string | null; canPlay: boolean } | null;
 }
 
 /** F-808 `GET /calling/records/summary`: every figure over the actor's scope, as of `asOf`. */

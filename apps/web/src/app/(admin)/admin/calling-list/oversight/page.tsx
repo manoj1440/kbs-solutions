@@ -3,7 +3,6 @@ import { AlarmClock, ChevronRight, CircleCheck, Filter, type LucideIcon, Message
 import Link from 'next/link';
 
 import { PlayRecordingButton } from '@/components/play-recording-button';
-import { CallerPerformanceNav } from '@/components/caller-performance-nav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, EmptyState, humanize, Meter, MiniStat, PillNav, selectClass } from '@/components/ui/kit';
@@ -131,12 +130,6 @@ export default async function OversightPage({ searchParams }: { searchParams: Pr
       </div>
       <section aria-label="Calls and delivery" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
         <div className="grid gap-2 border-b border-slate-100 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <CallerPerformanceNav active="calls" />
-            <span className="text-[11px] text-slate-500">
-              {summary.range.fromDay} → {summary.range.toDay} IST · calls by {summary.dateBasis.calls} · shares by {summary.dateBasis.shares}
-            </span>
-          </div>
           <form className="flex flex-wrap items-end gap-2" action="/admin/calling-list/oversight">
             {tab === 'shares' ? <input type="hidden" name="tab" value="shares" /> : null}
             {(['attention', 'state'] as const).map((k) => (sp[k] ? <input key={k} type="hidden" name={k} value={sp[k]} /> : null))}
@@ -208,6 +201,9 @@ export default async function OversightPage({ searchParams }: { searchParams: Pr
                 { href: sharesHref, label: 'WhatsApp shares', icon: MessageCircle, count: tab === 'shares' ? total : null },
               ]}
             />
+            <span className="ml-auto hidden text-[11px] text-slate-500 sm:block">
+              {summary.range.fromDay} → {summary.range.toDay} IST · provider-confirmed only
+            </span>
             <span className="hidden h-4 w-px bg-slate-200 sm:block" aria-hidden="true" />
             {OVERSIGHT_ATTENTION.map((a) => {
               const n = summary.attention[a];

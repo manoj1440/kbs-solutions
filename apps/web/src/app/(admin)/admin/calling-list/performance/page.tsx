@@ -1,7 +1,6 @@
 import { formatDateTime } from '@kbs/shared';
 import { Users } from 'lucide-react';
 
-import { CallerPerformanceNav } from '@/components/caller-performance-nav';
 import { type OverviewRow, RangeForm, rangeParams, TeamActivityTable } from '@/components/team-ops';
 import { EmptyState, MiniStat } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
@@ -45,13 +44,7 @@ export default async function CallerPerformancePage({ searchParams }: { searchPa
         <MiniStat label="Need reassignment" value={reassign} hint="Inactive callers holding records" tone={reassign ? 'rose' : 'slate'} />
       </div>
       <section aria-label="Caller activity" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 p-3">
-          <div className="grid gap-1">
-            <CallerPerformanceNav active="callers" />
-            <span className="text-[11px] text-slate-500">
-              {formatDateTime(ov.range.from)} → {formatDateTime(ov.range.to)} · connected = provider-confirmed
-            </span>
-          </div>
+        <div className="flex flex-wrap items-center justify-end gap-3 border-b border-slate-100 p-3">
           <RangeForm base="/admin/calling-list/performance" sp={sp} />
         </div>
         <div className="min-h-0 flex-1">

@@ -12,6 +12,7 @@ import { CalendarClock, ChevronLeft, ChevronRight, Filter, Inbox, TriangleAlert,
 import Link from 'next/link';
 
 import { ReassignForm } from '@/components/reassign-form';
+import { RECORD_STATUS_VARIANT } from '@/components/team-ops';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, EmptyState, humanize, MiniStat, selectClass } from '@/components/ui/kit';
@@ -42,19 +43,6 @@ interface Caller {
   eligible: boolean;
 }
 
-const STATUS_VARIANT: Record<RecordStatus, 'success' | 'info' | 'warning' | 'unknown' | 'secondary' | 'destructive'> = {
-  NEEDS_REVIEW: 'warning',
-  EXCLUDED: 'unknown',
-  DO_NOT_CONTACT: 'destructive',
-  UNASSIGNED: 'warning',
-  UNTOUCHED: 'secondary',
-  UNREACHABLE: 'warning',
-  FOLLOW_UP: 'info',
-  INTERESTED: 'success',
-  LINK_SHARED: 'success',
-  DECLINED: 'unknown',
-  COMPLETED: 'secondary',
-};
 const WORKED: RecordStatus[] = ['UNREACHABLE', 'FOLLOW_UP', 'INTERESTED', 'LINK_SHARED', 'DECLINED', 'COMPLETED'];
 
 /** What the Admin still has to do with a batch (mapping, review, consent, allocation) — null when nothing. */
@@ -193,7 +181,7 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
                       <div className="mt-0.5 text-slate-500">{r.location}</div>
                     </TableCell>
                     <TableCell data-label="Current status">
-                      <Badge variant={STATUS_VARIANT[r.recordStatus]}>{RECORD_STATUS_LABELS[r.recordStatus]}</Badge>
+                      <Badge variant={RECORD_STATUS_VARIANT[r.recordStatus]}>{RECORD_STATUS_LABELS[r.recordStatus]}</Badge>
                     </TableCell>
                     <TableCell data-label="Caller" className="text-xs">
                       {r.assignedTelecaller ? (

@@ -69,7 +69,12 @@ export class CallingQueueService {
         orderBy,
         skip: (q.page - 1) * q.pageSize,
         take: q.pageSize,
-        include: { assignedTelecaller: { select: { id: true, fullName: true } }, batch: { select: { publicRef: true } }, outcomes: { orderBy: { at: 'desc' }, take: 1, select: { outcome: true, at: true, remarks: true } } },
+        include: {
+          assignedTelecaller: { select: { id: true, fullName: true } },
+          batch: { select: { publicRef: true } },
+          outcomes: { orderBy: { at: 'desc' }, take: 1, select: { outcome: true, at: true, remarks: true } },
+          callAttempts: { orderBy: { initiatedAt: 'desc' }, take: 1, select: { id: true, initiatedAt: true, durationSec: true, connectedAt: true, recording: { select: { status: true } } } },
+        },
       }),
       this.prisma.client.callingRecord.count({ where }),
     ]);
@@ -122,7 +127,7 @@ export class CallingQueueService {
         assignedTelecaller: { select: { id: true, fullName: true } },
         batch: { select: { publicRef: true, uploadedAt: true } },
         outcomes: { orderBy: { at: 'desc' }, select: { id: true, outcome: true, remarks: true, followUpAt: true, selectedCardId: true, doNotContact: true, at: true, telecaller: { select: { id: true, fullName: true } } } },
-        callAttempts: { orderBy: { initiatedAt: 'desc' }, select: { id: true, providerState: true, initiatedAt: true, connectedAt: true, endedAt: true, durationSec: true, failureReason: true, telecaller: { select: { id: true, fullName: true } } } },
+        callAttempts: { orderBy: { initiatedAt: 'desc' }, select: { id: true, providerState: true, initiatedAt: true, connectedAt: true, endedAt: true, durationSec: true, failureReason: true, telecaller: { select: { id: true, fullName: true } }, recording: { select: { status: true } } } },
         interests: { orderBy: { at: 'desc' }, select: { id: true, at: true, card: { select: { id: true, name: true, bank: { select: { displayName: true } } } } } },
         shareActions: { orderBy: { at: 'desc' }, select: { id: true, kind: true, channel: true, handoffResult: true, deliveryStatus: true, at: true } },
         allocationEvents: { orderBy: { at: 'asc' }, select: { id: true, at: true, reason: true, fromTelecallerUserId: true, toTelecallerUserId: true, actorUserId: true } },
@@ -156,10 +161,12 @@ type RecordWithRefs = {
   hiddenReason: string | null;
   batch: { publicRef: string };
   outcomes: Array<{ outcome: string; at: Date; remarks: string | null }>;
+  callAttempts?: Array<{ id: string; initiatedAt: Date; durationSec: number | null; connectedAt: Date | null; recording?: { status: string } | null }>;
 };
 
 function toRow(r: RecordWithRefs): CallingQueueRow {
   const last = r.outcomes[0];
+  const call = r.callAttempts?.[0];
   return {
     id: r.id,
     fullName: r.fullName,
@@ -179,5 +186,15 @@ function toRow(r: RecordWithRefs): CallingQueueRow {
     batchRef: r.batch.publicRef,
     batchId: r.batchId,
     recordStatus: recordStatusOf(r),
+    lastCall: call
+      ? {
+          id: call.id,
+          at: call.initiatedAt.toISOString(),
+          durationSec: call.durationSec,
+          connected: call.connectedAt != null,
+          recordingStatus: call.recording?.status ?? null,
+          canPlay: call.recording?.status === 'AVAILABLE',
+        }
+      : null,
   };
 }

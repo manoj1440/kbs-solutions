@@ -96,6 +96,11 @@ test.describe('Admin workspace smoke', () => {
     await page.goto('/admin/calling-list/distribution');
     await expect(page).toHaveURL(/\/admin\/calling-list\/performance$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Caller performance' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Success %' })).toBeVisible();
+    await page.locator('td[data-label="Caller"] a').first().click();
+    await expect(page).toHaveURL(/\/performance\/telecaller\//);
+    await expect(page.getByRole('columnheader', { name: 'Last call' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Recording' })).toBeVisible();
   });
 
   test('notification drawer opens and closes', async () => {
