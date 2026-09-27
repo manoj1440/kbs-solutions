@@ -163,181 +163,125 @@ function DistCard({ title, d }: { title: string; d: Dist }) {
   );
 }
 
-/**
- * F-702 (and F-703 executive) operations dashboard. Calls, shares, leads, bank values and payouts are separate
- * metrics, each labelled with its source and date basis; bank values are the latest accepted MIS, never live status.
- */
-export async function OperationsDashboard({
-  basePath,
-  sp,
-  title,
-  endpoint,
-  extra,
-  nav,
-  eyebrow,
-  icon = LayoutDashboard,
-}: {
-  basePath: string;
-  sp: Record<string, string | undefined>;
-  title: string;
-  endpoint: string;
-  extra?: React.ReactNode;
-  /** tab row rendered under the page header (Admin dashboards) */
-  nav?: React.ReactNode;
-  eyebrow?: string;
-  icon?: LucideIcon;
-}) {
+const FILTER_KEYS = ['from', 'to', 'managerId', 'telecallerId', 'advisorId', 'bankId', 'cardId', 'pincode', 'state', 'misRecency'] as const;
+/** Query string of the dashboard filters present in `sp` (other params are ignored). */
+export function opsQuery(sp: Record<string, string | undefined>) {
   const qs = new URLSearchParams();
-  for (const k of ['from', 'to', 'managerId', 'telecallerId', 'advisorId', 'bankId', 'cardId', 'pincode', 'state', 'misRecency']) if (sp[k]) qs.set(k, sp[k] as string);
-  const [d, users, banks] = await Promise.all([
-    apiFetch<OpsDashboard>(`${endpoint}?${qs.toString()}`).then((r) => r.data),
+  for (const k of FILTER_KEYS) if (sp[k]) qs.set(k, sp[k] as string);
+  return qs.toString();
+}
+
+/** Dashboard filter form (GET to `basePath`); `hidden` carries extra params such as the selected period. */
+export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; sp: Record<string, string | undefined>; hidden?: Record<string, string> }) {
+  const [users, banks] = await Promise.all([
     apiFetch<UserRow[]>('/users?pageSize=200').then((r) => r.data).catch(() => [] as UserRow[]),
     apiFetch<Bank[]>('/catalogue/banks').then((r) => r.data).catch(() => [] as Bank[]),
   ]);
-  const c = d.calling;
-  const a = d.advisors;
   const telecallers = users.filter((u) => u.role === 'TELECALLER');
   const advisors = users.filter((u) => u.role === 'ADVISOR');
   const managers = users.filter((u) => u.role === 'MANAGER');
   const more = Boolean(sp.managerId || sp.pincode || sp.state || sp.misRecency);
   const moreCount = ['managerId', 'pincode', 'state', 'misRecency'].filter((k) => sp[k]).length;
-  const sum = (o: Record<string, Metric>) => Object.values(o).reduce((n, m) => n + m.value, 0);
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={icon}
-        eyebrow={eyebrow}
-        title={title}
-        description={d.meta.note}
-        meta={
-          <>
-            <Badge variant="secondary">{d.scope}</Badge>
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarRange className="size-3.5" aria-hidden="true" />
-              {d.meta.from || d.meta.to ? `${d.meta.from ?? '…'} → ${d.meta.to ?? '…'}` : 'all time'}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="size-3.5" aria-hidden="true" />
-              as of {formatDateTime(d.meta.asOf)}
-            </span>
-          </>
-        }
-      />
-      {nav}
-      <form className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={basePath}>
-        <div className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
-          <Field label="From" htmlFor="ops-from">
-            <input id="ops-from" className={selectClass} type="date" name="from" defaultValue={sp.from ?? ''} />
-          </Field>
-          <Field label="To" htmlFor="ops-to">
-            <input id="ops-to" className={selectClass} type="date" name="to" defaultValue={sp.to ?? ''} />
-          </Field>
-          <Field label="Telecaller" htmlFor="ops-telecaller">
-            <select id="ops-telecaller" className={selectClass} name="telecallerId" defaultValue={sp.telecallerId ?? ''}>
-              <option value="">All</option>
-              {telecallers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Advisor" htmlFor="ops-advisor">
-            <select id="ops-advisor" className={selectClass} name="advisorId" defaultValue={sp.advisorId ?? ''}>
-              <option value="">All</option>
-              {advisors.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Bank" htmlFor="ops-bank" className="col-span-2 sm:col-span-1">
-            <select id="ops-bank" className={selectClass} name="bankId" defaultValue={sp.bankId ?? ''}>
-              <option value="">All</option>
-              {banks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.displayName}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <div className="col-span-2 flex gap-2 sm:col-span-1">
-            <Button type="submit" className="h-10">
-              <Filter />
-              Apply
-            </Button>
-            <Button asChild variant="outline" className="h-10">
-              <Link href={basePath}>Reset</Link>
-            </Button>
-          </div>
+    <form className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={basePath}>
+      {Object.entries(hidden ?? {}).map(([k, v]) => (
+        <input key={k} type="hidden" name={k} value={v} />
+      ))}
+      <div className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
+        <Field label="From" htmlFor="ops-from">
+          <input id="ops-from" className={selectClass} type="date" name="from" defaultValue={sp.from ?? ''} />
+        </Field>
+        <Field label="To" htmlFor="ops-to">
+          <input id="ops-to" className={selectClass} type="date" name="to" defaultValue={sp.to ?? ''} />
+        </Field>
+        <Field label="Telecaller" htmlFor="ops-telecaller">
+          <select id="ops-telecaller" className={selectClass} name="telecallerId" defaultValue={sp.telecallerId ?? ''}>
+            <option value="">All</option>
+            {telecallers.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.fullName}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Advisor" htmlFor="ops-advisor">
+          <select id="ops-advisor" className={selectClass} name="advisorId" defaultValue={sp.advisorId ?? ''}>
+            <option value="">All</option>
+            {advisors.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.fullName}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Bank" htmlFor="ops-bank" className="col-span-2 sm:col-span-1">
+          <select id="ops-bank" className={selectClass} name="bankId" defaultValue={sp.bankId ?? ''}>
+            <option value="">All</option>
+            {banks.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.displayName}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <div className="col-span-2 flex gap-2 sm:col-span-1">
+          <Button type="submit" className="h-10">
+            <Filter />
+            Apply
+          </Button>
+          <Button asChild variant="outline" className="h-10">
+            <Link href={basePath}>Reset</Link>
+          </Button>
         </div>
-        <details className="group mt-3 border-t border-slate-100 pt-3" open={more}>
-          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md text-[12.5px] font-medium text-slate-600 hover:text-slate-900 [&::-webkit-details-marker]:hidden">
-            <SlidersHorizontal className="size-3.5" aria-hidden="true" />
-            More filters
-            {moreCount ? <span className="rounded-full bg-teal-50 px-1.5 text-[10.5px] font-semibold text-teal-700 tabular-nums">{moreCount}</span> : null}
-            <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
-          </summary>
-          <div className="mt-3 grid grid-cols-2 items-end gap-3 lg:grid-cols-4">
-            {managers.length ? (
-              <Field label="Manager" htmlFor="ops-manager">
-                <select id="ops-manager" className={selectClass} name="managerId" defaultValue={sp.managerId ?? ''}>
-                  <option value="">All</option>
-                  {managers.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.fullName}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            ) : null}
-            <Field label="Pincode" htmlFor="ops-pincode">
-              <input id="ops-pincode" className={selectClass} name="pincode" inputMode="numeric" maxLength={6} pattern="\d{6}" defaultValue={sp.pincode ?? ''} placeholder="6 digits" />
-            </Field>
-            <Field label="State" htmlFor="ops-state">
-              <input id="ops-state" className={selectClass} name="state" defaultValue={sp.state ?? ''} placeholder="e.g. Rajasthan" />
-            </Field>
-            <Field label="MIS recency" htmlFor="ops-recency" className="col-span-2 sm:col-span-1">
-              <select id="ops-recency" className={selectClass} name="misRecency" defaultValue={sp.misRecency ?? ''}>
-                <option value="">Any</option>
-                <option value="within7">Matched in last 7 days</option>
-                <option value="within30">Matched in last 30 days</option>
-                <option value="older30">Last match older than 30 days</option>
-                <option value="never">Never matched</option>
+      </div>
+      <details className="group mt-3 border-t border-slate-100 pt-3" open={more}>
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md text-[12.5px] font-medium text-slate-600 hover:text-slate-900 [&::-webkit-details-marker]:hidden">
+          <SlidersHorizontal className="size-3.5" aria-hidden="true" />
+          More filters
+          {moreCount ? <span className="rounded-full bg-teal-50 px-1.5 text-[10.5px] font-semibold text-teal-700 tabular-nums">{moreCount}</span> : null}
+          <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="mt-3 grid grid-cols-2 items-end gap-3 lg:grid-cols-4">
+          {managers.length ? (
+            <Field label="Manager" htmlFor="ops-manager">
+              <select id="ops-manager" className={selectClass} name="managerId" defaultValue={sp.managerId ?? ''}>
+                <option value="">All</option>
+                {managers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.fullName}
+                  </option>
+                ))}
               </select>
             </Field>
-          </div>
-        </details>
-      </form>
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="MIS freshness per bank">
-        <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-          <Database className="size-3.5" aria-hidden="true" />
-          MIS freshness
-        </span>
-        {d.meta.misFreshness.map((f) => (
-          <span key={f.bank.code} className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-xl border border-slate-200/80 bg-white py-1 pr-2 pl-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-            <BankMark code={f.bank.code} size="sm" />
-            <span className="truncate text-[12.5px] font-medium text-slate-800">{f.bank.displayName}</span>
-            <Badge variant={f.lastAppliedAt ? 'info' : 'unknown'}>{f.lastAppliedAt ? `MIS applied ${formatDateTime(f.lastAppliedAt)}` : 'no MIS applied'}</Badge>
-          </span>
-        ))}
-      </div>
-      {d.alerts?.length ? (
-        <Callout tone="warning" icon={TriangleAlert} title="Needs attention" role="alert">
-          <ul className="mt-1 grid gap-1">
-            {d.alerts.map((al) => (
-              <li key={al.kind}>
-                <Link href={al.href} className="inline-flex items-center gap-1.5 font-medium underline-offset-2 hover:underline">
-                  <ArrowRight className="size-3.5" aria-hidden="true" />
-                  {al.message}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Callout>
-      ) : null}
-      {extra}
+          ) : null}
+          <Field label="Pincode" htmlFor="ops-pincode">
+            <input id="ops-pincode" className={selectClass} name="pincode" inputMode="numeric" maxLength={6} pattern="\d{6}" defaultValue={sp.pincode ?? ''} placeholder="6 digits" />
+          </Field>
+          <Field label="State" htmlFor="ops-state">
+            <input id="ops-state" className={selectClass} name="state" defaultValue={sp.state ?? ''} placeholder="e.g. Rajasthan" />
+          </Field>
+          <Field label="MIS recency" htmlFor="ops-recency" className="col-span-2 sm:col-span-1">
+            <select id="ops-recency" className={selectClass} name="misRecency" defaultValue={sp.misRecency ?? ''}>
+              <option value="">Any</option>
+              <option value="within7">Matched in last 7 days</option>
+              <option value="within30">Matched in last 30 days</option>
+              <option value="older30">Last match older than 30 days</option>
+              <option value="never">Never matched</option>
+            </select>
+          </Field>
+        </div>
+      </details>
+    </form>
+  );
+}
+
+/** Calling and Advisor / bank / payout sections of the operations dashboard. */
+export function OpsSections({ d }: { d: OpsDashboard }) {
+  const c = d.calling;
+  const a = d.advisors;
+  const sum = (o: Record<string, Metric>) => Object.values(o).reduce((n, m) => n + m.value, 0);
+  return (
+    <>
       <section className="grid gap-4" aria-labelledby="calling-h">
         <SectionHeading id="calling-h" icon={PhoneCall} tone="sky" title="Calling operations" description="Records, provider-confirmed calls, callbacks and shares. Each figure shows its own source and date basis." />
         <TileGroup icon={Users} tone="violet" title="Customer records">
@@ -408,7 +352,75 @@ export async function OperationsDashboard({
           </div>
         </TileGroup>
       </section>
+    </>
+  );
+}
+
+/**
+ * F-702 (and F-703 executive) operations dashboard. Calls, shares, leads, bank values and payouts are separate
+ * metrics, each labelled with its source and date basis; bank values are the latest accepted MIS, never live status.
+ */
+export async function OperationsDashboard({
+  basePath,
+  sp,
+  title,
+  endpoint,
+}: {
+  basePath: string;
+  sp: Record<string, string | undefined>;
+  title: string;
+  endpoint: string;
+}) {
+  const d = (await apiFetch<OpsDashboard>(`${endpoint}?${opsQuery(sp)}`)).data;
+  return (
+    <div className="grid gap-6">
+      <PageHeader
+        icon={LayoutDashboard}
+        title={title}
+        description={d.meta.note}
+        meta={
+          <>
+            <Badge variant="secondary">{d.scope}</Badge>
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarRange className="size-3.5" aria-hidden="true" />
+              {d.meta.from || d.meta.to ? `${d.meta.from ?? '…'} → ${d.meta.to ?? '…'}` : 'all time'}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="size-3.5" aria-hidden="true" />
+              as of {formatDateTime(d.meta.asOf)}
+            </span>
+          </>
+        }
+      />
+      <OpsFilters basePath={basePath} sp={sp} />
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="MIS freshness per bank">
+        <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+          <Database className="size-3.5" aria-hidden="true" />
+          MIS freshness
+        </span>
+        {d.meta.misFreshness.map((f) => (
+          <span key={f.bank.code} className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-xl border border-slate-200/80 bg-white py-1 pr-2 pl-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+            <BankMark code={f.bank.code} size="sm" />
+            <span className="truncate text-[12.5px] font-medium text-slate-800">{f.bank.displayName}</span>
+            <Badge variant={f.lastAppliedAt ? 'info' : 'unknown'}>{f.lastAppliedAt ? `MIS applied ${formatDateTime(f.lastAppliedAt)}` : 'no MIS applied'}</Badge>
+          </span>
+        ))}
+      </div>
+      {d.alerts?.length ? (
+        <Callout tone="warning" icon={TriangleAlert} title="Needs attention" role="alert">
+          <ul className="mt-1 grid gap-1">
+            {d.alerts.map((al) => (
+              <li key={al.kind}>
+                <Link href={al.href} className="inline-flex items-center gap-1.5 font-medium underline-offset-2 hover:underline">
+                  <ArrowRight className="size-3.5" aria-hidden="true" />
+                  {al.message}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Callout>
+      ) : null}
+      <OpsSections d={d} />
     </div>
   );
-
 }
