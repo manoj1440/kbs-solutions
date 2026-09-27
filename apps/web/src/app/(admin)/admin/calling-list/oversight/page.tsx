@@ -1,8 +1,9 @@
 import { formatDateTime, OVERSIGHT_ATTENTION, OVERSIGHT_ATTENTION_LABELS, type OversightAttention } from '@kbs/shared';
-import { Activity, AlarmClock, CircleCheck, Filter, type LucideIcon, MessageCircle, MessageSquareX, Mic, MicOff, PhoneCall, PhoneIncoming, PhoneMissed, PhoneOff, TriangleAlert, Users } from 'lucide-react';
+import { Activity, AlarmClock, CircleCheck, Filter, type LucideIcon, MessageCircle, MessageSquareX, Mic, MicOff, PhoneCall, PhoneIncoming, PhoneMissed, PhoneOff, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 
 import { PlayRecordingButton } from '@/components/play-recording-button';
+import { CallerPerformanceNav } from '@/components/caller-performance-nav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, EmptyState, humanize, Meter, PageHeader, PillNav, SectionCard, selectClass, StatCard, StatGrid } from '@/components/ui/kit';
@@ -120,17 +121,9 @@ export default async function OversightPage({ searchParams }: { searchParams: Pr
       <PageHeader
         icon={PhoneCall}
         tone="sky"
-        eyebrow="Calling"
+        eyebrow="Calling · Caller performance"
         title="Calls & delivery oversight"
         description={`Every call attempt, recording and WhatsApp share across the organisation for ${summary.range.fromDay} → ${summary.range.toDay} (IST; calls by ${summary.dateBasis.calls}, shares by ${summary.dateBasis.shares}). Only provider events can mark a call connected, a recording available or a message delivered.`}
-        actions={
-          <Button variant="outline" asChild>
-            <Link href="/admin/calling-list/distribution">
-              <Users />
-              Calling allocation
-            </Link>
-          </Button>
-        }
       >
         <StatGrid>
           <StatCard emphasis label="Call attempts (provider-confirmed)" value={calls.providerConfirmed} hint={`of ${calls.initiated} started in KBS · ${calls.failedBeforeProvider} failed before the provider`} icon={PhoneCall} />
@@ -145,6 +138,7 @@ export default async function OversightPage({ searchParams }: { searchParams: Pr
           />
         </StatGrid>
       </PageHeader>
+      <CallerPerformanceNav active="calls" />
 
       <form className="grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)] sm:grid-cols-2 sm:p-5 lg:grid-cols-5" action="/admin/calling-list/oversight">
         {tab === 'shares' ? <input type="hidden" name="tab" value="shares" /> : null}
@@ -321,7 +315,7 @@ export default async function OversightPage({ searchParams }: { searchParams: Pr
                       <div className="flex min-w-0 items-center gap-2.5">
                         <Avatar name={c.telecaller.fullName} size="sm" />
                         <div className="min-w-0">
-                          <Link className="font-medium" href={`/admin/calling-list/distribution/telecaller/${c.telecaller.id}`}>
+                          <Link className="font-medium" href={`/admin/calling-list/performance/telecaller/${c.telecaller.id}`}>
                             {c.telecaller.fullName}
                           </Link>
                           <div className="text-[11px] text-slate-500">{c.telecaller.employeeCode ?? ''}</div>

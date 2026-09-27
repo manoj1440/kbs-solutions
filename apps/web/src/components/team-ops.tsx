@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 
-interface OverviewRow {
+export interface OverviewRow {
   id: string;
   fullName: string;
   employeeCode: string | null;
@@ -45,7 +45,7 @@ interface OverviewRow {
   interests: number;
 }
 
-function rangeParams(sp: { from?: string; to?: string }) {
+export function rangeParams(sp: { from?: string; to?: string }) {
   const q = new URLSearchParams();
   if (sp.from) q.set('from', new Date(sp.from).toISOString());
   if (sp.to) q.set('to', new Date(sp.to).toISOString());
@@ -91,76 +91,95 @@ export async function TeamOverview({
       {rows.length === 0 ? (
         <EmptyState icon={Users} title="No Telecallers." />
       ) : (
-        <Table responsive>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Telecaller / status</TableHead>
-              <TableHead>Queue / follow-ups</TableHead>
-              <TableHead>Call activity</TableHead>
-              <TableHead>Outcomes</TableHead>
-              <TableHead>Shares</TableHead>
-              <TableHead className="sm:text-right">Interests</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((t) => (
-              <TableRow key={t.id}>
-                <TableCell data-label="Telecaller / status">
-                  <div className="flex min-w-40 items-start gap-2.5">
-                    <Avatar name={t.fullName} size="sm" />
-                    <div className="min-w-0">
-                      <a className="font-medium" href={`${base}/telecaller/${t.id}?${rangeParams(sp)}`}>
-                        {t.fullName}
-                      </a>
-                      {t.employeeCode ? <div className="font-mono text-[11px] text-slate-500">{t.employeeCode}</div> : null}
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(t.status)}</Badge>
-                        <Badge variant={t.training === 'PASSED' ? 'success' : 'warning'}>
-                          {t.training === 'PASSED' ? 'trained' : t.training.toLowerCase().replace(/_/g, ' ')}
-                        </Badge>
-                        {t.wfhActive ? <Badge variant="info">WFH</Badge> : null}
-                      </div>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell data-label="Queue / follow-ups">
-                  <div>
-                    <span className="font-semibold text-slate-900 tabular-nums">{t.queueSize}</span> in queue
-                  </div>
-                  <div className="mt-1">
-                    {t.followUpsDue ? (
-                      <Badge variant="destructive">{t.followUpsDue} follow-ups due</Badge>
-                    ) : (
-                      <span className="text-xs text-slate-500">No follow-ups due</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell data-label="Call activity">
-                  <div className="tabular-nums">
-                    <span className="font-semibold text-slate-900">{t.attempts}</span> attempts ·{' '}
-                    <span className="font-semibold text-slate-900">{t.connected}</span> connected
-                  </div>
-                  <div className="mt-1 text-xs text-slate-500 tabular-nums">{Math.round(t.talkTimeSec / 60)} min talk time</div>
-                </TableCell>
-                <TableCell data-label="Outcomes">
-                  <Chips items={Object.entries(t.outcomes).map(([k, n]) => [OUTCOME_LABELS[k as keyof typeof OUTCOME_LABELS] ?? k, n])} />
-                </TableCell>
-                <TableCell data-label="Shares">
-                  <Chips items={Object.entries(t.shares).map(([k, n]) => [k.toLowerCase().replace(/_/g, ' '), n])} />
-                </TableCell>
-                <TableCell data-label="Interests" className="font-semibold tabular-nums sm:text-right">
-                  {t.interests}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <TeamActivityTable rows={rows} base={base} sp={sp} />
       )}
     </SectionCard>
   );
 }
 
-function RangeForm({ base, sp }: { base: string; sp: { from?: string; to?: string } }) {
+/** F-313 / F-808 per-caller evidence table (reused by the Admin caller-performance page with an in-page scroll). */
+export function TeamActivityTable({
+  rows,
+  base,
+  sp,
+  containerClassName,
+  headerClassName,
+}: {
+  rows: OverviewRow[];
+  base: string;
+  sp: { from?: string; to?: string };
+  containerClassName?: string;
+  headerClassName?: string;
+}) {
+  return (
+    <Table responsive containerClassName={containerClassName}>
+      <TableHeader className={headerClassName}>
+        <TableRow>
+          <TableHead>Telecaller / status</TableHead>
+          <TableHead>Queue / follow-ups</TableHead>
+          <TableHead>Call activity</TableHead>
+          <TableHead>Outcomes</TableHead>
+          <TableHead>Shares</TableHead>
+          <TableHead className="sm:text-right">Interests</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((t) => (
+          <TableRow key={t.id}>
+            <TableCell data-label="Telecaller / status">
+              <div className="flex min-w-40 items-start gap-2.5">
+                <Avatar name={t.fullName} size="sm" />
+                <div className="min-w-0">
+                  <a className="font-medium" href={`${base}/telecaller/${t.id}?${rangeParams(sp)}`}>
+                    {t.fullName}
+                  </a>
+                  {t.employeeCode ? <div className="font-mono text-[11px] text-slate-500">{t.employeeCode}</div> : null}
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(t.status)}</Badge>
+                    <Badge variant={t.training === 'PASSED' ? 'success' : 'warning'}>
+                      {t.training === 'PASSED' ? 'trained' : t.training.toLowerCase().replace(/_/g, ' ')}
+                    </Badge>
+                    {t.wfhActive ? <Badge variant="info">WFH</Badge> : null}
+                  </div>
+                </div>
+              </div>
+            </TableCell>
+            <TableCell data-label="Queue / follow-ups">
+              <div>
+                <span className="font-semibold text-slate-900 tabular-nums">{t.queueSize}</span> in queue
+              </div>
+              <div className="mt-1">
+                {t.followUpsDue ? (
+                  <Badge variant="destructive">{t.followUpsDue} follow-ups due</Badge>
+                ) : (
+                  <span className="text-xs text-slate-500">No follow-ups due</span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell data-label="Call activity">
+              <div className="tabular-nums">
+                <span className="font-semibold text-slate-900">{t.attempts}</span> attempts ·{' '}
+                <span className="font-semibold text-slate-900">{t.connected}</span> connected
+              </div>
+              <div className="mt-1 text-xs text-slate-500 tabular-nums">{Math.round(t.talkTimeSec / 60)} min talk time</div>
+            </TableCell>
+            <TableCell data-label="Outcomes">
+              <Chips items={Object.entries(t.outcomes).map(([k, n]) => [OUTCOME_LABELS[k as keyof typeof OUTCOME_LABELS] ?? k, n])} />
+            </TableCell>
+            <TableCell data-label="Shares">
+              <Chips items={Object.entries(t.shares).map(([k, n]) => [k.toLowerCase().replace(/_/g, ' '), n])} />
+            </TableCell>
+            <TableCell data-label="Interests" className="font-semibold tabular-nums sm:text-right">
+              {t.interests}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+export function RangeForm({ base, sp }: { base: string; sp: { from?: string; to?: string } }) {
   const date = 'h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900';
   return (
     <form action={base} method="get" className="flex flex-wrap items-end gap-2 text-xs">

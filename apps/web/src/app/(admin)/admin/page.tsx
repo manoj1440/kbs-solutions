@@ -218,7 +218,7 @@ export default async function AdminOverview({
   const queues: { label: string; detail: string; count: number | null | undefined; href: string; icon: LucideIcon; tone: Tone }[] = [
     { label: 'Payout approvals', detail: 'Awaiting your decision', count: total(approvals), href: '/admin/payouts/requests?awaitingMe=true', icon: Wallet, tone: 'amber' },
     { label: 'Advisor reviews', detail: 'Onboarding awaiting review', count: onboarding?.data.length, href: '/admin/onboarding', icon: Users, tone: 'violet' },
-    { label: 'Unassigned records', detail: 'Calling records needing allocation', count: distribution?.data.unassigned, href: '/admin/calling-list/distribution', icon: Phone, tone: 'sky' },
+    { label: 'Unassigned records', detail: 'Calling records needing allocation', count: distribution?.data.unassigned, href: '/admin/calling-list?status=UNASSIGNED#records', icon: Phone, tone: 'sky' },
     { label: 'Approved, awaiting payment', detail: 'Both approvals done · not yet paid', count: total(approved), href: '/admin/payouts/requests?state=APPROVED', icon: BadgeCheck, tone: 'teal' },
   ];
   const alerts = d?.alerts ?? [];
