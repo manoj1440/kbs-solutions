@@ -13,9 +13,7 @@ const PAGES = [
   '/admin/calling-list',
   '/admin/calling-list?status=UNTOUCHED&pincode=3',
   '/admin/calling-list/performance',
-  '/admin/calling-list/oversight',
-  '/admin/calling-list/oversight?tab=shares',
-  '/admin/calling-list/oversight?attention=RECORDING_FAILED',
+
   '/admin/catalogue',
   '/admin/mis',
   '/admin/mis/integrity',
