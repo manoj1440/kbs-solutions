@@ -48,7 +48,7 @@ const ids = {
 const pages = [
   '/admin', '/admin/leads', ids.lead && `/admin/leads/${ids.lead}`, '/admin/onboarding', '/admin/users',
   ids.user && `/admin/users/${ids.user}`, '/admin/calling-list', ids.list && `/admin/calling-list/${ids.list}`,
-  '/admin/calling-list/distribution', '/admin/calling-list/oversight', '/admin/catalogue',
+  '/admin/calling-list/performance', '/admin/calling-list/oversight', '/admin/catalogue',
   ids.card && `/admin/catalogue/${ids.card}`, '/admin/pincode-profiles', ids.pin && `/admin/pincode-profiles/${ids.pin}`,
   '/admin/training', '/admin/training/1', '/admin/training/team', '/admin/dashboards', '/admin/dashboards/telecallers',
   '/admin/dashboards/managers', '/admin/dashboards/advisors', '/admin/dashboards/bank-card-mix', '/admin/audit',

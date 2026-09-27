@@ -6,7 +6,7 @@ globalThis.kbsAdminLayoutSmoke = async (page) => {
   const results = [];
   for (const width of [1440, 1280, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const path of ['/admin/leads', '/admin/calling-list/distribution']) {
+    for (const path of ['/admin/leads', '/admin/calling-list']) {
       await page.goto(`${origin}${path}`);
       await page.locator('h1').waitFor();
       check(
@@ -78,7 +78,7 @@ globalThis.kbsAdminLayoutSmoke = async (page) => {
   check((await page.locator('table thead th').count()) === 6, 'Overview not restored.');
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 800 });
-    await page.goto(`${origin}/admin/calling-list/distribution`);
+    await page.goto(`${origin}/admin/calling-list`);
     const trigger = page.getByRole('button', { name: 'Reassign', exact: true }).first();
     const table = page.locator('[data-slot="table-container"]').last();
     const before = await table.evaluate((node) => node.scrollWidth);

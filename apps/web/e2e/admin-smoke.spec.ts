@@ -11,6 +11,8 @@ const PAGES = [
   '/admin/onboarding',
   '/admin/users',
   '/admin/calling-list',
+  '/admin/calling-list?status=UNTOUCHED&pincode=3',
+  '/admin/calling-list/performance',
   '/admin/calling-list/oversight',
   '/admin/calling-list/oversight?tab=shares',
   '/admin/calling-list/oversight?attention=RECORDING_FAILED',
@@ -75,6 +77,20 @@ test.describe('Admin workspace smoke', () => {
     expect(hrefs).not.toContain('/admin/account');
     for (const group of ['Overview', 'Sales', 'Calling', 'People', 'Products', 'Bank MIS', 'Payouts', 'Reports', 'Settings'])
       await expect(nav.getByText(group, { exact: true })).toBeVisible();
+  });
+
+  test('F-808: calling records filters by status and old allocation URL lands on caller performance', async () => {
+    await page.goto('/admin/calling-list');
+    const total = Number((await page.getByLabel('Current status').locator('option').first().textContent())?.match(/\((\d+)\)/)?.[1]);
+    await page.getByLabel('Current status').selectOption('UNTOUCHED');
+    await page.getByRole('button', { name: 'Apply' }).click();
+    await expect(page).toHaveURL(/status=UNTOUCHED/);
+    const statuses = await page.locator('td[data-label="Current status"]').allTextContents();
+    for (const badge of statuses) expect(badge.trim()).toBe('Not yet called');
+    expect(statuses.length).toBeLessThanOrEqual(Math.min(total, 100));
+    await page.goto('/admin/calling-list/distribution');
+    await expect(page).toHaveURL(/\/admin\/calling-list\/performance$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Caller performance' })).toBeVisible();
   });
 
   test('notification drawer opens and closes', async () => {
