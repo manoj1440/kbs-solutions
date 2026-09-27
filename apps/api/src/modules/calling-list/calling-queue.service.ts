@@ -41,7 +41,8 @@ export class CallingQueueService {
   }
 
   /** F-808: Prisma filter for one derived status — the same precedence as `recordStatusOf`. */
-  private statusWhere(status: RecordStatus) {
+  private statusWhere(status: RecordStatus | 'ALL') {
+    if (status === 'ALL') return {};
     if (status === 'EXCLUDED' || status === 'NEEDS_REVIEW') return { reviewStatus: status };
     const accepted = { reviewStatus: 'ACCEPTED' as const };
     if (status === 'DO_NOT_CONTACT') return { ...accepted, suppressed: true };
@@ -139,6 +140,7 @@ type RecordWithRefs = {
   id: string;
   reviewStatus: string;
   assignedTelecallerUserId: string | null;
+  batchId: string;
   fullName: string;
   mobile: string;
   pincode: string;
@@ -175,6 +177,7 @@ function toRow(r: RecordWithRefs): CallingQueueRow {
     hiddenReason: r.hiddenReason,
     canCall: !r.suppressed && !r.hiddenAt && r.mobile.startsWith('+'),
     batchRef: r.batch.publicRef,
+    batchId: r.batchId,
     recordStatus: recordStatusOf(r),
   };
 }

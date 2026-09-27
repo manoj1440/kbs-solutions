@@ -68,8 +68,8 @@ export const QueueTab = z.enum(['active', 'followups', 'hidden']);
 export type QueueTab = z.infer<typeof QueueTab>;
 export const QueueQuery = z.object({
   tab: QueueTab.default('active'),
-  /** F-808: explicit record status; overrides `tab` (Admin/Manager records list). */
-  status: z.enum(RECORD_STATUSES).optional(),
+  /** F-808: explicit record status or `ALL`; overrides `tab` (Admin/Manager records list). */
+  status: z.enum([...RECORD_STATUSES, 'ALL']).optional(),
   /** F-808: pincode prefix. */
   pincode: z.string().regex(/^\d{1,6}$/, 'Digits only').optional(),
   search: z.string().trim().max(100).optional(),
@@ -97,6 +97,7 @@ export interface CallingQueueRow {
   hiddenReason: string | null;
   canCall: boolean;
   batchRef: string;
+  batchId: string;
   /** F-808 derived current status. */
   recordStatus: RecordStatus;
 }

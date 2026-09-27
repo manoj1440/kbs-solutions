@@ -175,6 +175,8 @@ describe('F-307 calling queue / F-305 reassignment (RBAC-01, CUST-04)', () => {
       expect([status, list.body.meta.total]).toEqual([status, n]);
       expect(list.body.data.every((r: { recordStatus: string }) => r.recordStatus === status)).toBe(true);
     }
+    const everything = await api().get('/api/v1/calling/records?status=ALL&pageSize=100').set(auth(adminToken)).expect(200);
+    expect(everything.body.meta.total).toBe(all);
     const byPin = await api().get('/api/v1/calling/records?status=UNASSIGNED&pincode=110').set(auth(adminToken)).expect(200);
     expect(byPin.body.data.map((r: { fullName: string }) => r.fullName)).toEqual(['Waiting Row']);
     expect(JSON.stringify(byPin.body)).not.toContain('+919555600023');

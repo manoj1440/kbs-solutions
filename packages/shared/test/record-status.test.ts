@@ -22,5 +22,6 @@ describe('F-808 calling record status', () => {
     expect(QueueQuery.parse({ status: 'UNASSIGNED', pincode: '302', pageSize: '100' })).toMatchObject({ status: 'UNASSIGNED', pincode: '302', pageSize: 100 });
     expect(QueueQuery.safeParse({ pincode: 'abc' }).success).toBe(false);
     expect(QueueQuery.safeParse({ status: 'CONVERTED' }).success).toBe(false);
+    expect(QueueQuery.parse({ status: 'ALL' }).status).toBe('ALL');
   });
 });
