@@ -1,530 +1,178 @@
-import { formatDateTime, formatInr } from '@kbs/shared';
-import {
-  ArrowDownToLine,
-  ArrowRight,
-  ArrowUpRight,
-  BadgeCheck,
-  CalendarRange,
-  ChevronDown,
-  CircleAlert,
-  Clock3,
-  Filter,
-  Landmark,
-  ListChecks,
-  Phone,
-  PhoneCall,
-  ShieldCheck,
-  TriangleAlert,
-  Users,
-  Wallet,
-  type LucideIcon,
-} from 'lucide-react';
+import { type CallingRecordsSummary, formatDateTime, formatInr, type LeadStatusRow, RECORD_STATUS_LABELS } from '@kbs/shared';
+import { Inbox, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { OpsFilters, OpsSections, opsQuery, type OpsDashboard } from '@/components/operations-dashboard';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  BankMark,
-  Callout,
-  EmptyState,
-  IconTile,
-  Meter,
-  MiniStat,
-  PillNav,
-  TONE,
-  type Tone,
-} from '@/components/ui/kit';
-import {
-  countSuccess,
-  payoutSummarySchema,
-  percentChange,
-  PERIODS,
-  resolvePeriod,
-  type Range,
-} from '@/lib/admin-overview';
+import { ActivationBadge, DecisionBadge, StageBadge } from '@/components/status';
+import { BankMark, Callout, EmptyState, MiniStat, type Tone } from '@/components/ui/kit';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ApiError, apiFetch } from '@/lib/api';
-import { cn } from '@/lib/utils';
 
 export const metadata = { title: 'Business overview · KBS Solutions' };
 
-type Tot = { count: number; amountInr: number };
-interface MixRow {
-  bank: { id: string; code: string; displayName: string };
-  leads: number;
-  misMatched: number;
-  payoutEligible: Tot;
-  payoutPaid: Tot;
+interface Tot {
+  count: number;
+  amountInr: number;
 }
-interface Distribution {
-  telecallers: { needsReassignment: boolean }[];
-  unassigned: number | null;
-}
-type Advisors = OpsDashboard['advisors'];
-
-const number = (value: number | null | undefined) =>
-  value == null ? 'Unavailable' : value.toLocaleString('en-IN');
-const total = (response: { meta: Record<string, unknown> } | null) =>
-  typeof response?.meta.total === 'number' ? response.meta.total : null;
-const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : null);
-const day = (d: string) =>
-  new Date(`${d}T00:00:00+05:30`).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'Asia/Kolkata',
-  });
-const rangeLabel = (r: Partial<Range>) =>
-  r.from || r.to ? `${r.from ? day(r.from) : '…'} – ${r.to ? day(r.to) : 'today'}` : 'All time';
-
-/** Business figures from one executive response (same cohort: leads created in the window). */
-function figures(a: Advisors) {
-  return {
-    leads: a.leads.created.value,
-    matched: a.leads.misMatched.value,
-    approved: countSuccess('decision', a.decision.buckets),
-    activated: countSuccess('activation', a.activation.buckets),
-    earned: a.payouts.eligible.amountInr ?? 0,
-    earnedEvents: a.payouts.eligible.value,
+interface Home {
+  people: Record<'TELECALLER' | 'MANAGER' | 'ADVISOR' | 'ACCOUNTS', { total: number; active: number }>;
+  calling: CallingRecordsSummary;
+  mis: {
+    total: number;
+    approved: number;
+    declined: number;
+    inProcess: number;
+    decisionBlank: number;
+    cardsActive: number;
+    cardsInactive: number;
+    activationBlank: number;
   };
+  leads: { total: number; matched: number; awaitingMis: number };
+  payouts: { eligible: Tot; approvedUnpaid: Tot; paid: Tot; confirmedTransfersInr: number };
+  catalogue: { banks: { total: number; active: number }; cards: { total: number; published: number } };
+  recentLeads: LeadStatusRow[];
+  asOf: string;
+  note: string;
 }
 
-/** Change vs the comparison window as a compact text run: arrow + % (never colour alone, REQ-20 §20.2). */
-function deltaText(current: number, previous: number | null, against: string, money?: boolean): string | null {
-  if (previous == null) return null;
-  const change = percentChange(current, previous) ?? (current ? null : 0);
-  const text = change == null ? 'New' : change === 0 ? 'No change' : `${change > 0 ? '▲' : '▼'} ${Math.abs(change)}%`;
-  return `${text} vs ${money ? formatInr(previous) : previous.toLocaleString('en-IN')} · ${against}`;
-}
-
-function Panel({
-  title,
-  caption,
-  action,
-  children,
-}: {
-  title: string;
-  caption?: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section aria-label={title} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-2.5">
-        <h2 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h2>
-        {caption ? <span className="text-xs text-slate-500">{caption}</span> : null}
-        {action ? <span className="ml-auto">{action}</span> : null}
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-function SectionLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-teal-800 hover:underline"
-    >
-      {children}
-      <ArrowRight className="size-3.5" />
-    </Link>
-  );
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return <p className="shrink-0 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">{children}</p>;
 }
 
 /**
- * F-807 → F-811 Business overview: the Admin home and the executive dashboard in one (REQ-16 §16.2). Business first —
- * period KPIs with change, the lead → bank funnel, bank performance and open queues; operational detail below.
- * Bank figures are the latest accepted MIS values as reported (INV-01..03); every figure names its source.
+ * F-811 Business overview: the Admin home. Cumulative, business-first figures — team, calling records, bank MIS,
+ * payouts and catalogue — plus the newest leads. Bank figures are the latest accepted MIS values as reported
+ * (INV-01..03); every tile names its source.
  */
-export default async function AdminOverview({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
-  const sp = await searchParams;
-  const period = resolvePeriod(sp);
-  const unavailable: string[] = [];
-  async function load<T>(path: string, label: string) {
-    try {
-      return await apiFetch<T>(path);
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) redirect('/login?next=%2Fadmin');
-      unavailable.push(label);
-      return null;
-    }
+export default async function AdminHome() {
+  let home: Home;
+  try {
+    home = (await apiFetch<Home>('/dashboards/admin/home')).data;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) redirect('/login?next=%2Fadmin');
+    return (
+      <div className="flex flex-col gap-3">
+        <h1 className="sr-only">Business overview</h1>
+        <Callout tone="warning" icon={TriangleAlert} role="alert" title="Dashboard data could not be loaded.">
+          Refresh to retry. Unavailable figures are not zero.
+        </Callout>
+      </div>
+    );
   }
-  const scoped = { ...sp, from: undefined, to: undefined };
-  const q = opsQuery({ ...scoped, ...period.current });
-  const [cur, prev, mix, ledger, approvals, approved, onboarding, distribution] = await Promise.all([
-    load<OpsDashboard>(`/dashboards/admin/executive?${q}`, 'Business metrics'),
-    period.previous
-      ? load<OpsDashboard>(`/dashboards/admin/executive?${opsQuery({ ...scoped, ...period.previous })}`, 'Comparison period')
-      : null,
-    load<{ rows: MixRow[] }>(`/dashboards/admin/bank-card-mix?${q}`, 'Bank performance'),
-    load<unknown[]>('/payouts/entitlements?pageSize=1', 'Payout ledger'),
-    load<unknown[]>('/payouts/requests?awaitingMe=true&pageSize=1', 'Payout approvals'),
-    load<unknown[]>('/payouts/requests?state=APPROVED&pageSize=1', 'Approved requests'),
-    load<{ userId: string }[]>('/onboarding/review', 'Advisor reviews'),
-    load<Distribution>('/calling/distribution', 'Calling operations'),
-  ]);
-  const d = cur?.data;
-  const now = d ? figures(d.advisors) : null;
-  const was = prev ? figures(prev.data.advisors) : null;
-  const against = period.previous ? rangeLabel(period.previous) : '';
-  const parsed = payoutSummarySchema.safeParse(ledger?.meta);
-  const payouts = parsed.success ? parsed.data : null;
-  if (ledger && !payouts) unavailable.push('Payout totals');
 
-  // ── period chips keep every other filter; explicit dates are dropped so the chip wins ──
-  const keep = opsQuery(scoped);
-  const chipHref = (key: string) => `/admin?${keep ? `${keep}&` : ''}period=${key}`;
-  const filterCount = ['managerId', 'telecallerId', 'advisorId', 'bankId', 'cardId', 'pincode', 'state', 'misRecency'].filter(
-    (k) => sp[k],
-  ).length;
-
-  const funnel = now
-    ? [
-        { label: 'Leads created', value: now.leads, source: 'KBS leads', tone: 'violet' as Tone },
-        { label: 'Matched in bank MIS', value: now.matched, source: 'Bank MIS', tone: 'indigo' as Tone },
-        { label: 'Bank approved', value: now.approved, source: 'Bank MIS · decision', tone: 'teal' as Tone },
-        { label: 'Card activated', value: now.activated, source: 'Bank MIS · activation', tone: 'emerald' as Tone },
-      ]
-    : [];
-
-  const banks = [
-    ...(mix?.data.rows ?? [])
-      .reduce((map, r) => {
-        const b = map.get(r.bank.id) ?? { bank: r.bank, leads: 0, matched: 0, eligible: 0, events: 0, paid: 0 };
-        b.leads += r.leads;
-        b.matched += r.misMatched;
-        b.eligible += r.payoutEligible.amountInr;
-        b.events += r.payoutEligible.count;
-        b.paid += r.payoutPaid.amountInr;
-        return map.set(r.bank.id, b);
-      }, new Map<string, { bank: MixRow['bank']; leads: number; matched: number; eligible: number; events: number; paid: number }>())
-      .values(),
-  ].sort((a, b) => b.leads - a.leads || a.bank.displayName.localeCompare(b.bank.displayName));
-  const freshness = new Map(d?.meta.misFreshness.map((f) => [f.bank.code, f.lastAppliedAt]) ?? []);
-
-  const queues: { label: string; detail: string; count: number | null | undefined; href: string; icon: LucideIcon; tone: Tone }[] = [
-    { label: 'Payout approvals', detail: 'Awaiting your decision', count: total(approvals), href: '/admin/payouts/requests?awaitingMe=true', icon: Wallet, tone: 'amber' },
-    { label: 'Advisor reviews', detail: 'Onboarding awaiting review', count: onboarding?.data.length, href: '/admin/onboarding', icon: Users, tone: 'violet' },
-    { label: 'Unassigned records', detail: 'Calling records needing allocation', count: distribution?.data.unassigned, href: '/admin/calling-list?status=UNASSIGNED#records', icon: Phone, tone: 'sky' },
-    { label: 'Approved, awaiting payment', detail: 'Both approvals done · not yet paid', count: total(approved), href: '/admin/payouts/requests?state=APPROVED', icon: BadgeCheck, tone: 'teal' },
+  const { people, calling, mis, leads, payouts, catalogue, recentLeads } = home;
+  const c = calling.byStatus;
+  const teamTiles: { label: string; role: keyof typeof people; href: string; tone: Tone }[] = [
+    { label: 'Telecallers', role: 'TELECALLER', href: '/admin/users?role=TELECALLER', tone: 'sky' },
+    { label: 'Managers', role: 'MANAGER', href: '/admin/users?role=MANAGER', tone: 'indigo' },
+    { label: 'Advisors', role: 'ADVISOR', href: '/admin/users?role=ADVISOR', tone: 'violet' },
+    { label: 'Accounts', role: 'ACCOUNTS', href: '/admin/users?role=ACCOUNTS', tone: 'slate' },
   ];
-  const alerts = d?.alerts ?? [];
-  const open = queues.filter((x) => x.count).length + alerts.length;
-
-  const payoutRows = [
-    { label: 'Available to claim', key: 'available', state: 'ELIGIBLE_AVAILABLE', tone: 'teal' },
-    { label: 'Reserved in requests', key: 'reserved', state: 'RESERVED', tone: 'indigo' },
-    { label: 'Paid card events', key: 'paid', state: 'PAID', tone: 'emerald' },
-    { label: 'Pending hold', key: 'pendingHold', state: 'PENDING_HOLD', tone: 'amber' },
-    { label: 'Under review', key: 'underReview', state: 'UNDER_REVIEW', tone: 'rose' },
-  ] as const;
-  const amounts = payouts?.amounts;
-  const counts = payouts?.counts;
-  const largestAmount = amounts ? Math.max(...payoutRows.map((r) => amounts[r.key])) : 0;
-
-  const kpi = (delta: string | null, extra: string, source: string) => [delta, extra, source].filter(Boolean).join(' · ');
+  const callingTiles: { label: string; value: number; hint?: string; href?: string; tone: Tone }[] = [
+    { label: 'Customer records', value: calling.total, hint: `${calling.batches.total} uploads · calling list`, href: '/admin/calling-list', tone: 'sky' },
+    { label: 'Called at least once', value: calling.attempted, hint: `${calling.connected} connected · telephony`, tone: 'indigo' },
+    { label: RECORD_STATUS_LABELS.UNTOUCHED, value: c.UNTOUCHED, hint: 'Calling list', tone: 'slate' },
+    { label: RECORD_STATUS_LABELS.UNASSIGNED, value: c.UNASSIGNED, hint: 'Calling list', tone: 'slate' },
+    { label: RECORD_STATUS_LABELS.UNREACHABLE, value: c.UNREACHABLE, hint: 'Calling list', tone: 'amber' },
+    { label: RECORD_STATUS_LABELS.FOLLOW_UP, value: c.FOLLOW_UP, hint: `${calling.followUpsDue} due now`, tone: 'violet' },
+    { label: 'Interested / link shared', value: c.INTERESTED + c.LINK_SHARED, hint: 'Furthest KBS-known step', tone: 'teal' },
+    { label: 'Declined / closed', value: c.DECLINED + c.COMPLETED + c.DO_NOT_CONTACT, hint: 'Not interested, completed, do-not-contact', tone: 'rose' },
+  ];
 
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Business overview</h1>
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <PillNav
-          label="Period"
-          items={PERIODS.map((p) => ({ href: chipHref(p.key), label: p.label }))}
-          active={period.key === 'custom' ? '' : chipHref(period.key)}
-          className="max-w-full min-w-0"
-        />
-        <details className="group/filters relative min-w-0" open={period.key === 'custom' || filterCount > 0}>
-          <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 text-[13px] font-medium text-slate-700 shadow-[0_1px_2px_rgb(15_23_42/4%)] hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-            <Filter className="size-3.5" aria-hidden="true" />
-            Filters
-            {filterCount ? (
-              <span className="rounded-full bg-teal-50 px-1.5 text-[10.5px] font-semibold text-teal-700 tabular-nums">{filterCount}</span>
-            ) : null}
-            <ChevronDown className="size-3.5 transition-transform group-open/filters:rotate-180" aria-hidden="true" />
-          </summary>
-          <div className="absolute z-20 mt-2 w-[min(42rem,calc(100vw-2rem))] rounded-2xl border border-slate-200/80 bg-white p-3 shadow-lg">
-            <OpsFilters basePath="/admin" sp={sp} />
-          </div>
-        </details>
-        <Button variant="outline" size="sm" className="h-9" asChild>
-          <Link href="/admin/leads">
-            <ListChecks />
-            Explore leads
-          </Link>
-        </Button>
-        <Button size="sm" className="h-9" asChild>
-          <Link href="/admin/mis">
-            <ArrowDownToLine />
-            Import bank MIS
-          </Link>
-        </Button>
-        <span className="ml-auto flex items-center gap-2 text-[11px] text-slate-500">
-          <CalendarRange className="size-3.5" aria-hidden="true" />
-          {rangeLabel(period.current)}
-          {period.previous ? ` · vs ${against}` : ''}
-          {d ? <Badge variant="secondary">{d.scope}</Badge> : null}
-          <Clock3 className="ml-1 size-3.5" aria-hidden="true" />
-          {formatDateTime(d?.meta.asOf ?? new Date().toISOString())}
-        </span>
-      </div>
-      {unavailable.length > 0 ? (
-        <Callout tone="warning" icon={TriangleAlert} role="alert" title="Some data could not be loaded." className="shrink-0">
-          {unavailable.join(', ')}. Unavailable figures are not zero. Use the refresh button to retry.
-        </Callout>
-      ) : null}
+
+      <Eyebrow>Team</Eyebrow>
       <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
-        <MiniStat
-          label="Leads created"
-          value={number(now?.leads)}
-          hint={kpi(now && was ? deltaText(now.leads, was.leads, against) : null, '', 'KBS leads · created')}
-          href="/admin/leads"
-          tone="violet"
-        />
-        <MiniStat
-          label="Bank approved"
-          value={number(now?.approved)}
-          hint={kpi(now && was ? deltaText(now.approved, was.approved, against) : null, now ? `${pct(now.approved, now.leads) ?? 0}% of leads` : '', 'Bank MIS · decision')}
-          href="/admin/leads"
-          tone="teal"
-        />
-        <MiniStat
-          label="Cards activated"
-          value={number(now?.activated)}
-          hint={kpi(now && was ? deltaText(now.activated, was.activated, against) : null, now ? `${pct(now.activated, now.leads) ?? 0}% of leads` : '', 'Bank MIS · activation')}
-          href="/admin/leads"
-          tone="emerald"
-        />
-        <MiniStat
-          label="Payout earned"
-          value={now ? formatInr(now.earned) : 'Unavailable'}
-          hint={kpi(now && was ? deltaText(now.earned, was.earned, against, true) : null, now ? `${number(now.earnedEvents)} events` : '', 'Payout ledger')}
-          href="/admin/payouts/entitlements"
-          tone="amber"
-        />
+        {teamTiles.map((t) => (
+          <MiniStat key={t.role} label={t.label} value={people[t.role].total} hint={`${people[t.role].active} active`} href={t.href} tone={t.tone} />
+        ))}
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto">
-        <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <Panel
-            title="Lead to card funnel"
-            caption="Leads created in the period → latest bank MIS result · a match is not an approval"
-          >
-            {funnel.length ? (
-              <ol className="grid gap-3">
-                {funnel.map((step, i) => {
-                  const ofPrev = i ? pct(step.value, funnel[i - 1].value) : null;
-                  return (
-                    <li key={step.label} className="grid gap-1.5">
-                      <div className="flex items-baseline justify-between gap-3 text-[13px]">
-                        <span className="font-medium text-slate-800">
-                          {step.label}
-                          <span className="ml-2 text-[11px] font-normal text-slate-400">{step.source}</span>
-                        </span>
-                        <span className="flex items-baseline gap-2 tabular-nums">
-                          {ofPrev != null ? <span className="text-[11px] text-slate-500">{ofPrev}% of previous</span> : null}
-                          <span className="text-base font-semibold text-slate-900">{number(step.value)}</span>
-                        </span>
-                      </div>
-                      <Meter value={step.value} max={Math.max(1, funnel[0].value)} tone={step.tone} className="h-2.5" label={step.label} />
-                    </li>
-                  );
-                })}
-              </ol>
-            ) : (
-              <EmptyState icon={Landmark} title="Funnel unavailable" description="Business metrics could not be loaded. Refresh to retry." />
-            )}
-            {d ? (
-              <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3">
-                <p className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-                  <PhoneCall className="size-3.5" aria-hidden="true" />
-                  Calling activity · same period
-                </p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {(
-                    [
-                      ['Call attempts', d.calling.calls.attempts.value],
-                      ['Connected', d.calling.calls.connected.value],
-                      ['Customers contacted', d.calling.calls.uniqueCustomersContacted.value],
-                      ['Shares recorded', d.calling.shares.total.value],
-                    ] as const
-                  ).map(([label, value]) => (
-                    <div key={label} className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
-                      <p className="text-base font-semibold tabular-nums">{number(value)}</p>
-                      <p className="text-[11px] text-slate-500">{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </Panel>
+      <Eyebrow>Calling</Eyebrow>
+      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+        {callingTiles.map((t) => (
+          <MiniStat key={t.label} label={t.label} value={t.value} hint={t.hint} href={t.href} tone={t.tone} />
+        ))}
+      </div>
 
-          <section aria-labelledby="attention-title" className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
-              <div className="flex items-center gap-2">
-                <IconTile icon={CircleAlert} tone={open ? 'amber' : 'emerald'} size="sm" />
-                <h2 id="attention-title" className="text-sm font-semibold tracking-tight text-slate-900">
-                  Needs your attention
-                </h2>
-              </div>
-              <Badge variant={open ? 'warning' : 'success'}>{open ? `${open} open` : 'All clear'}</Badge>
-            </div>
-            <ul className="divide-y divide-slate-100">
-              {queues.map(({ label, detail, count, href, icon, tone }) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    prefetch={false}
-                    className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700"
-                  >
-                    <IconTile icon={icon} tone={count ? tone : 'slate'} size="sm" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium text-slate-800">{label}</span>
-                      <span className="text-[11px] text-slate-500">{detail}</span>
-                    </span>
-                    <span className={cn('text-lg font-semibold tabular-nums', count ? TONE[tone].text : 'text-slate-400')}>
-                      {number(count)}
-                    </span>
-                    <ArrowUpRight className="size-3.5 shrink-0 text-slate-400 group-hover:text-teal-700" />
-                  </Link>
-                </li>
-              ))}
-              {alerts.map((al) => (
-                <li key={al.kind}>
-                  <Link
-                    href={al.href}
-                    prefetch={false}
-                    className="group flex items-center gap-3 bg-amber-50/50 px-4 py-2.5 text-[13px] text-amber-950 hover:bg-amber-50"
-                  >
-                    <TriangleAlert className="size-4 shrink-0 text-amber-700" aria-hidden="true" />
-                    <span className="min-w-0 flex-1">{al.message}</span>
-                    <ArrowUpRight className="size-3.5 shrink-0 text-amber-700" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            {distribution?.data.telecallers.some((t) => t.needsReassignment) ? (
-              <Callout tone="warning" icon={TriangleAlert} className="m-3">
-                Some telecallers hold records that need reassignment. Review allocation.
-              </Callout>
-            ) : null}
-          </section>
+      <Eyebrow>Bank MIS &amp; payouts</Eyebrow>
+      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+        <MiniStat label="Applications reported" value={mis.total} hint="Latest bank-reported state per application" href="/admin/mis" tone="sky" />
+        <MiniStat label="Approved" value={mis.approved} hint="Bank MIS · decision" tone="emerald" />
+        <MiniStat label="In process" value={mis.inProcess} hint="Bank MIS · decision" tone="amber" />
+        <MiniStat label="Declined" value={mis.declined} hint="Bank MIS · decision" tone="rose" />
+        <MiniStat label="Cards active" value={mis.cardsActive} hint={`${mis.cardsInactive} inactive · ${mis.activationBlank} not reported`} tone="teal" />
+        <MiniStat label="Leads awaiting MIS" value={leads.awaitingMis} hint={`${leads.total} leads total`} href="/admin/leads" tone="indigo" />
+        <MiniStat label="Payout earned" value={formatInr(payouts.eligible.amountInr)} hint={`${payouts.eligible.count} card events · ${formatInr(payouts.paid.amountInr)} paid`} href="/admin/payouts/entitlements" tone="amber" />
+        <MiniStat label="Banks / cards configured" value={`${catalogue.banks.active} / ${catalogue.cards.published}`} hint={`${catalogue.banks.total} banks · ${catalogue.cards.total} cards in catalogue`} href="/admin/catalogue" tone="slate" />
+      </div>
+
+      <section aria-label="Recent leads" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-2.5">
+          <h2 className="text-sm font-semibold tracking-tight text-slate-900">Recent leads</h2>
+          <Link href="/admin/leads" className="ml-auto text-xs font-semibold text-teal-800 hover:underline">
+            All leads →
+          </Link>
         </div>
-
-        <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <Panel
-            title="Bank performance"
-            caption="Leads in the period per bank · MIS coverage · payout events"
-            action={<SectionLink href={`/admin/dashboards/bank-card-mix${q ? `?${q}` : ''}`}>Bank / card mix</SectionLink>}
-          >
-            {banks.length ? (
-              <ul className="divide-y divide-slate-100">
-                {banks.map((b) => {
-                  const applied = freshness.get(b.bank.code);
-                  return (
-                    <li key={b.bank.id} className="grid items-center gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <BankMark code={b.bank.code} />
-                        <div className="min-w-0 flex-1">
-                          <Link href={`/admin/leads?bankId=${b.bank.id}`} className="text-sm font-semibold text-slate-900 hover:text-teal-700">
-                            {b.bank.displayName}
-                          </Link>
-                          <div className="mt-1 flex items-center gap-2">
-                            <Meter value={b.matched} max={Math.max(1, b.leads)} tone="indigo" className="h-1.5 max-w-32" label={`${b.bank.displayName} MIS matched`} />
-                            <span className="shrink-0 text-[11px] text-slate-500 tabular-nums">{pct(b.matched, b.leads) ?? 0}% matched</span>
-                          </div>
-                          <p className="mt-0.5 text-[11px] text-slate-400">
-                            {applied ? `Last MIS applied ${formatDateTime(applied)}` : 'No MIS applied yet'}
-                          </p>
-                        </div>
+        <div className="min-h-0 flex-1">
+          {recentLeads.length === 0 ? (
+            <EmptyState icon={Inbox} className="m-3" title="No leads yet." description="Leads appear here as Advisors create them." />
+          ) : (
+            <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="pl-4">Customer</TableHead>
+                  <TableHead>Bank / card</TableHead>
+                  <TableHead>Stage</TableHead>
+                  <TableHead>Decision</TableHead>
+                  <TableHead>Card activation</TableHead>
+                  <TableHead className="pr-4">Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentLeads.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="pl-4" data-label="Customer">
+                      <Link href={`/admin/leads/${l.id}`} className="text-xs font-medium text-teal-700 hover:underline">
+                        {l.customer.name}
+                      </Link>
+                      <div className="mt-0.5 text-[11px] text-slate-500">
+                        {l.kbsRef}
+                        {l.customer.mobileMasked ? ` · ${l.customer.mobileMasked}` : ''}
                       </div>
-                      <div className="text-sm sm:text-right">
-                        <span className="font-semibold tabular-nums">{number(b.leads)}</span>
-                        <span className="ml-1 text-[11px] text-slate-500 sm:ml-0 sm:block">lead{b.leads === 1 ? '' : 's'}</span>
-                      </div>
-                      <div className="text-sm sm:min-w-36 sm:text-right">
-                        <span className="font-semibold tabular-nums">{formatInr(b.eligible)}</span>
-                        <span className="block text-[11px] text-slate-500 tabular-nums">
-                          {b.events} event{b.events === 1 ? '' : 's'} · {formatInr(b.paid)} paid
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <EmptyState
-                icon={Landmark}
-                title={mix ? 'No leads in this period' : 'Bank performance unavailable'}
-                description={mix ? 'Pick a longer period to see bank results.' : 'Refresh to retry.'}
-              />
-            )}
-          </Panel>
-
-          <Panel
-            title="Payout position"
-            caption="Ledger balances, all time · approval is not payment"
-            action={<SectionLink href="/admin/payouts/entitlements">Open ledger</SectionLink>}
-          >
-            <div className="divide-y divide-slate-100">
-              {payoutRows.map(({ label, key, state, tone }) => (
-                <Link key={key} href={`/admin/payouts/entitlements?state=${state}`} className="group grid gap-1.5 py-2.5 first:pt-0">
-                  <span className="flex items-center gap-2.5">
-                    <span className={`size-2 shrink-0 rounded-full ${TONE[tone].bar}`} />
-                    <span className="flex-1 text-sm text-slate-800 group-hover:text-teal-700">
-                      {label}
-                      <span className="ml-2 text-[11px] text-slate-500">
-                        {number(counts?.[key])} {counts?.[key] === 1 ? 'event' : 'events'}
+                    </TableCell>
+                    <TableCell data-label="Bank / card">
+                      <span className="inline-flex items-center gap-2">
+                        <BankMark code={l.bank.code} size="sm" />
+                        <span className="text-xs font-medium text-slate-700">{l.bank.code}</span>
                       </span>
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums">{amounts ? formatInr(amounts[key]) : 'Unavailable'}</span>
-                  </span>
-                  {amounts?.[key] ? (
-                    <Meter value={amounts[key]} max={largestAmount} tone={tone} className="ml-4.5 h-1 w-auto" label={label} />
-                  ) : null}
-                </Link>
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-              Positions overlap with eligible events; they are not extra balances to add together.
-            </p>
-            <div className="mt-2 border-t border-slate-100 pt-2.5 text-[10px] text-slate-500">
-              Source: KBS payout ledger ·{' '}
-              {ledger?.meta.asOf ? formatDateTime(String(ledger.meta.asOf)) : 'Snapshot time unavailable'}
-            </div>
-          </Panel>
+                      <div className="mt-0.5 max-w-40 truncate text-[11px] text-slate-500">{l.card.name}</div>
+                    </TableCell>
+                    <TableCell data-label="Stage">
+                      <StageBadge field={l.stage} label={null} />
+                    </TableCell>
+                    <TableCell data-label="Decision">
+                      <DecisionBadge field={l.decision} label={null} />
+                    </TableCell>
+                    <TableCell data-label="Card activation">
+                      <ActivationBadge field={l.activation} label={null} />
+                    </TableCell>
+                    <TableCell className="pr-4" data-label="Created">
+                      <div className="text-xs text-slate-700">{formatDateTime(l.leadCreatedAt)}</div>
+                      <div className="mt-0.5 text-[11px] text-slate-500">{l.lastMatchedAt ? `MIS ${formatDateTime(l.lastMatchedAt)}` : 'Awaiting MIS'}</div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
-
-        {d ? (
-          <details className="group grid gap-3 rounded-2xl border border-slate-200/80 bg-white/60 p-4">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-              <span>
-                <span className="block text-sm font-semibold text-slate-900">Operational detail</span>
-                <span className="text-xs text-slate-500">
-                  Calling records, calls, callbacks, shares, bank value breakdowns and payout events — each with its source and date basis.
-                </span>
-              </span>
-              <ChevronDown className="size-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="grid gap-3">
-              <OpsSections d={d} />
-            </div>
-          </details>
-        ) : null}
-
-        <footer className="flex flex-wrap items-start justify-between gap-3 border-t border-slate-200 pt-3 text-[11px] leading-relaxed text-slate-500">
-          <span className="inline-flex max-w-3xl items-start gap-2">
-            <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
-            Bank figures reflect the latest accepted MIS for leads created in the period — not live bank status. Recent
-            leads may still be in process; blank values mean “Not reported”.
-          </span>
-        </footer>
-      </div>
+        <p className="shrink-0 border-t border-slate-100 px-4 py-2 text-[10px] text-slate-500">
+          Source: KBS records + latest accepted bank MIS + payout ledger · as of {formatDateTime(home.asOf)}. {home.note}
+        </p>
+      </section>
     </div>
   );
 }

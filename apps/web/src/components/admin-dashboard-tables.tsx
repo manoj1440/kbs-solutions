@@ -154,7 +154,7 @@ export async function TelecallerPerformance({ sp }: { sp: Record<string, string 
           {d.rows.map((r) => (
             <TableRow key={r.user.id}>
               <TableCell data-label="Telecaller">
-                <PersonCell name={r.user.fullName} href={`/admin?period=all&telecallerId=${r.user.id}`} status={r.user.status} />
+                <PersonCell name={r.user.fullName} href={`/admin/calling-list/performance/telecaller/${r.user.id}`} status={r.user.status} />
               </TableCell>
               <TableCell data-label="Records" className={num}>
                 {r.records.assigned.value} / {r.records.active.value}
@@ -225,7 +225,7 @@ export async function ManagerPerformance({ sp }: { sp: Record<string, string | u
           {d.rows.map((r) => (
             <TableRow key={r.user.id}>
               <TableCell data-label="Manager">
-                <PersonCell name={r.user.fullName} href={`/admin?period=all&managerId=${r.user.id}`} />
+                <PersonCell name={r.user.fullName} href={`/admin/dashboards/advisors?managerId=${r.user.id}`} />
               </TableCell>
               <TableCell data-label="Team" className="text-slate-600">
                 <span className="tabular-nums">{r.telecallers}</span> Telecallers · <span className="tabular-nums">{r.advisors}</span> Advisors

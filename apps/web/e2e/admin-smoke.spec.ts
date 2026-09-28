@@ -55,13 +55,12 @@ test.describe('Admin workspace smoke', () => {
     });
   }
 
-  test('F-807: executive dashboard URL lands on the Business overview with its filters', async () => {
-    await page.goto('/admin/dashboards?from=2026-01-01&to=2026-01-31');
-    await expect(page).toHaveURL(/\/admin\?from=2026-01-01&to=2026-01-31$/);
+  test('F-807: executive dashboard URL lands on the Business overview', async () => {
+    await page.goto('/admin/dashboards');
+    await expect(page).toHaveURL(/\/admin$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Business overview' })).toBeVisible();
-    await page.getByRole('navigation', { name: 'Period' }).getByRole('link', { name: '7 days' }).click();
-    await expect(page).toHaveURL(/\/admin\?period=7d$/);
-    await expect(page.getByRole('link', { name: '7 days' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByText('Recent leads')).toBeVisible();
+    await expect(page.getByText('Customer records')).toBeVisible();
   });
 
   test('F-807: sidebar lists each page once, grouped by responsibility', async () => {
