@@ -93,8 +93,7 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
     }),
     c.accessor('totalAmountInr', {
       header: 'Amount',
-      meta: { align: 'right' },
-      cell: ({ getValue }) => <span className="text-[15px] font-semibold whitespace-nowrap text-slate-900 tabular-nums">{formatInr(getValue())}</span>,
+            cell: ({ getValue }) => <span className="text-[15px] font-semibold whitespace-nowrap text-slate-900 tabular-nums">{formatInr(getValue())}</span>,
     }),
     c.accessor('state', {
       header: 'State',

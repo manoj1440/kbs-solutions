@@ -160,13 +160,12 @@ export function DataTable<TData extends RowData>({
                   aria-sort={h.column.getIsSorted() === 'asc' ? 'ascending' : h.column.getIsSorted() === 'desc' ? 'descending' : undefined}
                   className={cn(
                     variant === 'panel' && (i === 0 ? 'pl-4' : i === hg.headers.length - 1 ? 'pr-4' : undefined),
-                    meta?.align === 'right' && 'sm:text-right tabular-nums',
                     meta?.className,
                     meta?.headerClassName,
                   )}
                 >
                   {h.isPlaceholder ? null : typeof def.header === 'string' && h.column.getCanSort() ? (
-                    <DataTableColumnHeader column={h.column} title={def.header} paged={pagedOnServer} className={meta?.align === 'right' ? 'sm:justify-end' : undefined} />
+                    <DataTableColumnHeader column={h.column} title={def.header} paged={pagedOnServer} />
                   ) : (
                     <table.FlexRender header={h} />
                   )}
@@ -196,7 +195,6 @@ export function DataTable<TData extends RowData>({
                       data-label={label}
                       className={cn(
                         variant === 'panel' && (i === 0 ? 'pl-4' : i === cells.length - 1 ? 'pr-4' : undefined),
-                        meta?.align === 'right' && 'sm:text-right tabular-nums',
                         meta?.className,
                         meta?.cellClassName,
                       )}

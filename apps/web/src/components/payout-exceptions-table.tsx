@@ -75,8 +75,7 @@ export function PayoutExceptionsTable({ rows, requestBase, canAcknowledge }: { r
     c.accessor((r) => r.amountInr ?? -1, {
       id: 'amount',
       header: 'Amount',
-      meta: { align: 'right' },
-      cell: ({ row }) => <span className="font-medium whitespace-nowrap">{row.original.amountInr !== null ? formatInr(row.original.amountInr) : '—'}</span>,
+            cell: ({ row }) => <span className="font-medium whitespace-nowrap">{row.original.amountInr !== null ? formatInr(row.original.amountInr) : '—'}</span>,
     }),
     c.display({
       id: 'resolution',

@@ -98,8 +98,7 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
     }),
     c.accessor('amountInr', {
       header: 'Amount',
-      meta: { align: 'right' },
-      cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-slate-900">{formatInr(getValue())}</span>,
+            cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-slate-900">{formatInr(getValue())}</span>,
     }),
     c.accessor('eligibleAt', {
       header: 'Eligible at',

@@ -62,7 +62,7 @@ export function NetworksTable({ rows }: { rows: Network[] }) {
     n.display({
       id: 'actions',
       header: 'Actions',
-      meta: { hideLabel: true, align: 'right' },
+      meta: { hideLabel: true },
       cell: ({ row }) => <NetworkActiveToggle id={row.original.id} active={row.original.active} />,
     }),
   ]);
@@ -111,7 +111,7 @@ export function WfhTable({ rows }: { rows: WfhRow[] }) {
     w.display({
       id: 'actions',
       header: 'Actions',
-      meta: { hideLabel: true, align: 'right' },
+      meta: { hideLabel: true },
       cell: ({ row }) => (!wfhOpen(row.original) ? null : <RevokeWfhButton id={row.original.id} />),
     }),
   ]);

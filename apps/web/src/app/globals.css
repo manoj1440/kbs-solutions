@@ -267,13 +267,16 @@ select:not([multiple]):not([size]) {
   container-type: inline-size;
 }
 
+/* Badges inside tables stay one line — long bank values clip with an ellipsis; full value on `title`. */
 [data-slot='table'] [data-slot='badge'] {
   max-width: 100%;
   min-width: 0;
   flex-shrink: 1;
-  white-space: normal;
-  overflow-wrap: break-word;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
   text-align: left;
+  justify-content: flex-start;
 }
 
 .lead-overview-table {
@@ -297,14 +300,6 @@ select:not([multiple]):not([size]) {
 
 .lead-overview-table td > span {
   flex-wrap: wrap;
-}
-
-/* F-810: overview rows stay one line — long bank values clip to ellipsis (full value on title + detail panel). */
-.lead-overview-table [data-slot='badge'] {
-  white-space: nowrap;
-  overflow-wrap: normal;
-  text-overflow: ellipsis;
-  justify-content: flex-start;
 }
 
 @container (max-width: 700px) {

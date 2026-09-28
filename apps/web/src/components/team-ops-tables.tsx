@@ -52,27 +52,24 @@ export function TeamActivityTable({
     }),
     c.accessor('queueSize', {
       header: 'Assigned',
-      meta: { align: 'right' },
-      cell: ({ row }) => (
+            cell: ({ row }) => (
         <>
           <span className="font-semibold text-slate-900">{row.original.queueSize}</span>
           {row.original.followUpsDue ? <div className="mt-0.5 text-[11px] font-medium text-rose-700">{row.original.followUpsDue} due</div> : null}
         </>
       ),
     }),
-    c.accessor('attempts', { header: 'Attempted', meta: { align: 'right' } }),
-    c.accessor('connected', { header: 'Connected', meta: { align: 'right' } }),
-    c.accessor('interests', { header: 'Succeeded', meta: { align: 'right' } }),
+    c.accessor('attempts', { header: 'Attempted',  }),
+    c.accessor('connected', { header: 'Connected',  }),
+    c.accessor('interests', { header: 'Succeeded',  }),
     c.accessor('talkTimeSec', {
       header: 'Talk time',
-      meta: { align: 'right' },
-      cell: ({ getValue }) => <span className="text-xs whitespace-nowrap">{fmtTalk(getValue())}</span>,
+            cell: ({ getValue }) => <span className="text-xs whitespace-nowrap">{fmtTalk(getValue())}</span>,
     }),
     c.accessor((r) => (r.connected ? Math.round((r.interests / r.connected) * 100) : 0), {
       id: 'success',
       header: 'Success %',
-      meta: { align: 'right' },
-      cell: ({ getValue }) => <span className="font-semibold">{getValue()}%</span>,
+            cell: ({ getValue }) => <span className="font-semibold">{getValue()}%</span>,
     }),
   ]);
   return <DataTable columns={columns} data={rows} getRowId={(r) => r.id} containerClassName={containerClassName} headerClassName={headerClassName} />;

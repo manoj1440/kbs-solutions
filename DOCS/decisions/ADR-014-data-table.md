@@ -3,7 +3,7 @@
 - Status: Accepted · Date: 2026-09-28 · Feature: F-813
 
 ## Context
-All 39 tables in `apps/web` were hand-written `<Table>`/`<TableHeader>`/`<TableBody>` markup (F-806/F-811). Every table re-implements the same mechanics: `data-label` per cell for the phone card mode, `sm:text-right tabular-nums` number alignment, sticky headers inside scrolling panels, `EmptyState` when empty, and five copies of the `A–B of T · page P of Q` pagination footer. The shadcn data-table guide (v9 edition: `tableFeatures`, `useTable`, `createColumnHelper`) gives the standard answer, and `@tanstack/react-table` 8.21.3 was already a dependency used by `leads-table.tsx`.
+All 39 tables in `apps/web` were hand-written `<Table>`/`<TableHeader>`/`<TableBody>` markup (F-806/F-811). Every table re-implements the same mechanics: `data-label` per cell for the phone card mode, `sm:text-right tabular-nums` number formatting, sticky headers inside scrolling panels, `EmptyState` when empty, and five copies of the `A–B of T · page P of Q` pagination footer. The shadcn data-table guide (v9 edition: `tableFeatures`, `useTable`, `createColumnHelper`) gives the standard answer, and `@tanstack/react-table` 8.21.3 was already a dependency used by `leads-table.tsx`.
 
 ## Decision
 - Upgrade to `@tanstack/react-table@9.2.4` (exact pin) and build one `DataTable` module at `apps/web/src/components/data-table/` following the guide: a `features` object (`rowSortingFeature`, `columnVisibilityFeature`, `rowExpandingFeature`, `rowSelectionFeature` + `sortedRowModel`/`expandedRowModel` + sort fns), a shared `columnHelper`, `DataTableColumnHeader`, `DataTablePagination`, `DataTablePanel`.

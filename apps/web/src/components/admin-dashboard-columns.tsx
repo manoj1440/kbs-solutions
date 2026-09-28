@@ -92,19 +92,17 @@ const telecallerColumns = t.columns([
   t.accessor((r) => r.records.assigned.value, {
     id: 'records',
     header: 'Records (assigned / active)',
-    meta: { label: 'Records', align: 'right' },
+    meta: { label: 'Records' },
     cell: ({ row }) => `${row.original.records.assigned.value} / ${row.original.records.active.value}`,
   }),
   t.accessor((r) => r.calls.attempts.value, {
     id: 'attempts',
     header: 'Attempts',
-    meta: { align: 'right' },
-  }),
+      }),
   t.accessor((r) => r.calls.connected.value, {
     id: 'connected',
     header: 'Connected',
-    meta: { align: 'right' },
-    cell: ({ row }) => (
+        cell: ({ row }) => (
       <>
         <span className="font-medium text-slate-900">{row.original.calls.connected.value}</span>
         <span className="text-xs text-slate-500">{pct(row.original.calls.connected)}</span>
@@ -115,18 +113,15 @@ const telecallerColumns = t.columns([
   t.accessor((r) => r.calls.notAnswered.value, {
     id: 'notAnswered',
     header: 'Not answered',
-    meta: { align: 'right' },
-  }),
+      }),
   t.accessor((r) => r.calls.uniqueCustomersContacted.value, {
     id: 'uniqueContacted',
     header: 'Unique contacted',
-    meta: { align: 'right' },
-  }),
+      }),
   t.accessor((r) => r.calls.recordingsAvailable.value, {
     id: 'recordings',
     header: 'Recordings',
-    meta: { align: 'right' },
-    cell: ({ row }) => (
+        cell: ({ row }) => (
       <>
         {row.original.calls.recordingsAvailable.value}
         <span className="text-xs text-slate-500">{pct(row.original.calls.recordingsAvailable)}</span>
@@ -136,14 +131,13 @@ const telecallerColumns = t.columns([
   t.accessor((r) => r.callbacks.due.value, {
     id: 'callbacks',
     header: 'Callbacks due / done',
-    meta: { label: 'Callbacks', align: 'right' },
+    meta: { label: 'Callbacks' },
     cell: ({ row }) => `${row.original.callbacks.due.value} / ${row.original.callbacks.completed.value}`,
   }),
   t.accessor((r) => r.shares.total.value, {
     id: 'shares',
     header: 'Shares',
-    meta: { align: 'right' },
-  }),
+      }),
 ]);
 
 export function TelecallerPerformanceTable({ rows }: { rows: TelecallerRow[] }) {
@@ -178,19 +172,16 @@ const managerColumns = m.columns([
   m.accessor((r) => r.calls.attempts.value, {
     id: 'calls',
     header: 'Attempts / connected',
-    meta: { align: 'right' },
-    cell: ({ row }) => `${row.original.calls.attempts.value} / ${row.original.calls.connected.value}`,
+        cell: ({ row }) => `${row.original.calls.attempts.value} / ${row.original.calls.connected.value}`,
   }),
   m.accessor((r) => r.shares.value, {
     id: 'shares',
     header: 'Shares',
-    meta: { align: 'right' },
-  }),
+      }),
   m.accessor((r) => r.leads.created.value, {
     id: 'leads',
     header: 'Leads / MIS matched',
-    meta: { align: 'right' },
-    cell: ({ row }) => (
+        cell: ({ row }) => (
       <>
         {row.original.leads.created.value} / {row.original.leads.misMatched.value}
         {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16 sm:ml-auto" label="MIS matched share of leads" /> : null}
@@ -200,20 +191,17 @@ const managerColumns = m.columns([
   m.accessor((r) => r.payouts.eligible.value, {
     id: 'eligible',
     header: 'Payout eligible',
-    meta: { align: 'right' },
-    cell: ({ row }) => <Money count={row.original.payouts.eligible.value} amount={row.original.payouts.eligible.amountInr ?? 0} />,
+        cell: ({ row }) => <Money count={row.original.payouts.eligible.value} amount={row.original.payouts.eligible.amountInr ?? 0} />,
   }),
   m.accessor((r) => r.payouts.approvedUnpaid.value, {
     id: 'unpaid',
     header: 'Approved unpaid',
-    meta: { align: 'right' },
-    cell: ({ row }) => <Money count={row.original.payouts.approvedUnpaid.value} amount={row.original.payouts.approvedUnpaid.amountInr ?? 0} />,
+        cell: ({ row }) => <Money count={row.original.payouts.approvedUnpaid.value} amount={row.original.payouts.approvedUnpaid.amountInr ?? 0} />,
   }),
   m.accessor((r) => r.payouts.paid.value, {
     id: 'paid',
     header: 'Paid',
-    meta: { align: 'right' },
-    cell: ({ row }) => <Money count={row.original.payouts.paid.value} amount={row.original.payouts.paid.amountInr ?? 0} />,
+        cell: ({ row }) => <Money count={row.original.payouts.paid.value} amount={row.original.payouts.paid.amountInr ?? 0} />,
   }),
 ]);
 
@@ -239,8 +227,7 @@ const advisorColumns = a.columns([
   a.accessor((r) => r.leads.created.value, {
     id: 'leads',
     header: 'Leads / matched',
-    meta: { align: 'right' },
-    cell: ({ row }) => (
+        cell: ({ row }) => (
       <>
         {row.original.leads.created.value} / {row.original.leads.misMatched.value}
         {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16 sm:ml-auto" label="MIS matched share of leads" /> : null}
@@ -260,14 +247,12 @@ const advisorColumns = a.columns([
   a.accessor((r) => r.payouts.eligible.value, {
     id: 'eligible',
     header: 'Eligible',
-    meta: { align: 'right' },
-    cell: ({ row }) => <Money count={row.original.payouts.eligible.value} amount={row.original.payouts.eligible.amountInr ?? 0} />,
+        cell: ({ row }) => <Money count={row.original.payouts.eligible.value} amount={row.original.payouts.eligible.amountInr ?? 0} />,
   }),
   a.accessor((r) => r.payouts.paid.value, {
     id: 'paid',
     header: 'Paid',
-    meta: { align: 'right' },
-    cell: ({ row }) => <Money count={row.original.payouts.paid.value} amount={row.original.payouts.paid.amountInr ?? 0} />,
+        cell: ({ row }) => <Money count={row.original.payouts.paid.value} amount={row.original.payouts.paid.amountInr ?? 0} />,
   }),
 ]);
 
@@ -296,12 +281,10 @@ const mixColumns = b.columns([
   }),
   b.accessor('leads', {
     header: 'Leads',
-    meta: { align: 'right' },
-  }),
+      }),
   b.accessor('misMatched', {
     header: 'MIS matched',
-    meta: { align: 'right' },
-    cell: ({ row }) => (
+        cell: ({ row }) => (
       <>
         {row.original.misMatched}
         {row.original.leads ? <Meter value={row.original.misMatched} max={row.original.leads} tone="indigo" className="mt-1 h-1 w-16 sm:ml-auto" label="MIS matched share of leads" /> : null}
@@ -310,19 +293,16 @@ const mixColumns = b.columns([
   }),
   b.accessor('awaitingMis', {
     header: 'Awaiting MIS',
-    meta: { align: 'right' },
-  }),
+      }),
   b.accessor((r) => r.payoutEligible.count, {
     id: 'eligible',
     header: 'Payout eligible',
-    meta: { align: 'right' },
-    cell: ({ row }) => <Money count={row.original.payoutEligible.count} amount={row.original.payoutEligible.amountInr} />,
+        cell: ({ row }) => <Money count={row.original.payoutEligible.count} amount={row.original.payoutEligible.amountInr} />,
   }),
   b.accessor((r) => r.payoutPaid.count, {
     id: 'paid',
     header: 'Paid',
-    meta: { align: 'right' },
-    cell: ({ row }) => <Money count={row.original.payoutPaid.count} amount={row.original.payoutPaid.amountInr} />,
+        cell: ({ row }) => <Money count={row.original.payoutPaid.count} amount={row.original.payoutPaid.amountInr} />,
   }),
 ]);
 

@@ -68,20 +68,19 @@ export function RetentionPlanTable({ rows }: { rows: CategoryPlan[] }) {
           <Badge variant="unknown" className="whitespace-nowrap">not set</Badge>
         ),
     }),
-    c.accessor((r) => r.olderThanCutoff ?? -1, { id: 'pastCutoff', header: 'Past cutoff', meta: { align: 'right' }, cell: ({ row }) => nfmt(row.original.olderThanCutoff) }),
-    c.accessor((r) => r.onHold ?? -1, { id: 'onHold', header: 'Legal hold', meta: { align: 'right' }, cell: ({ row }) => nfmt(row.original.onHold) }),
-    c.accessor((r) => r.protected ?? -1, { id: 'protected', header: 'Protected', meta: { align: 'right' }, cell: ({ row }) => nfmt(row.original.protected) }),
+    c.accessor((r) => r.olderThanCutoff ?? -1, { id: 'pastCutoff', header: 'Past cutoff',  cell: ({ row }) => nfmt(row.original.olderThanCutoff) }),
+    c.accessor((r) => r.onHold ?? -1, { id: 'onHold', header: 'Legal hold',  cell: ({ row }) => nfmt(row.original.onHold) }),
+    c.accessor((r) => r.protected ?? -1, { id: 'protected', header: 'Protected',  cell: ({ row }) => nfmt(row.original.protected) }),
     c.accessor((r) => r.eligible ?? -1, {
       id: 'eligible',
       header: 'Eligible',
-      meta: { align: 'right' },
-      cell: ({ row }) => <span className="font-semibold text-slate-900">{nfmt(row.original.eligible)}</span>,
+            cell: ({ row }) => <span className="font-semibold text-slate-900">{nfmt(row.original.eligible)}</span>,
     }),
-    c.accessor('alreadyDone', { header: 'Done', meta: { align: 'right' }, cell: ({ getValue }) => nfmt(getValue()) }),
+    c.accessor('alreadyDone', { header: 'Done',  cell: ({ getValue }) => nfmt(getValue()) }),
     c.display({
       id: 'actions',
       header: 'Actions',
-      meta: { hideLabel: true, align: 'right' },
+      meta: { hideLabel: true },
       cell: ({ row }) => <RunRetention category={row.original.category} label={row.original.label} runnable={row.original.configured && row.original.runnable} />,
     }),
   ]);

@@ -42,8 +42,7 @@ export function RatesTable({ rows, currentId }: { rows: Rate[]; currentId: strin
     }),
     c.accessor('amountInr', {
       header: 'Amount',
-      meta: { align: 'right' },
-      cell: ({ getValue }) => <span className="text-[15px] font-semibold text-slate-900">₹{getValue().toLocaleString('en-IN')}</span>,
+            cell: ({ getValue }) => <span className="text-[15px] font-semibold text-slate-900">₹{getValue().toLocaleString('en-IN')}</span>,
     }),
   ]);
   return (

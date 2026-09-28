@@ -41,7 +41,7 @@ const c = columnHelper<Row>();
 export function MyTable({ rows }: { rows: Row[] }) {
   const columns = c.columns([
     c.accessor('name', { header: 'Name' }),                                          // sortable text
-    c.accessor('amountInr', { header: 'Amount', meta: { align: 'right' } }),          // numeric + right
+    c.accessor('amountInr', { header: 'Amount' }),                                   // all values left-aligned
     c.accessor('at', { header: 'When', sortFn: 'datetime', cell: DateTimeCell }),    // date sort
     c.display({ id: 'actions', header: '', meta: { hideLabel: true }, cell: … }),    // no data-label
   ]);
@@ -50,7 +50,7 @@ export function MyTable({ rows }: { rows: Row[] }) {
 ```
 
 - `variant="panel"` (default when inside `DataTablePanel`) adds edge padding + sticky header for scrollable sections; use `DataTablePanel` + `DataTablePagination` (server `?page=` links) for the F-811 list layout.
-- Column meta: `label` (card-mode display name), `hideLabel`, `align:'right'`, `className`/`headerClassName`/`cellClassName`.
+- Column meta: `label` (card-mode display name), `hideLabel`, `className`/`headerClassName`/`cellClassName`. Cells are always left-aligned (numbers keep `tabular-nums` via the cell).
 - Sorting: click a header — cycles asc → desc → none, no menus (user decision: no popups, no column hiding).
 - Features: `initialSorting`, `enableRowSelection`, `renderSubRow`/`getSubRowId`, `getRowProps`, `pagedOnServer` (labels sorting as page-local).
 - `responsive` (default) = phone card mode via `data-label`; `responsive="compact"` for dense ops tables; `responsive={false}` for raw grids (e.g. dynamic columns).

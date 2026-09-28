@@ -439,7 +439,7 @@ const rq = columnHelper<ReviewRow>();
 
 function PreviewTable({ rows }: { rows: PreviewRow[] }) {
   const columns = pv.columns([
-    pv.accessor('row', { header: 'Row', meta: { align: 'right', cellClassName: 'text-xs text-slate-500' } }),
+    pv.accessor('row', { header: 'Row', meta: { cellClassName: 'text-xs text-slate-500' } }),
     pv.accessor('name', { header: 'Name', meta: { cellClassName: 'font-medium text-slate-800' } }),
     pv.accessor('mobile', { header: 'Mobile', meta: { cellClassName: 'font-mono text-xs' } }),
     pv.accessor('pincode', { header: 'Pincode', meta: { cellClassName: 'font-mono text-xs' } }),
@@ -450,7 +450,7 @@ function PreviewTable({ rows }: { rows: PreviewRow[] }) {
 
 function ReviewQueueTable({ rows, reason, setReason, act }: { rows: ReviewRow[]; reason: Record<string, string>; setReason: (v: Record<string, string>) => void; act: (id: string, action: 'ACCEPT' | 'EXCLUDE') => void }) {
   const columns = rq.columns([
-    rq.accessor('sourceRowNumber', { header: 'Row', meta: { align: 'right', cellClassName: 'text-xs text-slate-500' } }),
+    rq.accessor('sourceRowNumber', { header: 'Row', meta: { cellClassName: 'text-xs text-slate-500' } }),
     rq.accessor('fullName', { header: 'Name', meta: { cellClassName: 'font-medium text-slate-800' } }),
     rq.accessor('mobileMasked', { header: 'Mobile', meta: { cellClassName: 'font-mono text-xs' } }),
     rq.display({

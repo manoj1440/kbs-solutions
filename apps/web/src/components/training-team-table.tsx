@@ -81,8 +81,7 @@ export function TrainingTeamTable({ rows, linkBase }: { rows: TrainingTeamRow[];
     ),
     c.accessor('reactivations', {
       header: 'Reactivations',
-      meta: { align: 'right' },
-      cell: ({ getValue }) => <span className="text-xs">{getValue()}</span>,
+            cell: ({ getValue }) => <span className="text-xs">{getValue()}</span>,
     }),
   ]);
   return (

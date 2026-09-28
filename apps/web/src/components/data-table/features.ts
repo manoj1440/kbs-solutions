@@ -20,8 +20,6 @@ export interface DataTableColumnMeta {
   label?: string;
   /** Omit the card-mode label for this cell. */
   hideLabel?: boolean;
-  /** Right-align header + cells and use tabular numbers (`sm:text-right tabular-nums`). */
-  align?: 'right';
   /** Class merged onto both `th` and `td`. */
   className?: string;
   headerClassName?: string;

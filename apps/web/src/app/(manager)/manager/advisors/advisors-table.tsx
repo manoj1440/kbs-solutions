@@ -46,8 +46,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
     c.accessor((r) => r.leads.created.value, {
       id: 'leads',
       header: 'Leads (KBS)',
-      meta: { align: 'right' },
-      cell: ({ row }) => {
+            cell: ({ row }) => {
         const r = row.original;
         return (
           <>

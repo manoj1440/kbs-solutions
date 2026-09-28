@@ -21,7 +21,7 @@ const rows: Row[] = [
 const c = columnHelper<Row>();
 const columns = c.columns([
   c.accessor('name', { header: 'Name' }),
-  c.accessor('amount', { header: 'Amount', meta: { align: 'right' } }),
+  c.accessor('amount', { header: 'Amount' }),
   c.display({ id: 'act', header: '', meta: { label: 'Action', hideLabel: true }, cell: () => 'x' }),
 ]);
 
@@ -33,10 +33,10 @@ describe('F-813 DataTable', () => {
     expect(out).toContain('data-responsive="true"');
     expect(out).not.toContain('data-label="Action"'); // hideLabel wins
   });
-  it('meta.align right-aligns th and td', () => {
+  it('all cells stay left-aligned (no align meta)', () => {
     const out = html(<DataTable columns={columns} data={rows} />);
-    expect(out).toMatch(/<th[^>]*sm:text-right[^>]*tabular-nums[^>]*>/);
-    expect(out).toMatch(/<td[^>]*sm:text-right[^>]*tabular-nums[^>]*data-label="Amount"/);
+    expect(out).not.toContain('sm:text-right');
+    expect(out).toContain('data-label="Amount"');
   });
   it('renders empty instead of the table when data is empty', () => {
     const out = html(<DataTable columns={columns} data={[]} empty={<p>Nothing here.</p>} />);

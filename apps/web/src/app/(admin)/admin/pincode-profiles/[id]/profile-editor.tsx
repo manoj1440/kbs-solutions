@@ -289,7 +289,7 @@ function BatchesTable({ rows, onExplore }: { rows: Batch[]; onExplore: (b: Batch
       header: 'Status',
       cell: ({ getValue }) => <Badge variant={getValue() === 'IMPORTED' ? 'success' : 'unknown'}>{humanize(getValue())}</Badge>,
     }),
-    b.accessor((x) => x.rowCount ?? -1, { id: 'rows', header: 'Rows', meta: { align: 'right' }, cell: ({ row }) => row.original.rowCount ?? '—' }),
+    b.accessor((x) => x.rowCount ?? -1, { id: 'rows', header: 'Rows',  cell: ({ row }) => row.original.rowCount ?? '—' }),
     b.display({
       id: 'actions',
       header: 'Actions',
@@ -310,7 +310,7 @@ function BatchesTable({ rows, onExplore }: { rows: Batch[]; onExplore: (b: Batch
 function BatchRowsTable({ rows }: { rows: Row[] }) {
   const rawHeaders = Object.keys(rows[0]?.raw ?? {});
   const columns = rw.columns([
-    rw.accessor('sourceRowNumber', { header: 'Row', meta: { align: 'right', cellClassName: 'text-xs' } }),
+    rw.accessor('sourceRowNumber', { header: 'Row', meta: { cellClassName: 'text-xs' } }),
     rw.accessor('pincode', {
       header: 'Pincode',
       meta: { cellClassName: 'font-mono text-xs' },

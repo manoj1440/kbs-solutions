@@ -109,7 +109,7 @@ function BatchRowsTable({ rows, reload }: { rows: Row[]; reload: () => void }) {
   const columns = c.columns([
     c.accessor('sourceRowNumber', {
       header: 'Row',
-      meta: { align: 'right', cellClassName: 'text-xs text-slate-500' },
+      meta: { cellClassName: 'text-xs text-slate-500' },
     }),
     c.accessor('matchState', {
       header: 'State',

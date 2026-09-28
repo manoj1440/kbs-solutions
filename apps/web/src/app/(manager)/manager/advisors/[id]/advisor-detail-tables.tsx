@@ -91,7 +91,7 @@ export function AdvisorRequestsTable({ rows }: { rows: AdvisorRequestRow[] }) {
     }),
     r.accessor('totalAmountInr', {
       header: 'Amount',
-      meta: { align: 'right', cellClassName: 'text-xs' },
+      meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
           <div className="text-sm font-semibold whitespace-nowrap text-slate-900">{inr(row.original.totalAmountInr)}</div>
@@ -148,7 +148,7 @@ export function AdvisorEntitlementsTable({ rows }: { rows: EntitlementDto[] }) {
     }),
     e.accessor('amountInr', {
       header: 'Amount / state',
-      meta: { align: 'right', cellClassName: 'text-xs' },
+      meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
           <div className="text-sm font-semibold whitespace-nowrap text-slate-900 tabular-nums">{inr(row.original.amountInr)}</div>

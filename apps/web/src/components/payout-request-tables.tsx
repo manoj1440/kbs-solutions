@@ -112,8 +112,7 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
     }),
     i.accessor('amountSnapshotInr', {
       header: 'Amount',
-      meta: { align: 'right' },
-      cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-slate-900">{formatInr(getValue())}</span>,
+            cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-slate-900">{formatInr(getValue())}</span>,
     }),
     i.display({
       id: 'warnings',

@@ -60,8 +60,7 @@ const columns = c.columns([
   c.accessor((r) => r._count.batches, {
     id: 'batches',
     header: 'Batches',
-    meta: { align: 'right' },
-  }),
+      }),
 ]);
 
 export function PincodeProfilesTable({ rows }: { rows: PincodeProfileRow[] }) {
