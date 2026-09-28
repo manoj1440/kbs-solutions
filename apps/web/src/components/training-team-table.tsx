@@ -1,84 +1,98 @@
+'use client';
+
 import { formatDateTime } from '@kbs/shared';
 import { GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 
+import { columnHelper, DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, EmptyState, Meter } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { remaining, STATUS_LABEL, statusTone, type TrainingTeamRow } from '@/lib/training-types';
 
-/** F-205: shared team-progress table for Manager and Admin. */
+const c = columnHelper<TrainingTeamRow>();
+
+/** F-205 → F-813: shared team-progress table for Manager and Admin. */
 export function TrainingTeamTable({ rows, linkBase }: { rows: TrainingTeamRow[]; linkBase: string }) {
-  if (rows.length === 0) return <EmptyState icon={GraduationCap} title="No Telecallers enrolled yet." />;
-  return (
-    <Table responsive="compact" containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-      <TableHeader className="sticky top-0 z-10">
-        <TableRow>
-          <TableHead>Telecaller</TableHead>
-          <TableHead>Training</TableHead>
-          <TableHead>Deadline</TableHead>
-          <TableHead>Remaining</TableHead>
-          <TableHead>M1</TableHead>
-          <TableHead>M2</TableHead>
-          <TableHead>M3</TableHead>
-          <TableHead className="text-right">Reactivations</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((r) => {
-          const passed = r.modules.filter((m) => m.status === 'PASSED').length;
-          return (
-            <TableRow key={r.telecaller.id}>
-              <TableCell data-label="Telecaller">
-                <div className="flex items-center gap-2.5">
-                  <Avatar name={r.telecaller.fullName} size="sm" />
-                  <div className="min-w-0">
-                    <Link href={`${linkBase}/${r.telecaller.id}`} className="font-medium">
-                      {r.telecaller.fullName}
-                    </Link>
-                    <div className="font-mono text-[11px] text-slate-500">{r.telecaller.employeeCode}</div>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell data-label="Training">
-                <div className="grid min-w-28 gap-1.5">
-                  <Badge variant={statusTone(r.status)}>{STATUS_LABEL[r.status] ?? r.status}</Badge>
-                  {r.modules.length ? (
-                    <div className="flex items-center gap-2">
-                      <Meter value={passed} max={3} tone={passed === 3 ? 'emerald' : r.status === 'EXPIRED_DEACTIVATED' ? 'rose' : 'sky'} className="h-1.5 w-16" label={`${passed} of 3 modules passed`} />
-                      <span className="text-[11px] text-slate-500 tabular-nums">{passed}/3</span>
-                    </div>
-                  ) : null}
-                </div>
-              </TableCell>
-              <TableCell data-label="Deadline" className="text-xs">
-                {r.deadlineAt ? formatDateTime(r.deadlineAt) : 'starts at first login'}
-              </TableCell>
-              <TableCell data-label="Remaining" className="text-xs tabular-nums">
-                {remaining(r.remainingMs)}
-              </TableCell>
-              {[1, 2, 3].map((seq) => {
-                const m = r.modules.find((x) => x.sequence === seq);
-                return (
-                  <TableCell key={seq} data-label={`M${seq}`} className="text-xs">
-                    {m ? (
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                        <Badge variant={m.status === 'PASSED' ? 'success' : m.status === 'LOCKED' ? 'unknown' : 'info'}>{m.status === 'PASSED' ? 'Passed' : m.status === 'LOCKED' ? 'Locked' : 'Open'}</Badge>
-                        {m.bestScorePct !== null ? <span className="text-slate-500 tabular-nums">{m.bestScorePct}%</span> : null}
-                      </span>
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
-                );
-              })}
-              <TableCell data-label="Reactivations" className="text-xs tabular-nums sm:text-right">
-                {r.reactivations}
-              </TableCell>
-            </TableRow>
+  const columns = c.columns([
+    c.accessor((r) => r.telecaller.fullName, {
+      id: 'telecaller',
+      header: 'Telecaller',
+      cell: ({ row }) => {
+        const t = row.original.telecaller;
+        return (
+          <div className="flex items-center gap-2.5">
+            <Avatar name={t.fullName} size="sm" />
+            <div className="min-w-0">
+              <Link href={`${linkBase}/${t.id}`} className="font-medium">
+                {t.fullName}
+              </Link>
+              <div className="font-mono text-[11px] text-slate-500">{t.employeeCode}</div>
+            </div>
+          </div>
+        );
+      },
+    }),
+    c.accessor('status', {
+      header: 'Training',
+      cell: ({ row }) => {
+        const r = row.original;
+        const passed = r.modules.filter((m) => m.status === 'PASSED').length;
+        return (
+          <div className="grid min-w-28 gap-1.5">
+            <Badge variant={statusTone(r.status)}>{STATUS_LABEL[r.status] ?? r.status}</Badge>
+            {r.modules.length ? (
+              <div className="flex items-center gap-2">
+                <Meter value={passed} max={3} tone={passed === 3 ? 'emerald' : r.status === 'EXPIRED_DEACTIVATED' ? 'rose' : 'sky'} className="h-1.5 w-16" label={`${passed} of 3 modules passed`} />
+                <span className="text-[11px] text-slate-500 tabular-nums">{passed}/3</span>
+              </div>
+            ) : null}
+          </div>
+        );
+      },
+    }),
+    c.accessor('deadlineAt', {
+      header: 'Deadline',
+      sortFn: 'datetime',
+      meta: { cellClassName: 'text-xs' },
+      cell: ({ getValue }) => (getValue() ? formatDateTime(getValue()) : 'starts at first login'),
+    }),
+    c.accessor('remainingMs', {
+      header: 'Remaining',
+      meta: { cellClassName: 'text-xs tabular-nums' },
+      cell: ({ getValue }) => remaining(getValue()),
+    }),
+    ...[1, 2, 3].map((seq) =>
+      c.display({
+        id: `m${seq}`,
+        header: `M${seq}`,
+        meta: { cellClassName: 'text-xs' },
+        cell: ({ row }) => {
+          const m = row.original.modules.find((x) => x.sequence === seq);
+          return m ? (
+            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+              <Badge variant={m.status === 'PASSED' ? 'success' : m.status === 'LOCKED' ? 'unknown' : 'info'}>{m.status === 'PASSED' ? 'Passed' : m.status === 'LOCKED' ? 'Locked' : 'Open'}</Badge>
+              {m.bestScorePct !== null ? <span className="text-slate-500 tabular-nums">{m.bestScorePct}%</span> : null}
+            </span>
+          ) : (
+            '—'
           );
-        })}
-      </TableBody>
-    </Table>
+        },
+      }),
+    ),
+    c.accessor('reactivations', {
+      header: 'Reactivations',
+      meta: { align: 'right' },
+      cell: ({ getValue }) => <span className="text-xs">{getValue()}</span>,
+    }),
+  ]);
+  return (
+    <DataTable
+      variant="panel"
+      responsive="compact"
+      columns={columns}
+      data={rows}
+      getRowId={(r) => r.telecaller.id}
+      empty={<EmptyState icon={GraduationCap} title="No Telecallers enrolled yet." />}
+    />
   );
 }

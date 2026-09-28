@@ -10,7 +10,6 @@ import {
   CreditCard,
   FilePlus2,
   Headset,
-  Inbox,
   Landmark,
   ListChecks,
   PhoneCall,
@@ -29,13 +28,13 @@ import Form from 'next/form';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { ActivationBadge, DecisionBadge, StageBadge } from '@/components/status';
 import { Button } from '@/components/ui/button';
-import { BankMark, Callout, EmptyState, IconTile, Meter, MiniStat, selectClass, TONE, type Tone } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Callout, IconTile, Meter, MiniStat, selectClass, TONE, type Tone } from '@/components/ui/kit';
 import { PERIODS, resolvePeriod } from '@/lib/admin-overview';
 import { ApiError, apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
+
+import { RecentLeadsTable } from './recent-leads-table';
 
 export const metadata = { title: 'Business overview · KBS Solutions' };
 
@@ -258,57 +257,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
             <ArrowRight className="size-3.5" aria-hidden="true" />
           </Link>
         </div>
-        {recentLeads.length === 0 ? (
-          <EmptyState icon={Inbox} className="m-3" title="No leads created in this period." description="Widen the date range or check All time." />
-        ) : (
-          <Table responsive containerClassName="rounded-none! border-0!">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-4">Customer</TableHead>
-                <TableHead>Bank / card</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Decision</TableHead>
-                <TableHead>Card activation</TableHead>
-                <TableHead className="pr-4">Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentLeads.map((l) => (
-                <TableRow key={l.id} className="hover:bg-slate-50">
-                  <TableCell className="pl-4" data-label="Customer">
-                    <Link href={`/admin/leads/${l.id}`} className="text-xs font-medium text-teal-700 hover:underline">
-                      {l.customer.name}
-                    </Link>
-                    <div className="mt-0.5 text-[11px] text-slate-500">
-                      {l.kbsRef}
-                      {l.customer.mobileMasked ? ` · ${l.customer.mobileMasked}` : ''}
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Bank / card">
-                    <span className="inline-flex items-center gap-2">
-                      <BankMark code={l.bank.code} size="sm" />
-                      <span className="text-xs font-medium text-slate-700">{l.bank.code}</span>
-                    </span>
-                    <div className="mt-0.5 max-w-40 truncate text-[11px] text-slate-500">{l.card.name}</div>
-                  </TableCell>
-                  <TableCell data-label="Stage">
-                    <StageBadge field={l.stage} label={null} />
-                  </TableCell>
-                  <TableCell data-label="Decision">
-                    <DecisionBadge field={l.decision} label={null} />
-                  </TableCell>
-                  <TableCell data-label="Card activation">
-                    <ActivationBadge field={l.activation} label={null} />
-                  </TableCell>
-                  <TableCell className="pr-4" data-label="Created">
-                    <div className="text-xs text-slate-700">{formatDateTime(l.leadCreatedAt)}</div>
-                    <div className="mt-0.5 text-[11px] text-slate-500">{l.lastMatchedAt ? `MIS ${formatDateTime(l.lastMatchedAt)}` : 'Awaiting MIS'}</div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <RecentLeadsTable rows={recentLeads} />
         <p className="border-t border-slate-100 px-4 py-2 text-[10px] text-slate-500">
           Source: KBS records + latest accepted bank MIS + payout ledger · {rangeLabel} · as of {formatDateTime(home.asOf)}. {home.note}
         </p>

@@ -1,10 +1,9 @@
-import { type CallingQueueRow, type CallOutcome, formatDateTime, OUTCOME_LABELS } from '@kbs/shared';
-import { CalendarClock, CircleAlert, CircleCheck, Contact, Inbox, TriangleAlert, Users } from 'lucide-react';
+import { type CallingQueueRow } from '@kbs/shared';
+import { CircleAlert, CircleCheck, Contact, TriangleAlert, Users } from 'lucide-react';
 
-import { ReassignForm } from '@/components/reassign-form';
+import { DistributionRecordsTable } from '@/components/calling-distribution-table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, Callout, EmptyState, humanize, Meter, PillNav, SectionCard } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -25,15 +24,6 @@ interface Distribution {
 }
 
 const TAB_LABEL = { active: 'Active', followups: 'Follow-ups', hidden: 'Hidden' } as const;
-const INTERACTION_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'unknown' | 'secondary'> = {
-  UNTOUCHED: 'secondary',
-  FOLLOW_UP: 'info',
-  INTERESTED: 'success',
-  LINK_SHARED: 'success',
-  COMPLETED: 'success',
-  DECLINED: 'unknown',
-  UNREACHABLE: 'warning',
-};
 
 /** F-305 §6 / F-307 §4: distribution + scoped records with reassignment (Manager: team; Admin: all). */
 export async function CallingDistribution({
@@ -153,79 +143,7 @@ export async function CallingDistribution({
         }
         flush={records.data.length > 0}
       >
-        {records.data.length === 0 ? (
-          <EmptyState icon={Inbox} title="No records." description="Nothing in this tab for the current selection." />
-        ) : (
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer / mobile</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Assigned to</TableHead>
-                <TableHead>Follow-up / last outcome</TableHead>
-                <TableHead>Reassign</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {records.data.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell data-label="Customer / mobile">
-                    <div className="font-medium text-slate-900">{r.fullName}</div>
-                    <div className="mt-0.5 font-mono text-xs text-slate-500">{r.mobileMasked}</div>
-                  </TableCell>
-                  <TableCell data-label="Location" className="text-xs">
-                    <div className="font-mono">{r.pincode}</div>
-                    <div className="mt-0.5 text-slate-500">{r.location}</div>
-                  </TableCell>
-                  <TableCell data-label="Status">
-                    <div className="flex flex-wrap gap-1">
-                      <Badge variant={INTERACTION_VARIANT[r.interactionStatus] ?? 'secondary'}>{humanize(r.interactionStatus)}</Badge>
-                      {r.suppressed ? <Badge variant="destructive">DNC</Badge> : null}
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Assigned to" className="text-xs">
-                    {r.assignedTelecaller ? (
-                      <span className="inline-flex items-center gap-2">
-                        <Avatar name={r.assignedTelecaller.fullName} size="sm" />
-                        <span className="font-medium text-slate-800">{r.assignedTelecaller.fullName}</span>
-                      </span>
-                    ) : (
-                      <em className="text-slate-500">unassigned</em>
-                    )}
-                  </TableCell>
-                  <TableCell data-label="Follow-up / last outcome" className="text-xs">
-                    <div className={cn('inline-flex items-center gap-1', r.nextFollowUpAt ? 'font-medium text-slate-800' : 'text-slate-500')}>
-                      {r.nextFollowUpAt ? <CalendarClock className="size-3.5 text-sky-600" aria-hidden="true" /> : null}
-                      {r.nextFollowUpAt ? `Due ${formatDateTime(r.nextFollowUpAt)}` : 'No follow-up scheduled'}
-                    </div>
-                    <div className="mt-1 text-slate-500">
-                      {r.lastOutcome ? (
-                        <>
-                          <Badge variant="outline" title={r.lastOutcome.outcome} className="whitespace-normal">
-                            {OUTCOME_LABELS[r.lastOutcome.outcome as CallOutcome] ?? r.lastOutcome.outcome}
-                          </Badge>
-                          {r.lastOutcome.remarks ? <span className="ml-1">— {r.lastOutcome.remarks}</span> : null}
-                        </>
-                      ) : (
-                        'No outcome recorded'
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Reassign">
-                    {r.hiddenAt ? null : (
-                      <ReassignForm
-                        recordId={r.id}
-                        currentId={r.assignedTelecaller?.id ?? null}
-                        options={eligible.map((t) => ({ id: t.id, label: t.fullName }))}
-                      />
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <DistributionRecordsTable rows={records.data} eligible={eligible.map((t) => ({ id: t.id, label: t.fullName }))} />
       </SectionCard>
     </div>
   );

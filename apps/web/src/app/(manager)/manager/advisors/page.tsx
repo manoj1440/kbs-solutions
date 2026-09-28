@@ -1,28 +1,13 @@
-import { formatDate } from '@kbs/shared';
-import { Filter, Users } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import Form from 'next/form';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import {
-  Avatar,
-  EmptyState,
-  humanize,
-  Meter,
-  MiniStat,
-  selectClass,
-  StatusDot,
-} from '@/components/ui/kit';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { type AdvisorTeamResponse, inr, REPORTING_LABEL } from '@/lib/advisor-team';
+import { MiniStat, selectClass } from '@/components/ui/kit';
+import { type AdvisorTeamResponse } from '@/lib/advisor-team';
 import { apiFetch } from '@/lib/api';
+
+import { AdvisorsTable } from './advisors-table';
 
 export const metadata = { title: 'Advisors · KBS Solutions' };
 
@@ -46,8 +31,6 @@ export default async function ManagerAdvisorsPage({
       .then((r) => r.data.banks)
       .catch(() => []),
   ]);
-  const detail = (id: string) =>
-    `/manager/advisors/${id}${qs.toString() ? `?${qs.toString()}` : ''}`;
   // KPIs are sums of the rows below (every Advisor reporting to you, in the chosen range).
   const sum = (f: (r: AdvisorTeamResponse['rows'][number]) => number) =>
     data.rows.reduce((a, r) => a + f(r), 0);
@@ -90,107 +73,7 @@ export default async function ManagerAdvisorsPage({
           </Button>
         </Form>
         <div className="min-h-0 flex-1">
-          {data.rows.length === 0 ? (
-            <EmptyState className="m-3" icon={Users} title="No Advisors report to you yet" description="Advisors join your team when they apply one of your Agent Codes." />
-          ) : (
-            <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-              <TableHeader className="sticky top-0 z-10">
-                <TableRow>
-                  <TableHead className="pl-4">Advisor</TableHead>
-                  <TableHead className="text-right">Leads (KBS)</TableHead>
-                  <TableHead>Bank activation (MIS)</TableHead>
-                  <TableHead className="text-right">Payout ledger</TableHead>
-                  <TableHead className="pr-4">Approvals</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.rows.map((r) => (
-                  <TableRow key={r.user.id}>
-                    <TableCell className="pl-4" data-label="Advisor">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={r.user.fullName || r.user.publicRef} size="sm" />
-                        <div className="min-w-0">
-                          <Link className="font-medium" href={detail(r.user.id)}>
-                            {r.user.fullName || '(onboarding)'}
-                          </Link>
-                          <div className="font-mono text-[11px] text-slate-500">
-                            {r.user.publicRef} · {r.reporting ? `${REPORTING_LABEL[r.reporting.source] ?? r.reporting.source} ${r.reporting.agentCode ?? ''} · since ${formatDate(r.reporting.since)}` : 'No active reporting line'}
-                          </div>
-                          <div className="mt-0.5">
-                            <StatusDot tone={r.user.status === 'ACTIVE' ? 'emerald' : 'slate'}>
-                              {humanize(r.user.status)}
-                            </StatusDot>
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="Leads (KBS)" className="@min-[701px]:text-right">
-                      <div className="text-slate-900">
-                        <span className="text-base font-semibold tabular-nums">{r.leads.created.value}</span> created
-                      </div>
-                      <Meter
-                        value={r.leads.misMatched.value}
-                        max={r.leads.created.value}
-                        tone="indigo"
-                        className="my-1.5 h-1.5 w-full min-w-28 @min-[701px]:ml-auto @min-[701px]:w-32"
-                        label={`${r.leads.misMatched.value} of ${r.leads.created.value} matched in MIS`}
-                      />
-                      <div className="text-xs text-slate-500 tabular-nums">
-                        {r.leads.misMatched.value} of {r.leads.created.value} matched in MIS · {r.leads.awaitingMis.value} awaiting MIS
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="Bank activation (MIS)">
-                      <ul className="grid gap-1 text-xs">
-                        {r.activation.buckets.slice(0, 4).map((b) => (
-                          <li key={b.value} className="flex items-baseline justify-between gap-3">
-                            <span
-                              className={
-                                b.value === 'Awaiting MIS' || b.value === 'Not reported'
-                                  ? 'text-slate-500 italic'
-                                  : 'min-w-0 font-mono break-words text-slate-700'
-                              }
-                            >
-                              {b.value}
-                            </span>
-                            <span className="font-medium text-slate-900 tabular-nums">{b.count}</span>
-                          </li>
-                        ))}
-                        {r.activation.buckets.length === 0 ? (
-                          <li className="text-slate-400">No leads</li>
-                        ) : null}
-                      </ul>
-                    </TableCell>
-                    <TableCell data-label="Payout ledger" className="text-xs">
-                      <dl className="grid grid-cols-[auto_auto_auto] justify-start gap-x-3 gap-y-0.5 tabular-nums @min-[701px]:justify-end">
-                        {(
-                          [
-                            ['Eligible', r.payouts.eligible],
-                            ['Approved, unpaid', r.payouts.approvedUnpaid],
-                            ['Paid', r.payouts.paid],
-                          ] as const
-                        ).map(([label, m]) => (
-                          <div key={label} className="contents">
-                            <dt className="text-slate-500">{label}</dt>
-                            <dd className="text-right text-slate-700">{m.value}</dd>
-                            <dd className="text-right font-medium text-slate-900">{inr(m.amountInr)}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </TableCell>
-                    <TableCell className="pr-4" data-label="Approvals">
-                      {r.awaitingManagerApproval ? (
-                        <Button asChild size="sm" variant="outline">
-                          <Link href="/manager/payouts/requests?awaitingMe=true">{r.awaitingManagerApproval} awaiting Manager</Link>
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-slate-400">None pending</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <AdvisorsTable rows={data.rows} qs={qs.toString()} />
         </div>
         <div className="flex shrink-0 items-center border-t border-slate-100 px-4 py-2 text-xs text-slate-500 tabular-nums">
           {data.rows.length} Advisor{data.rows.length === 1 ? '' : 's'}

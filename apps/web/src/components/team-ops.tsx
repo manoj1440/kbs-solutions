@@ -1,64 +1,18 @@
-import { type CallingQueueRow, formatDateTime, RECORD_STATUS_LABELS, type RecordStatus } from '@kbs/shared';
-import { Filter, PhoneCall, Users } from 'lucide-react';
+import { type CallingQueueRow, formatDateTime } from '@kbs/shared';
+import { Filter, Users } from 'lucide-react';
 import Form from 'next/form';
 import Link from 'next/link';
 
-import { PlayRecordingButton } from '@/components/play-recording-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, EmptyState, humanize, MiniStat, SectionCard } from '@/components/ui/kit';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
+import { fmtTalk, type OverviewRow, rangeParams } from '@/lib/calling-shared';
 
-/** F-808: badge tone per calling-record status (records page + caller drill-down). */
-export const RECORD_STATUS_VARIANT: Record<RecordStatus, 'success' | 'info' | 'warning' | 'unknown' | 'secondary' | 'destructive'> = {
-  NEEDS_REVIEW: 'warning',
-  EXCLUDED: 'unknown',
-  DO_NOT_CONTACT: 'destructive',
-  UNASSIGNED: 'warning',
-  UNTOUCHED: 'secondary',
-  UNREACHABLE: 'warning',
-  FOLLOW_UP: 'info',
-  INTERESTED: 'success',
-  LINK_SHARED: 'success',
-  DECLINED: 'unknown',
-  COMPLETED: 'secondary',
-};
+import { AssignedRecordsTable, TeamActivityTable } from '@/components/team-ops-tables';
 
-const fmtTalk = (sec: number) => `${Math.floor(sec / 3600) ? `${Math.floor(sec / 3600)}h ` : ''}${Math.round((sec % 3600) / 60)}m`;
-const fmtCall = (sec: number | null) => (sec == null ? '—' : sec >= 3600 ? `${Math.floor(sec / 3600)}h ${Math.round((sec % 3600) / 60)}m` : `${Math.floor(sec / 60)}m ${sec % 60}s`);
-
-export interface OverviewRow {
-  id: string;
-  fullName: string;
-  employeeCode: string | null;
-  status: string;
-  training: string;
-  wfhActive: boolean;
-  lastLoginAt: string | null;
-  queueSize: number;
-  followUpsDue: number;
-  attempts: number;
-  connected: number;
-  talkTimeSec: number;
-  outcomes: Record<string, number>;
-  shares: Record<string, number>;
-  interests: number;
-}
-
-export function rangeParams(sp: { from?: string; to?: string }) {
-  const q = new URLSearchParams();
-  if (sp.from) q.set('from', new Date(sp.from).toISOString());
-  if (sp.to) q.set('to', new Date(sp.to).toISOString());
-  return q.toString();
-}
+export { type OverviewRow, rangeParams, RECORD_STATUS_VARIANT } from '@/lib/calling-shared';
+export { TeamActivityTable } from '@/components/team-ops-tables';
 
 /** F-313 §1: team overview — evidence counts with denominators, no ranking. */
 export async function TeamOverview({
@@ -87,78 +41,6 @@ export async function TeamOverview({
         <TeamActivityTable rows={rows} base={base} sp={sp} />
       )}
     </SectionCard>
-  );
-}
-
-/** F-313 / F-808 per-caller evidence table (reused by the Admin caller-performance page with an in-page scroll). */
-export function TeamActivityTable({
-  rows,
-  base,
-  sp,
-  containerClassName,
-  headerClassName,
-}: {
-  rows: OverviewRow[];
-  base: string;
-  sp: { from?: string; to?: string };
-  containerClassName?: string;
-  headerClassName?: string;
-}) {
-  return (
-    <Table responsive containerClassName={containerClassName}>
-      <TableHeader className={headerClassName}>
-        <TableRow>
-          <TableHead>Caller</TableHead>
-          <TableHead>Assigned</TableHead>
-          <TableHead>Attempted</TableHead>
-          <TableHead>Connected</TableHead>
-          <TableHead>Succeeded</TableHead>
-          <TableHead>Talk time</TableHead>
-          <TableHead className="sm:text-right">Success %</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((t) => (
-          <TableRow key={t.id}>
-            <TableCell data-label="Caller">
-              <div className="flex min-w-40 items-start gap-2.5">
-                <Avatar name={t.fullName} size="sm" />
-                <div className="min-w-0">
-                  <a className="font-medium" href={`${base}/telecaller/${t.id}?${rangeParams(sp)}`}>
-                    {t.fullName}
-                  </a>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(t.status)}</Badge>
-                    {t.employeeCode ? <span className="font-mono text-[11px] text-slate-500">{t.employeeCode}</span> : null}
-                    {t.training === 'PASSED' ? null : <Badge variant="warning">not trained</Badge>}
-                    {t.wfhActive ? <Badge variant="info">WFH</Badge> : null}
-                  </div>
-                </div>
-              </div>
-            </TableCell>
-            <TableCell data-label="Assigned" className="tabular-nums">
-              <span className="font-semibold text-slate-900">{t.queueSize}</span>
-              {t.followUpsDue ? <div className="mt-0.5 text-[11px] font-medium text-rose-700">{t.followUpsDue} due</div> : null}
-            </TableCell>
-            <TableCell data-label="Attempted" className="tabular-nums">
-              {t.attempts}
-            </TableCell>
-            <TableCell data-label="Connected" className="tabular-nums">
-              {t.connected}
-            </TableCell>
-            <TableCell data-label="Succeeded" className="tabular-nums">
-              {t.interests}
-            </TableCell>
-            <TableCell data-label="Talk time" className="text-xs whitespace-nowrap tabular-nums">
-              {fmtTalk(t.talkTimeSec)}
-            </TableCell>
-            <TableCell data-label="Success %" className="font-semibold tabular-nums sm:text-right">
-              {t.connected ? Math.round((t.interests / t.connected) * 100) : 0}%
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   );
 }
 
@@ -236,58 +118,7 @@ export async function TelecallerActivity({
           <span className="tabular-nums">{total}</span>
         </div>
         <div className="min-h-0 flex-1">
-          {records.length === 0 ? (
-            <EmptyState icon={PhoneCall} title="No records assigned to this caller." className="m-3" />
-          ) : (
-            <Table responsive containerClassName="lg:h-full lg:overflow-y-auto">
-              <TableHeader className="sticky top-0 z-10 bg-white">
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Current status</TableHead>
-                  <TableHead>Last call</TableHead>
-                  <TableHead>Recording</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {records.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell data-label="Customer">
-                      <div className="font-medium text-slate-900">{r.fullName}</div>
-                      <div className="mt-0.5 font-mono text-xs text-slate-500">
-                        {r.mobileMasked} · {r.pincode}
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="Current status">
-                      <Badge variant={RECORD_STATUS_VARIANT[r.recordStatus]}>{RECORD_STATUS_LABELS[r.recordStatus]}</Badge>
-                      {r.nextFollowUpAt ? <div className="mt-1 text-[11px] font-medium text-sky-800">Follow-up {formatDateTime(r.nextFollowUpAt)}</div> : null}
-                    </TableCell>
-                    <TableCell data-label="Last call" className="text-xs tabular-nums">
-                      {r.lastCall ? (
-                        <>
-                          <div className="font-medium text-slate-800">{fmtCall(r.lastCall.durationSec)}</div>
-                          <div className="mt-0.5 text-slate-500">{formatDateTime(r.lastCall.at)}</div>
-                        </>
-                      ) : (
-                        <span className="text-slate-500">No call yet</span>
-                      )}
-                    </TableCell>
-                    <TableCell data-label="Recording">
-                      {r.lastCall ? (
-                        <div className="flex items-center gap-1.5">
-                          <Badge variant={r.lastCall.recordingStatus === 'AVAILABLE' ? 'success' : r.lastCall.recordingStatus === 'FAILED' ? 'destructive' : 'unknown'}>
-                            {r.lastCall.recordingStatus ? humanize(r.lastCall.recordingStatus) : 'None'}
-                          </Badge>
-                          {r.lastCall.canPlay ? <PlayRecordingButton callId={r.lastCall.id} /> : null}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <AssignedRecordsTable rows={records} />
         </div>
       </section>
     </div>

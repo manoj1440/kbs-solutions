@@ -1,28 +1,21 @@
-import { UserPlus, UserRound } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { Avatar, EmptyState, humanize, MiniStat, StatusDot, type Tone } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MiniStat } from '@/components/ui/kit';
 import { TrainingTeamTable } from '@/components/training-team-table';
 import { apiFetch } from '@/lib/api';
 import type { TrainingTeamRow } from '@/lib/training-types';
 
+import { type TeamAdvisorRow, TeamAdvisorsTable } from './team-advisors-table';
+
 export const metadata = { title: 'My team · KBS Solutions' };
 
-interface TeamUser {
-  id: string;
-  fullName: string;
-  role: string;
-  status: string;
-  mobileMasked: string;
+interface TeamUser extends TeamAdvisorRow {
   employeeCode: string | null;
   lastLoginAt: string | null;
   createdAt: string;
 }
-
-/** F-806: dot tone per KBS user status (the humanised text carries the meaning). */
-const userStatusTone = (s: string): Tone => (s === 'ACTIVE' ? 'emerald' : s === 'PENDING_ONBOARDING' ? 'amber' : s === 'BLOCKED' ? 'rose' : 'slate');
 
 /** F-201/F-105 → F-811: Manager team list. Training columns arrive with F-205. */
 export default async function ManagerTeam() {
@@ -59,39 +52,7 @@ export default async function ManagerTeam() {
         <section aria-label="Advisors" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
           <div className="border-b border-slate-100 px-4 py-2.5 text-xs text-slate-500">Advisors · who applied one of your Agent Codes</div>
           <div className="min-h-0 flex-1">
-            {advisors.length === 0 ? (
-              <EmptyState icon={UserRound} className="m-3" title="No Advisors yet" description="Advisors join your team when they apply one of your Agent Codes." />
-            ) : (
-              <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-                <TableHeader className="sticky top-0 z-10">
-                  <TableRow>
-                    <TableHead className="pl-4">Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="pr-4">Mobile</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {advisors.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="pl-4" data-label="Name">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar name={u.fullName || '?'} size="sm" />
-                          <Link href={`/manager/advisors/${u.id}`} className="font-medium">
-                            {u.fullName || '(onboarding)'}
-                          </Link>
-                        </div>
-                      </TableCell>
-                      <TableCell data-label="Status">
-                        <StatusDot tone={userStatusTone(u.status)}>{humanize(u.status)}</StatusDot>
-                      </TableCell>
-                      <TableCell className="pr-4 font-mono text-xs" data-label="Mobile">
-                        {u.mobileMasked}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <TeamAdvisorsTable rows={advisors} />
           </div>
         </section>
       </div>

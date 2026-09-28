@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { columnHelper, DataTable } from '@/components/data-table';
 import { ReassignForm } from '@/components/reassign-form';
-import { RECORD_STATUS_VARIANT } from '@/components/team-ops';
+import { RECORD_STATUS_VARIANT } from '@/lib/calling-shared';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, EmptyState, humanize } from '@/components/ui/kit';
 
