@@ -10,23 +10,23 @@ One reusable `DataTable` module (`apps/web/src/components/data-table/`) built on
 |---|---|
 | Scope | All 39 tables incl. detail-page and client editor tables |
 | Sorting | Client-side, current page only; UI labels it so. No API sort params |
-| Deps | shadcn `dropdown-menu` + `checkbox` → `@radix-ui/react-dropdown-menu@2.1.24`, `@radix-ui/react-checkbox@1.3.11` |
+| Deps | shadcn `checkbox` → `@radix-ui/react-checkbox@1.3.11` (dropdown-menu added then removed — user wants direct sort click, no popups/hide) |
 | Pagination | Keep server `?page=` links (`DataTablePagination`); TanStack does no paging |
 | TanStack | `@tanstack/react-table@9.2.4` (exact pin; guide targets v9 API) |
 
 ## Architecture
 - `features.ts` — `tableFeatures({rowSortingFeature, columnVisibilityFeature, rowExpandingFeature, rowSelectionFeature, sortedRowModel, expandedRowModel, sortFns})`, `DataTableFeatures` type, `columnHelper()`, `ColumnMeta` augmentation (`label`, `hideLabel`, `align`, `className`, `headerClassName`, `cellClassName`).
 - `data-table.tsx` — the only `useTable` call site; emits `data-label`, `meta.align`, `pl-4`/`pr-4` edges on `variant="panel"`, sub-rows, `data-state="selected"`, empty handling.
-- `column-header.tsx` / `view-options.tsx` — guide components (sort dropdown, "View" column toggle; labels from `meta.label`).
+- `column-header.tsx` — click-to-sort header (asc → desc → none), no dropdown menus; column hiding not offered (user decision).
 - `pagination.tsx` / `panel.tsx` / `cells.tsx` — **server-compatible** shared footer (`A–B of T · page P of Q`), F-811 section shell, and cells repeated 3+ times (`Dash`, `DateTimeCell`, `MonoCell`, `NumCell`, `PersonCell`, `BankCell`).
 - **RSC boundary:** cell renderers are functions → each table gets a small `'use client'` file owning its columns; pages pass only serialisable row data + rendered `empty`/`toolbar`/`footer` ReactNodes.
-- `components/ui/`: add `dropdown-menu.tsx`, `checkbox.tsx` (shadcn new-york, individual `@radix-ui/react-*` packages like `label`/`slot`).
+- `components/ui/`: add `checkbox.tsx` (shadcn new-york, individual `@radix-ui/react-*` packages like `label`/`slot`).
 
 ## Guard-rails
 Presentation-only. Stage/Decision/Activation stay three separate badge columns with provenance; bank values verbatim (INV-01/02/03); header text + `data-label` values stay byte-identical (e2e depends on them); no API/route/filter changes.
 
 ## Acceptance criteria
-1. ✅ One `DataTable` module following the shadcn guide (sort header, view options, pagination, selection support).
+1. ✅ One `DataTable` module following the shadcn guide (click-to-sort header, pagination, selection support; no column-hide menu per user decision).
 2. ✅ All 39 tables render through it; same headers, `data-label`s, badges, links, copy.
 3. ✅ Server pagination + URL filters unchanged; sorting client-side per page and labelled.
 4. ✅ Phone card mode (normal + compact) unchanged.

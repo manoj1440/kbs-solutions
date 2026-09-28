@@ -159,7 +159,6 @@ export function AuditActionsTable({ rows, sp }: { rows: AuditRow[]; sp: Record<s
       columns={columns}
       data={rows}
       getRowId={(r) => r.id}
-      viewOptions
       pagedOnServer
       getRowProps={() => ({ className: 'align-top' })}
       empty={<EmptyState icon={History} className="m-3" title="No audit entries match." />}

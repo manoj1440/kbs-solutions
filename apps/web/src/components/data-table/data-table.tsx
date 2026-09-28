@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils';
 
 import { DataTableColumnHeader } from './column-header';
 import { type DataTableFeatures, features } from './features';
-import { DataTableViewOptions } from './view-options';
 
 type DataTableColumnDef<TData extends RowData> = ColumnDef<DataTableFeatures, TData>;
 
@@ -48,9 +47,7 @@ export interface DataTableProps<TData extends RowData> {
   columnVisibility?: ColumnVisibilityState;
   onColumnVisibilityChange?: (v: ColumnVisibilityState) => void;
   initialColumnVisibility?: ColumnVisibilityState;
-  /** Show the "View" column-toggle menu. */
-  viewOptions?: boolean;
-  /** Extra controls rendered next to the View menu above the table. */
+  /** Extra controls rendered in the bar above the table. */
   toolbar?: React.ReactNode | ((table: ReturnType<typeof useTable<DataTableFeatures, TData>>) => React.ReactNode);
   /** Expandable rows: render this panel under expanded rows. */
   renderSubRow?: (row: Row<DataTableFeatures, TData>) => React.ReactNode;
@@ -80,7 +77,6 @@ export function DataTable<TData extends RowData>({
   columnVisibility,
   onColumnVisibilityChange,
   initialColumnVisibility,
-  viewOptions = false,
   toolbar,
   renderSubRow,
   getSubRowId,
@@ -222,13 +218,10 @@ export function DataTable<TData extends RowData>({
     </Table>
   );
 
-  if (!viewOptions && !toolbarNode) return body;
+  if (!toolbarNode) return body;
   return (
     <div className="grid min-w-0 lg:h-full lg:grid-rows-[auto_minmax(0,1fr)]">
-      <div className="flex shrink-0 items-center justify-end gap-2 border-b border-slate-100 px-3 py-2">
-        {toolbarNode}
-        {viewOptions ? <DataTableViewOptions table={table} /> : null}
-      </div>
+      <div className="flex shrink-0 items-center justify-end gap-2 border-b border-slate-100 px-3 py-2">{toolbarNode}</div>
       {body}
     </div>
   );

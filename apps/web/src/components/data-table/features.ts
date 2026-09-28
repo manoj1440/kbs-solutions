@@ -16,7 +16,7 @@ import {
 
 /** Per-column options understood by `DataTable` (the v9 `columnMeta` type slot). */
 export interface DataTableColumnMeta {
-  /** Card-mode label (`data-label`) and the "View" menu text. Defaults to the string header. */
+  /** Card-mode label (`data-label`). Defaults to the string header. */
   label?: string;
   /** Omit the card-mode label for this cell. */
   hideLabel?: boolean;

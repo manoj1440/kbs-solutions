@@ -110,7 +110,6 @@ export function CallingRecordsTable({
       columns={columns}
       data={rows}
       getRowId={(r) => r.id}
-      viewOptions
       pagedOnServer
       empty={
         <EmptyState

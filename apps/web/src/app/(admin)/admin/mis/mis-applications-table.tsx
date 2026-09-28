@@ -116,7 +116,6 @@ export function MisApplicationsTable({ rows, filtered }: { rows: MisApplication[
       columns={columns}
       data={rows}
       getRowId={(r) => r.leadId}
-      viewOptions
       pagedOnServer
       empty={
         <EmptyState

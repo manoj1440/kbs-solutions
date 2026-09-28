@@ -153,7 +153,6 @@ export function TelecallerPerformanceTable({ rows }: { rows: TelecallerRow[] }) 
       columns={telecallerColumns}
       data={rows}
       getRowId={(r) => r.user.id}
-      viewOptions
       empty={<EmptyState icon={Users} title="No Telecallers." />}
     />
   );
@@ -225,7 +224,6 @@ export function ManagerPerformanceTable({ rows }: { rows: ManagerRow[] }) {
       columns={managerColumns}
       data={rows}
       getRowId={(r) => r.user.id}
-      viewOptions
       empty={<EmptyState icon={UserCog} title="No Managers." />}
     />
   );
@@ -280,7 +278,6 @@ export function AdvisorPerformanceTable({ rows }: { rows: AdvisorRow[] }) {
       columns={advisorColumns}
       data={rows}
       getRowId={(r) => r.user.id}
-      viewOptions
       empty={<EmptyState icon={UserRound} title="No Advisors." />}
     />
   );
@@ -336,7 +333,6 @@ export function BankCardMixTable({ rows }: { rows: BankCardMixRow[] }) {
       columns={mixColumns}
       data={rows}
       getRowId={(r) => `${r.bank.code}:${r.card.id}`}
-      viewOptions
       empty={<EmptyState icon={CreditCard} title="No leads in this period." />}
     />
   );

@@ -9,7 +9,7 @@ Premium operations console: calm grey canvas, white elevated surfaces, teal prim
 4. **One `h1` per page**, rendered by `PageHeader`.
 5. Links inside tables are styled automatically (teal, no underline) — do not add `underline`.
 6. Use `EmptyState` instead of "No … yet." table rows; `Callout` instead of ad-hoc coloured boxes.
-7. No new dependencies; icons from `lucide-react`; charts are CSS (`Meter`) or inline SVG. Exceptions: the shadcn `dropdown-menu`/`checkbox` primitives and TanStack Table v9 behind the common `DataTable` (ADR-014).
+7. No new dependencies; icons from `lucide-react`; charts are CSS (`Meter`) or inline SVG. Exceptions: the shadcn `checkbox` primitive and TanStack Table v9 behind the common `DataTable` (ADR-014).
 8. Numbers: `tabular-nums`, right-aligned in tables.
 
 ## Components (`@/components/ui/kit`)
@@ -50,8 +50,9 @@ export function MyTable({ rows }: { rows: Row[] }) {
 ```
 
 - `variant="panel"` (default when inside `DataTablePanel`) adds edge padding + sticky header for scrollable sections; use `DataTablePanel` + `DataTablePagination` (server `?page=` links) for the F-811 list layout.
-- Column meta: `label` (display name for the View toggle), `hideLabel`, `align:'right'`, `className`/`headerClassName`/`cellClassName`.
-- Features: `initialSorting`, `viewOptions` (column toggle), `enableRowSelection`, `renderSubRow`/`getSubRowId`, `getRowProps`, `pagedOnServer` (labels sorting as page-local).
+- Column meta: `label` (card-mode display name), `hideLabel`, `align:'right'`, `className`/`headerClassName`/`cellClassName`.
+- Sorting: click a header — cycles asc → desc → none, no menus (user decision: no popups, no column hiding).
+- Features: `initialSorting`, `enableRowSelection`, `renderSubRow`/`getSubRowId`, `getRowProps`, `pagedOnServer` (labels sorting as page-local).
 - `responsive` (default) = phone card mode via `data-label`; `responsive="compact"` for dense ops tables; `responsive={false}` for raw grids (e.g. dynamic columns).
 - Shared cells: `Dash`, `DateCell`, `DateTimeCell`, `MonoCell`, `PersonCell`, `BankCell`.
 - **RSC boundary:** column defs are functions → table components live in `'use client'` files; server pages pass rows + rendered `empty`/`toolbar`/`footer` nodes only.
