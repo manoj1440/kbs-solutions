@@ -148,18 +148,26 @@ describe('F-702 Manager dashboard / F-703 Admin dashboards (DASH-01, DASH-02)', 
     await get('/dashboards/admin/telecallers', team[0].managerToken, 403);
   });
 
-  it('F-811: admin home returns team, calling, MIS, leads, payout and catalogue totals plus the newest leads (RBAC-01)', async () => {
+  it('F-811: admin home returns team, calling, MIS, leads, payout and catalogue figures for a date range plus the newest leads (RBAC-01)', async () => {
     const d = await get('/dashboards/admin/home', admin);
     expect(d.people.MANAGER.total).toBe(2);
     expect(d.people.TELECALLER.total).toBe(2);
     expect(d.people.ADVISOR.total).toBe(2);
-    expect(d.calling.total).toBe(await prisma.callingRecord.count());
-    expect(d.mis.total).toBe(await prisma.bankStatusSnapshot.count());
-    expect(d.leads.total).toBe(5);
+    expect(d.cumulative.mis.total).toBe(await prisma.bankStatusSnapshot.count());
+    expect(d.business.leads.created.value).toBe(5);
+    expect(d.business.approved).toBe(2);
+    expect(d.business.activated).toBe(2);
+    expect(d.business.declined).toBe(1);
+    expect(d.calling.calls.attempts.value).toBe(7);
+    expect(d.calling.byCaller).toHaveLength(2);
+    expect(d.calling.pipeline.total).toBe(await prisma.callingRecord.count());
     expect(d.catalogue.banks.total).toBe(await prisma.bank.count());
     expect(d.recentLeads).toHaveLength(5);
     expect(Date.parse(d.recentLeads[0].leadCreatedAt)).toBeGreaterThanOrEqual(Date.parse(d.recentLeads.at(-1).leadCreatedAt));
     expect(d.note).toContain('never live bank status');
+    const empty = await get('/dashboards/admin/home?from=2000-01-01&to=2000-01-02', admin);
+    expect(empty.business.leads.created.value).toBe(0);
+    expect(empty.recentLeads).toHaveLength(0);
     await get('/dashboards/admin/home', team[0].managerToken, 403);
   });
 

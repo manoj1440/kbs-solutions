@@ -1,4 +1,4 @@
-import { type AdvisorTeamResponse, type CallingRecordsSummary, type DashboardQuery, LeadListQuery, type LeadStatusRow, maskMobile, PayoutDashboardQuery } from '@kbs/shared';
+import { activationBucket, type AdvisorTeamResponse, type CallingRecordsSummary, type DashboardQuery, decisionBucket, LeadListQuery, type LeadStatusRow, maskMobile, PayoutDashboardQuery } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -12,7 +12,7 @@ import { bucketOf, totalsOf } from '../payouts/ledger-buckets';
 import { PayoutDashboardService } from '../payouts/payout-dashboard.service';
 import { HierarchyService } from '../users/hierarchy.service';
 
-import { DashboardMetricsService } from './dashboard-metrics.service';
+import { DATE_BASIS, DashboardMetricsService } from './dashboard-metrics.service';
 
 export interface Alert {
   kind: 'MIS_UNMATCHED' | 'MIS_CONFLICT' | 'PAYOUT_EXCEPTIONS' | 'LAUNCH_GATES_OPEN' | 'BANK_NEVER_APPLIED';
@@ -44,22 +44,28 @@ export class AdminDashboardsService {
   }
 
   /**
-   * F-811 Admin home: business-first cumulative figures + the 10 newest leads. No period, no filters — every number
-   * is a passthrough from the owning service so nothing here computes a bank value itself (INV-01..03).
+   * F-811 Admin home: business-first figures for a date range (from/to) plus all-time context. Every bank figure is
+   * a passthrough from the metric engine or the owning service — nothing here computes a bank value itself
+   * (INV-01..03).
    */
-  async home(actor: Actor) {
+  async home(actor: Actor, q: DashboardQuery) {
     this.assertAdmin(actor);
-    const [peopleRows, calling, mis, leads, payout, banks, activeBanks, cards, publishedCards, recent] = await Promise.all([
+    const scope = await this.metrics.scope(actor, q);
+    const leadListQuery = LeadListQuery.parse({ pageSize: 10, ...(q.from ? { from: q.from } : {}), ...(q.to ? { to: q.to } : {}) });
+    const [peopleRows, pipeline, mis, leadsCum, payoutCum, advisors, calling, telecallers, banks, activeBanks, cards, publishedCards, recent] = await Promise.all([
       this.prisma.client.user.groupBy({ by: ['role', 'status'], _count: { _all: true } }),
       this.callingQueue.summary(actor),
       this.misImport.applicationsSummary(),
       this.leadsService.summary(actor),
       this.payouts.summary(actor, PayoutDashboardQuery.parse({})),
+      this.metrics.advisors(scope, q),
+      this.metrics.calling(scope, q),
+      this.telecallers(actor, q),
       this.prisma.client.bank.count(),
       this.prisma.client.bank.count({ where: { active: true } }),
       this.prisma.client.creditCard.count(),
       this.prisma.client.creditCard.count({ where: { status: 'PUBLISHED' } }),
-      this.leadsService.list(actor, LeadListQuery.parse({ pageSize: 10 })),
+      this.leadsService.list(actor, leadListQuery),
     ]);
     const people = Object.fromEntries(['TELECALLER', 'MANAGER', 'ADVISOR', 'ACCOUNTS'].map((r) => [r, { total: 0, active: 0 }])) as Record<'TELECALLER' | 'MANAGER' | 'ADVISOR' | 'ACCOUNTS', { total: number; active: number }>;
     for (const g of peopleRows) {
@@ -69,16 +75,49 @@ export class AdminDashboardsService {
       if (g.status === 'ACTIVE') slot.active += g._count._all;
     }
     const { values: _ignored, ...misSummary } = mis;
+    // Same loose bank-verbatim buckets as LeadsService.summary / MisImportService.applicationsSummary (F-811):
+    // banks write Approve/Approved/APPROVED; 'Awaiting MIS' / 'Not reported' are not bank values.
+    const UNKNOWN = new Set(['Awaiting MIS', 'Not reported']);
+    const biz = { approved: 0, declined: 0, inProcess: 0, activated: 0 };
+    for (const b of advisors.decision.buckets) {
+      if (UNKNOWN.has(b.value)) continue;
+      biz[decisionBucket(b.value)] += b.count;
+    }
+    for (const b of advisors.activation.buckets) {
+      if (!UNKNOWN.has(b.value) && activationBucket(b.value) === 'active') biz.activated += b.count;
+    }
     return {
+      range: { from: q.from ?? null, to: q.to ?? null },
       people,
-      calling: calling as CallingRecordsSummary,
-      mis: misSummary,
-      leads: { total: leads.total, matched: leads.matched, awaitingMis: leads.awaitingMis },
-      payouts: { eligible: payout.totals.eligible, approvedUnpaid: payout.totals.approvedUnpaid, paid: payout.totals.paid, confirmedTransfersInr: payout.confirmedTransfers.amountInr },
       catalogue: { banks: { total: banks, active: activeBanks }, cards: { total: cards, published: publishedCards } },
+      cumulative: {
+        mis: misSummary,
+        leads: { total: leadsCum.total, matched: leadsCum.matched, awaitingMis: leadsCum.awaitingMis },
+        payouts: { eligible: payoutCum.totals.eligible, paid: payoutCum.totals.paid },
+      },
+      business: {
+        leads: advisors.leads,
+        approved: biz.approved,
+        activated: biz.activated,
+        declined: biz.declined,
+        inProcess: biz.inProcess,
+        decision: advisors.decision,
+        activation: advisors.activation,
+        payouts: advisors.payouts,
+      },
+      calling: {
+        records: calling.records,
+        calls: calling.calls,
+        callbacks: calling.callbacks,
+        outcomes: calling.outcomes,
+        shares: calling.shares,
+        byCaller: telecallers.rows,
+        pipeline: pipeline as CallingRecordsSummary,
+      },
       recentLeads: recent.data as LeadStatusRow[],
       asOf: new Date().toISOString(),
       note: 'Bank values are the latest accepted MIS only — never live bank status.',
+      dateBases: DATE_BASIS,
     };
   }
 
