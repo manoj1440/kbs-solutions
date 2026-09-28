@@ -23,7 +23,8 @@ The F-808 → F-810 single-screen pattern (business tiles → compact filter/act
 | `manager` home, `manager/advisors`, `manager/pending-actions`, `manager/calling` (`OperationsDashboard` header) | same pattern |
 | notifications (`NotificationCentre`, all roles) | top control bar + scrollable list panel + footer pagination |
 
-Not touched: `/admin` business overview (already the F-807 at-a-glance surface — its StatCards carry deltas), detail/editor pages (lead, batch, user, card, profile, module, rule — `PageHeader` is their identity header; pages scroll as documents by design).
+`/admin` business overview — compacted too: pinned slim control row (period pills + Filters overlay + Explore leads + Import bank MIS + range/scope/as-of meta), 4 `MiniStat` KPIs carrying `delta · source` in the hint (arrows text-encoded per REQ-20), funnel + attention + bank + payout as slim `Panel` sections inside the internal scroll, `OpsSections` + provenance footer below.
+Not touched: detail/editor pages (lead, batch, user, card, profile, module, rule — `PageHeader` is their identity header; pages scroll as documents by design).
 
 ## Mechanics
 

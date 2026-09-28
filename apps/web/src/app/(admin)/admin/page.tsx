@@ -8,10 +8,8 @@ import {
   ChevronDown,
   CircleAlert,
   Clock3,
-  CreditCard,
   Filter,
   Landmark,
-  LayoutDashboard,
   ListChecks,
   Phone,
   PhoneCall,
@@ -33,11 +31,8 @@ import {
   EmptyState,
   IconTile,
   Meter,
-  PageHeader,
+  MiniStat,
   PillNav,
-  SectionCard,
-  StatCard,
-  StatGrid,
   TONE,
   type Tone,
 } from '@/components/ui/kit';
@@ -94,37 +89,34 @@ function figures(a: Advisors) {
   };
 }
 
-/** Change vs the comparison window: arrow + % in text (never colour alone, REQ-20 §20.2). */
-function Delta({
-  current,
-  previous,
-  against,
-  money,
-  light,
-}: {
-  current: number;
-  previous: number | null;
-  against: string;
-  money?: boolean;
-  light?: boolean;
-}) {
+/** Change vs the comparison window as a compact text run: arrow + % (never colour alone, REQ-20 §20.2). */
+function deltaText(current: number, previous: number | null, against: string, money?: boolean): string | null {
   if (previous == null) return null;
   const change = percentChange(current, previous) ?? (current ? null : 0);
   const text = change == null ? 'New' : change === 0 ? 'No change' : `${change > 0 ? '▲' : '▼'} ${Math.abs(change)}%`;
-  const tone = light
-    ? 'bg-white/15 text-white'
-    : change == null || change === 0
-      ? 'bg-slate-100 text-slate-600'
-      : change > 0
-        ? 'bg-emerald-50 text-emerald-700'
-        : 'bg-rose-50 text-rose-700';
+  return `${text} vs ${money ? formatInr(previous) : previous.toLocaleString('en-IN')} · ${against}`;
+}
+
+function Panel({
+  title,
+  caption,
+  action,
+  children,
+}: {
+  title: string;
+  caption?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5">
-      <span className={cn('rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums', tone)}>{text}</span>
-      <span>
-        vs {money ? formatInr(previous) : previous.toLocaleString('en-IN')} · {against}
-      </span>
-    </span>
+    <section aria-label={title} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-2.5">
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h2>
+        {caption ? <span className="text-xs text-slate-500">{caption}</span> : null}
+        {action ? <span className="ml-auto">{action}</span> : null}
+      </div>
+      <div className="p-4">{children}</div>
+    </section>
   );
 }
 
@@ -141,7 +133,7 @@ function SectionLink({ href, children }: { href: string; children: React.ReactNo
 }
 
 /**
- * F-807 Business overview: the Admin home and the executive dashboard in one (REQ-16 §16.2). Business first —
+ * F-807 → F-811 Business overview: the Admin home and the executive dashboard in one (REQ-16 §16.2). Business first —
  * period KPIs with change, the lead → bank funnel, bank performance and open queues; operational detail below.
  * Bank figures are the latest accepted MIS values as reported (INV-01..03); every figure names its source.
  */
@@ -235,364 +227,304 @@ export default async function AdminOverview({
   const counts = payouts?.counts;
   const largestAmount = amounts ? Math.max(...payoutRows.map((r) => amounts[r.key])) : 0;
 
+  const kpi = (delta: string | null, extra: string, source: string) => [delta, extra, source].filter(Boolean).join(' · ');
+
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={LayoutDashboard}
-        eyebrow="Overview"
-        title="Business overview"
-        description="How the business is doing: leads, bank results and payouts for the selected period."
-        actions={
-          <>
-            <Button variant="outline" asChild>
-              <Link href="/admin/leads">
-                <ListChecks />
-                Explore leads
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href="/admin/mis">
-                <ArrowDownToLine />
-                Import bank MIS
-              </Link>
-            </Button>
-          </>
-        }
-        meta={
-          <>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-700">
-              <CalendarRange className="size-3.5" />
-              {rangeLabel(period.current)}
-            </span>
-            {period.previous ? <span>compared with {against}</span> : null}
-            {d ? <Badge variant="secondary">{d.scope}</Badge> : null}
-            <span className="inline-flex items-center gap-1.5">
-              <Clock3 className="size-3.5" />
-              as of {formatDateTime(d?.meta.asOf ?? new Date().toISOString())} · IST
-            </span>
-          </>
-        }
-      >
-        <div className="flex min-w-0 flex-wrap items-start gap-2">
-          <PillNav
-            label="Period"
-            items={PERIODS.map((p) => ({ href: chipHref(p.key), label: p.label }))}
-            active={period.key === 'custom' ? '' : chipHref(period.key)}
-            className="max-w-full min-w-0"
-          />
-          <details className="group/filters min-w-0 flex-1 basis-full [&[open]]:basis-full sm:basis-auto" open={period.key === 'custom' || filterCount > 0}>
-            <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 text-[13px] font-medium text-slate-700 shadow-[0_1px_2px_rgb(15_23_42/4%)] hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-              <Filter className="size-3.5" aria-hidden="true" />
-              Custom dates & filters
-              {filterCount ? (
-                <span className="rounded-full bg-teal-50 px-1.5 text-[10.5px] font-semibold text-teal-700 tabular-nums">{filterCount}</span>
-              ) : null}
-              <ChevronDown className="size-3.5 transition-transform group-open/filters:rotate-180" aria-hidden="true" />
-            </summary>
-            <div className="mt-3">
-              <OpsFilters basePath="/admin" sp={sp} />
-            </div>
-          </details>
-        </div>
-        {unavailable.length > 0 ? (
-          <Callout tone="warning" icon={TriangleAlert} role="alert" title="Some data could not be loaded.">
-            {unavailable.join(', ')}. Unavailable figures are not zero. Use the refresh button to retry.
-          </Callout>
-        ) : null}
-        <StatGrid>
-          <StatCard
-            label="Leads created"
-            value={number(now?.leads)}
-            hint={now ? <Delta current={now.leads} previous={was?.leads ?? null} against={against} /> : undefined}
-            source="KBS leads · created date"
-            href="/admin/leads"
-            icon={Users}
-            tone="violet"
-          />
-          <StatCard
-            label="Bank approved"
-            value={number(now?.approved)}
-            hint={
-              now ? (
-                <>
-                  <span className="block">{pct(now.approved, now.leads) ?? 0}% of leads</span>
-                  <Delta current={now.approved} previous={was?.approved ?? null} against={against} />
-                </>
-              ) : undefined
-            }
-            source="Bank MIS · final decision"
-            href="/admin/leads"
-            icon={ShieldCheck}
-            tone="teal"
-          />
-          <StatCard
-            label="Cards activated"
-            value={number(now?.activated)}
-            hint={
-              now ? (
-                <>
-                  <span className="block">{pct(now.activated, now.leads) ?? 0}% of leads</span>
-                  <Delta current={now.activated} previous={was?.activated ?? null} against={against} />
-                </>
-              ) : undefined
-            }
-            source="Bank MIS · activation"
-            href="/admin/leads"
-            icon={CreditCard}
-            tone="emerald"
-          />
-          <StatCard
-            label="Payout earned"
-            value={now ? formatInr(now.earned) : 'Unavailable'}
-            hint={
-              now ? (
-                <>
-                  <span className="block">
-                    {number(now.earnedEvents)} eligible card event{now.earnedEvents === 1 ? '' : 's'}
-                  </span>
-                  <Delta current={now.earned} previous={was?.earned ?? null} against={against} money light />
-                </>
-              ) : undefined
-            }
-            source="Payout ledger · eligible date"
-            href="/admin/payouts/entitlements"
-            icon={Wallet}
-            emphasis
-          />
-        </StatGrid>
-      </PageHeader>
-
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <SectionCard
-          icon={Landmark}
-          tone="indigo"
-          title="Lead to card funnel"
-          description="Leads created in the period and their latest bank MIS result, as reported. A match is not an approval."
-          bodyClassName="grid gap-5"
-        >
-          {funnel.length ? (
-            <ol className="grid gap-3.5">
-              {funnel.map((step, i) => {
-                const ofPrev = i ? pct(step.value, funnel[i - 1].value) : null;
-                return (
-                  <li key={step.label} className="grid gap-1.5">
-                    <div className="flex items-baseline justify-between gap-3 text-[13px]">
-                      <span className="font-medium text-slate-800">
-                        {step.label}
-                        <span className="ml-2 text-[11px] font-normal text-slate-400">{step.source}</span>
-                      </span>
-                      <span className="flex items-baseline gap-2 tabular-nums">
-                        {ofPrev != null ? <span className="text-[11px] text-slate-500">{ofPrev}% of previous</span> : null}
-                        <span className="text-base font-semibold text-slate-900">{number(step.value)}</span>
-                      </span>
-                    </div>
-                    <Meter value={step.value} max={Math.max(1, funnel[0].value)} tone={step.tone} className="h-2.5" label={step.label} />
-                  </li>
-                );
-              })}
-            </ol>
-          ) : (
-            <EmptyState icon={Landmark} title="Funnel unavailable" description="Business metrics could not be loaded. Refresh to retry." />
-          )}
-          {d ? (
-            <div className="grid gap-2 border-t border-slate-100 pt-4">
-              <p className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-                <PhoneCall className="size-3.5" aria-hidden="true" />
-                Calling activity · same period
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {(
-                  [
-                    ['Call attempts', d.calling.calls.attempts.value],
-                    ['Connected', d.calling.calls.connected.value],
-                    ['Customers contacted', d.calling.calls.uniqueCustomersContacted.value],
-                    ['Shares recorded', d.calling.shares.total.value],
-                  ] as const
-                ).map(([label, value]) => (
-                  <div key={label} className="rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-100">
-                    <p className="text-lg font-semibold tabular-nums">{number(value)}</p>
-                    <p className="text-[11px] text-slate-500">{label}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="text-[10.5px] text-slate-400">
-                Telecaller calls are a separate population from Advisor leads; they are not a funnel step.
-              </p>
-            </div>
-          ) : null}
-        </SectionCard>
-
-        <section
-          aria-labelledby="attention-title"
-          className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)]"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div className="flex items-center gap-3">
-              <IconTile icon={CircleAlert} tone={open ? 'amber' : 'emerald'} size="sm" />
-              <div>
-                <h2 id="attention-title" className="text-[15px] leading-6 font-semibold tracking-tight text-slate-900">
-                  Needs your attention
-                </h2>
-                <p className="text-[12.5px] text-slate-500">Open work queues and system alerts</p>
-              </div>
-            </div>
-            <Badge variant={open ? 'warning' : 'success'}>{open ? `${open} open` : 'All clear'}</Badge>
-          </div>
-          <ul className="divide-y divide-slate-100">
-            {queues.map(({ label, detail, count, href, icon, tone }) => (
-              <li key={label}>
-                <Link
-                  href={href}
-                  prefetch={false}
-                  className="group flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700"
-                >
-                  <IconTile icon={icon} tone={count ? tone : 'slate'} size="sm" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-slate-800">{label}</span>
-                    <span className="text-[11px] text-slate-500">{detail}</span>
-                  </span>
-                  <span className={cn('text-lg font-semibold tabular-nums', count ? TONE[tone].text : 'text-slate-400')}>
-                    {number(count)}
-                  </span>
-                  <ArrowUpRight className="size-3.5 shrink-0 text-slate-400 group-hover:text-teal-700" />
-                </Link>
-              </li>
-            ))}
-            {alerts.map((al) => (
-              <li key={al.kind}>
-                <Link
-                  href={al.href}
-                  prefetch={false}
-                  className="group flex items-center gap-3 bg-amber-50/50 px-5 py-3 text-[13px] text-amber-950 hover:bg-amber-50"
-                >
-                  <TriangleAlert className="size-4 shrink-0 text-amber-700" aria-hidden="true" />
-                  <span className="min-w-0 flex-1">{al.message}</span>
-                  <ArrowUpRight className="size-3.5 shrink-0 text-amber-700" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {distribution?.data.telecallers.some((t) => t.needsReassignment) ? (
-            <Callout tone="warning" icon={TriangleAlert} className="m-4">
-              Some telecallers hold records that need reassignment. Review allocation.
-            </Callout>
-          ) : null}
-        </section>
-      </div>
-
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <SectionCard
-          icon={Landmark}
-          tone="indigo"
-          title="Bank performance"
-          description="Leads created in the period, bank by bank, with MIS coverage and payout events for those leads."
-          actions={<SectionLink href={`/admin/dashboards/bank-card-mix${q ? `?${q}` : ''}`}>Bank / card mix</SectionLink>}
-        >
-          {banks.length ? (
-            <ul className="divide-y divide-slate-100">
-              {banks.map((b) => {
-                const applied = freshness.get(b.bank.code);
-                return (
-                  <li key={b.bank.id} className="grid items-center gap-x-4 gap-y-2 py-3.5 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <BankMark code={b.bank.code} />
-                      <div className="min-w-0 flex-1">
-                        <Link href={`/admin/leads?bankId=${b.bank.id}`} className="text-sm font-semibold text-slate-900 hover:text-teal-700">
-                          {b.bank.displayName}
-                        </Link>
-                        <div className="mt-1.5 flex items-center gap-2">
-                          <Meter value={b.matched} max={Math.max(1, b.leads)} tone="indigo" className="h-1.5 max-w-32" label={`${b.bank.displayName} MIS matched`} />
-                          <span className="shrink-0 text-[11px] text-slate-500 tabular-nums">{pct(b.matched, b.leads) ?? 0}% matched</span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-400">
-                          {applied ? `Last MIS applied ${formatDateTime(applied)}` : 'No MIS applied yet'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-sm sm:text-right">
-                      <span className="font-semibold tabular-nums">{number(b.leads)}</span>
-                      <span className="ml-1 text-[11px] text-slate-500 sm:ml-0 sm:block">lead{b.leads === 1 ? '' : 's'}</span>
-                    </div>
-                    <div className="text-sm sm:min-w-36 sm:text-right">
-                      <span className="font-semibold tabular-nums">{formatInr(b.eligible)}</span>
-                      <span className="block text-[11px] text-slate-500 tabular-nums">
-                        {b.events} event{b.events === 1 ? '' : 's'} · {formatInr(b.paid)} paid
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <EmptyState
-              icon={Landmark}
-              title={mix ? 'No leads in this period' : 'Bank performance unavailable'}
-              description={mix ? 'Pick a longer period to see bank results.' : 'Refresh to retry.'}
-            />
-          )}
-        </SectionCard>
-
-        <SectionCard
-          icon={Wallet}
-          tone="teal"
-          title="Payout position"
-          description="Current ledger balances (all time). Approval is not payment."
-          actions={<SectionLink href="/admin/payouts/entitlements">Open ledger</SectionLink>}
-          bodyClassName="grid gap-4"
-        >
-          <div className="divide-y divide-slate-100">
-            {payoutRows.map(({ label, key, state, tone }) => (
-              <Link key={key} href={`/admin/payouts/entitlements?state=${state}`} className="group grid gap-2 py-3 first:pt-0">
-                <span className="flex items-center gap-2.5">
-                  <span className={`size-2 shrink-0 rounded-full ${TONE[tone].bar}`} />
-                  <span className="flex-1 text-sm text-slate-800 group-hover:text-teal-700">
-                    {label}
-                    <span className="ml-2 text-[11px] text-slate-500">
-                      {number(counts?.[key])} {counts?.[key] === 1 ? 'event' : 'events'}
-                    </span>
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums">{amounts ? formatInr(amounts[key]) : 'Unavailable'}</span>
-                </span>
-                {amounts?.[key] ? (
-                  <Meter value={amounts[key]} max={largestAmount} tone={tone} className="ml-4.5 h-1 w-auto" label={label} />
-                ) : null}
-              </Link>
-            ))}
-          </div>
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            Positions overlap with eligible events; they are not extra balances to add together.
-          </p>
-          <div className="border-t border-slate-100 pt-3 text-[10px] text-slate-500">
-            Source: KBS payout ledger ·{' '}
-            {ledger?.meta.asOf ? formatDateTime(String(ledger.meta.asOf)) : 'Snapshot time unavailable'}
-          </div>
-        </SectionCard>
-      </div>
-
-      {d ? (
-        <details className="group grid gap-6 rounded-2xl border border-slate-200/80 bg-white/60 p-4 sm:p-5">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-            <span>
-              <span className="block text-[15px] font-semibold text-slate-900">Operational detail</span>
-              <span className="text-[12.5px] text-slate-500">
-                Calling records, calls, callbacks, shares, bank value breakdowns and payout events — each with its source and date basis.
-              </span>
-            </span>
-            <ChevronDown className="size-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
+      <h1 className="sr-only">Business overview</h1>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <PillNav
+          label="Period"
+          items={PERIODS.map((p) => ({ href: chipHref(p.key), label: p.label }))}
+          active={period.key === 'custom' ? '' : chipHref(period.key)}
+          className="max-w-full min-w-0"
+        />
+        <details className="group/filters relative min-w-0" open={period.key === 'custom' || filterCount > 0}>
+          <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 text-[13px] font-medium text-slate-700 shadow-[0_1px_2px_rgb(15_23_42/4%)] hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+            <Filter className="size-3.5" aria-hidden="true" />
+            Filters
+            {filterCount ? (
+              <span className="rounded-full bg-teal-50 px-1.5 text-[10.5px] font-semibold text-teal-700 tabular-nums">{filterCount}</span>
+            ) : null}
+            <ChevronDown className="size-3.5 transition-transform group-open/filters:rotate-180" aria-hidden="true" />
           </summary>
-          <div className="mt-6 grid gap-6">
-            <OpsSections d={d} />
+          <div className="absolute z-20 mt-2 w-[min(42rem,calc(100vw-2rem))] rounded-2xl border border-slate-200/80 bg-white p-3 shadow-lg">
+            <OpsFilters basePath="/admin" sp={sp} />
           </div>
         </details>
-      ) : null}
-
-      <footer className="flex flex-wrap items-start justify-between gap-3 border-t border-slate-200 pt-4 text-[11px] leading-relaxed text-slate-500">
-        <span className="inline-flex max-w-3xl items-start gap-2">
-          <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
-          Bank figures reflect the latest accepted MIS for leads created in the period — not live bank status. Recent
-          leads may still be in process; blank values mean “Not reported”.
+        <Button variant="outline" size="sm" className="h-9" asChild>
+          <Link href="/admin/leads">
+            <ListChecks />
+            Explore leads
+          </Link>
+        </Button>
+        <Button size="sm" className="h-9" asChild>
+          <Link href="/admin/mis">
+            <ArrowDownToLine />
+            Import bank MIS
+          </Link>
+        </Button>
+        <span className="ml-auto flex items-center gap-2 text-[11px] text-slate-500">
+          <CalendarRange className="size-3.5" aria-hidden="true" />
+          {rangeLabel(period.current)}
+          {period.previous ? ` · vs ${against}` : ''}
+          {d ? <Badge variant="secondary">{d.scope}</Badge> : null}
+          <Clock3 className="ml-1 size-3.5" aria-hidden="true" />
+          {formatDateTime(d?.meta.asOf ?? new Date().toISOString())}
         </span>
-      </footer>
+      </div>
+      {unavailable.length > 0 ? (
+        <Callout tone="warning" icon={TriangleAlert} role="alert" title="Some data could not be loaded." className="shrink-0">
+          {unavailable.join(', ')}. Unavailable figures are not zero. Use the refresh button to retry.
+        </Callout>
+      ) : null}
+      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+        <MiniStat
+          label="Leads created"
+          value={number(now?.leads)}
+          hint={kpi(now && was ? deltaText(now.leads, was.leads, against) : null, '', 'KBS leads · created')}
+          href="/admin/leads"
+          tone="violet"
+        />
+        <MiniStat
+          label="Bank approved"
+          value={number(now?.approved)}
+          hint={kpi(now && was ? deltaText(now.approved, was.approved, against) : null, now ? `${pct(now.approved, now.leads) ?? 0}% of leads` : '', 'Bank MIS · decision')}
+          href="/admin/leads"
+          tone="teal"
+        />
+        <MiniStat
+          label="Cards activated"
+          value={number(now?.activated)}
+          hint={kpi(now && was ? deltaText(now.activated, was.activated, against) : null, now ? `${pct(now.activated, now.leads) ?? 0}% of leads` : '', 'Bank MIS · activation')}
+          href="/admin/leads"
+          tone="emerald"
+        />
+        <MiniStat
+          label="Payout earned"
+          value={now ? formatInr(now.earned) : 'Unavailable'}
+          hint={kpi(now && was ? deltaText(now.earned, was.earned, against, true) : null, now ? `${number(now.earnedEvents)} events` : '', 'Payout ledger')}
+          href="/admin/payouts/entitlements"
+          tone="amber"
+        />
+      </div>
+
+      <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto">
+        <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <Panel
+            title="Lead to card funnel"
+            caption="Leads created in the period → latest bank MIS result · a match is not an approval"
+          >
+            {funnel.length ? (
+              <ol className="grid gap-3">
+                {funnel.map((step, i) => {
+                  const ofPrev = i ? pct(step.value, funnel[i - 1].value) : null;
+                  return (
+                    <li key={step.label} className="grid gap-1.5">
+                      <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                        <span className="font-medium text-slate-800">
+                          {step.label}
+                          <span className="ml-2 text-[11px] font-normal text-slate-400">{step.source}</span>
+                        </span>
+                        <span className="flex items-baseline gap-2 tabular-nums">
+                          {ofPrev != null ? <span className="text-[11px] text-slate-500">{ofPrev}% of previous</span> : null}
+                          <span className="text-base font-semibold text-slate-900">{number(step.value)}</span>
+                        </span>
+                      </div>
+                      <Meter value={step.value} max={Math.max(1, funnel[0].value)} tone={step.tone} className="h-2.5" label={step.label} />
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <EmptyState icon={Landmark} title="Funnel unavailable" description="Business metrics could not be loaded. Refresh to retry." />
+            )}
+            {d ? (
+              <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3">
+                <p className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+                  <PhoneCall className="size-3.5" aria-hidden="true" />
+                  Calling activity · same period
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {(
+                    [
+                      ['Call attempts', d.calling.calls.attempts.value],
+                      ['Connected', d.calling.calls.connected.value],
+                      ['Customers contacted', d.calling.calls.uniqueCustomersContacted.value],
+                      ['Shares recorded', d.calling.shares.total.value],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div key={label} className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                      <p className="text-base font-semibold tabular-nums">{number(value)}</p>
+                      <p className="text-[11px] text-slate-500">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </Panel>
+
+          <section aria-labelledby="attention-title" className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <IconTile icon={CircleAlert} tone={open ? 'amber' : 'emerald'} size="sm" />
+                <h2 id="attention-title" className="text-sm font-semibold tracking-tight text-slate-900">
+                  Needs your attention
+                </h2>
+              </div>
+              <Badge variant={open ? 'warning' : 'success'}>{open ? `${open} open` : 'All clear'}</Badge>
+            </div>
+            <ul className="divide-y divide-slate-100">
+              {queues.map(({ label, detail, count, href, icon, tone }) => (
+                <li key={label}>
+                  <Link
+                    href={href}
+                    prefetch={false}
+                    className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700"
+                  >
+                    <IconTile icon={icon} tone={count ? tone : 'slate'} size="sm" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-slate-800">{label}</span>
+                      <span className="text-[11px] text-slate-500">{detail}</span>
+                    </span>
+                    <span className={cn('text-lg font-semibold tabular-nums', count ? TONE[tone].text : 'text-slate-400')}>
+                      {number(count)}
+                    </span>
+                    <ArrowUpRight className="size-3.5 shrink-0 text-slate-400 group-hover:text-teal-700" />
+                  </Link>
+                </li>
+              ))}
+              {alerts.map((al) => (
+                <li key={al.kind}>
+                  <Link
+                    href={al.href}
+                    prefetch={false}
+                    className="group flex items-center gap-3 bg-amber-50/50 px-4 py-2.5 text-[13px] text-amber-950 hover:bg-amber-50"
+                  >
+                    <TriangleAlert className="size-4 shrink-0 text-amber-700" aria-hidden="true" />
+                    <span className="min-w-0 flex-1">{al.message}</span>
+                    <ArrowUpRight className="size-3.5 shrink-0 text-amber-700" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {distribution?.data.telecallers.some((t) => t.needsReassignment) ? (
+              <Callout tone="warning" icon={TriangleAlert} className="m-3">
+                Some telecallers hold records that need reassignment. Review allocation.
+              </Callout>
+            ) : null}
+          </section>
+        </div>
+
+        <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <Panel
+            title="Bank performance"
+            caption="Leads in the period per bank · MIS coverage · payout events"
+            action={<SectionLink href={`/admin/dashboards/bank-card-mix${q ? `?${q}` : ''}`}>Bank / card mix</SectionLink>}
+          >
+            {banks.length ? (
+              <ul className="divide-y divide-slate-100">
+                {banks.map((b) => {
+                  const applied = freshness.get(b.bank.code);
+                  return (
+                    <li key={b.bank.id} className="grid items-center gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <BankMark code={b.bank.code} />
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/admin/leads?bankId=${b.bank.id}`} className="text-sm font-semibold text-slate-900 hover:text-teal-700">
+                            {b.bank.displayName}
+                          </Link>
+                          <div className="mt-1 flex items-center gap-2">
+                            <Meter value={b.matched} max={Math.max(1, b.leads)} tone="indigo" className="h-1.5 max-w-32" label={`${b.bank.displayName} MIS matched`} />
+                            <span className="shrink-0 text-[11px] text-slate-500 tabular-nums">{pct(b.matched, b.leads) ?? 0}% matched</span>
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-slate-400">
+                            {applied ? `Last MIS applied ${formatDateTime(applied)}` : 'No MIS applied yet'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-sm sm:text-right">
+                        <span className="font-semibold tabular-nums">{number(b.leads)}</span>
+                        <span className="ml-1 text-[11px] text-slate-500 sm:ml-0 sm:block">lead{b.leads === 1 ? '' : 's'}</span>
+                      </div>
+                      <div className="text-sm sm:min-w-36 sm:text-right">
+                        <span className="font-semibold tabular-nums">{formatInr(b.eligible)}</span>
+                        <span className="block text-[11px] text-slate-500 tabular-nums">
+                          {b.events} event{b.events === 1 ? '' : 's'} · {formatInr(b.paid)} paid
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <EmptyState
+                icon={Landmark}
+                title={mix ? 'No leads in this period' : 'Bank performance unavailable'}
+                description={mix ? 'Pick a longer period to see bank results.' : 'Refresh to retry.'}
+              />
+            )}
+          </Panel>
+
+          <Panel
+            title="Payout position"
+            caption="Ledger balances, all time · approval is not payment"
+            action={<SectionLink href="/admin/payouts/entitlements">Open ledger</SectionLink>}
+          >
+            <div className="divide-y divide-slate-100">
+              {payoutRows.map(({ label, key, state, tone }) => (
+                <Link key={key} href={`/admin/payouts/entitlements?state=${state}`} className="group grid gap-1.5 py-2.5 first:pt-0">
+                  <span className="flex items-center gap-2.5">
+                    <span className={`size-2 shrink-0 rounded-full ${TONE[tone].bar}`} />
+                    <span className="flex-1 text-sm text-slate-800 group-hover:text-teal-700">
+                      {label}
+                      <span className="ml-2 text-[11px] text-slate-500">
+                        {number(counts?.[key])} {counts?.[key] === 1 ? 'event' : 'events'}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">{amounts ? formatInr(amounts[key]) : 'Unavailable'}</span>
+                  </span>
+                  {amounts?.[key] ? (
+                    <Meter value={amounts[key]} max={largestAmount} tone={tone} className="ml-4.5 h-1 w-auto" label={label} />
+                  ) : null}
+                </Link>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+              Positions overlap with eligible events; they are not extra balances to add together.
+            </p>
+            <div className="mt-2 border-t border-slate-100 pt-2.5 text-[10px] text-slate-500">
+              Source: KBS payout ledger ·{' '}
+              {ledger?.meta.asOf ? formatDateTime(String(ledger.meta.asOf)) : 'Snapshot time unavailable'}
+            </div>
+          </Panel>
+        </div>
+
+        {d ? (
+          <details className="group grid gap-3 rounded-2xl border border-slate-200/80 bg-white/60 p-4">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+              <span>
+                <span className="block text-sm font-semibold text-slate-900">Operational detail</span>
+                <span className="text-xs text-slate-500">
+                  Calling records, calls, callbacks, shares, bank value breakdowns and payout events — each with its source and date basis.
+                </span>
+              </span>
+              <ChevronDown className="size-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="grid gap-3">
+              <OpsSections d={d} />
+            </div>
+          </details>
+        ) : null}
+
+        <footer className="flex flex-wrap items-start justify-between gap-3 border-t border-slate-200 pt-3 text-[11px] leading-relaxed text-slate-500">
+          <span className="inline-flex max-w-3xl items-start gap-2">
+            <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
+            Bank figures reflect the latest accepted MIS for leads created in the period — not live bank status. Recent
+            leads may still be in process; blank values mean “Not reported”.
+          </span>
+        </footer>
+      </div>
     </div>
   );
 }
