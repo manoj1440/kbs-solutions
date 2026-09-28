@@ -26,6 +26,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Callout, EmptyState, IconTile, type Tone } from '@/components/ui/kit';
+import { Skeleton } from '@/components/ui/skeleton';
 import { clientApi } from '@/lib/client-api';
 import { notificationHref, type WebArea } from '@/lib/notification-links';
 import { cn } from '@/lib/utils';
@@ -156,10 +157,10 @@ export function NotificationCentre({ area }: { area: WebArea }) {
           {rows === null
             ? [0, 1, 2].map((i) => (
                 <li key={i} className="flex items-start gap-3 px-5 py-4 sm:px-6" aria-hidden={i > 0 || undefined}>
-                  <span className="size-8 shrink-0 animate-pulse rounded-xl bg-slate-100" />
+                  <Skeleton className="size-8 shrink-0 rounded-xl" />
                   <span className="grid flex-1 gap-2">
-                    {i === 0 ? <span className="text-sm text-slate-500">Loading…</span> : <span className="h-3 w-1/3 animate-pulse rounded bg-slate-100" />}
-                    <span className="h-3 w-2/3 animate-pulse rounded bg-slate-100" />
+                    {i === 0 ? <span className="text-sm text-slate-500">Loading…</span> : <Skeleton className="h-3 w-1/3" />}
+                    <Skeleton className="h-3 w-2/3" />
                   </span>
                 </li>
               ))
