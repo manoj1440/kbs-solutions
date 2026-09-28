@@ -1,5 +1,5 @@
 import { formatDateTime } from '@kbs/shared';
-import { ChevronLeft, ChevronRight, FileSpreadsheet, Filter, Inbox, TriangleAlert } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, Inbox, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';

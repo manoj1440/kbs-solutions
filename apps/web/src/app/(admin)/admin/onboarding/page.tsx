@@ -1,12 +1,14 @@
 import { formatDateTime } from '@kbs/shared';
-import { ArrowRight, BadgeCheck, ClipboardCheck, Hourglass, Landmark, Mail } from 'lucide-react';
+import { ArrowRight, ClipboardCheck, Hourglass, Landmark, Mail } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, EmptyState, humanize, PageHeader, SectionCard, StatCard, StatGrid, type Tone, TONE } from '@/components/ui/kit';
+import { Avatar, EmptyState, humanize, MiniStat, type Tone, TONE } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
+
+export const metadata = { title: 'Advisor onboarding · KBS Solutions' };
 
 interface Row {
   userId: string;
@@ -28,7 +30,7 @@ function waiting(submittedAt: string | null, now: number): { label: string; tone
   return { label, hours, tone: hours >= 72 ? 'rose' : hours >= 24 ? 'amber' : 'emerald' };
 }
 
-/** F-401 §8: Advisor onboarding review queue. */
+/** F-401 §8 → F-811: Advisor onboarding review queue, compact. */
 export default async function OnboardingQueuePage() {
   const q = await apiFetch<Row[]>('/onboarding/review');
   const now = new Date().getTime();
@@ -37,26 +39,19 @@ export default async function OnboardingQueuePage() {
   const oldest = rows.reduce<(typeof rows)[number]['wait']>((a, r) => (r.wait && (!a || r.wait.hours > a.hours) ? r.wait : a), null);
   const overDay = rows.filter((r) => r.wait && r.wait.hours >= 24).length;
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={ClipboardCheck}
-        tone="violet"
-        eyebrow="People"
-        title="Advisor onboarding review"
-        description="Identity shows the provider result only; bank details are masked and every reveal is logged."
-      >
-        <StatGrid>
-          <StatCard label="Awaiting review" value={q.data.length} hint="Submitted Advisors, oldest first below" icon={ClipboardCheck} emphasis />
-          <StatCard label="Identity verified" value={verified} hint={`of ${q.data.length} in the queue`} icon={BadgeCheck} tone="emerald" />
-          <StatCard label="Waiting over a day" value={overDay} hint="Since the Advisor submitted" icon={Hourglass} tone={overDay ? 'amber' : 'slate'} />
-          <StatCard label="Longest wait" value={oldest ? oldest.label : '—'} hint="Oldest submission in the queue" icon={Hourglass} tone={oldest?.tone === 'rose' ? 'rose' : 'slate'} />
-        </StatGrid>
-      </PageHeader>
-      <SectionCard icon={ClipboardCheck} tone="violet" title="Awaiting review" description={`${q.data.length} submissions.`}>
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
+      <h1 className="sr-only">Advisor onboarding review</h1>
+      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+        <MiniStat label="Awaiting review" value={q.data.length} hint="Oldest first below" tone="sky" />
+        <MiniStat label="Identity verified" value={verified} hint={`of ${q.data.length} in the queue`} tone="emerald" />
+        <MiniStat label="Waiting over a day" value={overDay} hint="Since submission" tone={overDay ? 'amber' : 'slate'} />
+        <MiniStat label="Longest wait" value={oldest ? oldest.label : '—'} hint="Oldest submission" tone={oldest?.tone === 'rose' ? 'rose' : 'slate'} />
+      </div>
+      <section aria-label="Awaiting review" className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
         {q.data.length === 0 ? (
-          <EmptyState icon={ClipboardCheck} title="Nothing awaiting review." description="New Advisor submissions appear here as soon as they are sent for review." />
+          <EmptyState icon={ClipboardCheck} className="m-3" title="Nothing awaiting review." description="New Advisor submissions appear here as soon as they are sent for review." />
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+          <ul className="grid gap-3 p-3 md:grid-cols-2 2xl:grid-cols-3">
             {[...rows]
               .sort((a, b) => (b.wait?.hours ?? -1) - (a.wait?.hours ?? -1))
               .map((r) => (
@@ -116,7 +111,7 @@ export default async function OnboardingQueuePage() {
               ))}
           </ul>
         )}
-      </SectionCard>
+      </section>
     </div>
   );
 }

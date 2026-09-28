@@ -1,13 +1,15 @@
 import { formatDateTime } from '@kbs/shared';
-import { ArrowRight, Bot, ChevronLeft, ChevronRight, Download, Eye, Filter, History, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Bot, ChevronLeft, ChevronRight, Download, Eye, History, Lock } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, EmptyState, Field, humanize, PageHeader, PillNav, SectionCard, selectClass } from '@/components/ui/kit';
+import { Avatar, EmptyState, humanize, PillNav, selectClass } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
+
+export const metadata = { title: 'Audit · KBS Solutions' };
 
 interface Actor {
   id: string;
@@ -96,7 +98,7 @@ function ActorCell({ actor, role }: { actor: Actor | null; role: string | null |
   );
 }
 
-/** F-704 data & permissions audit dashboard (REQ-16 §16.2, REQ-24 §24.3). Read-only; export follows audit.exportEnabled. */
+/** F-704 → F-811 audit (REQ-16 §16.2, REQ-24 §24.3). Read-only; export follows audit.exportEnabled. */
 export default async function AuditPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const tab = sp.tab === 'sensitive' ? 'sensitive' : 'actions';
@@ -117,224 +119,200 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     return `/admin/audit?${q.toString()}`;
   };
   const resetHref = tab === 'sensitive' ? '/admin/audit?tab=sensitive' : '/admin/audit';
+  const pages = Math.max(1, Math.ceil(total / 50));
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={ShieldCheck}
-        eyebrow="Settings"
-        tone="indigo"
-        title="Data & permissions audit"
-        description="Every accepted or rejected upload, mapping revision, lead reference linkage, bank status change, assignment/WFH grant, training reactivation, payout decision and manual payment with actor, time and source. Read-only."
-      />
-      <div className="grid gap-3">
-        <PillNav
-          label="Audit views"
-          active={resetHref}
-          items={[
-            { href: '/admin/audit', label: 'Actions', icon: History },
-            { href: '/admin/audit?tab=sensitive', label: 'Sensitive access', icon: Eye },
-          ]}
-        />
-        <form className="grid grid-cols-2 items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)] lg:grid-cols-[repeat(3,minmax(0,1fr))] xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]" action="/admin/audit">
-          {tab === 'sensitive' ? <input type="hidden" name="tab" value="sensitive" /> : null}
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
+      <h1 className="sr-only">Data &amp; permissions audit</h1>
+      <section aria-label="Audit log" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+          <PillNav
+            label="Audit views"
+            active={resetHref}
+            items={[
+              { href: '/admin/audit', label: 'Actions', icon: History },
+              { href: '/admin/audit?tab=sensitive', label: 'Sensitive access', icon: Eye },
+            ]}
+          />
+          <span className="text-xs text-slate-500 tabular-nums">{total.toLocaleString('en-IN')} entr{total === 1 ? 'y' : 'ies'} · IST</span>
+          <span className="flex-1" />
           {tab === 'actions' ? (
-            <>
-              <Field label="Category" htmlFor="audit-group">
-                <select id="audit-group" className={selectClass} name="group" defaultValue={sp.group ?? ''}>
-                  <option value="">All categories</option>
-                  {cat.groups.map((g) => (
-                    <option key={g.key} value={g.key}>
-                      {g.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Action" htmlFor="audit-action">
-                <select id="audit-action" className={selectClass} name="action" defaultValue={sp.action ?? ''}>
-                  <option value="">Any action</option>
-                  {cat.groups.map((g) => (
-                    <optgroup key={g.key} label={g.label}>
-                      {g.actions.map((a) => (
-                        <option key={a.action} value={a.action}>
-                          {a.action} ({a.count})
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                  {cat.other.length ? (
-                    <optgroup label="Other">
-                      {cat.other.map((a) => (
-                        <option key={a.action} value={a.action}>
-                          {a.action} ({a.count})
-                        </option>
-                      ))}
-                    </optgroup>
-                  ) : null}
-                </select>
-              </Field>
-            </>
-          ) : null}
-          <Field label="Actor" htmlFor="audit-actor">
-            <select id="audit-actor" className={selectClass} name="actorUserId" defaultValue={sp.actorUserId ?? ''}>
-              <option value="">Anyone</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName} ({u.role.toLowerCase()})
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Entity type" htmlFor="audit-entity">
-            <select id="audit-entity" className={selectClass} name="entityType" defaultValue={sp.entityType ?? ''}>
-              <option value="">Any</option>
-              {cat.entityTypes.map((e) => (
-                <option key={e} value={e}>
-                  {e}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="From" htmlFor="audit-from">
-            <input id="audit-from" className={selectClass} type="date" name="from" defaultValue={sp.from ?? ''} />
-          </Field>
-          <Field label="To" htmlFor="audit-to">
-            <input id="audit-to" className={selectClass} type="date" name="to" defaultValue={sp.to ?? ''} />
-          </Field>
-          <div className="col-span-2 flex gap-2 lg:col-span-1">
-            <Button type="submit" className="h-10">
-              <Filter />
-              Apply
-            </Button>
-            <Button asChild variant="outline" className="h-10">
-              <Link href={resetHref}>Reset</Link>
-            </Button>
-          </div>
-        </form>
-      </div>
-      <SectionCard
-        icon={tab === 'actions' ? History : Eye}
-        tone={tab === 'actions' ? 'indigo' : 'amber'}
-        title={`${total} entr${total === 1 ? 'y' : 'ies'}`}
-        description="Newest first · times in IST. Personal data is masked in the log; open the record for context."
-        flush={list.data.length > 0}
-        actions={
-          tab === 'actions' ? (
             exportEnabled ? (
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="h-8">
                 <a href={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1'}/audit/export?${qs.toString()}`}>
                   <Download />
                   Export CSV (audited)
                 </a>
               </Button>
             ) : (
-              <span className="inline-flex max-w-xs items-start gap-1.5 text-xs text-slate-500">
-                <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                Export disabled — KBS has not approved an export policy (audit.exportEnabled).
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+                Export disabled (audit.exportEnabled)
               </span>
             )
-          ) : null
-        }
-      >
-        {list.data.length === 0 ? (
-          <EmptyState icon={tab === 'actions' ? History : Eye} title={tab === 'actions' ? 'No audit entries match.' : 'No sensitive access recorded.'} />
-        ) : tab === 'actions' ? (
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead>When</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>Reason / change</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(list.data as AuditRow[]).map((r) => (
-                <TableRow key={r.id} className="align-top">
-                  <TableCell data-label="When" className="text-xs whitespace-nowrap text-slate-600 tabular-nums">
-                    {formatDateTime(r.at)}
-                  </TableCell>
-                  <TableCell data-label="Action">
-                    <Link className="inline-block rounded-md bg-indigo-50 px-1.5 py-0.5 font-mono text-[11.5px] break-all ring-1 ring-indigo-100 ring-inset" href={link({ action: r.action, group: undefined, page: undefined })}>
-                      {r.action}
-                    </Link>
-                  </TableCell>
-                  <TableCell data-label="Actor">
-                    <ActorCell actor={r.actor} role={r.actorRole} />
-                  </TableCell>
-                  <TableCell data-label="Entity" className="text-xs">
-                    <span className="font-medium text-slate-700">{r.entityType ?? '—'}</span>
-                    <div className="font-mono text-[11px] break-all text-slate-500">{r.entityId ?? ''}</div>
-                  </TableCell>
-                  <TableCell data-label="Reason / change" className="min-w-56 text-xs whitespace-normal">
-                    {r.reason ? <div className="text-slate-700">{r.reason}</div> : null}
-                    {r.before !== null || r.after !== null ? (
-                      <details className="group mt-1">
-                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 font-medium text-teal-700 hover:text-teal-900 [&::-webkit-details-marker]:hidden">
-                          <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" aria-hidden="true" />
-                          Before / after
-                        </summary>
-                        <div className="mt-1.5 rounded-lg border border-slate-200/80 bg-slate-50 p-2">
-                          <Diff before={r.before} after={r.after} />
-                        </div>
-                      </details>
-                    ) : null}
-                    {!r.reason && r.before === null && r.after === null ? <span className="text-slate-400">—</span> : null}
-                  </TableCell>
+          ) : null}
+        </div>
+        <form className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3" action="/admin/audit">
+          {tab === 'sensitive' ? <input type="hidden" name="tab" value="sensitive" /> : null}
+          {tab === 'actions' ? (
+            <>
+              <select aria-label="Category" className={cn(selectClass, 'h-9 min-w-36 flex-[1_1_9rem]')} name="group" defaultValue={sp.group ?? ''}>
+                <option value="">All categories</option>
+                {cat.groups.map((g) => (
+                  <option key={g.key} value={g.key}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+              <select aria-label="Action" className={cn(selectClass, 'h-9 min-w-44 flex-[1_1_11rem]')} name="action" defaultValue={sp.action ?? ''}>
+                <option value="">Any action</option>
+                {cat.groups.map((g) => (
+                  <optgroup key={g.key} label={g.label}>
+                    {g.actions.map((a) => (
+                      <option key={a.action} value={a.action}>
+                        {a.action} ({a.count})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+                {cat.other.length ? (
+                  <optgroup label="Other">
+                    {cat.other.map((a) => (
+                      <option key={a.action} value={a.action}>
+                        {a.action} ({a.count})
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
+              </select>
+            </>
+          ) : null}
+          <select aria-label="Actor" className={cn(selectClass, 'h-9 min-w-40 flex-[1_1_10rem]')} name="actorUserId" defaultValue={sp.actorUserId ?? ''}>
+            <option value="">Anyone</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.fullName} ({u.role.toLowerCase()})
+              </option>
+            ))}
+          </select>
+          <select aria-label="Entity type" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} name="entityType" defaultValue={sp.entityType ?? ''}>
+            <option value="">Any entity</option>
+            {cat.entityTypes.map((e) => (
+              <option key={e} value={e}>
+                {e}
+              </option>
+            ))}
+          </select>
+          <input aria-label="From date" className={cn(selectClass, 'h-9 w-36')} type="date" name="from" defaultValue={sp.from ?? ''} />
+          <input aria-label="To date" className={cn(selectClass, 'h-9 w-36')} type="date" name="to" defaultValue={sp.to ?? ''} />
+          <Button type="submit" size="sm" className="h-9">
+            Apply
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="h-9">
+            <Link href={resetHref}>Reset</Link>
+          </Button>
+        </form>
+        <div className="min-h-0 flex-1">
+          {list.data.length === 0 ? (
+            <EmptyState icon={tab === 'actions' ? History : Eye} className="m-3" title={tab === 'actions' ? 'No audit entries match.' : 'No sensitive access recorded.'} />
+          ) : tab === 'actions' ? (
+            <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="pl-4">When</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Actor</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead className="pr-4">Reason / change</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead>When</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Revealed</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>Purpose</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(list.data as SensitiveRow[]).map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell data-label="When" className="text-xs whitespace-nowrap text-slate-600 tabular-nums">
-                    {formatDateTime(r.at)}
-                  </TableCell>
-                  <TableCell data-label="Actor">
-                    {r.actor ? <ActorCell actor={r.actor} role={r.actor.role} /> : '—'}
-                  </TableCell>
-                  <TableCell data-label="Revealed">
-                    <Badge variant="warning">{r.field.replace(/_/g, ' ').toLowerCase()}</Badge>
-                  </TableCell>
-                  <TableCell data-label="Entity" className="text-xs">
-                    <span className="font-medium text-slate-700">{r.entityType}</span>
-                    <div className="font-mono text-[11px] break-all text-slate-500">{r.entityId}</div>
-                  </TableCell>
-                  <TableCell data-label="Purpose" className="text-xs text-slate-600">
-                    {(r.purpose ?? '—').replace(/_/g, ' ').toLowerCase()}
-                  </TableCell>
+              </TableHeader>
+              <TableBody>
+                {(list.data as AuditRow[]).map((r) => (
+                  <TableRow key={r.id} className="align-top">
+                    <TableCell data-label="When" className="pl-4 text-xs whitespace-nowrap text-slate-600 tabular-nums">
+                      {formatDateTime(r.at)}
+                    </TableCell>
+                    <TableCell data-label="Action">
+                      <Link className="inline-block rounded-md bg-indigo-50 px-1.5 py-0.5 font-mono text-[11.5px] break-all ring-1 ring-indigo-100 ring-inset" href={link({ action: r.action, group: undefined, page: undefined })}>
+                        {r.action}
+                      </Link>
+                    </TableCell>
+                    <TableCell data-label="Actor">
+                      <ActorCell actor={r.actor} role={r.actorRole} />
+                    </TableCell>
+                    <TableCell data-label="Entity" className="text-xs">
+                      <span className="font-medium text-slate-700">{r.entityType ?? '—'}</span>
+                      <div className="font-mono text-[11px] break-all text-slate-500">{r.entityId ?? ''}</div>
+                    </TableCell>
+                    <TableCell data-label="Reason / change" className="min-w-56 pr-4 text-xs whitespace-normal">
+                      {r.reason ? <div className="text-slate-700">{r.reason}</div> : null}
+                      {r.before !== null || r.after !== null ? (
+                        <details className="group mt-1">
+                          <summary className="inline-flex cursor-pointer list-none items-center gap-1 font-medium text-teal-700 hover:text-teal-900 [&::-webkit-details-marker]:hidden">
+                            <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" aria-hidden="true" />
+                            Before / after
+                          </summary>
+                          <div className="mt-1.5 rounded-lg border border-slate-200/80 bg-slate-50 p-2">
+                            <Diff before={r.before} after={r.after} />
+                          </div>
+                        </details>
+                      ) : null}
+                      {!r.reason && r.before === null && r.after === null ? <span className="text-slate-400">—</span> : null}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="pl-4">When</TableHead>
+                  <TableHead>Actor</TableHead>
+                  <TableHead>Revealed</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead className="pr-4">Purpose</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-        <div className={cn('flex flex-wrap items-center justify-between gap-2 text-sm', list.data.length > 0 ? 'border-t border-slate-100 px-5 py-3 sm:px-6' : 'mt-4')}>
+              </TableHeader>
+              <TableBody>
+                {(list.data as SensitiveRow[]).map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell data-label="When" className="pl-4 text-xs whitespace-nowrap text-slate-600 tabular-nums">
+                      {formatDateTime(r.at)}
+                    </TableCell>
+                    <TableCell data-label="Actor">
+                      {r.actor ? <ActorCell actor={r.actor} role={r.actor.role} /> : '—'}
+                    </TableCell>
+                    <TableCell data-label="Revealed">
+                      <Badge variant="warning">{r.field.replace(/_/g, ' ').toLowerCase()}</Badge>
+                    </TableCell>
+                    <TableCell data-label="Entity" className="text-xs">
+                      <span className="font-medium text-slate-700">{r.entityType}</span>
+                      <div className="font-mono text-[11px] break-all text-slate-500">{r.entityId}</div>
+                    </TableCell>
+                    <TableCell data-label="Purpose" className="pr-4 text-xs text-slate-600">
+                      {(r.purpose ?? '—').replace(/_/g, ' ').toLowerCase()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-xs">
           <span className="text-slate-500 tabular-nums">
-            Page {page} of {Math.max(1, Math.ceil(total / 50))}
+            {total ? `${((page - 1) * 50 + 1).toLocaleString('en-IN')}–${Math.min(page * 50, total).toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')}` : '0 entries'} · page {page} of {pages}
           </span>
           <div className="flex gap-2">
             {page > 1 ? (
-              <Button asChild size="sm" variant="outline">
+              <Button asChild size="sm" variant="outline" className="h-8">
                 <Link href={link({ page: String(page - 1) })}>
                   <ChevronLeft />
                   Previous
                 </Link>
               </Button>
             ) : null}
-            {page * 50 < total ? (
-              <Button asChild size="sm" variant="outline">
+            {page < pages ? (
+              <Button asChild size="sm" variant="outline" className="h-8">
                 <Link href={link({ page: String(page + 1) })}>
                   Next
                   <ChevronRight />
@@ -343,7 +321,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             ) : null}
           </div>
         </div>
-      </SectionCard>
+      </section>
     </div>
   );
 }

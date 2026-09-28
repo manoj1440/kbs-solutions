@@ -1,12 +1,14 @@
-import { CheckCircle2, GraduationCap, TriangleAlert, UserPlus, UserRound, Users } from 'lucide-react';
+import { UserPlus, UserRound } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { Avatar, EmptyState, humanize, PageHeader, SectionCard, StatCard, StatGrid, StatusDot, type Tone } from '@/components/ui/kit';
+import { Avatar, EmptyState, humanize, MiniStat, StatusDot, type Tone } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TrainingTeamTable } from '@/components/training-team-table';
 import { apiFetch } from '@/lib/api';
 import type { TrainingTeamRow } from '@/lib/training-types';
+
+export const metadata = { title: 'My team · KBS Solutions' };
 
 interface TeamUser {
   id: string;
@@ -22,7 +24,7 @@ interface TeamUser {
 /** F-806: dot tone per KBS user status (the humanised text carries the meaning). */
 const userStatusTone = (s: string): Tone => (s === 'ACTIVE' ? 'emerald' : s === 'PENDING_ONBOARDING' ? 'amber' : s === 'BLOCKED' ? 'rose' : 'slate');
 
-/** F-201/F-105: Manager team list. Training columns arrive with F-205. */
+/** F-201/F-105 → F-811: Manager team list. Training columns arrive with F-205. */
 export default async function ManagerTeam() {
   const [users, team] = await Promise.all([apiFetch<TeamUser[]>('/users?pageSize=200'), apiFetch<TrainingTeamRow[]>('/training/team')]);
   const telecallers = users.data.filter((u) => u.role === 'TELECALLER');
@@ -31,69 +33,68 @@ export default async function ManagerTeam() {
   const expired = team.data.filter((r) => r.status === 'EXPIRED_DEACTIVATED').length;
   const activeAdvisors = advisors.filter((u) => u.status === 'ACTIVE').length;
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={Users}
-        tone="violet"
-        eyebrow="Team"
-        title="My team"
-        description={`${telecallers.length} Telecallers · ${advisors.length} Advisors reporting to you.`}
-        actions={
-          <Button asChild>
-            <Link href="/manager/telecallers/new">
-              <UserPlus />
-              Create Telecaller
-            </Link>
-          </Button>
-        }
-      >
-        <StatGrid>
-          <StatCard label="Telecallers" value={telecallers.length} hint="Reporting to you" icon={Users} emphasis />
-          <StatCard label="Training passed" value={passed} hint={`All three modules passed, of ${team.data.length} enrolled`} icon={CheckCircle2} tone="emerald" />
-          <StatCard label="Deadline passed" value={expired} hint="72-hour window ended before passing" icon={TriangleAlert} tone={expired ? 'rose' : 'slate'} />
-          <StatCard label="Advisors" value={advisors.length} hint={`${activeAdvisors} active`} icon={UserRound} tone="sky" href="/manager/advisors" source="Advisor results" />
-        </StatGrid>
-      </PageHeader>
-
-      <SectionCard icon={GraduationCap} tone="violet" title="Telecallers" description="Training status, deadline and best score per module. Open a Telecaller for details." flush={team.data.length > 0}>
-        <TrainingTeamTable rows={team.data} linkBase="/manager/telecallers" />
-      </SectionCard>
-
-      <SectionCard icon={UserRound} tone="sky" title="Advisors" description="Advisors who applied one of your Agent Codes." flush={advisors.length > 0}>
-        {advisors.length === 0 ? (
-          <EmptyState icon={UserRound} title="No Advisors yet" description="Advisors join your team when they apply one of your Agent Codes." />
-        ) : (
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Mobile</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {advisors.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell data-label="Name">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar name={u.fullName || '?'} size="sm" />
-                      <Link href={`/manager/advisors/${u.id}`} className="font-medium">
-                        {u.fullName || '(onboarding)'}
-                      </Link>
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Status">
-                    <StatusDot tone={userStatusTone(u.status)}>{humanize(u.status)}</StatusDot>
-                  </TableCell>
-                  <TableCell data-label="Mobile" className="font-mono text-xs">
-                    {u.mobileMasked}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </SectionCard>
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
+      <h1 className="sr-only">My team</h1>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+          <MiniStat label="Telecallers" value={telecallers.length} hint="Reporting to you" tone="violet" />
+          <MiniStat label="Training passed" value={passed} hint={`of ${team.data.length} enrolled`} tone="emerald" />
+          <MiniStat label="Deadline passed" value={expired} hint="72h window ended" tone={expired ? 'rose' : 'slate'} />
+          <MiniStat label="Advisors" value={advisors.length} hint={`${activeAdvisors} active`} tone="sky" href="/manager/advisors" />
+        </div>
+        <Button asChild size="sm" className="h-9">
+          <Link href="/manager/telecallers/new">
+            <UserPlus />
+            Create Telecaller
+          </Link>
+        </Button>
+      </div>
+      <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:overflow-visible">
+        <section aria-label="Telecallers" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+          <div className="border-b border-slate-100 px-4 py-2.5 text-xs text-slate-500">Telecallers · training status, deadline and best score per module</div>
+          <div className="min-h-0 flex-1">
+            <TrainingTeamTable rows={team.data} linkBase="/manager/telecallers" />
+          </div>
+        </section>
+        <section aria-label="Advisors" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+          <div className="border-b border-slate-100 px-4 py-2.5 text-xs text-slate-500">Advisors · who applied one of your Agent Codes</div>
+          <div className="min-h-0 flex-1">
+            {advisors.length === 0 ? (
+              <EmptyState icon={UserRound} className="m-3" title="No Advisors yet" description="Advisors join your team when they apply one of your Agent Codes." />
+            ) : (
+              <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
+                <TableHeader className="sticky top-0 z-10">
+                  <TableRow>
+                    <TableHead className="pl-4">Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="pr-4">Mobile</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {advisors.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="pl-4" data-label="Name">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={u.fullName || '?'} size="sm" />
+                          <Link href={`/manager/advisors/${u.id}`} className="font-medium">
+                            {u.fullName || '(onboarding)'}
+                          </Link>
+                        </div>
+                      </TableCell>
+                      <TableCell data-label="Status">
+                        <StatusDot tone={userStatusTone(u.status)}>{humanize(u.status)}</StatusDot>
+                      </TableCell>
+                      <TableCell className="pr-4 font-mono text-xs" data-label="Mobile">
+                        {u.mobileMasked}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

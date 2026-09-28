@@ -10,7 +10,6 @@ import {
   ClipboardCheck,
   FileSpreadsheet,
   GraduationCap,
-  Inbox,
   ListChecks,
   type LucideIcon,
   Megaphone,
@@ -26,7 +25,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Callout, EmptyState, IconTile, PageHeader, SectionCard, type Tone } from '@/components/ui/kit';
+import { Callout, EmptyState, IconTile, type Tone } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 import { notificationHref, type WebArea } from '@/lib/notification-links';
 import { cn } from '@/lib/utils';
@@ -116,54 +115,43 @@ export function NotificationCentre({ area }: { area: WebArea }) {
   const pages = Math.max(1, Math.ceil(total / PAGE));
   const seg = (on: boolean) => cn('h-8 rounded-lg px-3 text-[13px] shadow-none', on ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100');
   return (
-    <div className="grid min-w-0 gap-6">
-      <PageHeader
-        icon={Bell}
-        tone="sky"
-        eyebrow={area === 'admin' ? 'Administration' : undefined}
-        title="Notifications"
-        description={`${unread === null ? 'Loading…' : `${unread} unread.`} Opening an item checks that you can still see the record.`}
-        actions={
-          <>
-            <div className="inline-flex gap-1 rounded-xl border border-slate-200/80 bg-white p-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-              <Button size="sm" variant="ghost" className={seg(!unreadOnly)} aria-pressed={!unreadOnly} onClick={() => (setUnreadOnly(false), setPage(1))}>
-                All
-              </Button>
-              <Button size="sm" variant="ghost" className={seg(unreadOnly)} aria-pressed={unreadOnly} onClick={() => (setUnreadOnly(true), setPage(1))}>
-                Unread
-              </Button>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!unread}
-              onClick={async () => {
-                try {
-                  await clientApi.post('/notifications/read-all', {});
-                  await load();
-                } catch {
-                  setMsg('Could not mark notifications as read.');
-                }
-              }}
-            >
-              <CheckCheck />
-              Mark all read
-            </Button>
-          </>
-        }
-      />
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
+      <h1 className="sr-only">Notifications</h1>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="inline-flex gap-1 rounded-xl border border-slate-200/80 bg-white p-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+          <Button size="sm" variant="ghost" className={seg(!unreadOnly)} aria-pressed={!unreadOnly} onClick={() => (setUnreadOnly(false), setPage(1))}>
+            All
+          </Button>
+          <Button size="sm" variant="ghost" className={seg(unreadOnly)} aria-pressed={unreadOnly} onClick={() => (setUnreadOnly(true), setPage(1))}>
+            Unread
+          </Button>
+        </div>
+        <span className="text-xs text-slate-500 tabular-nums">{unread === null ? 'Loading…' : `${unread} unread`} · {total} total · newest first</span>
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-auto h-9"
+          disabled={!unread}
+          onClick={async () => {
+            try {
+              await clientApi.post('/notifications/read-all', {});
+              await load();
+            } catch {
+              setMsg('Could not mark notifications as read.');
+            }
+          }}
+        >
+          <CheckCheck />
+          Mark all read
+        </Button>
+      </div>
       {msg ? (
-        <Callout tone="neutral" role="status">
+        <Callout tone="neutral" role="status" className="shrink-0">
           {msg}
         </Callout>
       ) : null}
-      <SectionCard
-        icon={Inbox}
-        tone="sky"
-        title={unreadOnly ? 'Unread' : 'All notifications'}
-        description={`${total} item${total === 1 ? '' : 's'} · newest first · times in IST`}
-        flush
-      >
+      <section aria-label={unreadOnly ? 'Unread notifications' : 'All notifications'} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+        <div className="min-h-0 flex-1 overflow-y-auto">
         <ul className="divide-y divide-slate-100 border-t border-slate-100">
           {rows === null
             ? [0, 1, 2].map((i) => (
@@ -209,20 +197,19 @@ export function NotificationCentre({ area }: { area: WebArea }) {
             );
           })}
         </ul>
-      </SectionCard>
-      {pages > 1 ? (
-        <nav aria-label="Pagination" className="flex items-center justify-between gap-2 text-sm">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-slate-500 tabular-nums">
-            Page {page} of {pages}
-          </span>
-          <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
-            Next
-          </Button>
-        </nav>
-      ) : null}
+        </div>
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
+          <span className="tabular-nums">Page {page} of {pages}</span>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="h-8" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              Previous
+            </Button>
+            <Button size="sm" variant="outline" className="h-8" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+              Next
+            </Button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

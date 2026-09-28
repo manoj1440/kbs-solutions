@@ -7,7 +7,6 @@ import {
   FileSpreadsheet,
   Files,
   GraduationCap,
-  History,
   IdCard,
   KeyRound,
   LifeBuoy,
@@ -16,12 +15,10 @@ import {
   Network,
   Palette,
   Phone,
-  Rocket,
   ScrollText,
   Settings2,
   ShieldCheck,
   Shuffle,
-  SlidersHorizontal,
   Star,
   TriangleAlert,
   Wallet,
@@ -31,11 +28,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import {
   Callout,
-  Meter,
-  PageHeader,
-  SectionCard,
-  StatCard,
-  StatGrid,
+  MiniStat,
   type Tone,
 } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
@@ -183,77 +176,18 @@ export default async function ConfigPage() {
   }
   const changed = cfg.data.filter((c) => c.updatedAt).length;
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={Settings2}
-        eyebrow="Settings"
-        title="Configuration"
-        tone="slate"
-        description={
-          <>
-            Every change needs a reason and is kept in the key&apos;s history and the audit trail. ★
-            = required before production (REQ-28 §28.2 launch gate).
-          </>
-        }
-      >
-        <StatGrid>
-          <StatCard
-            label="Launch gates"
-            icon={Rocket}
-            tone={open.length ? 'amber' : 'emerald'}
-            value={
-              <>
-                {setCount}
-                <span className="text-base font-medium text-slate-400">
-                  {' '}
-                  of {gates.data.length} set
-                </span>
-                <Meter
-                  value={setCount}
-                  max={gates.data.length}
-                  tone={open.length ? 'amber' : 'emerald'}
-                  className="mt-2.5"
-                  label="Launch gates set"
-                />
-              </>
-            }
-            hint={
-              open.length
-                ? `${open.length} ★ key${open.length === 1 ? '' : 's'} still unset`
-                : 'All ★ keys hold a value.'
-            }
-          />
-          <StatCard
-            label="Settings"
-            value={cfg.data.length}
-            hint={`Across ${groups.size} sections`}
-            icon={SlidersHorizontal}
-            tone="indigo"
-          />
-          <StatCard
-            label="Changed by an Admin"
-            value={changed}
-            hint="Each change has a reason in its history"
-            icon={History}
-            tone="sky"
-          />
-          <StatCard
-            label="Never changed"
-            value={cfg.data.length - changed}
-            hint="Still the seeded default"
-            icon={Settings2}
-            tone="slate"
-          />
-        </StatGrid>
-      </PageHeader>
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
+      <h1 className="sr-only">Configuration</h1>
+      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+        <MiniStat label="Launch gates" value={`${setCount} / ${gates.data.length}`} hint={open.length ? `${open.length} ★ unset` : 'All ★ keys set'} tone={open.length ? 'amber' : 'emerald'} />
+        <MiniStat label="Settings" value={cfg.data.length} hint={`${groups.size} sections`} tone="sky" />
+        <MiniStat label="Changed by an Admin" value={changed} hint="Reasoned + audited" tone="violet" />
+        <MiniStat label="Never changed" value={cfg.data.length - changed} hint="Seeded defaults" tone="slate" />
+      </div>
 
-      <section aria-label="Launch gates">
+      <section aria-label="Launch gates" className="shrink-0">
         {open.length ? (
-          <Callout
-            tone="warning"
-            icon={TriangleAlert}
-            title={`Launch gates: ${setCount} of ${gates.data.length} set`}
-          >
+          <Callout tone="warning" icon={TriangleAlert} title={`Launch gates: ${setCount} of ${gates.data.length} set`}>
             <p>These ★ keys need a value before production:</p>
             <ul className="mt-2 flex min-w-0 flex-wrap gap-1.5">
               {open.map((g) => (
@@ -271,18 +205,14 @@ export default async function ConfigPage() {
             </ul>
           </Callout>
         ) : (
-          <Callout
-            tone="success"
-            icon={CircleCheck}
-            title={`Launch gates: ${setCount} of ${gates.data.length} set`}
-          >
+          <Callout tone="success" icon={CircleCheck} title={`Launch gates: ${setCount} of ${gates.data.length} set`}>
             All ★ keys hold a value.
           </Callout>
         )}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[12.5rem_minmax(0,1fr)] xl:items-start">
-        <nav aria-label="Configuration sections" className="xl:sticky xl:top-24">
+      <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto xl:grid-cols-[12.5rem_minmax(0,1fr)] xl:items-start">
+        <nav aria-label="Configuration sections" className="xl:sticky xl:top-2">
           <p className="mb-2 hidden px-1 text-[10.5px] font-semibold tracking-[0.16em] text-slate-500 uppercase xl:block">
             Sections
           </p>
@@ -308,27 +238,31 @@ export default async function ConfigPage() {
           </ul>
         </nav>
 
-        <div className="grid min-w-0 gap-6">
+        <div className="grid min-w-0 gap-3">
           {[...groups.entries()].map(([group, entries]) => {
             const m = groupMeta(group);
             const stars = entries.filter((c) => c.requiresValueBeforeProd).length;
             return (
-              <SectionCard
+              <section
                 key={group}
                 id={`cfg-group-${group}`}
-                icon={m.icon}
-                tone={m.tone}
-                title={m.label}
-                description={`${entries.length} key${entries.length === 1 ? '' : 's'}${stars ? ` · ${stars} ★ required before production` : ''}`}
-                flush
+                className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]"
               >
-                <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_10.5rem_9.5rem] gap-4 border-y border-slate-100 bg-slate-50 px-6 py-2.5 text-[10.5px] font-semibold tracking-[0.06em] text-slate-500 uppercase lg:grid">
+                <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
+                  <m.icon className="size-4 text-slate-400" aria-hidden="true" />
+                  <h2 className="text-sm font-semibold text-slate-900">{m.label}</h2>
+                  <span className="text-xs text-slate-500">
+                    {entries.length} key{entries.length === 1 ? '' : 's'}
+                    {stars ? ` · ${stars} ★` : ''}
+                  </span>
+                </div>
+                <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_10.5rem_9.5rem] gap-4 bg-slate-50 px-4 py-2 text-[10.5px] font-semibold tracking-[0.06em] text-slate-500 uppercase lg:grid">
                   <span>Key · description</span>
                   <span>Value</span>
                   <span>Last change</span>
                   <span className="sr-only">Actions</span>
                 </div>
-                <ul className="divide-y divide-slate-100 border-t border-slate-100 lg:border-t-0">
+                <ul className="divide-y divide-slate-100">
                   {entries.map((c) => (
                     <li
                       key={c.key}
@@ -372,7 +306,7 @@ export default async function ConfigPage() {
                     </li>
                   ))}
                 </ul>
-              </SectionCard>
+              </section>
             );
           })}
         </div>

@@ -1,10 +1,10 @@
 import { formatDateTime, formatInr } from '@kbs/shared';
-import { CalendarRange, Clock, CreditCard, Filter, Landmark, PhoneCall, Scale, Share2, UserCog, UserRound, Users, Wallet, type LucideIcon } from 'lucide-react';
+import { CalendarRange, CreditCard, Filter, UserCog, UserRound, Users } from 'lucide-react';
 import Link from 'next/link';
 
 import { AdminDashboardNav } from '@/components/admin-dashboard-nav';
 import { Button } from '@/components/ui/button';
-import { Avatar, BankMark, EmptyState, Field, humanize, Meter, PageHeader, SectionCard, selectClass, StatCard, StatGrid } from '@/components/ui/kit';
+import { Avatar, BankMark, EmptyState, humanize, Meter, MiniStat, selectClass, type Tone } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 
@@ -67,8 +67,6 @@ function Money({ count, amount }: { count: number; amount: number }) {
 function Frame({
   path,
   title,
-  description,
-  icon,
   sp,
   meta,
   stats,
@@ -77,57 +75,46 @@ function Frame({
 }: {
   path: string;
   title: string;
-  description: string;
-  icon: LucideIcon;
   sp: Record<string, string | undefined>;
   meta: Meta;
-  stats?: React.ReactNode;
+  stats?: { label: string; value: number; hint: string; tone?: Tone }[];
   /** rendered instead of the table when there are no rows */
   empty?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={icon}
-        eyebrow="Reports"
-        title={title}
-        description={`${description} ${meta.note}`}
-        meta={
-          <>
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarRange className="size-3.5" aria-hidden="true" />
-              {meta.from || meta.to ? `${meta.from ?? '…'} → ${meta.to ?? '…'}` : 'All time'}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="size-3.5" aria-hidden="true" />
-              as of {formatDateTime(meta.asOf)}
-            </span>
-          </>
-        }
-      />
-      <AdminDashboardNav active={path} />
-      <form className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={path}>
-        <Field label="From" htmlFor="dash-from" className="min-w-36 flex-1 sm:max-w-52">
-          <input id="dash-from" className={selectClass} type="date" name="from" defaultValue={sp.from ?? ''} />
-        </Field>
-        <Field label="To" htmlFor="dash-to" className="min-w-36 flex-1 sm:max-w-52">
-          <input id="dash-to" className={selectClass} type="date" name="to" defaultValue={sp.to ?? ''} />
-        </Field>
-        <div className="flex gap-2">
-          <Button type="submit" className="h-10">
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
+      <h1 className="sr-only">{title}</h1>
+      {stats?.length ? (
+        <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+          {stats.map((x) => (
+            <MiniStat key={x.label} label={x.label} value={x.value} hint={x.hint} tone={x.tone ?? 'slate'} />
+          ))}
+        </div>
+      ) : null}
+      <section aria-label={title} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+          <AdminDashboardNav active={path} />
+          <span className="text-xs text-slate-500 tabular-nums">
+            <CalendarRange className="mr-1 inline size-3.5 -translate-y-px" aria-hidden="true" />
+            {meta.from || meta.to ? `${meta.from ?? '…'} → ${meta.to ?? '…'}` : 'All time'} · as of {formatDateTime(meta.asOf)}
+          </span>
+        </div>
+        <form className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3" action={path}>
+          <input aria-label="From date" className={`${selectClass} h-9 w-36`} type="date" name="from" defaultValue={sp.from ?? ''} />
+          <input aria-label="To date" className={`${selectClass} h-9 w-36`} type="date" name="to" defaultValue={sp.to ?? ''} />
+          <Button type="submit" size="sm" className="h-9">
             <Filter />
             Apply
           </Button>
-          <Button asChild variant="outline" className="h-10">
+          <Button asChild variant="ghost" size="sm" className="h-9">
             <Link href={path}>Reset</Link>
           </Button>
+        </form>
+        <div className="min-h-0 flex-1">
+          {empty ?? children}
         </div>
-      </form>
-      {stats ? <StatGrid>{stats}</StatGrid> : null}
-      <SectionCard icon={Scale} tone="slate" title="Evidence, not ranking" description="Figures per person with their own source; no score or automatic decision is derived from them (REQ-15 §15.3)." flush={!empty}>
-        {empty ?? children}
-      </SectionCard>
+      </section>
     </div>
   );
 }
@@ -138,23 +125,19 @@ export async function TelecallerPerformance({ sp }: { sp: Record<string, string 
   return (
     <Frame
       path="/admin/dashboards/telecallers"
-      icon={Users}
       title="Telecaller performance"
-      description="Provider-confirmed calls, KBS outcomes and shares per Telecaller · call initiated date."
       sp={sp}
       meta={d.meta}
-      stats={
-        <>
-          <StatCard label="Telecallers" value={d.rows.length} hint="In this view" icon={Users} tone="violet" />
-          <StatCard label="Call attempts" value={total(d.rows, (r) => r.calls.attempts.value)} hint={hint} icon={PhoneCall} tone="sky" />
-          <StatCard label="Connected" value={total(d.rows, (r) => r.calls.connected.value)} hint={hint} icon={PhoneCall} tone="emerald" />
-          <StatCard label="Shares" value={total(d.rows, (r) => r.shares.total.value)} hint={hint} icon={Share2} tone="teal" />
-        </>
-      }
+      stats={[
+        { label: 'Telecallers', value: d.rows.length, hint: 'In this view', tone: 'violet' },
+        { label: 'Call attempts', value: total(d.rows, (r) => r.calls.attempts.value), hint, tone: 'sky' },
+        { label: 'Connected', value: total(d.rows, (r) => r.calls.connected.value), hint, tone: 'emerald' },
+        { label: 'Shares', value: total(d.rows, (r) => r.shares.total.value), hint, tone: 'teal' },
+      ]}
       empty={d.rows.length === 0 ? <EmptyState icon={Users} title="No Telecallers." /> : undefined}
     >
-      <Table responsive>
-        <TableHeader>
+      <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
+        <TableHeader className="sticky top-0 z-10">
           <TableRow>
             <TableHead>Telecaller</TableHead>
             <TableHead className="sm:text-right">Records (assigned / active)</TableHead>
@@ -214,23 +197,19 @@ export async function ManagerPerformance({ sp }: { sp: Record<string, string | u
   return (
     <Frame
       path="/admin/dashboards/managers"
-      icon={UserCog}
       title="Manager performance"
-      description="Team totals per Manager — identical to what each Manager sees on their own dashboard."
       sp={sp}
       meta={d.meta}
-      stats={
-        <>
-          <StatCard label="Managers" value={d.rows.length} hint="In this view" icon={UserCog} tone="violet" />
-          <StatCard label="Telecallers" value={total(d.rows, (r) => r.telecallers)} hint={hint} icon={PhoneCall} tone="sky" />
-          <StatCard label="Advisors" value={total(d.rows, (r) => r.advisors)} hint={hint} icon={UserRound} tone="indigo" />
-          <StatCard label="Leads created" value={total(d.rows, (r) => r.leads.created.value)} hint={hint} icon={Landmark} tone="teal" />
-        </>
-      }
+      stats={[
+        { label: 'Managers', value: d.rows.length, hint: 'In this view', tone: 'violet' },
+        { label: 'Telecallers', value: total(d.rows, (r) => r.telecallers), hint, tone: 'sky' },
+        { label: 'Advisors', value: total(d.rows, (r) => r.advisors), hint, tone: 'indigo' },
+        { label: 'Leads created', value: total(d.rows, (r) => r.leads.created.value), hint, tone: 'teal' },
+      ]}
       empty={d.rows.length === 0 ? <EmptyState icon={UserCog} title="No Managers." /> : undefined}
     >
-      <Table responsive>
-        <TableHeader>
+      <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
+        <TableHeader className="sticky top-0 z-10">
           <TableRow>
             <TableHead>Manager</TableHead>
             <TableHead>Team</TableHead>
@@ -300,23 +279,19 @@ export async function AdvisorPerformance({ sp }: { sp: Record<string, string | u
   return (
     <Frame
       path="/admin/dashboards/advisors"
-      icon={UserRound}
       title="Advisor performance"
-      description="Leads, latest accepted MIS results (verbatim) and payout events per Advisor · KBS lead created date."
       sp={sp}
       meta={d.meta}
-      stats={
-        <>
-          <StatCard label="Advisors" value={d.rows.length} hint="In this view" icon={UserRound} tone="violet" />
-          <StatCard label="Leads created" value={total(d.rows, (r) => r.leads.created.value)} hint={hint} icon={Landmark} tone="teal" />
-          <StatCard label="MIS matched" value={total(d.rows, (r) => r.leads.misMatched.value)} hint={hint} icon={Landmark} tone="indigo" />
-          <StatCard label="Paid payout events" value={total(d.rows, (r) => r.payouts.paid.value)} hint={`${formatInr(total(d.rows, (r) => r.payouts.paid.amountInr ?? 0))} · ${hint.toLowerCase()}`} icon={Wallet} tone="emerald" />
-        </>
-      }
+      stats={[
+        { label: 'Advisors', value: d.rows.length, hint: 'In this view', tone: 'violet' },
+        { label: 'Leads created', value: total(d.rows, (r) => r.leads.created.value), hint, tone: 'teal' },
+        { label: 'MIS matched', value: total(d.rows, (r) => r.leads.misMatched.value), hint, tone: 'indigo' },
+        { label: 'Paid payout events', value: total(d.rows, (r) => r.payouts.paid.value), hint: `${formatInr(total(d.rows, (r) => r.payouts.paid.amountInr ?? 0))} · ${hint.toLowerCase()}`, tone: 'emerald' },
+      ]}
       empty={d.rows.length === 0 ? <EmptyState icon={UserRound} title="No Advisors." /> : undefined}
     >
-      <Table responsive>
-        <TableHeader>
+      <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
+        <TableHeader className="sticky top-0 z-10">
           <TableRow>
             <TableHead>Advisor</TableHead>
             <TableHead className="sm:text-right">Leads / matched</TableHead>
@@ -362,23 +337,19 @@ export async function BankCardMix({ sp }: { sp: Record<string, string | undefine
   return (
     <Frame
       path="/admin/dashboards/bank-card-mix"
-      icon={CreditCard}
       title="Bank / card mix"
-      description={`${d.meta.source} · KBS lead created date.`}
       sp={sp}
       meta={d.meta}
-      stats={
-        <>
-          <StatCard label="Leads" value={total(d.rows, (r) => r.leads)} hint={hint} icon={Landmark} tone="teal" />
-          <StatCard label="MIS matched" value={total(d.rows, (r) => r.misMatched)} hint={hint} icon={Landmark} tone="indigo" />
-          <StatCard label="Awaiting MIS" value={total(d.rows, (r) => r.awaitingMis)} hint={hint} icon={Clock} tone="slate" />
-          <StatCard label="Payout eligible" value={total(d.rows, (r) => r.payoutEligible.count)} hint={`${formatInr(total(d.rows, (r) => r.payoutEligible.amountInr))} · ${hint.toLowerCase()}`} icon={Wallet} tone="emerald" />
-        </>
-      }
+      stats={[
+        { label: 'Leads', value: total(d.rows, (r) => r.leads), hint, tone: 'teal' },
+        { label: 'MIS matched', value: total(d.rows, (r) => r.misMatched), hint, tone: 'indigo' },
+        { label: 'Awaiting MIS', value: total(d.rows, (r) => r.awaitingMis), hint, tone: 'slate' },
+        { label: 'Payout eligible', value: total(d.rows, (r) => r.payoutEligible.count), hint: `${formatInr(total(d.rows, (r) => r.payoutEligible.amountInr))} · ${hint.toLowerCase()}`, tone: 'emerald' },
+      ]}
       empty={d.rows.length === 0 ? <EmptyState icon={CreditCard} title="No leads in this period." /> : undefined}
     >
-      <Table responsive>
-        <TableHeader>
+      <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
+        <TableHeader className="sticky top-0 z-10">
           <TableRow>
             <TableHead>Bank</TableHead>
             <TableHead>Card</TableHead>

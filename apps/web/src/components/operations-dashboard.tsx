@@ -9,7 +9,6 @@ import {
   Database,
   Filter,
   Landmark,
-  LayoutDashboard,
   MessageSquareText,
   MessageSquareWarning,
   PhoneCall,
@@ -24,7 +23,7 @@ import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BankMark, Callout, EmptyState, Field, IconTile, Meter, PageHeader, SectionCard, selectClass, TONE, type Tone } from '@/components/ui/kit';
+import { BankMark, Callout, EmptyState, Field, IconTile, Meter, SectionCard, selectClass, TONE, type Tone } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -373,25 +372,19 @@ export async function OperationsDashboard({
 }) {
   const d = (await apiFetch<OpsDashboard>(`${endpoint}?${opsQuery(sp)}`)).data;
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={LayoutDashboard}
-        title={title}
-        description={d.meta.note}
-        meta={
-          <>
-            <Badge variant="secondary">{d.scope}</Badge>
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarRange className="size-3.5" aria-hidden="true" />
-              {d.meta.from || d.meta.to ? `${d.meta.from ?? '…'} → ${d.meta.to ?? '…'}` : 'all time'}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="size-3.5" aria-hidden="true" />
-              as of {formatDateTime(d.meta.asOf)}
-            </span>
-          </>
-        }
-      />
+    <div className="flex flex-col gap-3 overflow-y-auto lg:h-[calc(100dvh-6rem)]">
+      <h1 className="sr-only">{title}</h1>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+        <Badge variant="secondary">{d.scope}</Badge>
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+          <CalendarRange className="size-3.5" aria-hidden="true" />
+          {d.meta.from || d.meta.to ? `${d.meta.from ?? '…'} → ${d.meta.to ?? '…'}` : 'all time'}
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 tabular-nums">
+          <Clock className="size-3.5" aria-hidden="true" />
+          as of {formatDateTime(d.meta.asOf)}
+        </span>
+      </div>
       <OpsFilters basePath={basePath} sp={sp} />
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="MIS freshness per bank">
         <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">

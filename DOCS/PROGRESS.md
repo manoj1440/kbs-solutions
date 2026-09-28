@@ -170,3 +170,9 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 - api e2e: leads-list 5/5 incl. new F-810 scope test. admin-smoke: 62 pass / 1 skip (earlier session.spec failures = the known refresh-reuse race + OTP cooldown cascade, unrelated).
 
 
+## F-811 done — compact list/table pattern everywhere (2026-09-28)
+- Every Admin list/dashboard page + Manager pages + shared payout/entitlement/dashboard/notification components moved to the F-808 pattern: MiniStat tiles → compact filter row → internally-scrolling table → footer pagination. PageHeader/StatGrid/SectionCard removed from ~20 pages; PageHeader kept only as identity on detail/editor pages and the F-807 overview.
+- Payout requests/entitlements/liability + the 4 admin report dashboards are shared components — one rewrite covers admin, manager and accounts.
+- Verified: typecheck + lint clean; web e2e desktop 34 pass (admin-smoke 31, session 3, manager-advisors, role-routing) and phone 36 pass / 1 skip; 1440px pages fit one screen, 390px no horizontal overflow.
+- E2E env note: web specs need `E2E_BASE_URL`, `E2E_API_URL=…/api/v1`, `E2E_PG_CONTAINER=kbs-test-pg`, `E2E_PG_DB=kbs_dev` — without the pg vars `clearOtp` no-ops and logins hit AUTH_OTP_RESEND_TOO_SOON. All earlier session.spec flakes were this, not a product bug.
+- Not pushed.
