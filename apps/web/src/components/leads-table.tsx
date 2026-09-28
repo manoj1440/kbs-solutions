@@ -50,18 +50,15 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       header: 'Customer / reference',
       accessorFn: (r) => r.customer.name,
       cell: ({ row }) => (
-        <div className="flex min-w-0 items-start gap-2.5">
-          <Avatar name={row.original.customer.name} size="sm" className="mt-0.5 hidden sm:inline-flex" />
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Avatar name={row.original.customer.name} size="sm" className="hidden sm:inline-flex" />
           <div className="grid min-w-0 gap-0.5">
-            <Link className="font-semibold" href={`${basePath}/${row.original.id}`}>
+            <Link className="truncate font-semibold text-slate-900 hover:text-teal-700" href={`${basePath}/${row.original.id}`}>
               {row.original.customer.name}
             </Link>
-            <div className="text-xs text-slate-500 tabular-nums">
-              {row.original.customer.mobileMasked ?? ''}
+            <div className="truncate text-xs text-slate-500 tabular-nums">
+              {row.original.customer.mobileMasked ?? ''} · <code>{row.original.kbsRef}</code>
             </div>
-            {!fullTable ? (
-              <code className="text-[11px] text-slate-500">{row.original.kbsRef}</code>
-            ) : null}
           </div>
         </div>
       ),
@@ -72,18 +69,17 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       accessorFn: (r) => `${r.bank.displayName} ${r.card.name}`,
       cell: ({ row }) => (
         <div className="grid min-w-0 gap-0.5">
-          <div className="flex items-center gap-2 font-medium text-slate-800">
-            <BankMark code={row.original.bank.code} size="sm" className="hidden h-6 min-w-6 text-[7.5px] sm:inline-flex" />
-            {row.original.bank.displayName}
+          <div className="flex min-w-0 items-center gap-2 font-medium text-slate-800">
+            <BankMark code={row.original.bank.code} size="sm" className="h-6 min-w-6 shrink-0 text-[7.5px]" />
+            <span className="truncate">{row.original.bank.displayName}</span>
           </div>
-          <div className="text-xs text-slate-500">
+          <div className="truncate text-xs text-slate-500">
             {row.original.card.name}
-            {row.original.card.crosswalked &&
-            row.original.card.crosswalked.id !== row.original.card.id
-              ? ` · bank product ${row.original.card.crosswalked.productCode} → ${row.original.card.crosswalked.name}`
+            {row.original.card.crosswalked && row.original.card.crosswalked.id !== row.original.card.id
+              ? ` · ${row.original.card.crosswalked.productCode} → ${row.original.card.crosswalked.name}`
               : ''}
+            {!fullTable && row.original.lastMatchedAt ? ` · MIS ${formatDateTime(row.original.lastMatchedAt)}` : !fullTable ? ' · never matched' : ''}
           </div>
-          {!fullTable ? <FreshnessLabel lastMatchedAt={row.original.lastMatchedAt} /> : null}
         </div>
       ),
     },
@@ -149,19 +145,19 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       id: 'stage',
       header: 'Bank stage',
       accessorFn: (r) => r.stage.display,
-      cell: ({ row }) => <StageBadge field={row.original.stage} />,
+      cell: ({ row }) => <StageBadge field={row.original.stage} label={null} />,
     },
     {
       id: 'decision',
       header: 'Bank decision',
       accessorFn: (r) => r.decision.display,
-      cell: ({ row }) => <DecisionBadge field={row.original.decision} />,
+      cell: ({ row }) => <DecisionBadge field={row.original.decision} label={null} />,
     },
     {
       id: 'activation',
       header: 'Activation',
       accessorFn: (r) => r.activation.display,
-      cell: ({ row }) => <ActivationBadge field={row.original.activation} />,
+      cell: ({ row }) => <ActivationBadge field={row.original.activation} label={null} />,
     },
     {
       id: 'remarks',
@@ -185,25 +181,25 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
     },
     {
       id: 'action',
-      header: 'Actions',
+      header: '',
       enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          <Button asChild size="sm" variant="outline">
-            <Link href={`${basePath}/${row.original.id}`}>
-              Open lead
-              <ArrowUpRight aria-hidden="true" />
-            </Link>
-          </Button>
+        <div className="flex items-center justify-end gap-1">
           <Button
-            size="sm"
+            size="icon"
             variant="ghost"
+            className="size-7"
             onClick={row.getToggleExpandedHandler()}
             aria-expanded={row.getIsExpanded()}
             aria-controls={`lead-details-${row.original.id}`}
+            aria-label={row.getIsExpanded() ? `Hide details for ${row.original.customer.name}` : `Show details for ${row.original.customer.name}`}
           >
-            {row.getIsExpanded() ? 'Less detail' : 'More detail'}
             <ChevronDown aria-hidden="true" className={row.getIsExpanded() ? 'rotate-180 transition-transform' : 'transition-transform'} />
+          </Button>
+          <Button asChild size="icon" variant="ghost" className="size-7">
+            <Link href={`${basePath}/${row.original.id}`} aria-label={`Open lead ${row.original.customer.name}`}>
+              <ArrowUpRight aria-hidden="true" />
+            </Link>
           </Button>
         </div>
       ),
@@ -296,7 +292,6 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
                   <TableCell
                     key={cell.id}
                     data-label={String(cell.column.columnDef.header)}
-                    className="align-top"
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>

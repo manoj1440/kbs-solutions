@@ -10,3 +10,8 @@
 ## Verified
 - Browser: tiles + filters + expandable table at 1440 & 390, no page scroll (desktop) / no x-overflow (phone).
 - api e2e `leads-list`: +1 test asserting summary buckets for admin, advisor-1 (3 leads), advisor-2 (1 lead) scopes — 5/5 pass.
+
+### Table polish (same session)
+- Status badges render without the `Stage:`/`Decision:`/`Activation:` prefixes inside table cells (`label={null}`; detail pages keep labels).
+- `.lead-overview-table` badges clip to one-line ellipsis (overrides the global wrap rule); rows are a uniform 71px, cells `align-middle`.
+- Actions column → two icon buttons (expand details, open lead); customer name is the lead link.

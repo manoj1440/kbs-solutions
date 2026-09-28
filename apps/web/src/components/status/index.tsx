@@ -9,20 +9,20 @@ import { cn } from '@/lib/utils';
  * Stage, Decision, Activation and Payout state are deliberately separate components (REQ-14 §14.3).
  */
 
-function StatusBadge({ kind, field, label }: { kind: StatusKind; field: StatusField; label: string }) {
+function StatusBadge({ kind, field, label }: { kind: StatusKind; field: StatusField; label?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="text-[11px] font-medium text-slate-500">{label}:</span>
-      <Badge variant={statusTone(kind, field)} title={field.raw ?? undefined}>
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+      {label ? <span className="text-[11px] font-medium text-slate-500">{label}:</span> : null}
+      <Badge variant={statusTone(kind, field)} title={field.raw ?? undefined} className="max-w-full truncate">
         {field.display}
       </Badge>
     </span>
   );
 }
 
-export const StageBadge = (p: { field: StatusField }) => <StatusBadge kind="stage" label="Stage" field={p.field} />;
-export const DecisionBadge = (p: { field: StatusField }) => <StatusBadge kind="decision" label="Decision" field={p.field} />;
-export const ActivationBadge = (p: { field: StatusField }) => <StatusBadge kind="activation" label="Activation" field={p.field} />;
+export const StageBadge = (p: { field: StatusField; label?: string | null }) => <StatusBadge kind="stage" label={p.label === null ? undefined : (p.label ?? 'Stage')} field={p.field} />;
+export const DecisionBadge = (p: { field: StatusField; label?: string | null }) => <StatusBadge kind="decision" label={p.label === null ? undefined : (p.label ?? 'Decision')} field={p.field} />;
+export const ActivationBadge = (p: { field: StatusField; label?: string | null }) => <StatusBadge kind="activation" label={p.label === null ? undefined : (p.label ?? 'Activation')} field={p.field} />;
 
 const PROVENANCE_CLASS: Record<Provenance, string> = {
   BANK_MIS: 'bg-provenance-bank-mis/10 text-provenance-bank-mis ring-provenance-bank-mis/25',
