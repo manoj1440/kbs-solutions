@@ -32,3 +32,5 @@ Make `/admin/mis` a business page like Calling records: cumulative status number
 - Filters verified live (`decision=Approved&activation=INACTIVE` → correct subset).
 - api e2e: `mis-import`, `mis-apply` (incl. new F-809 test), `mis-jobs` — 12/12 pass. web smoke: 61 pass / 1 skip.
 - Leftover: `applicationsSummary` hardcodes the default blank-token list instead of reading `mis.blankValueTokens` config (matches seed defaults; fine).
+
+- User feedback (same day): removed the `Applications | Uploads` pill — the page is now filters + Upload MIS + the applications table only. Batches are reachable via the batch ref link on each row and an amber attention strip when an upload is running/failed.

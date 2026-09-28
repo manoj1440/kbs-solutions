@@ -190,6 +190,7 @@ export class MisImportService {
         mobileMasked: maskMobile(s.lead.customerMobile),
         pincode: s.lead.pincode,
         bank: s.bank,
+        batchId: s.lastMatchedBatchId,
         batchRef: s.lastMatchedBatch.publicRef,
         applicationNo: s.applicationNo,
         applicationReferenceNumber: s.applicationReferenceNumber,
