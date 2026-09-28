@@ -1,26 +1,21 @@
 import {
   type CallingQueueRow,
   type CallingRecordsSummary,
-  type CallOutcome,
-  formatDateTime,
-  OUTCOME_LABELS,
   RECORD_STATUS_LABELS,
   RECORD_STATUSES,
   type RecordStatus,
 } from '@kbs/shared';
-import { CalendarClock, ChevronLeft, ChevronRight, Filter, Inbox, TriangleAlert, UserX } from 'lucide-react';
+import { Filter, TriangleAlert } from 'lucide-react';
 import Form from 'next/form';
 import Link from 'next/link';
 
-import { ReassignForm } from '@/components/reassign-form';
-import { RECORD_STATUS_VARIANT } from '@/components/team-ops';
-import { Badge } from '@/components/ui/badge';
+import { DataTablePagination, DataTablePanel } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import { Avatar, EmptyState, humanize, MiniStat, selectClass } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MiniStat, selectClass } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
+import { CallingRecordsTable } from './calling-records-table';
 import { UploadListButton } from './new-batch';
 
 export const metadata = { title: 'Calling records · KBS Solutions' };
@@ -81,7 +76,6 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
   const positive = sum(['INTERESTED', 'LINK_SHARED']);
   const closed = sum(['DECLINED', 'COMPLETED', 'DO_NOT_CONTACT', 'EXCLUDED']);
   const total = Number(records.meta.total ?? records.data.length);
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pending = batches.data.filter((b) => batchAction(b));
   const eligible = dist.filter((t) => t.eligible).map((t) => ({ id: t.id, label: t.fullName }));
   const filtered = status !== 'ALL' || sp.q || pincode || sp.telecallerId;
@@ -122,141 +116,47 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
         <MiniStat label="Closed or blocked" value={closed} hint={`${by.DECLINED + by.COMPLETED} closed · ${by.DO_NOT_CONTACT + by.EXCLUDED} blocked`} tone="slate" />
       </div>
 
-      <section id="records" aria-label="Calling records" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
-          <Form action="/admin/calling-list" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            <input aria-label="Customer name" name="q" className={cn(selectClass, 'h-9 min-w-40 flex-[2_1_10rem]')} defaultValue={sp.q ?? ''} placeholder="Search customer name" />
-            <input aria-label="Pincode" name="pincode" className={cn(selectClass, 'h-9 w-28 flex-none')} inputMode="numeric" maxLength={6} pattern="\d{1,6}" defaultValue={pincode ?? ''} placeholder="Pincode" />
-            <select aria-label="Current status" name="status" className={cn(selectClass, 'h-9 min-w-44 flex-[1_1_11rem]')} defaultValue={status === 'ALL' ? '' : status}>
-              <option value="">All statuses ({summary.total})</option>
-              {RECORD_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {RECORD_STATUS_LABELS[s]} ({by[s]})
-                </option>
-              ))}
-            </select>
-            <select aria-label="Caller" name="telecallerId" className={cn(selectClass, 'h-9 min-w-36 flex-[1_1_9rem]')} defaultValue={sp.telecallerId ?? ''}>
-              <option value="">All callers</option>
-              {dist.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.fullName}
-                </option>
-              ))}
-            </select>
-            <Button type="submit" size="sm" className="h-9">
-              <Filter />
-              Apply
-            </Button>
-            {filtered ? (
-              <Button asChild size="sm" variant="ghost" className="h-9">
-                <Link href="/admin/calling-list">Reset</Link>
-              </Button>
-            ) : null}
-          </Form>
-          <UploadListButton />
-        </div>
-        <div className="min-h-0 flex-1">
-          {records.data.length === 0 ? (
-            <EmptyState icon={Inbox} className="m-3" title={filtered ? 'No records match these filters.' : 'No customer records yet.'} description={filtered ? 'Change or reset the filters.' : 'Upload a customer list to begin.'} />
-          ) : (
-            <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-              <TableHeader className="sticky top-0 z-10">
-                <TableRow>
-                  <TableHead className="pl-4">Customer</TableHead>
-                  <TableHead>Pincode / location</TableHead>
-                  <TableHead>Current status</TableHead>
-                  <TableHead>Caller</TableHead>
-                  <TableHead>Last activity</TableHead>
-                  <TableHead className="pr-4">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {records.data.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="pl-4" data-label="Customer">
-                      <div className="font-medium text-slate-900">{r.fullName}</div>
-                      <div className="mt-0.5 font-mono text-xs text-slate-500">{r.mobileMasked}</div>
-                    </TableCell>
-                    <TableCell data-label="Pincode / location" className="text-xs">
-                      <div className="font-mono">{r.pincode}</div>
-                      <div className="mt-0.5 text-slate-500">{r.location}</div>
-                    </TableCell>
-                    <TableCell data-label="Current status">
-                      <Badge variant={RECORD_STATUS_VARIANT[r.recordStatus]}>{RECORD_STATUS_LABELS[r.recordStatus]}</Badge>
-                    </TableCell>
-                    <TableCell data-label="Caller" className="text-xs">
-                      {r.assignedTelecaller ? (
-                        <Link href={`/admin/calling-list/performance/telecaller/${r.assignedTelecaller.id}`} className="inline-flex items-center gap-2 font-medium text-slate-800 hover:text-teal-700">
-                          <Avatar name={r.assignedTelecaller.fullName} size="sm" />
-                          {r.assignedTelecaller.fullName}
-                        </Link>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-slate-500">
-                          <UserX className="size-3.5" aria-hidden="true" />
-                          No caller
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell data-label="Last activity" className="text-xs">
-                      {r.lastOutcome ? (
-                        <>
-                          <div className="font-medium text-slate-800">{OUTCOME_LABELS[r.lastOutcome.outcome as CallOutcome] ?? humanize(r.lastOutcome.outcome)}</div>
-                          <div className="mt-0.5 text-slate-500">
-                            {formatDateTime(r.lastOutcome.at)}
-                            {r.lastOutcome.remarks ? ` — ${r.lastOutcome.remarks}` : ''}
-                          </div>
-                        </>
-                      ) : (
-                        <span className="text-slate-500">No outcome yet</span>
-                      )}
-                      {r.nextFollowUpAt ? (
-                        <div className="mt-1 inline-flex items-center gap-1 font-medium text-sky-800">
-                          <CalendarClock className="size-3.5" aria-hidden="true" />
-                          Follow-up {formatDateTime(r.nextFollowUpAt)}
-                        </div>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="pr-4" data-label="Action">
-                      {r.recordStatus === 'NEEDS_REVIEW' ? (
-                        <Link href={`/admin/calling-list/${r.batchId}`} className="text-[13px] font-medium text-teal-700 hover:underline">
-                          Review in {r.batchRef}
-                        </Link>
-                      ) : r.recordStatus === 'EXCLUDED' || r.recordStatus === 'DO_NOT_CONTACT' || r.hiddenAt ? (
-                        <span className="text-xs text-slate-400">—</span>
-                      ) : (
-                        <ReassignForm recordId={r.id} currentId={r.assignedTelecaller?.id ?? null} options={eligible} />
-                      )}
-                    </TableCell>
-                  </TableRow>
+      <DataTablePanel
+        id="records"
+        label="Calling records"
+        toolbar={
+          <>
+            <Form action="/admin/calling-list" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <input aria-label="Customer name" name="q" className={cn(selectClass, 'h-9 min-w-40 flex-[2_1_10rem]')} defaultValue={sp.q ?? ''} placeholder="Search customer name" />
+              <input aria-label="Pincode" name="pincode" className={cn(selectClass, 'h-9 w-28 flex-none')} inputMode="numeric" maxLength={6} pattern="\d{1,6}" defaultValue={pincode ?? ''} placeholder="Pincode" />
+              <select aria-label="Current status" name="status" className={cn(selectClass, 'h-9 min-w-44 flex-[1_1_11rem]')} defaultValue={status === 'ALL' ? '' : status}>
+                <option value="">All statuses ({summary.total})</option>
+                {RECORD_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {RECORD_STATUS_LABELS[s]} ({by[s]})
+                  </option>
                 ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-xs">
-          <span className="text-slate-500 tabular-nums">
-            {total ? `${((page - 1) * PAGE_SIZE + 1).toLocaleString('en-IN')}–${Math.min(page * PAGE_SIZE, total).toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')}` : '0 records'} · page {page} of {pages}
-          </span>
-          <div className="flex gap-2">
-            {page > 1 ? (
-              <Button asChild size="sm" variant="outline" className="h-8">
-                <Link href={link({ page: String(page - 1) })}>
-                  <ChevronLeft />
-                  Previous
-                </Link>
+              </select>
+              <select aria-label="Caller" name="telecallerId" className={cn(selectClass, 'h-9 min-w-36 flex-[1_1_9rem]')} defaultValue={sp.telecallerId ?? ''}>
+                <option value="">All callers</option>
+                {dist.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.fullName}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" size="sm" className="h-9">
+                <Filter />
+                Apply
               </Button>
-            ) : null}
-            {page < pages ? (
-              <Button asChild size="sm" variant="outline" className="h-8">
-                <Link href={link({ page: String(page + 1) })}>
-                  Next
-                  <ChevronRight />
-                </Link>
-              </Button>
-            ) : null}
-          </div>
-        </div>
-      </section>
+              {filtered ? (
+                <Button asChild size="sm" variant="ghost" className="h-9">
+                  <Link href="/admin/calling-list">Reset</Link>
+                </Button>
+              ) : null}
+            </Form>
+            <UploadListButton />
+          </>
+        }
+        footer={<DataTablePagination page={page} pageSize={PAGE_SIZE} total={total} href={(p) => link({ page: String(p) })} noun="records" />}
+      >
+        <CallingRecordsTable rows={records.data} filtered={Boolean(filtered)} eligible={eligible} />
+      </DataTablePanel>
     </div>
   );
 }

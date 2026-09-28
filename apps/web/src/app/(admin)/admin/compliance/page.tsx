@@ -1,40 +1,10 @@
-import { formatDateTime } from '@kbs/shared';
-import { ShieldCheck } from 'lucide-react';
-
-import { Badge } from '@/components/ui/badge';
-import {
-  EmptyState,
-  humanize,
-  MiniStat,
-} from '@/components/ui/kit';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { MiniStat } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
-import { ComplianceActions, LiftButton } from './actions';
+import { ComplianceActions } from './actions';
+import { type Suppression, SuppressionTable } from './suppression-table';
 
 export const metadata = { title: 'Compliance · KBS Solutions' };
-
-interface Suppression {
-  id: string;
-  mobile: string;
-  reason: string;
-  at: string;
-  liftedAt: string | null;
-  createdByUserId: string | null;
-}
-
-const REASON: Record<string, string> = {
-  CUSTOMER_REQUEST: 'Customer request',
-  COMPLIANCE: 'Compliance',
-  DND_LIST: 'DND list',
-};
 
 /** F-306/F-304 → F-811 Admin: suppression list, DND import, pincode master import. */
 export default async function CompliancePage() {
@@ -57,46 +27,7 @@ export default async function CompliancePage() {
           Suppression applies to every import and blocks call initiation server-side — hidden, never deleted (INV-07).
         </div>
         <div className="min-h-0 flex-1">
-          {s.data.length === 0 ? (
-            <EmptyState icon={ShieldCheck} className="m-3" title="No suppressed mobiles" description="Suppress a mobile above or import a DND list. Suppressed numbers are never called." />
-          ) : (
-            <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-              <TableHeader className="sticky top-0 z-10">
-                <TableRow>
-                  <TableHead className="pl-4">Mobile</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Added</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="pr-4" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {s.data.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="pl-4 font-mono text-xs text-slate-800" data-label="Mobile">
-                      {r.mobile}
-                    </TableCell>
-                    <TableCell data-label="Reason">
-                      <Badge variant="secondary">{REASON[r.reason] ?? humanize(r.reason)}</Badge>
-                    </TableCell>
-                    <TableCell data-label="Added" className="text-xs text-slate-600">
-                      {formatDateTime(r.at)}
-                    </TableCell>
-                    <TableCell data-label="Status">
-                      {r.liftedAt ? (
-                        <Badge variant="unknown">lifted {formatDateTime(r.liftedAt)}</Badge>
-                      ) : (
-                        <Badge variant="destructive">active</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="pr-4 sm:text-right">
-                      {r.liftedAt ? null : <LiftButton id={r.id} />}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <SuppressionTable rows={s.data} />
         </div>
         <div className="flex shrink-0 items-center border-t border-slate-100 px-4 py-2 text-xs text-slate-500 tabular-nums">
           {total} entr{total === 1 ? 'y' : 'ies'}

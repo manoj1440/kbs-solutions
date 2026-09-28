@@ -12,15 +12,18 @@ export function DataTablePanel({
   footer,
   children,
   className,
+  id,
 }: {
   label: string;
   toolbar?: React.ReactNode;
   footer?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
     <section
+      id={id}
       aria-label={label}
       className={cn('flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]', className)}
     >
