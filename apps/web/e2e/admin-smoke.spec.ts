@@ -60,7 +60,10 @@ test.describe('Admin workspace smoke', () => {
     await expect(page).toHaveURL(/\/admin$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Business overview' })).toBeVisible();
     await expect(page.getByText('Recent leads')).toBeVisible();
-    await expect(page.getByText('Customer records')).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Period' })).toBeVisible();
+    await expect(page.getByText('Calling performance')).toBeVisible();
+    await page.getByRole('navigation', { name: 'Period' }).getByRole('link', { name: 'All time' }).click();
+    await expect(page).toHaveURL(/\/admin\?period=all$/);
   });
 
   test('F-807: sidebar lists each page once, grouped by responsibility', async () => {
