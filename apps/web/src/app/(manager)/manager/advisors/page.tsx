@@ -1,5 +1,6 @@
 import { formatDate } from '@kbs/shared';
 import { Filter, Users } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -66,7 +67,7 @@ export default async function ManagerAdvisorsPage({
         <MiniStat label="Awaiting my approval" value={awaitingMe} hint="Payout requests" tone={awaitingMe ? 'amber' : 'slate'} href={awaitingMe ? '/manager/payouts/requests?awaitingMe=true' : undefined} />
       </div>
       <section aria-label="Advisor results" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <form
+        <Form
           className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3"
           action="/manager/advisors"
         >
@@ -87,7 +88,7 @@ export default async function ManagerAdvisorsPage({
           <Button asChild variant="ghost" size="sm" className="h-9">
             <Link href="/manager/advisors">Reset</Link>
           </Button>
-        </form>
+        </Form>
         <div className="min-h-0 flex-1">
           {data.rows.length === 0 ? (
             <EmptyState className="m-3" icon={Users} title="No Advisors report to you yet" description="Advisors join your team when they apply one of your Agent Codes." />

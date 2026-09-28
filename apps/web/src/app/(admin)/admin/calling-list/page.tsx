@@ -9,6 +9,7 @@ import {
   type RecordStatus,
 } from '@kbs/shared';
 import { CalendarClock, ChevronLeft, ChevronRight, Filter, Inbox, TriangleAlert, UserX } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { ReassignForm } from '@/components/reassign-form';
@@ -123,7 +124,7 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
 
       <section id="records" aria-label="Calling records" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
-          <form action="/admin/calling-list" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <Form action="/admin/calling-list" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <input aria-label="Customer name" name="q" className={cn(selectClass, 'h-9 min-w-40 flex-[2_1_10rem]')} defaultValue={sp.q ?? ''} placeholder="Search customer name" />
             <input aria-label="Pincode" name="pincode" className={cn(selectClass, 'h-9 w-28 flex-none')} inputMode="numeric" maxLength={6} pattern="\d{1,6}" defaultValue={pincode ?? ''} placeholder="Pincode" />
             <select aria-label="Current status" name="status" className={cn(selectClass, 'h-9 min-w-44 flex-[1_1_11rem]')} defaultValue={status === 'ALL' ? '' : status}>
@@ -151,7 +152,7 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
                 <Link href="/admin/calling-list">Reset</Link>
               </Button>
             ) : null}
-          </form>
+          </Form>
           <UploadListButton />
         </div>
         <div className="min-h-0 flex-1">

@@ -25,6 +25,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -190,13 +191,13 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
             ))}
             <div className="mt-1 border-t border-slate-100 pt-2">
               <p className="px-3 pb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Custom</p>
-              <form action="/admin" className="grid gap-2 px-3 pb-1">
+              <Form action="/admin" className="grid gap-2 px-3 pb-1">
                 <input type="date" name="from" aria-label="From" defaultValue={sp.from ?? period.current.from ?? ''} className={cn(selectClass, 'h-8 px-2 text-xs')} />
                 <input type="date" name="to" aria-label="To" defaultValue={sp.to ?? period.current.to ?? ''} className={cn(selectClass, 'h-8 px-2 text-xs')} />
                 <Button type="submit" size="sm" className="h-8">
                   Apply
                 </Button>
-              </form>
+              </Form>
             </div>
           </div>
         </details>

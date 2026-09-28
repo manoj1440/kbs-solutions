@@ -1,5 +1,6 @@
 import { formatDateTime } from '@kbs/shared';
 import { ArrowRight, Bot, ChevronLeft, ChevronRight, Download, Eye, History, Lock } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
@@ -151,7 +152,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             )
           ) : null}
         </div>
-        <form className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3" action="/admin/audit">
+        <Form className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3" action="/admin/audit">
           {tab === 'sensitive' ? <input type="hidden" name="tab" value="sensitive" /> : null}
           {tab === 'actions' ? (
             <>
@@ -210,7 +211,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <Button asChild variant="ghost" size="sm" className="h-9">
             <Link href={resetHref}>Reset</Link>
           </Button>
-        </form>
+        </Form>
         <div className="min-h-0 flex-1">
           {list.data.length === 0 ? (
             <EmptyState icon={tab === 'actions' ? History : Eye} className="m-3" title={tab === 'actions' ? 'No audit entries match.' : 'No sensitive access recorded.'} />

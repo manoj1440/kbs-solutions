@@ -1,5 +1,6 @@
 import { formatDateTime, formatInr } from '@kbs/shared';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { AcknowledgeException } from '@/components/payout-exception-ack';
@@ -109,7 +110,7 @@ export async function PayoutDashboard({ basePath, requestHref, sp, title, canAck
           />
         ))}
       </div>
-      <form className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={basePath}>
+      <Form className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={basePath}>
         <input aria-label="From date" type="date" name="from" defaultValue={sp.from ?? ''} className={cn(selectClass, 'h-9 w-36')} />
         <input aria-label="To date" type="date" name="to" defaultValue={sp.to ?? ''} className={cn(selectClass, 'h-9 w-36')} />
         <select aria-label="Date basis" className={cn(selectClass, 'h-9 min-w-44')} name="dateBasis" defaultValue={sp.dateBasis ?? 'eligibleAt'}>
@@ -136,7 +137,7 @@ export async function PayoutDashboard({ basePath, requestHref, sp, title, canAck
         <span className="ml-auto text-[11px] text-slate-500">
           as of {formatDateTime(d.meta.asOf)} · {d.meta.source}
         </span>
-      </form>
+      </Form>
       {d.exceptions.total > 0 ? (
         <Callout role="alert" tone="warning" icon={AlertTriangle} className="shrink-0">
           {d.exceptions.total} open payout exception(s):{' '}

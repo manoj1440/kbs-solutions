@@ -1,5 +1,6 @@
 import { formatDateTime } from '@kbs/shared';
 import { ChevronLeft, ChevronRight, Filter, Users } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -72,7 +73,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
 
       <section aria-label="Users" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
-          <form method="get" action="/admin/users" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <Form action="/admin/users" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <input aria-label="Search" name="q" defaultValue={sp.q ?? ''} placeholder="Name, employee code or KBS-U-…" className={cn(selectClass, 'h-9 min-w-44 flex-[2_1_12rem]')} />
             <select aria-label="Role" name="role" defaultValue={sp.role ?? ''} className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')}>
               <option value="">All roles</option>
@@ -99,7 +100,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 <Link href="/admin/users">Reset</Link>
               </Button>
             ) : null}
-          </form>
+          </Form>
           <CreateUserDialog />
         </div>
         <div className="min-h-0 flex-1">

@@ -7,6 +7,7 @@ import {
   MIS_FRESHNESS,
 } from '@kbs/shared';
 import { ChevronLeft, ChevronRight, Filter, SlidersHorizontal } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { LeadsTable } from '@/components/leads-table';
@@ -98,7 +99,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
       </div>
 
       <section aria-label={title} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <form method="get" action={basePath} aria-label="Search & filters" className="border-b border-slate-100">
+        <Form action={basePath} aria-label="Search & filters" className="border-b border-slate-100">
           <div className="flex flex-wrap items-center gap-2 p-3">
             <input aria-label="Search" name="q" className={cn(selectClass, 'h-9 min-w-44 flex-[2_1_12rem]')} defaultValue={sp.q ?? ''} placeholder="Name, mobile, KBS-L-…, bank application no." />
             <select aria-label="Bank" name="bankId" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} defaultValue={sp.bankId ?? ''}>
@@ -188,7 +189,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
             </div>
           </details>
           {sp.advisorId ? <input type="hidden" name="advisorId" value={sp.advisorId} /> : null}
-        </form>
+        </Form>
         <div className="min-h-0 flex-1">
           <LeadsTable rows={list.data} basePath={basePath} />
         </div>

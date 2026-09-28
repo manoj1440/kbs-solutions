@@ -1,5 +1,6 @@
 import { formatDateTime, formatInr } from '@kbs/shared';
 import { CalendarRange, CreditCard, Filter, UserCog, UserRound, Users } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { AdminDashboardNav } from '@/components/admin-dashboard-nav';
@@ -100,7 +101,7 @@ function Frame({
             {meta.from || meta.to ? `${meta.from ?? '…'} → ${meta.to ?? '…'}` : 'All time'} · as of {formatDateTime(meta.asOf)}
           </span>
         </div>
-        <form className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3" action={path}>
+        <Form className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3" action={path}>
           <input aria-label="From date" className={`${selectClass} h-9 w-36`} type="date" name="from" defaultValue={sp.from ?? ''} />
           <input aria-label="To date" className={`${selectClass} h-9 w-36`} type="date" name="to" defaultValue={sp.to ?? ''} />
           <Button type="submit" size="sm" className="h-9">
@@ -110,7 +111,7 @@ function Frame({
           <Button asChild variant="ghost" size="sm" className="h-9">
             <Link href={path}>Reset</Link>
           </Button>
-        </form>
+        </Form>
         <div className="min-h-0 flex-1">
           {empty ?? children}
         </div>

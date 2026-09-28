@@ -19,6 +19,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
@@ -182,7 +183,7 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
   const more = Boolean(sp.managerId || sp.pincode || sp.state || sp.misRecency);
   const moreCount = ['managerId', 'pincode', 'state', 'misRecency'].filter((k) => sp[k]).length;
   return (
-    <form className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={basePath}>
+    <Form className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={basePath}>
       {Object.entries(hidden ?? {}).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
@@ -270,7 +271,7 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
           </Field>
         </div>
       </details>
-    </form>
+    </Form>
   );
 }
 

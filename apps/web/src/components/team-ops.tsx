@@ -1,5 +1,6 @@
 import { type CallingQueueRow, formatDateTime, RECORD_STATUS_LABELS, type RecordStatus } from '@kbs/shared';
 import { Filter, PhoneCall, Users } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { PlayRecordingButton } from '@/components/play-recording-button';
@@ -164,7 +165,7 @@ export function TeamActivityTable({
 export function RangeForm({ base, sp }: { base: string; sp: { from?: string; to?: string } }) {
   const date = 'h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900';
   return (
-    <form action={base} method="get" className="flex flex-wrap items-end gap-2 text-xs">
+    <Form action={base} className="flex flex-wrap items-end gap-2 text-xs">
       <label className="grid gap-1 font-medium text-slate-600">
         From
         <input type="date" name="from" defaultValue={sp.from?.slice(0, 10)} className={date} />
@@ -177,7 +178,7 @@ export function RangeForm({ base, sp }: { base: string; sp: { from?: string; to?
         <Filter />
         Apply
       </Button>
-    </form>
+    </Form>
   );
 }
 

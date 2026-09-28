@@ -1,5 +1,6 @@
 import { formatDateTime } from '@kbs/shared';
 import { ChevronLeft, ChevronRight, Filter, Inbox, TriangleAlert } from 'lucide-react';
+import Form from 'next/form';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
@@ -132,7 +133,7 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
 
       <section aria-label="Bank MIS applications" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
-          <form action="/admin/mis" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <Form action="/admin/mis" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <input aria-label="Search" name="q" className={cn(selectClass, 'h-9 min-w-44 flex-[2_1_12rem]')} defaultValue={sp.q ?? ''} placeholder="Application / ref / customer / code" />
             <select aria-label="Bank" name="bankId" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} defaultValue={sp.bankId ?? ''}>
               <option value="">All banks</option>
@@ -175,7 +176,7 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
                 <Link href="/admin/mis">Reset</Link>
               </Button>
             ) : null}
-          </form>
+          </Form>
           <UploadMisButton banks={uploadBanks} />
         </div>
         <div className="min-h-0 flex-1">
