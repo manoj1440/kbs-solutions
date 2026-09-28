@@ -91,7 +91,7 @@ export function CallingRecordsTable({
     }),
     c.display({
       id: 'action',
-      header: 'Action',
+      header: 'Actions',
       cell: ({ row }) =>
         row.original.recordStatus === 'NEEDS_REVIEW' ? (
           <Link href={`/admin/calling-list/${row.original.batchId}`} className="text-[13px] font-medium text-teal-700 hover:underline">

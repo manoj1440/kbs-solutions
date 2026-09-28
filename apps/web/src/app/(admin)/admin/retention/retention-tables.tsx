@@ -80,7 +80,7 @@ export function RetentionPlanTable({ rows }: { rows: CategoryPlan[] }) {
     c.accessor('alreadyDone', { header: 'Done', meta: { align: 'right' }, cell: ({ getValue }) => nfmt(getValue()) }),
     c.display({
       id: 'actions',
-      header: '',
+      header: 'Actions',
       meta: { hideLabel: true, align: 'right' },
       cell: ({ row }) => <RunRetention category={row.original.category} label={row.original.label} runnable={row.original.configured && row.original.runnable} />,
     }),

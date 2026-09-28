@@ -149,7 +149,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
     }),
     c.display({
       id: 'action',
-      header: '',
+      header: 'Actions',
       meta: { hideLabel: true },
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">

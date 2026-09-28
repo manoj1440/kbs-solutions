@@ -488,7 +488,7 @@ function ReviewQueueTable({ rows, reason, setReason, act }: { rows: ReviewRow[];
     }),
     rq.display({
       id: 'actions',
-      header: '',
+      header: 'Actions',
       meta: { hideLabel: true },
       cell: ({ row }) => (
         <div className="flex gap-1">

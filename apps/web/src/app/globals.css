@@ -142,6 +142,42 @@
   text-underline-offset: 3px;
 }
 
+/* F-813: first + last columns stay pinned while the middle scrolls horizontally.
+   Below 700px rows become labelled cards, so pinning only applies on wider screens.
+   `td[colspan]` (empty + sub-rows) is excluded — it must span the full width. */
+@media (min-width: 700px) {
+  .admin-content [data-slot='table-row'] > [data-slot='table-head']:first-child,
+  .admin-content [data-slot='table-row'] > [data-slot='table-cell']:first-child:not([colspan]) {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    box-shadow: inset -1px 0 0 0 #eef1f5;
+  }
+  .admin-content [data-slot='table-row'] > [data-slot='table-head']:last-child,
+  .admin-content [data-slot='table-row'] > [data-slot='table-cell']:last-child:not([colspan]) {
+    position: sticky;
+    right: 0;
+    z-index: 5;
+    box-shadow: inset 1px 0 0 0 #eef1f5;
+  }
+  .admin-content [data-slot='table-head']:first-child,
+  .admin-content [data-slot='table-head']:last-child {
+    background: #f8fafc;
+  }
+  .admin-content [data-slot='table-cell']:first-child,
+  .admin-content [data-slot='table-cell']:last-child {
+    background: white;
+  }
+  .admin-content [data-slot='table-row']:hover > [data-slot='table-cell']:first-child,
+  .admin-content [data-slot='table-row']:hover > [data-slot='table-cell']:last-child {
+    background: #f8fafc;
+  }
+  .admin-content [data-slot='table-row'][data-state='selected'] > [data-slot='table-cell']:first-child,
+  .admin-content [data-slot='table-row'][data-state='selected'] > [data-slot='table-cell']:last-child {
+    background: #f2f8f7;
+  }
+}
+
 /* F-806 D4: one select look everywhere (native element, no extra dependency) */
 select:not([multiple]):not([size]) {
   appearance: none;

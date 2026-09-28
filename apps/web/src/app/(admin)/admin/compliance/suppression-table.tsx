@@ -47,7 +47,7 @@ const columns = c.columns([
   }),
   c.display({
     id: 'actions',
-    header: '',
+    header: 'Actions',
     meta: { hideLabel: true, align: 'right' },
     cell: ({ row }) => (row.original.liftedAt ? null : <LiftButton id={row.original.id} />),
   }),

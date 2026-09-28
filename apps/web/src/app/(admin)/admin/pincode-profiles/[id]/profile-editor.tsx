@@ -292,7 +292,7 @@ function BatchesTable({ rows, onExplore }: { rows: Batch[]; onExplore: (b: Batch
     b.accessor((x) => x.rowCount ?? -1, { id: 'rows', header: 'Rows', meta: { align: 'right' }, cell: ({ row }) => row.original.rowCount ?? '—' }),
     b.display({
       id: 'actions',
-      header: '',
+      header: 'Actions',
       meta: { hideLabel: true },
       cell: ({ row }) =>
         row.original.status === 'IMPORTED' ? (
