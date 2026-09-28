@@ -1,64 +1,26 @@
-import { formatDateTime } from '@kbs/shared';
 import {
-  FileX2,
-  Gavel,
   OctagonAlert,
   ShieldCheck,
-  UserRoundX,
 } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import {
   Callout,
-  EmptyState,
-  IconTile,
   MiniStat,
 } from '@/components/ui/kit';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 
-import { LegalHoldForm, RunRetention } from './actions';
+import { LegalHoldForm } from './actions';
+import { type CategoryPlan, type Hold, LegalHoldsTable, RetentionPlanTable } from './retention-tables';
 
 export const metadata = { title: 'Retention · KBS Solutions' };
 
-interface CategoryPlan {
-  category: string;
-  label: string;
-  configKey: string;
-  action: 'PURGE_FILE' | 'RESTRICT_RECORD';
-  days: number | null;
-  configured: boolean;
-  cutoff: string | null;
-  olderThanCutoff: number | null;
-  onHold: number | null;
-  protected: number | null;
-  eligible: number | null;
-  onHoldTotal: number;
-  alreadyDone: number;
-  runnable: boolean;
-  blockedReason: string | null;
-}
 interface Plan {
   executionEnabled: boolean;
   scheduleEnabled: boolean;
   neverRemoved: string[];
   categories: CategoryPlan[];
-}
-interface Hold {
-  subject: string;
-  id: string;
-  label: string;
-  reason: string | null;
-  createdAt: string;
-  restricted?: boolean;
 }
 
 const n = (v: number | null) => (v === null ? '—' : v.toLocaleString('en-IN'));
@@ -108,53 +70,7 @@ export default async function RetentionPage() {
             Dry run — counts are live and change nothing · nightly 02:00 IST <Badge variant={nightly ? 'success' : 'unknown'}>{nightly ? 'on' : 'off'}</Badge>
           </div>
           <div className="min-h-0 flex-1">
-            <Table responsive="compact" containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-              <TableHeader className="sticky top-0 z-10">
-                <TableRow>
-                  <TableHead className="pl-4">Category</TableHead>
-                  <TableHead>Retention</TableHead>
-                  <TableHead className="text-right">Past cutoff</TableHead>
-                  <TableHead className="text-right">Hold</TableHead>
-                  <TableHead className="text-right">Protected</TableHead>
-                  <TableHead className="text-right">Eligible</TableHead>
-                  <TableHead className="text-right">Done</TableHead>
-                  <TableHead className="pr-4" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {plan.categories.map((c) => (
-                  <TableRow key={c.category}>
-                    <TableCell className="pl-4" data-label="Category">
-                      <div className="flex items-center gap-2.5">
-                        <IconTile icon={c.action === 'PURGE_FILE' ? FileX2 : UserRoundX} tone={c.action === 'PURGE_FILE' ? 'rose' : 'violet'} size="sm" />
-                        <div className="min-w-0">
-                          <div className="font-medium text-slate-800">{c.label}</div>
-                          <div className="text-xs text-slate-500">{c.action === 'PURGE_FILE' ? 'Purge file' : 'Restrict record'}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="Retention" className="text-xs">
-                      {c.configured ? (
-                        <>
-                          <span className="font-medium text-slate-800 tabular-nums">{c.days} days</span>
-                          <div className="text-slate-500">before {c.cutoff ? formatDateTime(c.cutoff) : ''}</div>
-                        </>
-                      ) : (
-                        <Badge variant="unknown" className="whitespace-nowrap">not set</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell data-label="Past cutoff" className="tabular-nums sm:text-right">{n(c.olderThanCutoff)}</TableCell>
-                    <TableCell data-label="Legal hold" className="tabular-nums sm:text-right">{n(c.onHold)}</TableCell>
-                    <TableCell data-label="Protected" className="tabular-nums sm:text-right">{n(c.protected)}</TableCell>
-                    <TableCell data-label="Eligible" className="font-semibold text-slate-900 tabular-nums sm:text-right">{n(c.eligible)}</TableCell>
-                    <TableCell data-label="Done" className="tabular-nums sm:text-right">{n(c.alreadyDone)}</TableCell>
-                    <TableCell className="pr-4 sm:text-right">
-                      <RunRetention category={c.category} label={c.label} runnable={c.configured && c.runnable} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <RetentionPlanTable rows={plan.categories} />
           </div>
           <div className="flex shrink-0 gap-2 border-t border-slate-100 px-4 py-2 text-xs text-slate-600">
             <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
@@ -166,31 +82,7 @@ export default async function RetentionPage() {
             <LegalHoldForm />
           </div>
           <div className="min-h-0 flex-1">
-            {allHolds.length ? (
-              <Table responsive="compact" containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-                <TableHeader className="sticky top-0 z-10">
-                  <TableRow>
-                    <TableHead className="pl-4">Item</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead className="pr-4">Created</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allHolds.map((h) => (
-                    <TableRow key={h.id}>
-                      <TableCell className="pl-4" data-label="Item">
-                        <div className="font-medium text-slate-800">{h.label}</div>
-                        <div className="font-mono text-[11px] break-all text-slate-500">{h.id}</div>
-                      </TableCell>
-                      <TableCell data-label="Reason" className="text-xs text-slate-600">{h.reason}</TableCell>
-                      <TableCell className="pr-4 text-xs text-slate-600" data-label="Created">{formatDateTime(h.createdAt)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <EmptyState className="m-3 py-7" icon={Gavel} title="No items are on legal hold." description="Place a hold above by file or calling-record id to exclude it from every retention run." />
-            )}
+            <LegalHoldsTable rows={allHolds} />
           </div>
         </section>
       </div>
