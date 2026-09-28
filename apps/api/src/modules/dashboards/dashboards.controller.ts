@@ -30,6 +30,13 @@ export class DashboardsController {
   }
 
   // ── F-703 Admin dashboards ──
+  /** F-811 Admin home: business-first cumulative figures + recent leads, no period/filters. */
+  @Get('admin/home')
+  @RequirePermission('DASHBOARD_ADMIN')
+  home(@CurrentActor() actor: Actor) {
+    return this.admin.home(actor);
+  }
+
   @Get('admin/executive')
   @RequirePermission('DASHBOARD_ADMIN')
   executive(@CurrentActor() actor: Actor, @Query() raw: unknown) {

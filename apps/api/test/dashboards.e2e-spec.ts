@@ -148,6 +148,21 @@ describe('F-702 Manager dashboard / F-703 Admin dashboards (DASH-01, DASH-02)', 
     await get('/dashboards/admin/telecallers', team[0].managerToken, 403);
   });
 
+  it('F-811: admin home returns team, calling, MIS, leads, payout and catalogue totals plus the newest leads (RBAC-01)', async () => {
+    const d = await get('/dashboards/admin/home', admin);
+    expect(d.people.MANAGER.total).toBe(2);
+    expect(d.people.TELECALLER.total).toBe(2);
+    expect(d.people.ADVISOR.total).toBe(2);
+    expect(d.calling.total).toBe(await prisma.callingRecord.count());
+    expect(d.mis.total).toBe(await prisma.bankStatusSnapshot.count());
+    expect(d.leads.total).toBe(5);
+    expect(d.catalogue.banks.total).toBe(await prisma.bank.count());
+    expect(d.recentLeads).toHaveLength(5);
+    expect(Date.parse(d.recentLeads[0].leadCreatedAt)).toBeGreaterThanOrEqual(Date.parse(d.recentLeads.at(-1).leadCreatedAt));
+    expect(d.note).toContain('never live bank status');
+    await get('/dashboards/admin/home', team[0].managerToken, 403);
+  });
+
   it('F-703 executive = Manager dashboard filtered to that team (same engine)', async () => {
     const strip = (x: { calling: unknown; advisors: unknown }) => JSON.parse(JSON.stringify({ calling: x.calling, advisors: x.advisors }));
     for (const t of team) expect(strip(await get(`/dashboards/admin/executive?managerId=${t.managerId}`, admin))).toEqual(strip(await get('/dashboards/manager', t.managerToken)));

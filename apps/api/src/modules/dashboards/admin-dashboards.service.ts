@@ -1,10 +1,13 @@
-import { type AdvisorTeamResponse, type DashboardQuery, maskMobile } from '@kbs/shared';
+import { type AdvisorTeamResponse, type CallingRecordsSummary, type DashboardQuery, LeadListQuery, type LeadStatusRow, maskMobile, PayoutDashboardQuery } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { CallingQueueService } from '../calling-list/calling-queue.service';
 import { ConfigService } from '../config/config.service';
+import { LeadsService } from '../leads/leads.service';
+import { MisImportService } from '../mis/mis-import.service';
 import { bucketOf, totalsOf } from '../payouts/ledger-buckets';
 import { PayoutDashboardService } from '../payouts/payout-dashboard.service';
 import { HierarchyService } from '../users/hierarchy.service';
@@ -31,10 +34,52 @@ export class AdminDashboardsService {
     private readonly payouts: PayoutDashboardService,
     private readonly config: ConfigService,
     private readonly hierarchy: HierarchyService,
+    private readonly callingQueue: CallingQueueService,
+    private readonly misImport: MisImportService,
+    private readonly leadsService: LeadsService,
   ) {}
 
   private assertAdmin(actor: Actor) {
     if (actor.role !== 'ADMIN') throw new AppError('RBAC_FORBIDDEN', 'Admin dashboards are for the Admin.');
+  }
+
+  /**
+   * F-811 Admin home: business-first cumulative figures + the 10 newest leads. No period, no filters — every number
+   * is a passthrough from the owning service so nothing here computes a bank value itself (INV-01..03).
+   */
+  async home(actor: Actor) {
+    this.assertAdmin(actor);
+    const [peopleRows, calling, mis, leads, payout, banks, activeBanks, cards, publishedCards, recent] = await Promise.all([
+      this.prisma.client.user.groupBy({ by: ['role', 'status'], _count: { _all: true } }),
+      this.callingQueue.summary(actor),
+      this.misImport.applicationsSummary(),
+      this.leadsService.summary(actor),
+      this.payouts.summary(actor, PayoutDashboardQuery.parse({})),
+      this.prisma.client.bank.count(),
+      this.prisma.client.bank.count({ where: { active: true } }),
+      this.prisma.client.creditCard.count(),
+      this.prisma.client.creditCard.count({ where: { status: 'PUBLISHED' } }),
+      this.leadsService.list(actor, LeadListQuery.parse({ pageSize: 10 })),
+    ]);
+    const people = Object.fromEntries(['TELECALLER', 'MANAGER', 'ADVISOR', 'ACCOUNTS'].map((r) => [r, { total: 0, active: 0 }])) as Record<'TELECALLER' | 'MANAGER' | 'ADVISOR' | 'ACCOUNTS', { total: number; active: number }>;
+    for (const g of peopleRows) {
+      const slot = people[g.role as keyof typeof people];
+      if (!slot) continue;
+      slot.total += g._count._all;
+      if (g.status === 'ACTIVE') slot.active += g._count._all;
+    }
+    const { values: _ignored, ...misSummary } = mis;
+    return {
+      people,
+      calling: calling as CallingRecordsSummary,
+      mis: misSummary,
+      leads: { total: leads.total, matched: leads.matched, awaitingMis: leads.awaitingMis },
+      payouts: { eligible: payout.totals.eligible, approvedUnpaid: payout.totals.approvedUnpaid, paid: payout.totals.paid, confirmedTransfersInr: payout.confirmedTransfers.amountInr },
+      catalogue: { banks: { total: banks, active: activeBanks }, cards: { total: cards, published: publishedCards } },
+      recentLeads: recent.data as LeadStatusRow[],
+      asOf: new Date().toISOString(),
+      note: 'Bank values are the latest accepted MIS only — never live bank status.',
+    };
   }
 
   async executive(actor: Actor, q: DashboardQuery) {
