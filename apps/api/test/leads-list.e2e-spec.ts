@@ -142,4 +142,14 @@ describe('F-408 My Leads search / filters / detail sections / MIS history (FOS-0
     expect(n.bankRemarks.kyc[0].display).toBe('Awaiting MIS Update');
     expect((await api().get(`/api/v1/leads/${ids.noref}/mis-history`).set(t).expect(200)).body.data).toEqual([]);
   });
+
+  it('F-810: /leads/summary returns scope-aware cumulative buckets', async () => {
+    const admin = (await api().get('/api/v1/leads/summary').set(auth(adminToken)).expect(200)).body.data;
+    expect(admin).toMatchObject({ total: 4, matched: 2, awaitingMis: 2, approved: 2, declined: 0, cardsActive: 0, cardsInactive: 1, activationBlank: 1 });
+    // advisor scope: adv1 owns 3 leads, 2 matched
+    const adv1 = (await api().get('/api/v1/leads/summary').set(auth(adv1Token)).expect(200)).body.data;
+    expect(adv1).toMatchObject({ total: 3, matched: 2, awaitingMis: 1, approved: 2 });
+    const adv2 = (await api().get('/api/v1/leads/summary').set(auth(adv2Token)).expect(200)).body.data;
+    expect(adv2).toMatchObject({ total: 1, matched: 0, awaitingMis: 1 });
+  });
 });

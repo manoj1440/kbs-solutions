@@ -51,3 +51,5 @@ Every list/get service takes `Actor` (`userId, role, teamUserIds[]`) and applies
 `POST /mis/batches/:id/preview` and `/apply` return the result directly for batches up to `mis.asyncRowThreshold` rows. Above it they return `201 { queued: true, alreadyRunning, batchId, stage, job }` and run in the background; poll `GET /mis/batches/:id/job` (`job.status` QUEUED → RUNNING → SUCCEEDED | FAILED, `job.progress {phase, done, total}`). Triggering again while a job is active returns the same job with `alreadyRunning: true`.
 
 F-809: `GET /mis/applications` + `/mis/applications/summary` list the cumulative bank-reported state per application (`BankStatusSnapshot` + lead, mobiles masked) with `bankId/q/stage/decision/activation` filters; `POST /mis/batches` accepts `profileId` optional — omitted resolves to the bank's latest APPROVED profile (the shared MIS layout).
+
+F-810: `GET /leads/summary` returns scope-aware cumulative buckets (`total/matched/awaitingMis/approved/declined/inProcess/cardsActive/cardsInactive/decisionBlank/activationBlank`) for the same actor scope as `GET /leads` — powers the compact leads tiles without an extra list fetch.

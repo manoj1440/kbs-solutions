@@ -390,6 +390,29 @@ export class LeadsService {
     return new Paginated(rows.map((l) => this.toRow(l, xw, tokens)), q.page, q.pageSize, total, { filters: { q: q.q ?? null, bankId: q.bankId ?? null, cardId: q.cardId ?? null, stage: q.stage ?? null, decision: q.decision ?? null, activation: q.activation ?? null, misFreshness: q.misFreshness ?? null, actionable: q.actionable ?? null, sort: q.sort } });
   }
 
+  /** F-810: scope-aware cumulative counts for the compact leads browser tiles (bank-verbatim values, INV-02). */
+  async summary(actor: Actor) {
+    const scope = this.scopeWhere(actor);
+    const tokens = this.blankTokens();
+    const [total, snaps] = await Promise.all([
+      this.prisma.client.lead.count({ where: scope }),
+      this.prisma.client.bankStatusSnapshot.findMany({ where: { lead: scope }, select: { finalDecision: true, cardActivationStatus: true } }),
+    ]);
+    const c = { approved: 0, declined: 0, inProcess: 0, decisionBlank: 0, cardsActive: 0, cardsInactive: 0, activationBlank: 0 };
+    for (const s of snaps) {
+      const d = s.finalDecision?.trim();
+      if (!d || isBlankBankValue(d, tokens)) c.decisionBlank += 1;
+      else if (/approv/i.test(d)) c.approved += 1;
+      else if (/declin|reject/i.test(d)) c.declined += 1;
+      else c.inProcess += 1;
+      const a = s.cardActivationStatus?.trim();
+      if (!a || isBlankBankValue(a, tokens)) c.activationBlank += 1;
+      else if (/inactiv|not activ/i.test(a)) c.cardsInactive += 1;
+      else if (/activ/i.test(a)) c.cardsActive += 1;
+    }
+    return { total, matched: snaps.length, awaitingMis: total - snaps.length, ...c };
+  }
+
   /** Distinct filter values within the actor's scope — verbatim bank values, never a fixed list (REQ-14 §14.1). */
   async filterOptions(actor: Actor): Promise<LeadFilterOptions> {
     const scope = this.scopeWhere(actor);

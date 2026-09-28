@@ -235,12 +235,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
   const visibleColumns = table.getVisibleLeafColumns().length;
   return (
     <div className="grid min-w-0 gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-slate-500">
-          {fullTable
-            ? 'All 13 fields. Scroll sideways for additional columns, or switch to the overview.'
-            : 'Key information fits this panel. More detail shows bank references, dates and remarks.'}
-        </p>
+      <div className="flex justify-end">
         <Button
           size="sm"
           variant="outline"
@@ -248,12 +243,13 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           onClick={() => setFullTable((value) => !value)}
         >
           {fullTable ? <LayoutList aria-hidden="true" /> : <Columns3 aria-hidden="true" />}
-          {fullTable ? 'Overview layout' : 'Full table view'}
+          {fullTable ? 'Overview layout' : 'All columns'}
         </Button>
       </div>
       <Table
         responsive={!fullTable}
         className={fullTable ? 'min-w-[1800px]' : 'lead-overview-table'}
+        containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto"
       >
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (

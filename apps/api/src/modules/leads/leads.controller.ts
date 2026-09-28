@@ -107,6 +107,12 @@ export class LeadsController {
     return this.svc.filterOptions(actor);
   }
 
+  @Get('summary')
+  @RequirePermission('LEAD_READ_OWN', 'LEAD_READ_TEAM', 'LEAD_READ_ALL')
+  summary(@CurrentActor() actor: Actor) {
+    return this.svc.summary(actor);
+  }
+
   @Get()
   @RequirePermission('LEAD_READ_OWN', 'LEAD_READ_TEAM', 'LEAD_READ_ALL')
   list(@CurrentActor() actor: Actor, @Query() raw: unknown) {

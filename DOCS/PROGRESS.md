@@ -165,4 +165,8 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 - New endpoints `GET /mis/applications` + `/mis/applications/summary` (snapshots + masked lead data). `/admin/mis/integrity` UI removed (redirect to `/admin/mis`); `/dashboards/mis-integrity*` API kept (compliance).
 - Verified: api e2e 12/12 (incl. new F-809 test), web smoke 61/1 skip, real xlsx upload → auto-applied end-to-end. Not pushed.
 
+## F-810 done — compact Leads browser (2026-09-28)
+- `/admin/leads` + `/manager/leads` (shared `LeadsBrowser`) → F-808/809 pattern: MiniStat tiles from new scope-aware `GET /leads/summary`, one filter row + collapsed "More filters", internally-scrolling REQ-14 table, footer pagination. PageHeader/chips/hints removed.
+- api e2e: leads-list 5/5 incl. new F-810 scope test. admin-smoke: 62 pass / 1 skip (earlier session.spec failures = the known refresh-reuse race + OTP cooldown cascade, unrelated).
+
 
