@@ -92,6 +92,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-806-web-admin-ui-revamp.md](./F-806-web-admin-ui-revamp.md) | F-806 Web Admin UI revamp: rich design system + every Admin page | UX shells | DONE | F-801, F-803, F-804 |
 | [F-807-admin-nav-and-business-home.md](./F-807-admin-nav-and-business-home.md) | F-807 Admin navigation by responsibility + business-first home | UX shells | DONE | F-806, F-703 |
 | [F-808-admin-calling-records-and-caller-performance.md](./F-808-admin-calling-records-and-caller-performance.md) | F-808 Admin Calling: one records page + one caller performance page | Telecaller ops | DONE | F-303, F-305, F-307, F-313, F-314 |
+| [F-809-admin-mis-business-view.md](./F-809-admin-mis-business-view.md) | F-809 Admin MIS: business-first records view | MIS | IN_PROGRESS | F-501–F-505, F-507, F-808 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | DONE | F-801, F-802 |
 | [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | DONE | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |
