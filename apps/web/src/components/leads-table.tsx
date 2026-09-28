@@ -2,20 +2,11 @@
 
 import type { LeadStatusRow } from '@kbs/shared';
 import { formatDate, formatDateTime } from '@kbs/shared';
-import {
-  type ColumnDef,
-  type ExpandedState,
-  flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getSortedRowModel,
-  type SortingState,
-  useReactTable,
-} from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ArrowUpRight, ChevronDown, Columns3, LayoutList, ListChecks } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Columns3, LayoutList, ListChecks } from 'lucide-react';
 import Link from 'next/link';
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 
+import { columnHelper, type ColumnVisibilityState, DataTable } from '@/components/data-table';
 import {
   ActivationBadge,
   DecisionBadge,
@@ -26,29 +17,20 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, BankMark, EmptyState, KeyValueGrid } from '@/components/ui/kit';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+
+const c = columnHelper<LeadStatusRow>();
 
 /**
  * F-506 — the REQ-14 §14.2 status table. Stage / Decision / Activation are separate columns with their own badges;
  * the expandable panel shows the remarks preview and raw bank values. There is no "next stage" action (§14.2 row 13).
+ * F-813: renders through the common `DataTable` (TanStack v9).
  */
 export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath: string }) {
-  'use no memo'; // TanStack Table returns unstable functions; React Compiler must skip this component.
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'leadCreatedAt', desc: true }]);
-  const [expanded, setExpanded] = useState<ExpandedState>({});
   const [fullTable, setFullTable] = useState(false);
-  const columns: ColumnDef<LeadStatusRow>[] = [
-    {
+  const columns = c.columns([
+    c.accessor((r) => r.customer.name, {
       id: 'customer',
       header: 'Customer / reference',
-      accessorFn: (r) => r.customer.name,
       cell: ({ row }) => (
         <div className="flex min-w-0 items-center gap-2.5">
           <Avatar name={row.original.customer.name} size="sm" className="hidden sm:inline-flex" />
@@ -62,11 +44,10 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           </div>
         </div>
       ),
-    },
-    {
+    }),
+    c.accessor((r) => `${r.bank.displayName} ${r.card.name}`, {
       id: 'bankCard',
       header: 'Bank / card',
-      accessorFn: (r) => `${r.bank.displayName} ${r.card.name}`,
       cell: ({ row }) => (
         <div className="grid min-w-0 gap-0.5">
           <div className="flex min-w-0 items-center gap-2 font-medium text-slate-800">
@@ -82,17 +63,13 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           </div>
         </div>
       ),
-    },
-    {
-      id: 'kbsRef',
+    }),
+    c.accessor('kbsRef', {
       header: 'KBS Lead ID',
-      accessorKey: 'kbsRef',
-      cell: ({ getValue }) => <code className="text-xs">{getValue<string>()}</code>,
-    },
-    {
-      id: 'bankApplicationNo',
+      cell: ({ getValue }) => <code className="text-xs">{getValue()}</code>,
+    }),
+    c.accessor('bankApplicationNo', {
       header: 'Bank Application No.',
-      accessorKey: 'bankApplicationNo',
       cell: ({ row }) =>
         row.original.bankApplicationNo ??
         (row.original.bankReference?.kind === 'APPLICATION_NO' ? (
@@ -102,11 +79,9 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         ) : (
           <span className="text-muted-foreground">—</span>
         )),
-    },
-    {
-      id: 'bankApplicationReference',
+    }),
+    c.accessor('bankApplicationReference', {
       header: 'Bank Application Reference',
-      accessorKey: 'bankApplicationReference',
       cell: ({ row }) =>
         row.original.bankApplicationReference ??
         (row.original.bankReference?.kind === 'APPLICATION_REFERENCE_NUMBER' ? (
@@ -116,17 +91,15 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         ) : (
           <span className="text-muted-foreground">—</span>
         )),
-    },
-    {
-      id: 'leadCreatedAt',
+    }),
+    c.accessor('leadCreatedAt', {
       header: 'Lead Created',
-      accessorKey: 'leadCreatedAt',
-      cell: ({ getValue }) => formatDateTime(getValue<string>()),
-    },
-    {
+      sortFn: 'datetime',
+      cell: ({ getValue }) => formatDateTime(getValue()),
+    }),
+    c.accessor((r) => r.bankCreationDate.value ?? '', {
       id: 'bankCreationDate',
       header: 'Bank Creation Date',
-      accessorFn: (r) => r.bankCreationDate.value ?? '',
       cell: ({ row }) =>
         row.original.bankCreationDate.value ? (
           <span title={`Source column: ${row.original.bankCreationDate.source}`}>
@@ -140,29 +113,25 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
             {row.original.matched ? 'Not reported' : 'Awaiting MIS Update'}
           </span>
         ),
-    },
-    {
+    }),
+    c.accessor((r) => r.stage.display, {
       id: 'stage',
       header: 'Bank stage',
-      accessorFn: (r) => r.stage.display,
       cell: ({ row }) => <StageBadge field={row.original.stage} label={null} />,
-    },
-    {
+    }),
+    c.accessor((r) => r.decision.display, {
       id: 'decision',
       header: 'Bank decision',
-      accessorFn: (r) => r.decision.display,
       cell: ({ row }) => <DecisionBadge field={row.original.decision} label={null} />,
-    },
-    {
+    }),
+    c.accessor((r) => r.activation.display, {
       id: 'activation',
       header: 'Activation',
-      accessorFn: (r) => r.activation.display,
       cell: ({ row }) => <ActivationBadge field={row.original.activation} label={null} />,
-    },
-    {
+    }),
+    c.accessor((r) => r.remarksPreview ?? '', {
       id: 'remarks',
       header: 'Bank Reason / Remarks',
-      accessorFn: (r) => r.remarksPreview ?? '',
       cell: ({ row }) => (
         <span className="text-xs">
           {row.original.remarksPreview ?? (
@@ -172,17 +141,16 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           )}
         </span>
       ),
-    },
-    {
+    }),
+    c.accessor((r) => r.lastMatchedAt ?? '', {
       id: 'lastMatchedAt',
       header: 'Last Matched MIS Update',
-      accessorFn: (r) => r.lastMatchedAt ?? '',
       cell: ({ row }) => <FreshnessLabel lastMatchedAt={row.original.lastMatchedAt} />,
-    },
-    {
+    }),
+    c.display({
       id: 'action',
       header: '',
-      enableSorting: false,
+      meta: { hideLabel: true },
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
           <Button
@@ -203,9 +171,9 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           </Button>
         </div>
       ),
-    },
-  ];
-  const columnVisibility: Record<string, boolean> = fullTable
+    }),
+  ]);
+  const columnVisibility: ColumnVisibilityState = fullTable
     ? {}
     : {
         kbsRef: false,
@@ -216,19 +184,6 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         remarks: false,
         lastMatchedAt: false,
       };
-  const table = useReactTable({
-    data: rows,
-    columns,
-    state: { sorting, expanded, columnVisibility },
-    onSortingChange: setSorting,
-    onExpandedChange: setExpanded,
-    getRowId: (row) => row.id,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    getRowCanExpand: () => true,
-  });
-  const visibleColumns = table.getVisibleLeafColumns().length;
   return (
     <div className="grid min-w-0 gap-3">
       <div className="flex justify-end">
@@ -242,72 +197,26 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           {fullTable ? 'Overview layout' : 'All columns'}
         </Button>
       </div>
-      <Table
+      <DataTable
+        columns={columns}
+        data={rows}
+        getRowId={(row) => row.id}
         responsive={!fullTable}
         className={fullTable ? 'min-w-[1800px]' : 'lead-overview-table'}
         containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto"
-      >
-        <TableHeader>
-          {table.getHeaderGroups().map((hg) => (
-            <TableRow key={hg.id}>
-              {hg.headers.map((h) => (
-                <TableHead key={h.id}>
-                  {h.isPlaceholder ? null : h.column.getCanSort() ? (
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 text-left"
-                      onClick={h.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                      {h.column.getIsSorted() === 'asc' ? (
-                        <ArrowUp className="size-3 text-teal-700" aria-hidden="true" />
-                      ) : h.column.getIsSorted() === 'desc' ? (
-                        <ArrowDown className="size-3 text-teal-700" aria-hidden="true" />
-                      ) : null}
-                    </button>
-                  ) : (
-                    flexRender(h.column.columnDef.header, h.getContext())
-                  )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={visibleColumns} className="p-4">
-                <EmptyState
-                  icon={ListChecks}
-                  title="No leads match."
-                  description="Try clearing a filter or widening the date range."
-                />
-              </TableCell>
-            </TableRow>
-          ) : null}
-          {table.getRowModel().rows.map((row) => (
-            <Fragment key={row.id}>
-              <TableRow data-collision={row.original.possibleCollision || undefined}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    data-label={String(cell.column.columnDef.header)}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-              {row.getIsExpanded() ? (
-                <TableRow id={`lead-details-${row.original.id}`} className="bg-slate-50/80 hover:bg-slate-50/80">
-                  <TableCell colSpan={visibleColumns}>
-                    <RawPanel row={row.original} />
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </Fragment>
-          ))}
-        </TableBody>
-      </Table>
+        initialSorting={[{ id: 'leadCreatedAt', desc: true }]}
+        columnVisibility={columnVisibility}
+        renderSubRow={(row) => <RawPanel row={row.original} />}
+        getSubRowId={(row) => `lead-details-${row.id}`}
+        getRowProps={(row) => ({ 'data-collision': row.possibleCollision || undefined })}
+        emptyRow={
+          <EmptyState
+            icon={ListChecks}
+            title="No leads match."
+            description="Try clearing a filter or widening the date range."
+          />
+        }
+      />
     </div>
   );
 }
