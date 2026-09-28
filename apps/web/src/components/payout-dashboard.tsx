@@ -1,28 +1,15 @@
 import { formatDateTime, formatInr } from '@kbs/shared';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import Form from 'next/form';
 import Link from 'next/link';
 
-import { AcknowledgeException } from '@/components/payout-exception-ack';
-import { Badge } from '@/components/ui/badge';
+import { type ExceptionItem, PayoutExceptionsTable } from '@/components/payout-exceptions-table';
 import { Button } from '@/components/ui/button';
-import { Avatar, Callout, EmptyState, Meter, MiniStat, selectClass, TONE, type Tone } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Callout, Meter, MiniStat, selectClass, TONE, type Tone } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 type Tot = { count: number; amountInr: number };
-interface ExceptionItem {
-  kind: string;
-  subjectId: string;
-  request: { id: string; publicRef: string; state: string } | null;
-  advisor: { id: string; fullName: string } | null;
-  amountInr: number | null;
-  detail: string;
-  raisedAt: string;
-  acknowledgeable: boolean;
-  resolvedVia: string | null;
-}
 interface Dashboard {
   totals: Record<'eligible' | 'available' | 'requested' | 'approvedUnpaid' | 'onHold' | 'paid' | 'underReview' | 'pendingHold' | 'void', Tot>;
   confirmedTransfers: Tot;
@@ -67,7 +54,7 @@ const KIND_LABEL: Record<string, string> = {
  * F-606 → F-811 payout liability & reconciliation. Same ledger (and bucket classifier) as the Advisor ledger, so figures
  * reconcile across roles. Date basis is always shown. Approval is not payment; paid = confirmed transfers.
  */
-export async function PayoutDashboard({ basePath, requestHref, sp, title, canAcknowledge }: { basePath: string; requestHref: (id: string) => string; sp: Record<string, string | undefined>; title: string; canAcknowledge: boolean }) {
+export async function PayoutDashboard({ basePath, requestBase, sp, title, canAcknowledge }: { basePath: string; requestBase: string; sp: Record<string, string | undefined>; title: string; canAcknowledge: boolean }) {
   const qs = new URLSearchParams();
   for (const k of ['from', 'to', 'dateBasis', 'bankId', 'advisorId', 'managerId']) if (sp[k]) qs.set(k, sp[k] as string);
   const [d, banks] = await Promise.all([
@@ -202,55 +189,7 @@ export async function PayoutDashboard({ basePath, requestHref, sp, title, canAck
             Exceptions · derived from the ledger — nothing here claws back or refunds money
           </div>
           <div className="min-h-0 flex-1">
-            {d.exceptions.items.length === 0 ? (
-              <EmptyState icon={CheckCircle2} className="m-3" title="No open exceptions." description="Exceptions appear here when the ledger finds a payment issue, a stale approval or a bank correction after payment." />
-            ) : (
-              <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-                <TableHeader className="sticky top-0 z-10">
-                  <TableRow>
-                    <TableHead className="pl-4">Kind</TableHead>
-                    <TableHead>Request / Advisor</TableHead>
-                    <TableHead>Detail</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="pr-4">Resolution</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {d.exceptions.items.map((e) => (
-                    <TableRow key={`${e.kind}:${e.subjectId}`}>
-                      <TableCell className="pl-4" data-label="Kind">
-                        <Badge variant="warning">{KIND_LABEL[e.kind] ?? e.kind}</Badge>
-                        <div className="mt-1 text-[11px] text-slate-500">{formatDateTime(e.raisedAt)}</div>
-                      </TableCell>
-                      <TableCell data-label="Request / Advisor" className="text-xs">
-                        <div className="flex items-center gap-2.5">
-                          {e.advisor ? <Avatar name={e.advisor.fullName} size="sm" /> : null}
-                          <div className="min-w-0">
-                            {e.request ? (
-                              <Link className="font-mono text-xs" href={requestHref(e.request.id)}>
-                                {e.request.publicRef}
-                              </Link>
-                            ) : (
-                              '—'
-                            )}
-                            <div className="text-slate-500">{e.advisor?.fullName ?? ''}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell data-label="Detail" className="max-w-md text-xs whitespace-normal text-slate-700">
-                        {e.detail}
-                      </TableCell>
-                      <TableCell data-label="Amount" className="font-medium whitespace-nowrap tabular-nums sm:text-right">
-                        {e.amountInr !== null ? formatInr(e.amountInr) : '—'}
-                      </TableCell>
-                      <TableCell className="pr-4 text-xs" data-label="Resolution">
-                        {e.acknowledgeable && canAcknowledge ? <AcknowledgeException kind={e.kind} subjectId={e.subjectId} /> : <span className="text-slate-500">{e.resolvedVia ?? 'Admin/Accounts acknowledge'}</span>}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <PayoutExceptionsTable rows={d.exceptions.items} requestBase={requestBase} canAcknowledge={canAcknowledge} />
           </div>
         </section>
       </div>

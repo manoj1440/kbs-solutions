@@ -1,30 +1,10 @@
-import { formatDateTime, formatInr, payoutStateLabel } from '@kbs/shared';
-import { Check, ChevronLeft, ChevronRight, Clock, Inbox, Minus, X, type LucideIcon } from 'lucide-react';
-import Link from 'next/link';
+import { formatInr, payoutStateLabel } from '@kbs/shared';
 
-import { PayoutStateBadge } from '@/components/status';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar, EmptyState, humanize, MiniStat, PillNav } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/data-table';
+import { PayoutRequestsTable, type PayoutRequestRow } from '@/components/payout-requests-table';
+import { MiniStat, PillNav } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
-import { cn } from '@/lib/utils';
 
-interface Row {
-  id: string;
-  publicRef: string;
-  state: string;
-  advisor: { id: string; fullName: string };
-  itemCount: number;
-  totalAmountInr: number;
-  submittedAt: string;
-  approvals: { role: string; decision: string; at: string }[];
-  outstanding: string[];
-  payment: { state: string; paidAt: string; amountInr: number } | null;
-  holdReason: string | null;
-  paidAt: string | null;
-  correctionPending: boolean;
-}
 interface Queues {
   awaiting: { count: number; amountInr: number };
   paid: { count: number; amountInr: number; confirmedTransferInr: number };
@@ -40,7 +20,7 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, mode = 'a
   for (const [k, v] of Object.entries(sp)) if (v) qs.set(k, v);
   qs.set('pageSize', '50');
   const [r, queues] = await Promise.all([
-    apiFetch<Row[]>(`/payouts/requests?${qs.toString()}`),
+    apiFetch<PayoutRequestRow[]>(`/payouts/requests?${qs.toString()}`),
     mode === 'accounts' || sp.queue
       ? apiFetch<Queues>('/payouts/payments/queues')
           .then((x) => x.data)
@@ -49,7 +29,6 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, mode = 'a
   ]);
   const total = Number(r.meta.total ?? 0);
   const page = Math.max(1, Number(sp.page ?? 1) || 1);
-  const pages = Math.max(1, Math.ceil(total / 50));
   const scope = total > r.data.length ? `of the ${r.data.length} shown` : 'in this view';
   const awaitingRole = (role: string) => r.data.filter((x) => x.outstanding.includes(role)).length;
   const corrections = r.data.filter((x) => x.correctionPending).length;
@@ -103,144 +82,12 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, mode = 'a
         )}
       </div>
       <section aria-label="Payout requests" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">{filters}</div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 p-3">{filters}</div>
         <div className="min-h-0 flex-1">
-          {r.data.length === 0 ? (
-            <EmptyState icon={Inbox} className="m-3" title="No requests." description="Nothing matches this queue right now." />
-          ) : (
-            <Table responsive containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto">
-              <TableHeader className="sticky top-0 z-10">
-                <TableRow>
-                  <TableHead className="pl-4">Request</TableHead>
-                  <TableHead>Advisor</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>{mode === 'accounts' ? 'Payment' : 'Approvals'}</TableHead>
-                  <TableHead className="pr-4">Submitted</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {r.data.map((x) => (
-                  <TableRow key={x.id}>
-                    <TableCell className="pl-4" data-label="Request">
-                      <Link className="font-mono text-xs font-semibold" href={`${basePath}/${x.id}`}>
-                        {x.publicRef}
-                      </Link>
-                      <div className="mt-0.5 text-[11px] text-slate-500">{x.itemCount} card event(s)</div>
-                    </TableCell>
-                    <TableCell data-label="Advisor">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={x.advisor.fullName} size="sm" />
-                        <span className="font-medium text-slate-800">{x.advisor.fullName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="Amount" className="text-[15px] font-semibold whitespace-nowrap text-slate-900 tabular-nums sm:text-right">
-                      {formatInr(x.totalAmountInr)}
-                    </TableCell>
-                    <TableCell data-label="State">
-                      <PayoutStateBadge state={x.state} />
-                    </TableCell>
-                    {mode === 'accounts' ? (
-                      <TableCell data-label="Payment" className="text-xs">
-                        {x.payment ? (
-                          <span className="text-slate-700">
-                            {humanize(x.payment.state)} · <span className="tabular-nums">{formatInr(x.payment.amountInr)}</span>
-                          </span>
-                        ) : x.state === 'APPROVED' ? (
-                          <span className="text-slate-500">Not yet recorded</span>
-                        ) : (
-                          '—'
-                        )}
-                        {x.correctionPending ? (
-                          <Badge variant="warning" className="ml-1">
-                            correction awaiting Admin
-                          </Badge>
-                        ) : null}
-                        {x.holdReason ? <div className="text-destructive mt-1 whitespace-normal">{x.holdReason}</div> : null}
-                      </TableCell>
-                    ) : (
-                      <TableCell data-label="Approvals" className="text-xs">
-                        <ApprovalSteps row={x} />
-                        {x.payment ? <div className="mt-1.5 text-[11px] text-slate-500">Payment {humanize(x.payment.state).toLowerCase()}</div> : null}
-                        {x.correctionPending ? (
-                          <Badge variant="warning" className="mt-1.5">
-                            correction awaiting Admin
-                          </Badge>
-                        ) : null}
-                      </TableCell>
-                    )}
-                    <TableCell className="pr-4 text-xs whitespace-nowrap text-slate-600" data-label="Submitted">
-                      {formatDateTime(x.submittedAt)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <PayoutRequestsTable rows={r.data} basePath={basePath} mode={mode} />
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-xs">
-          <span className="text-slate-500 tabular-nums">
-            {total ? `${((page - 1) * 50 + 1).toLocaleString('en-IN')}–${Math.min(page * 50, total).toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')}` : '0 requests'} · page {page} of {pages}
-          </span>
-          <div className="flex gap-2">
-            {page > 1 ? (
-              <Button asChild size="sm" variant="outline" className="h-8">
-                <Link href={link({ page: String(page - 1) })}>
-                  <ChevronLeft />
-                  Previous
-                </Link>
-              </Button>
-            ) : null}
-            {page < pages ? (
-              <Button asChild size="sm" variant="outline" className="h-8">
-                <Link href={link({ page: String(page + 1) })}>
-                  Next
-                  <ChevronRight />
-                </Link>
-              </Button>
-            ) : null}
-          </div>
-        </div>
+        <DataTablePagination page={page} pageSize={50} total={total} href={(p) => link({ page: String(p) })} noun="requests" />
       </section>
     </div>
-  );
-}
-
-const STEP: Record<'approved' | 'rejected' | 'pending' | 'none', { icon: LucideIcon; cls: string; text: string }> = {
-  approved: { icon: Check, cls: 'bg-emerald-500 text-white', text: 'approved' },
-  rejected: { icon: X, cls: 'bg-rose-500 text-white', text: 'rejected' },
-  pending: {
-    icon: Clock,
-    cls: 'bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-300',
-    text: 'pending',
-  },
-  none: { icon: Minus, cls: 'bg-slate-100 text-slate-400', text: '—' },
-};
-
-/** Two-step approval trail (Manager → Admin) built from the row's approval records; text is always rendered. */
-function ApprovalSteps({ row }: { row: Row }) {
-  const steps = (['MANAGER', 'ADMIN'] as const).map((role) => {
-    const a = row.approvals.find((x) => x.role === role);
-    const status: keyof typeof STEP = a ? (a.decision === 'APPROVED' ? 'approved' : 'rejected') : row.outstanding.includes(role) ? 'pending' : 'none';
-    return { role, status };
-  });
-  return (
-    <ol className="flex items-center gap-1.5" aria-label="Approvals">
-      {steps.map(({ role, status }, i) => {
-        const s = STEP[status];
-        return (
-          <li key={role} className="flex items-center gap-1.5">
-            {i > 0 ? <span className={cn('h-px w-3 sm:w-4', steps[0].status === 'approved' ? 'bg-emerald-300' : 'bg-slate-200')} aria-hidden="true" /> : null}
-            <span className={cn('inline-flex size-5 shrink-0 items-center justify-center rounded-full', s.cls)} aria-hidden="true">
-              <s.icon className="size-3" strokeWidth={3} />
-            </span>
-            <span className="leading-tight">
-              <span className="block text-[12px] font-medium text-slate-800">{humanize(role)}</span>
-              <span className="block text-[10.5px] text-slate-500">{s.text}</span>
-            </span>
-          </li>
-        );
-      })}
-    </ol>
   );
 }

@@ -2,14 +2,15 @@ import { formatDateTime, formatInr } from '@kbs/shared';
 import { Ban, Banknote, Check, Circle, Clock, CreditCard, PauseCircle, UserCheck, Wallet, X, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 
-import { PayeeReveal, PaymentActions, ProofLink } from '@/components/payment-actions';
+import { PayeeReveal, PaymentActions } from '@/components/payment-actions';
 import { RequestActions } from '@/components/payout-request-actions';
+import { type PaymentEntry, PaymentHistoryTable, type RequestItem, RequestItemsTable } from '@/components/payout-request-tables';
 import { PayoutStateBadge } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, BankMark, Callout, KeyValueGrid, PageHeader, SectionCard } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Avatar, Callout, KeyValueGrid, PageHeader, SectionCard } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
+import { PAYMENT_STATE } from '@/lib/payment-states';
 import { cn } from '@/lib/utils';
 
 interface Approval {
@@ -36,22 +37,7 @@ export interface PayoutRequestDto {
     order: string;
   };
   me: { role: 'MANAGER' | 'ADMIN' | null; canApprove: boolean; canCancel: boolean };
-  items: {
-    id: string;
-    entitlementId: string;
-    amountSnapshotInr: number;
-    entitlementState: string;
-    warnings: string[];
-    lead: { id: string; publicRef: string; customerFullName: string };
-    bank: { code: string; displayName: string };
-    card: string;
-    triggerField: string;
-    triggerFieldValue: string;
-    rule: { name: string; version: number };
-    evidence: { batchRef: string; uploadedAt: string };
-    eligibleAt: string;
-    priorRequests: { id: string; publicRef: string; state: string; submittedAt: string }[];
-  }[];
+  items: RequestItem[];
   receipt: {
     state: string;
     paidAt: string;
@@ -82,43 +68,10 @@ export interface PayoutRequestDto {
     canResolve: boolean;
   };
 }
-export interface PaymentEntry {
-  id: string;
-  state: string;
-  paidAt: string;
-  amountInr: number;
-  transferReference: string;
-  method: string | null;
-  proofFileId: string | null;
-  proofAttachedAt: string | null;
-  recordedBy: { id: string; fullName: string };
-  recordedAt: string;
-  exceptionReason: string | null;
-  exceptionRaisedAt: string | null;
-  resolutionNote: string | null;
-  resolvedAt: string | null;
-  correctionOfId: string | null;
-  correctionReason: string | null;
-  correctionDecision: {
-    by: { id: string; fullName: string } | null;
-    at: string;
-    reason: string | null;
-  } | null;
-  supersededAt: string | null;
-}
-
-const PAYMENT_STATE: Record<string, { label: string; tone: 'success' | 'warning' | 'destructive' | 'info' | 'unknown' }> = {
-  VERIFIED: { label: 'verified', tone: 'success' },
-  PROOF_PENDING: { label: 'proof pending', tone: 'warning' },
-  RECORDED: { label: 'recorded', tone: 'info' },
-  EXCEPTION: { label: 'exception', tone: 'destructive' },
-  CORRECTION_PENDING: { label: 'correction awaiting Admin', tone: 'warning' },
-  SUPERSEDED: { label: 'superseded', tone: 'unknown' },
-  CORRECTION_REJECTED: { label: 'correction rejected', tone: 'unknown' },
-};
+export type { PaymentEntry } from '@/components/payout-request-tables';
 
 /** F-604 approval detail: itemised cards with MIS evidence, rule/rate version, prior requests and warnings; two approval rows. */
-export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: string; backHref: string; leadHref?: (leadId: string) => string }) {
+export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: string; backHref: string; leadBase?: string }) {
   const r = (await apiFetch<PayoutRequestDto>(`/payouts/requests/${id}`)).data;
   const pending = r.state === 'PENDING_APPROVALS';
   return (
@@ -175,65 +128,7 @@ export async function PayoutRequestDetail({ id, backHref, leadHref }: { id: stri
       {r.state === 'PENDING_APPROVALS' || r.me.canCancel ? <PaymentActions request={r} /> : null}
       <PaymentTrace r={r} />
       <SectionCard icon={CreditCard} tone="indigo" title="Itemised card events" description="Evidence from the bank MIS, the rule/rate version in force at eligibility, and any earlier requests for the same lead." flush>
-        <Table responsive>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Lead</TableHead>
-              <TableHead>Bank / card</TableHead>
-              <TableHead>MIS evidence</TableHead>
-              <TableHead>Rule</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Warnings / prior</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {r.items.map((i) => (
-              <TableRow key={i.id}>
-                <TableCell data-label="Lead" className="whitespace-nowrap">
-                  {leadHref ? (
-                    <Link className="font-mono text-xs font-semibold" href={leadHref(i.lead.id)}>
-                      {i.lead.publicRef}
-                    </Link>
-                  ) : (
-                    <span className="font-mono text-xs font-semibold">{i.lead.publicRef}</span>
-                  )}
-                  <div className="text-[11px] text-slate-500">{i.lead.customerFullName}</div>
-                </TableCell>
-                <TableCell data-label="Bank / card" className="text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <BankMark code={i.bank.code} size="sm" />
-                    <div className="min-w-0">
-                      <div className="font-medium text-slate-800">{i.bank.displayName}</div>
-                      <div className="text-[11px] text-slate-500">{i.card}</div>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell data-label="MIS evidence" className="text-xs whitespace-normal">
-                  <code>{i.triggerField}</code> = “{i.triggerFieldValue}”
-                  <div className="mt-0.5 text-[11px] text-slate-500">
-                    batch {i.evidence.batchRef} · {formatDateTime(i.evidence.uploadedAt)} · eligible {formatDateTime(i.eligibleAt)}
-                  </div>
-                </TableCell>
-                <TableCell data-label="Rule" className="text-xs">
-                  {i.rule.name} <span className="text-slate-500">v{i.rule.version}</span>
-                </TableCell>
-                <TableCell data-label="Amount" className="font-semibold whitespace-nowrap text-slate-900 tabular-nums sm:text-right">
-                  {formatInr(i.amountSnapshotInr)}
-                </TableCell>
-                <TableCell data-label="Warnings / prior" className="text-xs whitespace-normal">
-                  {i.warnings.map((w) => (
-                    <Badge key={w} variant="warning" className="mr-1 mb-1">
-                      {w}
-                    </Badge>
-                  ))}
-                  {i.priorRequests.length ? <div className="text-slate-500">Prior: {i.priorRequests.map((p) => `${p.publicRef} (${p.state.toLowerCase()})`).join(', ')}</div> : null}
-                  {i.entitlementState !== 'RESERVED' && i.entitlementState !== 'PAID' ? <div className="text-slate-500">entitlement now {i.entitlementState.toLowerCase()}</div> : null}
-                  {!i.warnings.length && !i.priorRequests.length && (i.entitlementState === 'RESERVED' || i.entitlementState === 'PAID') ? <span className="text-slate-400">—</span> : null}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <RequestItemsTable rows={r.items} leadBase={leadBase} />
       </SectionCard>
     </div>
   );
@@ -379,48 +274,7 @@ function PaymentTrace({ r }: { r: PayoutRequestDto }) {
         ) : null}
         {r.paymentHistory.length ? (
           <div className="-mx-5 border-t border-slate-100 sm:-mx-6">
-            <Table responsive>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Entry</TableHead>
-                  <TableHead>Transfer</TableHead>
-                  <TableHead>Proof</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {r.paymentHistory.map((p) => (
-                  <TableRow key={p.id} className={p.supersededAt ? 'opacity-70' : undefined}>
-                    <TableCell data-label="Entry" className="text-xs">
-                      <Badge variant={PAYMENT_STATE[p.state]?.tone ?? 'unknown'}>{PAYMENT_STATE[p.state]?.label ?? p.state}</Badge>
-                      <div className="mt-1 text-[11px] text-slate-500">
-                        {p.recordedBy.fullName} · {formatDateTime(p.recordedAt)}
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="Transfer" className="text-xs">
-                      <span className="font-semibold text-slate-900 tabular-nums">{formatInr(p.amountInr)}</span> · {p.method ?? '—'}
-                      <div className="text-slate-600">
-                        <code>{p.transferReference}</code> · paid {formatDateTime(p.paidAt)}
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="Proof" className="text-xs">
-                      {p.proofFileId ? <ProofLink fileId={p.proofFileId} /> : <span className="text-slate-500">none</span>}
-                    </TableCell>
-                    <TableCell data-label="Notes" className="text-xs whitespace-normal">
-                      {p.correctionReason ? <div>Correction: {p.correctionReason}</div> : null}
-                      {p.correctionDecision ? (
-                        <div className="text-slate-500">
-                          Admin {p.state === 'CORRECTION_REJECTED' ? 'rejected' : 'approved'} ({p.correctionDecision.by?.fullName ?? '—'}, {formatDateTime(p.correctionDecision.at)}): {p.correctionDecision.reason}
-                        </div>
-                      ) : null}
-                      {p.exceptionReason ? <div className="text-destructive">{p.exceptionReason}</div> : null}
-                      {p.resolutionNote ? <div className="text-slate-500">Resolved: {p.resolutionNote}</div> : null}
-                      {p.supersededAt ? <div className="text-slate-500">Superseded {formatDateTime(p.supersededAt)}</div> : null}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <PaymentHistoryTable rows={r.paymentHistory} />
           </div>
         ) : r.receipt ? (
           <p className="text-sm">

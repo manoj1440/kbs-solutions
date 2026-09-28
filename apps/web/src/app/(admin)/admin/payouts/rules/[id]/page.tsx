@@ -4,12 +4,12 @@ import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BankMark, EmptyState, humanize, KeyValueGrid, PageHeader, SectionCard, StatCard, StatGrid } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { BankMark, humanize, KeyValueGrid, PageHeader, SectionCard, StatCard, StatGrid } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 import { RuleActions } from './actions';
+import { RatesTable } from './rates-table';
 
 const STATUS: Record<string, 'success' | 'warning' | 'unknown'> = {
   APPROVED: 'success',
@@ -60,41 +60,7 @@ export default async function PayoutRulePage({ params }: { params: Promise<{ id:
       </PageHeader>
       <RuleActions rule={rule} />
       <SectionCard icon={IndianRupee} tone="teal" title="Rates" description="The approved rate in force at the moment a card event becomes eligible is snapshotted on the entitlement; later changes never alter it (REQ-17 §17.9)." flush={rule.rates.length > 0}>
-        {rule.rates.length === 0 ? (
-          <EmptyState icon={IndianRupee} title="No rate yet — the rule cannot price an entitlement until a rate is approved." />
-        ) : (
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Effective</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Approved</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rule.rates.map((x) => (
-                <TableRow key={x.id} data-current={rule.currentRate?.id === x.id || undefined} className={cn(rule.currentRate?.id === x.id && 'bg-teal-50/40')}>
-                  <TableCell data-label="Effective" className="text-xs">
-                    {formatDate(x.effectiveFrom)} → {x.effectiveTo ? formatDate(x.effectiveTo) : 'open'}
-                  </TableCell>
-                  <TableCell data-label="Status">
-                    <span className="inline-flex flex-wrap items-center gap-1">
-                      <Badge variant={STATUS[x.status] ?? 'secondary'}>{humanize(x.status)}</Badge>
-                      {rule.currentRate?.id === x.id ? <Badge variant="info">in force</Badge> : null}
-                    </span>
-                  </TableCell>
-                  <TableCell data-label="Approved" className="text-xs text-slate-600">
-                    {x.approvedAt ? `${formatDateTime(x.approvedAt)} · ${x.approvedBy?.fullName ?? '—'}` : '—'}
-                  </TableCell>
-                  <TableCell data-label="Amount" className="text-[15px] font-semibold text-slate-900 tabular-nums sm:text-right">
-                    ₹{x.amountInr.toLocaleString('en-IN')}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <RatesTable rows={rule.rates} currentId={rule.currentRate?.id} />
       </SectionCard>
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <SectionCard icon={FileText} tone="indigo" title="Rule definition">
