@@ -16,6 +16,12 @@ export function statusTone(kind: StatusKind, field: StatusField): StatusTone {
   return 'info';
 }
 
+/** Business bucket for a bank-verbatim decision value (blank already excluded). Loose on purpose: banks write Approve/Approved/APPROVED. */
+export const decisionBucket = (v: string): 'approved' | 'declined' | 'inProcess' => (/approv/i.test(v) ? 'approved' : /declin|reject/i.test(v) ? 'declined' : 'inProcess');
+
+/** Business bucket for a bank-verbatim activation value: inactive/active, or null when the value is neither. */
+export const activationBucket = (v: string): 'active' | 'inactive' | null => (/inactiv|not activ/i.test(v) ? 'inactive' : /activ/i.test(v) ? 'active' : null);
+
 const PAYOUT_BAD = new Set(['REJECTED', 'ON_HOLD', 'CANCELLED', 'VOID']);
 const PAYOUT_INFO = new Set(['APPROVED', 'ELIGIBLE_AVAILABLE']);
 

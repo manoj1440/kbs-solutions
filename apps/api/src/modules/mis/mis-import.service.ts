@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { type CreateMisBatchBody, makePublicRef, maskMobile, maskName, MIS_DATE_FIELDS, MIS_PII_FIELDS, type MisApplicationsQuery, type MisBatchListQuery, type MisRowsQuery, RefPrefix } from '@kbs/shared';
+import { activationBucket, type CreateMisBatchBody, decisionBucket, makePublicRef, maskMobile, maskName, MIS_DATE_FIELDS, MIS_PII_FIELDS, type MisApplicationsQuery, type MisBatchListQuery, type MisRowsQuery, RefPrefix } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -224,11 +224,12 @@ export class MisImportService {
         if (!s) c.blank += n;
         else {
           c.reported += n;
-          const low = s.toLowerCase();
-          if (low.includes('inactiv')) c.inactive += n;
-          else if (low.includes('active')) c.active += n;
-          if (low.includes('approv')) c.approved += n;
-          else if (low.includes('declin') || low.includes('reject')) c.declined += n;
+          const ab = activationBucket(s);
+          if (ab === 'inactive') c.inactive += n;
+          else if (ab === 'active') c.active += n;
+          const db = decisionBucket(s);
+          if (db === 'approved') c.approved += n;
+          else if (db === 'declined') c.declined += n;
         }
       }
       return c;

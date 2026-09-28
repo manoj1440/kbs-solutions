@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { AWAITING_MIS_UPDATE, NOT_REPORTED, payoutStateLabel, payoutStateTone, statusTone, type StatusField } from '../src';
+import { activationBucket, AWAITING_MIS_UPDATE, decisionBucket, NOT_REPORTED, payoutStateLabel, payoutStateTone, statusTone, type StatusField } from '../src';
 
 const f = (display: string, value: string | null = null): StatusField => ({ display, value, raw: value, provenance: 'BANK_MIS', asOf: null }) as StatusField;
 
@@ -19,6 +19,14 @@ describe('F-803 status tones (REQ-20 §20.2, VIEW-01)', () => {
     expect(statusTone('activation', f('Active', 'ACTIVE'))).toBe('success');
     expect(statusTone('activation', f('Inactive', 'INACTIVE'))).toBe('warning');
     expect(statusTone('stage', f('Login', 'Login'))).toBe('info');
+  });
+  it('F-811: business buckets accept every spelling banks use (same rule on dashboards, leads and MIS)', () => {
+    for (const v of ['Approve', 'Approved', 'APPROVED']) expect(decisionBucket(v)).toBe('approved');
+    for (const v of ['Decline', 'Rejected']) expect(decisionBucket(v)).toBe('declined');
+    expect(decisionBucket('IPA')).toBe('inProcess');
+    for (const v of ['V + ACTIVE', 'TXN ACTIVE - Rs 100']) expect(activationBucket(v)).toBe('active');
+    for (const v of ['INACTIVE', 'Not Activated']) expect(activationBucket(v)).toBe('inactive');
+    expect(activationBucket('Card Dispatched')).toBeNull();
   });
   it('payout states: one vocabulary for web and mobile', () => {
     expect(payoutStateTone('PAID')).toBe('success');

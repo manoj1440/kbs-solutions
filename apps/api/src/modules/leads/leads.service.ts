@@ -1,5 +1,5 @@
 import type { Prisma } from '@kbs/db';
-import { type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, DEFAULT_BLANK_TOKENS, type DeclarationText, FILTER_AWAITING, FILTER_NOT_REPORTED, isBlankBankValue, isValidE164India, type LeadFilterOptions, type OperationalEvent, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, RefPrefix, toE164India } from '@kbs/shared';
+import { activationBucket, type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, decisionBucket, DEFAULT_BLANK_TOKENS, type DeclarationText, FILTER_AWAITING, FILTER_NOT_REPORTED, isBlankBankValue, isValidE164India, type LeadFilterOptions, type OperationalEvent, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, RefPrefix, toE164India } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -402,13 +402,14 @@ export class LeadsService {
     for (const s of snaps) {
       const d = s.finalDecision?.trim();
       if (!d || isBlankBankValue(d, tokens)) c.decisionBlank += 1;
-      else if (/approv/i.test(d)) c.approved += 1;
-      else if (/declin|reject/i.test(d)) c.declined += 1;
-      else c.inProcess += 1;
+      else c[decisionBucket(d)] += 1;
       const a = s.cardActivationStatus?.trim();
       if (!a || isBlankBankValue(a, tokens)) c.activationBlank += 1;
-      else if (/inactiv|not activ/i.test(a)) c.cardsInactive += 1;
-      else if (/activ/i.test(a)) c.cardsActive += 1;
+      else {
+        const ab = activationBucket(a);
+        if (ab === 'active') c.cardsActive += 1;
+        else if (ab === 'inactive') c.cardsInactive += 1;
+      }
     }
     return { total, matched: snaps.length, awaitingMis: total - snaps.length, ...c };
   }
