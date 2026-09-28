@@ -16,7 +16,6 @@ const PAGES = [
 
   '/admin/catalogue',
   '/admin/mis',
-  '/admin/mis/integrity',
   '/admin/payouts/liability',
   '/admin/payouts/requests',
   '/admin/payouts/requests?queue=exceptions',

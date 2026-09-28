@@ -28,7 +28,6 @@ import {
   PieChart,
   RefreshCw,
   Scale,
-  ScanSearch,
   Search,
   Settings2,
   ShieldCheck,
@@ -96,7 +95,6 @@ const ADMIN_GROUPS: NavGroup[] = [
     label: 'Bank MIS',
     items: [
       { href: '/admin/mis', label: 'MIS imports', icon: FileSpreadsheet },
-      { href: '/admin/mis/integrity', label: 'Data integrity', icon: ScanSearch },
     ],
   },
   {

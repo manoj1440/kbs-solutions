@@ -1,6 +1,6 @@
 # F-809 — Admin MIS: business-first records view
 
-**Status:** IN_PROGRESS
+**Status:** DONE
 **Depends on:** F-501–F-505 (MIS pipeline), F-507 (integrity), F-808 (layout patterns)
 
 ## Goal
@@ -20,8 +20,15 @@ Make `/admin/mis` a business page like Calling records: cumulative status number
 
 ## Acceptance criteria
 
-- [ ] Applications table lists every MIS-reported application with status columns; filters work
-- [ ] Tiles show cumulative business counts
-- [ ] Upload is one modal: bank + file → imported (auto apply); batch page shows the result
-- [ ] No integrity page/sidebar entry; deep links handled
-- [ ] typecheck/lint/build + Playwright clean
+- [x] Applications table lists every MIS-reported application with status columns; filters work
+- [x] Tiles show cumulative business counts
+- [x] Upload is one modal: bank + file → imported (auto apply); batch page shows the result
+- [x] No integrity page/sidebar entry; deep links handled
+- [x] typecheck/lint/build + Playwright clean
+
+## Verification (2026-09-28)
+- End-to-end browser upload of a real .xlsx via the modal: batch created (profile auto-resolved, no mapping UI), auto-applied, batch page shows APPLIED with row counts.
+- `/admin/mis` renders tiles + applications table at 1440 and 390; uploads behind the `Uploads` pill; no page scroll.
+- Filters verified live (`decision=Approved&activation=INACTIVE` → correct subset).
+- api e2e: `mis-import`, `mis-apply` (incl. new F-809 test), `mis-jobs` — 12/12 pass. web smoke: 61 pass / 1 skip.
+- Leftover: `applicationsSummary` hardcodes the default blank-token list instead of reading `mis.blankValueTokens` config (matches seed defaults; fine).

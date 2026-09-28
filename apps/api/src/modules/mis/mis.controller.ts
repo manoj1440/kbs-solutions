@@ -1,4 +1,4 @@
-import { CreateMisBatchBody, MisBatchListQuery, MisRowsQuery, ReasonBody, UpdateMisProfileBody } from '@kbs/shared';
+import { CreateMisBatchBody, MisApplicationsQuery, MisBatchListQuery, MisRowsQuery, ReasonBody, UpdateMisProfileBody } from '@kbs/shared';
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
 
@@ -57,6 +57,19 @@ export class MisController {
   @RequirePermission('MIS_IMPORT')
   batches(@Query() raw: unknown) {
     return this.imports.list(MisBatchListQuery.parse(raw));
+  }
+
+  /** F-809: cumulative applications list — the business view of what banks have reported. */
+  @Get('applications')
+  @RequirePermission('MIS_IMPORT')
+  applications(@Query() raw: unknown) {
+    return this.imports.applications(MisApplicationsQuery.parse(raw));
+  }
+
+  @Get('applications/summary')
+  @RequirePermission('MIS_IMPORT')
+  applicationsSummary() {
+    return this.imports.applicationsSummary();
   }
 
   @Post('batches')

@@ -217,4 +217,33 @@ describe('F-503 preview / F-504 matching + resolution / F-505 apply (MIS-02…MI
     expect(empty.rows.imported).toBe(0);
     expect(empty.leads.total).toBe(b.leads.total);
   });
+
+  it('F-809: batch create without profileId resolves the approved profile; applications list + summary reflect applied data', async () => {
+    // no profileId → server picks the bank's latest APPROVED profile
+    const up = await api().post('/api/v1/files/mis').set(auth(adminToken)).attach('file', await hdfcWorkbook([{ 'Application No': 'APP-002', CURRENT_STAGE: 'Document Curing', FINAL_DECISION: 'Declined', 'Card Activation Staus': 'INACTIVE', FINAL_DECISION_DATE: '11-09-2026 09:00:00' }]), { filename: 'f809.xlsx', contentType: XLSX_TYPE }).expect(201);
+    const b = await api().post('/api/v1/mis/batches').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: hdfcId, fileId: up.body.data.id }).expect(201);
+    expect(b.body.data.stage).toBe('MAPPED');
+    expect(b.body.data.profile.id).toBe(profileId);
+    await api().post(`/api/v1/mis/batches/${b.body.data.id}/apply`).set(auth(adminToken)).set('idempotency-key', idem()).expect(201);
+
+    const apps = (await api().get('/api/v1/mis/applications').set(auth(adminToken)).expect(200)).body;
+    expect(apps.meta.total).toBeGreaterThanOrEqual(3); // leads A, B, C have snapshots
+    const row = apps.data.find((r: { applicationNo: string | null }) => r.applicationNo === 'APP-002');
+    expect(row).toMatchObject({ finalDecision: 'Declined', cardActivationStatus: 'INACTIVE' });
+    expect(row.mobileMasked).toContain('•'); // mobile masked
+    // filters
+    const filtered = (await api().get('/api/v1/mis/applications?decision=Declined').set(auth(adminToken)).expect(200)).body;
+    expect(filtered.data.every((r: { finalDecision: string | null }) => r.finalDecision === 'Declined')).toBe(true);
+    const searched = (await api().get('/api/v1/mis/applications?q=APP-002').set(auth(adminToken)).expect(200)).body;
+    expect(searched.data).toHaveLength(1);
+    const empty = (await api().get('/api/v1/mis/applications?bankId=00000000-0000-0000-0000-000000000000').set(auth(adminToken)).expect(200)).body;
+    expect(empty.meta.total).toBe(0);
+    // summary buckets reconcile with the list
+    const sum = (await api().get('/api/v1/mis/applications/summary').set(auth(adminToken)).expect(200)).body.data;
+    expect(sum.total).toBe(apps.meta.total);
+    expect(sum.approved).toBeGreaterThanOrEqual(1);
+    expect(sum.declined).toBeGreaterThanOrEqual(1);
+    expect(sum.values.decisions).toContain('Declined');
+    expect(sum.values.activations).toContain('INACTIVE');
+  });
 });

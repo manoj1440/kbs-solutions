@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { type CreateMisBatchBody, makePublicRef, maskName, MIS_DATE_FIELDS, MIS_PII_FIELDS, type MisBatchListQuery, type MisRowsQuery, RefPrefix } from '@kbs/shared';
+import { type CreateMisBatchBody, makePublicRef, maskMobile, maskName, MIS_DATE_FIELDS, MIS_PII_FIELDS, type MisApplicationsQuery, type MisBatchListQuery, type MisRowsQuery, RefPrefix } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -76,7 +76,10 @@ export class MisImportService {
   }
 
   async create(actor: Actor, body: CreateMisBatchBody) {
-    const profile = await this.prisma.client.misImportProfile.findUnique({ where: { id: body.profileId } });
+    // F-809: every bank uses the same MIS layout, so the upload only names the bank; the latest APPROVED profile resolves the field map.
+    const profile = body.profileId
+      ? await this.prisma.client.misImportProfile.findUnique({ where: { id: body.profileId } })
+      : await this.prisma.client.misImportProfile.findFirst({ where: { bankId: body.bankId, status: 'APPROVED' }, orderBy: { version: 'desc' } });
     if (!profile || profile.bankId !== body.bankId) throw new AppError('VALIDATION_FAILED', 'Profile does not belong to that bank.');
     if (profile.status !== 'APPROVED') throw new AppError('MIS_PROFILE_NOT_APPROVED', 'The MIS profile for this bank is not approved yet.');
     const { file, checksum, sheets, sheet } = await this.load(body.fileId, body.sheetName ?? profile.sheetSelector);
@@ -141,6 +144,113 @@ export class MisImportService {
       this.prisma.client.misImportBatch.count({ where }),
     ]);
     return new Paginated(rows, q.page, q.pageSize, total);
+  }
+
+  /**
+   * F-809: the cumulative business view — one row per application (BankStatusSnapshot = latest bank-reported state),
+   * newest import first. `q` matches application no / reference no / product code / lead ref / customer name.
+   */
+  async applications(q: MisApplicationsQuery) {
+    const where = {
+      ...(q.bankId ? { bankId: q.bankId } : {}),
+      ...(q.stage ? { currentStage: { equals: q.stage, mode: 'insensitive' as const } } : {}),
+      ...(q.decision ? { finalDecision: { equals: q.decision, mode: 'insensitive' as const } } : {}),
+      ...(q.activation ? { cardActivationStatus: { equals: q.activation, mode: 'insensitive' as const } } : {}),
+      ...(q.q
+        ? {
+            OR: [
+              { applicationNo: { contains: q.q, mode: 'insensitive' as const } },
+              { applicationReferenceNumber: { contains: q.q, mode: 'insensitive' as const } },
+              { productCode: { contains: q.q, mode: 'insensitive' as const } },
+              { lead: { publicRef: { contains: q.q, mode: 'insensitive' as const } } },
+              { lead: { customerFullName: { contains: q.q, mode: 'insensitive' as const } } },
+            ],
+          }
+        : {}),
+    };
+    const [rows, total] = await Promise.all([
+      this.prisma.client.bankStatusSnapshot.findMany({
+        where,
+        orderBy: { lastMatchedAt: 'desc' },
+        skip: (q.page - 1) * q.pageSize,
+        take: q.pageSize,
+        include: {
+          bank: { select: { code: true, displayName: true } },
+          lead: { select: { publicRef: true, customerFullName: true, customerMobile: true, pincode: true } },
+          lastMatchedBatch: { select: { publicRef: true } },
+        },
+      }),
+      this.prisma.client.bankStatusSnapshot.count({ where }),
+    ]);
+    return new Paginated(
+      rows.map((s) => ({
+        leadId: s.leadId,
+        leadRef: s.lead.publicRef,
+        customer: s.lead.customerFullName,
+        mobileMasked: maskMobile(s.lead.customerMobile),
+        pincode: s.lead.pincode,
+        bank: s.bank,
+        batchRef: s.lastMatchedBatch.publicRef,
+        applicationNo: s.applicationNo,
+        applicationReferenceNumber: s.applicationReferenceNumber,
+        currentStage: s.currentStage,
+        finalDecision: s.finalDecision,
+        cardActivationStatus: s.cardActivationStatus,
+        productCode: s.productCode,
+        productDescription: s.productDescription,
+        reportedAt: s.lastMatchedAt.toISOString(),
+      })),
+      q.page,
+      q.pageSize,
+      total,
+    );
+  }
+
+  /** F-809: cumulative counts for the tiles + distinct status values for the filter dropdowns. */
+  async applicationsSummary() {
+    const blank = new Set(['', '#N/A', 'N/A', 'NA', '-', '#REF!', 'NULL']);
+    const [total, decisions, activations, stages] = await Promise.all([
+      this.prisma.client.bankStatusSnapshot.count(),
+      this.prisma.client.bankStatusSnapshot.groupBy({ by: ['finalDecision'], _count: { _all: true } }),
+      this.prisma.client.bankStatusSnapshot.groupBy({ by: ['cardActivationStatus'], _count: { _all: true } }),
+      this.prisma.client.bankStatusSnapshot.groupBy({ by: ['currentStage'], _count: { _all: true } }),
+    ]);
+    const norm = (v: string | null) => (v && !blank.has(v.trim()) ? v.trim() : null);
+    const classify = (rows: { v: string | null; n: number }[]) => {
+      const c = { approved: 0, declined: 0, active: 0, inactive: 0, reported: 0, blank: 0 };
+      for (const { v, n } of rows) {
+        const s = norm(v);
+        if (!s) c.blank += n;
+        else {
+          c.reported += n;
+          const low = s.toLowerCase();
+          if (low.includes('inactiv')) c.inactive += n;
+          else if (low.includes('active')) c.active += n;
+          if (low.includes('approv')) c.approved += n;
+          else if (low.includes('declin') || low.includes('reject')) c.declined += n;
+        }
+      }
+      return c;
+    };
+    const dRows = decisions.map((r) => ({ v: r.finalDecision, n: r._count._all }));
+    const aRows = activations.map((r) => ({ v: r.cardActivationStatus, n: r._count._all }));
+    const d = classify(dRows);
+    const a = classify(aRows);
+    return {
+      total,
+      approved: d.approved,
+      declined: d.declined,
+      inProcess: Math.max(0, d.reported - d.approved - d.declined),
+      decisionBlank: d.blank,
+      cardsActive: a.active,
+      cardsInactive: a.inactive,
+      activationBlank: a.blank,
+      values: {
+        stages: stages.map((r) => norm(r.currentStage)).filter((x): x is string => Boolean(x)).sort(),
+        decisions: dRows.map((r) => norm(r.v)).filter((x): x is string => Boolean(x)).sort(),
+        activations: aRows.map((r) => norm(r.v)).filter((x): x is string => Boolean(x)).sort(),
+      },
+    };
   }
 
   /** Rows with PII masked unless `reveal` (MIS_RAW_ROW_VIEW; logged as sensitive access MIS_RAW_ROW). */

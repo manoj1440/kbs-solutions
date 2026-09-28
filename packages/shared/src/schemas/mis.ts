@@ -30,11 +30,16 @@ export const UpdateMisProfileBody = z
   .strict();
 export type UpdateMisProfileBody = z.infer<typeof UpdateMisProfileBody>;
 
-export const CreateMisBatchBody = z.object({ bankId: z.string().uuid(), profileId: z.string().uuid(), fileId: z.string().uuid(), sheetName: z.string().max(100).optional() }).strict();
+/** F-809: profileId optional — all banks share one MIS layout, so the server resolves the bank's latest APPROVED profile. */
+export const CreateMisBatchBody = z.object({ bankId: z.string().uuid(), profileId: z.string().uuid().optional(), fileId: z.string().uuid(), sheetName: z.string().max(100).optional() }).strict();
 export type CreateMisBatchBody = z.infer<typeof CreateMisBatchBody>;
 
 export const MisBatchListQuery = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(100).default(50), bankId: z.string().uuid().optional(), stage: z.string().optional() });
 export type MisBatchListQuery = z.infer<typeof MisBatchListQuery>;
+
+/** F-809: the applications list — BankStatusSnapshot rows, newest import first. `q` matches app no / ref no / product code / lead ref / customer name. */
+export const MisApplicationsQuery = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(200).default(50), bankId: z.string().uuid().optional(), q: z.string().trim().max(120).optional(), stage: z.string().trim().max(120).optional(), decision: z.string().trim().max(120).optional(), activation: z.string().trim().max(120).optional() });
+export type MisApplicationsQuery = z.infer<typeof MisApplicationsQuery>;
 
 export const MisRowsQuery = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(200).default(50), matchState: z.enum(['PENDING', 'MATCHED', 'UNMATCHED', 'CONFLICT', 'INVALID', 'DUPLICATE_IN_BATCH', 'IGNORED']).optional(), reveal: z.coerce.boolean().optional() });
 export type MisRowsQuery = z.infer<typeof MisRowsQuery>;

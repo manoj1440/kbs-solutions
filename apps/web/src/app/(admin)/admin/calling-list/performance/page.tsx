@@ -1,4 +1,3 @@
-import { formatDateTime } from '@kbs/shared';
 import { Users } from 'lucide-react';
 
 import { type OverviewRow, RangeForm, rangeParams, TeamActivityTable } from '@/components/team-ops';
