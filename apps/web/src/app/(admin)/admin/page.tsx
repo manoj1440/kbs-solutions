@@ -5,6 +5,8 @@ import {
   BriefcaseBusiness,
   Calculator,
   CalendarClock,
+  CalendarRange,
+  ChevronDown,
   CreditCard,
   FilePlus2,
   Headset,
@@ -27,9 +29,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { ActivationBadge, DecisionBadge, StageBadge } from '@/components/status';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BankMark, Callout, EmptyState, IconTile, Meter, MiniStat, PillNav, selectClass, TONE, type Tone } from '@/components/ui/kit';
+import { BankMark, Callout, EmptyState, IconTile, Meter, MiniStat, selectClass, TONE, type Tone } from '@/components/ui/kit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PERIODS, resolvePeriod } from '@/lib/admin-overview';
 import { ApiError, apiFetch } from '@/lib/api';
@@ -43,14 +44,6 @@ interface Metric {
 }
 interface Dist {
   buckets: { value: string; count: number }[];
-}
-interface CallerRow {
-  user: { id: string; fullName: string; status: string };
-  records: { assigned: Metric; active: Metric };
-  calls: { attempts: Metric; connected: Metric };
-  callbacks: { due: Metric; completed: Metric };
-  shares: { total: Metric };
-  outcomes: Record<string, Metric | undefined>;
 }
 interface Home {
   range: { from: string | null; to: string | null };
@@ -77,7 +70,6 @@ interface Home {
     callbacks: { due: Metric; completed: Metric };
     outcomes: Record<string, Metric | undefined>;
     shares: { total: Metric; delivered: Metric };
-    byCaller: CallerRow[];
     pipeline: CallingRecordsSummary;
   };
   recentLeads: LeadStatusRow[];
@@ -162,32 +154,52 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const { people, cumulative, business, calling, recentLeads } = home;
   const pipeline = calling.pipeline;
   const chipHref = (key: string) => `/admin?period=${key}`;
-  const activeChip = period.key === 'custom' ? '' : chipHref(period.key);
   const rangeLabel = home.range.from || home.range.to ? `${home.range.from ? day(home.range.from) : '…'} – ${home.range.to ? day(home.range.to) : 'today'}` : 'All time';
+  const currentLabel = period.label;
   const teamPills: { label: string; role: keyof typeof people; href: string; icon: LucideIcon; tone: Tone }[] = [
     { label: 'Telecallers', role: 'TELECALLER', href: '/admin/users?role=TELECALLER', icon: Headset, tone: 'sky' },
     { label: 'Managers', role: 'MANAGER', href: '/admin/users?role=MANAGER', icon: UserCog, tone: 'indigo' },
     { label: 'Advisors', role: 'ADVISOR', href: '/admin/users?role=ADVISOR', icon: BriefcaseBusiness, tone: 'violet' },
     { label: 'Accounts', role: 'ACCOUNTS', href: '/admin/users?role=ACCOUNTS', icon: Calculator, tone: 'slate' },
   ];
-  const callers = [...calling.byCaller].sort((a, b) => b.calls.attempts.value - a.calls.attempts.value || a.user.fullName.localeCompare(b.user.fullName));
-
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="relative z-20 flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">Business overview</h1>
-        <PillNav label="Period" items={PERIODS.map((p) => ({ href: chipHref(p.key), label: p.label }))} active={activeChip} />
-        <form action="/admin" className="flex items-center gap-1.5">
-          <input type="date" name="from" aria-label="From" defaultValue={sp.from ?? period.current.from ?? ''} className={cn(selectClass, 'h-8 w-36 px-2 text-xs')} />
-          <span className="text-xs text-slate-400">–</span>
-          <input type="date" name="to" aria-label="To" defaultValue={sp.to ?? period.current.to ?? ''} className={cn(selectClass, 'h-8 w-36 px-2 text-xs')} />
-          <Button type="submit" size="sm" className="h-8">
-            Apply
-          </Button>
-        </form>
-        <span className="ml-auto text-[11px] text-slate-500">
-          {rangeLabel} · as of {formatDateTime(home.asOf)}
-        </span>
+        <details className="group/period relative ml-auto">
+          <summary
+            aria-label="Period"
+            className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 text-[13px] font-medium text-slate-700 shadow-[0_1px_2px_rgb(15_23_42/4%)] hover:bg-slate-50 [&::-webkit-details-marker]:hidden"
+          >
+            <CalendarRange className="size-3.5" aria-hidden="true" />
+            {currentLabel} <span className="text-xs text-slate-400">{rangeLabel}</span>
+            <ChevronDown className="size-3.5 transition-transform group-open/period:rotate-180" aria-hidden="true" />
+          </summary>
+          <div role="menu" className="absolute right-0 z-20 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-slate-200/80 bg-white p-2 shadow-lg">
+            {PERIODS.map((p) => (
+              <Link
+                key={p.key}
+                role="menuitem"
+                href={chipHref(p.key)}
+                prefetch={false}
+                aria-current={period.key === p.key ? 'page' : undefined}
+                className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 aria-[current=page]:bg-teal-50 aria-[current=page]:font-semibold aria-[current=page]:text-teal-800"
+              >
+                {p.label}
+              </Link>
+            ))}
+            <div className="mt-1 border-t border-slate-100 pt-2">
+              <p className="px-3 pb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Custom</p>
+              <form action="/admin" className="grid gap-2 px-3 pb-1">
+                <input type="date" name="from" aria-label="From" defaultValue={sp.from ?? period.current.from ?? ''} className={cn(selectClass, 'h-8 px-2 text-xs')} />
+                <input type="date" name="to" aria-label="To" defaultValue={sp.to ?? period.current.to ?? ''} className={cn(selectClass, 'h-8 px-2 text-xs')} />
+                <Button type="submit" size="sm" className="h-8">
+                  Apply
+                </Button>
+              </form>
+            </div>
+          </div>
+        </details>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -232,53 +244,6 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           <Stat label="Interested" value={interested(calling.outcomes)} hint="Furthest KBS-known step" icon={Sparkles} tone="teal" />
           <Stat label="Links / PDFs shared" value={calling.shares.total.value} hint={`${calling.shares.delivered.value} delivered`} icon={Send} tone="violet" />
           <Stat label="Callbacks" value={calling.callbacks.completed.value} hint={`${calling.callbacks.due.value} due`} icon={CalendarClock} tone="slate" />
-        </div>
-        <div className="mt-4 overflow-hidden rounded-xl ring-1 ring-slate-200/70">
-          {callers.length === 0 ? (
-            <EmptyState icon={Users} title="No callers." description="No telecallers on the team yet." />
-          ) : (
-            <Table responsive containerClassName="rounded-none! border-0!">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="pl-4">Caller</TableHead>
-                  <TableHead className="sm:text-right">Records held</TableHead>
-                  <TableHead className="sm:text-right">Attempts</TableHead>
-                  <TableHead className="sm:text-right">Connected</TableHead>
-                  <TableHead className="sm:text-right">Interested</TableHead>
-                  <TableHead className="sm:text-right">Shares</TableHead>
-                  <TableHead className="pr-4 sm:text-right">Callbacks done</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {callers.map((r) => (
-                  <TableRow key={r.user.id} className="hover:bg-slate-50">
-                    <TableCell className="pl-4" data-label="Caller">
-                      <span className="text-xs font-medium text-slate-800">{r.user.fullName}</span>
-                      {r.user.status !== 'ACTIVE' ? <Badge variant="secondary" className="ml-2">{r.user.status}</Badge> : null}
-                    </TableCell>
-                    <TableCell data-label="Records held" className="text-xs tabular-nums sm:text-right">
-                      {r.records.assigned.value}
-                    </TableCell>
-                    <TableCell data-label="Attempts" className="text-xs tabular-nums sm:text-right">
-                      {r.calls.attempts.value}
-                    </TableCell>
-                    <TableCell data-label="Connected" className="text-xs tabular-nums sm:text-right">
-                      {r.calls.connected.value}
-                    </TableCell>
-                    <TableCell data-label="Interested" className="text-xs tabular-nums sm:text-right">
-                      {interested(r.outcomes)}
-                    </TableCell>
-                    <TableCell data-label="Shares" className="text-xs tabular-nums sm:text-right">
-                      {r.shares.total.value}
-                    </TableCell>
-                    <TableCell data-label="Callbacks done" className="pr-4 text-xs tabular-nums sm:text-right">
-                      {r.callbacks.completed.value}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
         </div>
       </Panel>
 
@@ -344,7 +309,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           </Table>
         )}
         <p className="border-t border-slate-100 px-4 py-2 text-[10px] text-slate-500">
-          Source: KBS records + latest accepted bank MIS + payout ledger · as of {formatDateTime(home.asOf)}. {home.note}
+          Source: KBS records + latest accepted bank MIS + payout ledger · {rangeLabel} · as of {formatDateTime(home.asOf)}. {home.note}
         </p>
       </section>
     </div>
