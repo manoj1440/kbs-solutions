@@ -2,8 +2,9 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-09-28, end of session 15)
+## Current state (as of 2026-09-28, end of session 16)
 
+- **Session 16 (UX fix):** web filters no longer reload the page (native GET `<form>` → `next/form`), and every route now has a shadcn skeleton loading state (`loading.tsx` + `PageSkeleton`/`DetailSkeleton`). Web only; no API/data change.
 - **Feature status:** 80 of 82 features **DONE** (session 15 added and finished **F-812 Admin home: business numbers only** — `GET /dashboards/admin/home` + `/admin` rewrite; sessions 14–15 also finished F-809/F-810/F-811). Earlier: 77 of 79 (session 14 also added and finished **F-808 Admin Calling: one records page + one caller performance page** — `/admin/calling-list` and `/admin/calling-list/performance`, one screen each; open issue: web refresh race, see F-808 notes). Before that, session 14 added **F-807 Admin navigation by responsibility + business-first home** — `/admin` now merges the executive dashboard; `/admin/dashboards` redirects). Earlier: 75 of 77 (session 13 added and finished **F-806 web Admin UI revamp** — design kit + shell + every Admin page; guide in `apps/web/src/components/ui/README.md`; session 12 finished **F-805 mobile UI revamp**, guide in `apps/mobile/components/ui/README.md`)
 - Earlier: 73 of 75 features **DONE** (sessions 9–11 added and finished F-314 Admin calls & delivery oversight, F-315 Manager Advisor drill-down and F-804 web session continuity + account screens, all found by REQ-15/REQ-25 gap checks) (`DOCS/features/README.md` and each file's "Progress notes" are the source of truth). Not done:
   - **F-302** Android protected screens — code complete; stays IN_PROGRESS only for the **SEC-02 manual run on a physical Android 12+ device** (checklist in `DOCS/runbooks/02-mobile-security-limits.md`).
@@ -38,6 +39,13 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 ```
 
 ## Session log
+
+### 2026-09-28 — Session 16 (web: no reload on filters + skeleton loading, on the Mac)
+- User reported a full browser reload on every filter Apply. Cause: all 11 filter bars were native GET `<form>` submissions. Converted to `next/form` `<Form>` (client-side `router.push`, same URL contract). Verified in a real browser: `window` marker survives Apply, one navigation entry only, and the F-808 calling-records e2e still passes.
+- Skeletons: new `components/page-skeleton.tsx` (`PageSkeleton` = tiles + filter bar + table rows; `DetailSkeleton` = header + stat strip + two cards) built on the shadcn `Skeleton` primitive, and `loading.tsx` at each role root (`admin`, `manager`, `accounts` → `PageSkeleton`), on all 20 `[id]`/`[seq]` leaf routes (→ `DetailSkeleton`) and `verify/[ref]`. Same-page filter changes keep the old UI until ready (React transition behaviour); cross-route navigation shows the skeleton instantly. Notification-centre inline pulse spans now use `Skeleton`.
+- Checks: web typecheck + lint (TanStack warning only), web unit 12/12, `next build` green (65 routes), Playwright `admin-smoke` calling-records filter test passes on the prod build; live browser check confirmed skeleton on route change and no reload on Apply.
+- Environment note: the Mac API was down at session start — `pnpm --filter api dev` on :4000 works with web on :3000 (`WEB_ORIGIN=http://localhost:3000`); :3200 is no longer CORS-allowed.
+- Not pushed.
 
 ### 2026-09-28 — Session 15 (F-812 Admin home = business numbers, on the Mac)
 - User: `/admin` must show the business at first glance (team sizes, calling statuses, MIS applications/cards/payout, banks/cards configured, recent leads) — no config. Built `GET /dashboards/admin/home` (passthrough over F-808/F-809/F-810/F-606 summaries; Admin only) and rewrote `/admin` as one fetch → Team · Calling · Bank MIS & payouts tiles + Recent leads table. Deleted the period/filter helpers (`lib/admin-overview.ts`). Report drill-down links moved off `/admin?period=…`.
