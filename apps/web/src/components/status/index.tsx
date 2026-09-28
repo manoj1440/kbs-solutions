@@ -1,4 +1,4 @@
-import type { Provenance, StatusField, StatusKind } from '@kbs/shared';
+import type { Provenance, StatusField, StatusKind, StatusTone } from '@kbs/shared';
 import { formatDateTime, payoutStateLabel, payoutStateTone, PROVENANCE_LABEL, statusTone } from '@kbs/shared';
 
 import { Badge } from '@/components/ui/badge';
@@ -9,13 +9,23 @@ import { cn } from '@/lib/utils';
  * Stage, Decision, Activation and Payout state are deliberately separate components (REQ-14 §14.3).
  */
 
+/** Tone → text colour (F-813: bank values render as plain coloured text, no chip). */
+const TONE_TEXT: Record<StatusTone, string> = {
+  success: 'text-success',
+  destructive: 'text-destructive',
+  warning: 'text-warning',
+  info: 'text-info',
+  unknown: 'text-slate-600',
+  secondary: 'text-slate-700',
+};
+
 function StatusBadge({ kind, field, label }: { kind: StatusKind; field: StatusField; label?: string }) {
   return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
-      {label ? <span className="text-[11px] font-medium text-slate-500">{label}:</span> : null}
-      <Badge variant={statusTone(kind, field)} title={field.raw ?? undefined} className="max-w-full truncate">
+    <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
+      {label ? <span className="shrink-0 text-[11px] font-medium text-slate-500">{label}:</span> : null}
+      <span title={field.raw ?? undefined} className={cn('min-w-0 max-w-full truncate text-[12.5px] font-semibold', TONE_TEXT[statusTone(kind, field)])}>
         {field.display}
-      </Badge>
+      </span>
     </span>
   );
 }

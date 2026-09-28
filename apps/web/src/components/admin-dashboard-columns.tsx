@@ -106,7 +106,7 @@ const telecallerColumns = t.columns([
       <>
         <span className="font-medium text-slate-900">{row.original.calls.connected.value}</span>
         <span className="text-xs text-slate-500">{pct(row.original.calls.connected)}</span>
-        {row.original.calls.connected.denominator?.value ? <Meter value={row.original.calls.connected.value} max={row.original.calls.connected.denominator.value} tone="emerald" className="mt-1 h-1 w-16 sm:ml-auto" label="Connected share of attempts" /> : null}
+        {row.original.calls.connected.denominator?.value ? <Meter value={row.original.calls.connected.value} max={row.original.calls.connected.denominator.value} tone="emerald" className="mt-1 h-1 w-16" label="Connected share of attempts" /> : null}
       </>
     ),
   }),
@@ -184,7 +184,7 @@ const managerColumns = m.columns([
         cell: ({ row }) => (
       <>
         {row.original.leads.created.value} / {row.original.leads.misMatched.value}
-        {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16 sm:ml-auto" label="MIS matched share of leads" /> : null}
+        {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16" label="MIS matched share of leads" /> : null}
       </>
     ),
   }),
@@ -230,7 +230,7 @@ const advisorColumns = a.columns([
         cell: ({ row }) => (
       <>
         {row.original.leads.created.value} / {row.original.leads.misMatched.value}
-        {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16 sm:ml-auto" label="MIS matched share of leads" /> : null}
+        {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16" label="MIS matched share of leads" /> : null}
       </>
     ),
   }),
@@ -287,7 +287,7 @@ const mixColumns = b.columns([
         cell: ({ row }) => (
       <>
         {row.original.misMatched}
-        {row.original.leads ? <Meter value={row.original.misMatched} max={row.original.leads} tone="indigo" className="mt-1 h-1 w-16 sm:ml-auto" label="MIS matched share of leads" /> : null}
+        {row.original.leads ? <Meter value={row.original.misMatched} max={row.original.leads} tone="indigo" className="mt-1 h-1 w-16" label="MIS matched share of leads" /> : null}
       </>
     ),
   }),

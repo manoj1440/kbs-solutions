@@ -152,7 +152,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       header: 'Actions',
       meta: { hideLabel: true },
       cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-start gap-1">
           <Button
             size="icon"
             variant="ghost"

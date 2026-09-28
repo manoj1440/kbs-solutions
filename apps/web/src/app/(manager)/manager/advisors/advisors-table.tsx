@@ -57,7 +57,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
               value={r.leads.misMatched.value}
               max={r.leads.created.value}
               tone="indigo"
-              className="my-1.5 h-1.5 w-full min-w-28 @min-[701px]:ml-auto @min-[701px]:w-32"
+              className="my-1.5 h-1.5 w-full min-w-28 @min-[701px]:w-32"
               label={`${r.leads.misMatched.value} of ${r.leads.created.value} matched in MIS`}
             />
             <div className="text-xs text-slate-500 tabular-nums">
@@ -95,7 +95,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
       header: 'Payout ledger',
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
-        <dl className="grid grid-cols-[auto_auto_auto] justify-start gap-x-3 gap-y-0.5 tabular-nums @min-[701px]:justify-end">
+        <dl className="grid grid-cols-[auto_auto_auto] justify-start gap-x-3 gap-y-0.5 tabular-nums">
           {(
             [
               ['Eligible', row.original.payouts.eligible],
@@ -105,8 +105,8 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
           ).map(([label, m]) => (
             <div key={label} className="contents">
               <dt className="text-slate-500">{label}</dt>
-              <dd className="text-right text-slate-700">{m.value}</dd>
-              <dd className="text-right font-medium text-slate-900">{inr(m.amountInr)}</dd>
+              <dd className="text-slate-700">{m.value}</dd>
+              <dd className="font-medium text-slate-900">{inr(m.amountInr)}</dd>
             </div>
           ))}
         </dl>
