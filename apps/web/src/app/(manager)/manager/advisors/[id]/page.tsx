@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime, type LeadStatusRow } from '@kbs/shared';
+import { formatDate, type LeadStatusRow } from '@kbs/shared';
 import {
   ArrowLeft,
   BadgeCheck,
@@ -20,12 +20,10 @@ import {
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import type { EntitlementDto } from '@/components/entitlements-ledger';
-import { ActivationBadge, DecisionBadge, PayoutStateBadge, StageBadge } from '@/components/status';
+import type { EntitlementDto } from '@/components/entitlements-table';
 import { Button } from '@/components/ui/button';
 import {
   Avatar,
-  BankMark,
   Callout,
   EmptyState,
   humanize,
@@ -39,14 +37,6 @@ import {
   type Tone,
 } from '@/components/ui/kit';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   type AdvisorTeamResponse,
   type Distribution,
   inr,
@@ -56,16 +46,8 @@ import {
 } from '@/lib/advisor-team';
 import { ApiError, apiFetch } from '@/lib/api';
 
-interface RequestRow {
-  id: string;
-  publicRef: string;
-  state: string;
-  itemCount: number;
-  totalAmountInr: number;
-  submittedAt: string;
-  outstanding: string[];
-  paidAt: string | null;
-}
+import { type AdvisorRequestRow, AdvisorLeadsTable, AdvisorRequestsTable, AdvisorEntitlementsTable } from './advisor-detail-tables';
+
 
 function Tile({
   label,
@@ -175,7 +157,7 @@ export default async function ManagerAdvisorPage({
   if (!row) notFound();
   const [leads, requests, ents] = await Promise.all([
     apiFetch<LeadStatusRow[]>(`/leads?advisorId=${id}&pageSize=10`),
-    apiFetch<RequestRow[]>(`/payouts/requests?advisorId=${id}&pageSize=20`),
+    apiFetch<AdvisorRequestRow[]>(`/payouts/requests?advisorId=${id}&pageSize=20`),
     apiFetch<EntitlementDto[]>(`/payouts/entitlements?advisorId=${id}&pageSize=20`),
   ]);
   const p = row.payouts;
@@ -302,59 +284,7 @@ export default async function ManagerAdvisorPage({
         }
         flush={leads.data.length > 0}
       >
-        {leads.data.length === 0 ? (
-          <EmptyState icon={ListChecks} title="No leads yet." />
-        ) : (
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Bank / card</TableHead>
-                <TableHead>Bank status (MIS)</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leads.data.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell data-label="Customer">
-                    <Link className="font-medium" href={`/manager/leads/${l.id}`}>
-                      {l.customer.name}
-                    </Link>
-                    <div className="font-mono text-[11px] text-slate-500">{l.kbsRef}</div>
-                  </TableCell>
-                  <TableCell data-label="Bank / card">
-                    <div className="flex items-center gap-2.5">
-                      <BankMark code={l.bank.code} size="sm" />
-                      <div className="min-w-0 text-xs">
-                        <div className="font-medium text-slate-800">{l.bank.displayName}</div>
-                        <div className="text-slate-500">{l.card.name}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell data-label="Bank status (MIS)">
-                    <div className="flex flex-wrap gap-1">
-                      <StageBadge field={l.stage} />
-                      <DecisionBadge field={l.decision} />
-                      <ActivationBadge field={l.activation} />
-                    </div>
-                    {l.remarksPreview ? (
-                      <div className="mt-1 line-clamp-2 text-xs text-slate-500">
-                        {l.remarksPreview}
-                      </div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell
-                    data-label="Created"
-                    className="text-xs whitespace-nowrap text-slate-600 tabular-nums"
-                  >
-                    {formatDate(l.leadCreatedAt)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <AdvisorLeadsTable rows={leads.data} />
       </SectionCard>
 
       <div className="grid items-start gap-6 xl:grid-cols-2">
@@ -365,58 +295,7 @@ export default async function ManagerAdvisorPage({
           description="Newest first. Open a request to see both approvals and the Accounts payment record."
           flush={requests.data.length > 0}
         >
-          {requests.data.length === 0 ? (
-            <EmptyState icon={Wallet} title="No payout requests yet." />
-          ) : (
-            <Table responsive="compact">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Request</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>State</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requests.data.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell data-label="Request">
-                      <Link
-                        className="font-mono text-xs"
-                        href={`/manager/payouts/requests/${r.id}`}
-                      >
-                        {r.publicRef}
-                      </Link>
-                      <div className="text-xs text-slate-500 tabular-nums">
-                        submitted {formatDateTime(r.submittedAt)}
-                      </div>
-                    </TableCell>
-                    <TableCell
-                      data-label="Amount"
-                      className="text-xs tabular-nums @min-[701px]:text-right"
-                    >
-                      <div className="text-sm font-semibold whitespace-nowrap text-slate-900">
-                        {inr(r.totalAmountInr)}
-                      </div>
-                      <div className="text-slate-500">{r.itemCount} card event(s)</div>
-                    </TableCell>
-                    <TableCell data-label="State">
-                      <PayoutStateBadge state={r.state} />
-                      {r.outstanding.length ? (
-                        <div className="mt-1 text-xs text-slate-500">
-                          Waiting: {r.outstanding.join(' + ').toLowerCase()}
-                        </div>
-                      ) : null}
-                      {r.paidAt ? (
-                        <div className="mt-1 text-xs text-slate-500 tabular-nums">
-                          Paid {formatDate(r.paidAt)}
-                        </div>
-                      ) : null}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <AdvisorRequestsTable rows={requests.data} />
         </SectionCard>
         <SectionCard
           icon={BadgeCheck}
@@ -425,57 +304,7 @@ export default async function ManagerAdvisorPage({
           description="Payout entitlements created from applied bank MIS under the approved rule. Paid events cannot be claimed again."
           flush={ents.data.length > 0}
         >
-          {ents.data.length === 0 ? (
-            <EmptyState icon={BadgeCheck} title="No eligible card events yet." />
-          ) : (
-            <Table responsive="compact">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Lead</TableHead>
-                  <TableHead>MIS evidence</TableHead>
-                  <TableHead className="text-right">Amount / state</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ents.data.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell data-label="Lead">
-                      <div className="flex items-center gap-2.5">
-                        <BankMark code={e.bank.code} size="sm" />
-                        <div className="min-w-0">
-                          <Link className="font-medium" href={`/manager/leads/${e.lead.id}`}>
-                            {e.lead.customerFullName}
-                          </Link>
-                          <div className="text-xs text-slate-500">
-                            {e.bank.displayName} · {e.card}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="MIS evidence" className="text-xs">
-                      <span className="font-mono break-words text-slate-800">
-                        {e.triggerField} = {e.triggerFieldValue}
-                      </span>
-                      <div className="text-slate-500 tabular-nums">
-                        batch {e.evidence.batchRef} · {formatDate(e.eligibleAt)}
-                      </div>
-                    </TableCell>
-                    <TableCell
-                      data-label="Amount / state"
-                      className="text-xs @min-[701px]:text-right"
-                    >
-                      <div className="text-sm font-semibold whitespace-nowrap text-slate-900 tabular-nums">
-                        {inr(e.amountInr)}
-                      </div>
-                      <div className="mt-1">
-                        <PayoutStateBadge state={e.state} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <AdvisorEntitlementsTable rows={ents.data} />
         </SectionCard>
       </div>
     </div>

@@ -3,13 +3,13 @@ import { ArrowLeft, FileClock, Hash, Landmark, MessageSquareText, UserRound, Wal
 import Link from 'next/link';
 
 import { CreditCardArt } from '@/components/card-art';
-import type { EntitlementDto } from '@/components/entitlements-ledger';
+import type { EntitlementDto } from '@/components/entitlements-table';
+import { LeadHistoryTable } from '@/components/lead-history-table';
 import { type FollowUpDto, LeadOps, type RemarkDto } from '@/components/lead-ops';
 import { ActivationBadge, DecisionBadge, FreshnessLabel, PayoutStateBadge, ProvenanceChip, StageBadge } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, EmptyState, humanize, IconTile, KeyValueGrid, PageHeader, SectionCard } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiFetch } from '@/lib/api';
 
 interface RemarkField {
@@ -34,8 +34,6 @@ export interface LeadDetailDto extends Omit<LeadStatusRow, 'bankReference'> {
   bankReference: { value: string | null; kind?: string; status?: string; source?: string; label?: string; at?: string };
   referenceHistory: { id: string; kind: string; value: string; status: string; source: string; at: string; supersededAt: string | null }[];
 }
-
-const CHANGE_LABEL: Record<string, string> = { SET: 'set', CHANGED: 'changed', CONFIRMED_SAME: 'confirmed unchanged', REPORTED_BLANK: 'reported blank', ABSENT_FROM_BATCH: 'absent from this batch' };
 
 /**
  * F-408 — lead detail sections (REQ-11 §11.9): A operational (KBS activity), B bank references + latest raw snapshot,
@@ -234,14 +232,14 @@ export async function LeadDetail({ id, backHref, eyebrow = 'Workspace' }: { id: 
                     · imported {formatDateTime(g.importedAt)} by {g.uploaderRole.toLowerCase()}
                   </span>
                 </p>
-                {changed.length === 0 ? <p className="text-muted-foreground text-sm">Identical repeat — no bank value changed in this batch.</p> : <HistoryTable batchId={g.batchId} changes={changed} />}
+                {changed.length === 0 ? <p className="text-muted-foreground text-sm">Identical repeat — no bank value changed in this batch.</p> : <LeadHistoryTable batchId={g.batchId} changes={changed} />}
                 {quiet.length ? (
                   <details className="group text-xs">
                     <summary className="text-muted-foreground cursor-pointer py-1">
                       {quiet.filter((c) => c.changeKind === 'CONFIRMED_SAME').length} field(s) confirmed unchanged · {quiet.filter((c) => c.changeKind === 'REPORTED_BLANK').length} reported blank
                     </summary>
                     <div className="mt-2">
-                      <HistoryTable batchId={g.batchId} changes={quiet} />
+                      <LeadHistoryTable batchId={g.batchId} changes={quiet} />
                     </div>
                   </details>
                 ) : null}
@@ -270,35 +268,6 @@ export async function LeadDetail({ id, backHref, eyebrow = 'Workspace' }: { id: 
         )}
       </SectionCard>
     </div>
-  );
-}
-
-function HistoryTable({ batchId, changes }: { batchId: string; changes: MisHistoryGroup['changes'] }) {
-  return (
-    <Table responsive>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Field</TableHead>
-          <TableHead>Old value</TableHead>
-          <TableHead>New value</TableHead>
-          <TableHead>Change</TableHead>
-          <TableHead>Reported bank event date</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {changes.map((c) => (
-          <TableRow key={`${batchId}-${c.field}`}>
-            <TableCell data-label="Field" className="font-mono text-xs">{c.field === '*' ? '(whole row)' : c.field}</TableCell>
-            <TableCell data-label="Old value" className="text-xs">{c.oldValue ?? <em className="text-muted-foreground">blank</em>}</TableCell>
-            <TableCell data-label="New value" className="text-xs font-medium">{c.newValue ?? <em className="text-muted-foreground">blank</em>}</TableCell>
-            <TableCell data-label="Change">
-              <Badge variant={c.changeKind === 'CHANGED' || c.changeKind === 'SET' ? 'info' : c.changeKind === 'ABSENT_FROM_BATCH' ? 'warning' : 'secondary'}>{CHANGE_LABEL[c.changeKind] ?? c.changeKind.toLowerCase()}</Badge>
-            </TableCell>
-            <TableCell data-label="Reported bank event date" className="text-xs tabular-nums">{c.reportedEventDate ? formatDateTime(c.reportedEventDate) : '—'}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   );
 }
 

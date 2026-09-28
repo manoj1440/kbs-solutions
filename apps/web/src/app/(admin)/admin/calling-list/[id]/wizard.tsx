@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { columnHelper, DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Callout, EmptyState, Field, humanize, Meter, PageHeader, SectionCard, selectClass, StatCard, StatGrid, TONE, type Tone } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
@@ -257,38 +257,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
 
       {batch.preview?.length ? (
         <SectionCard icon={TableProperties} tone="sky" title={`Preview (first ${batch.preview.length} rows, masked)`} description="Mobile and PAN are never shown in full during import (REQ-06 §6.2)." flush>
-          <Table responsive>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="sm:text-right">Row</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Mobile</TableHead>
-                <TableHead>Pincode</TableHead>
-                <TableHead>PAN</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {batch.preview.map((r) => (
-                <TableRow key={r.row}>
-                  <TableCell data-label="Row" className="text-xs text-slate-500 tabular-nums sm:text-right">
-                    {r.row}
-                  </TableCell>
-                  <TableCell data-label="Name" className="font-medium text-slate-800">
-                    {r.name}
-                  </TableCell>
-                  <TableCell data-label="Mobile" className="font-mono text-xs">
-                    {r.mobile}
-                  </TableCell>
-                  <TableCell data-label="Pincode" className="font-mono text-xs">
-                    {r.pincode}
-                  </TableCell>
-                  <TableCell data-label="PAN" className="font-mono text-xs">
-                    {r.pan ?? '—'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <PreviewTable rows={batch.preview} />
         </SectionCard>
       ) : null}
 
@@ -459,63 +428,79 @@ function ReviewQueue({ batchId, onChanged }: { batchId: string; onChanged: () =>
       {rows?.length === 0 ? (
         <EmptyState icon={CheckCircle2} title="Nothing to review." description="Every imported row passed validation or has already been accepted or excluded." />
       ) : (
-        <Table responsive>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="sm:text-right">Row</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Mobile</TableHead>
-              <TableHead>Pincode · location</TableHead>
-              <TableHead>Issues</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(rows ?? []).map((r) => (
-              <TableRow key={r.id}>
-                <TableCell data-label="Row" className="text-xs text-slate-500 tabular-nums sm:text-right">
-                  {r.sourceRowNumber}
-                </TableCell>
-                <TableCell data-label="Name" className="font-medium text-slate-800">
-                  {r.fullName}
-                </TableCell>
-                <TableCell data-label="Mobile" className="font-mono text-xs">
-                  {r.mobileMasked}
-                </TableCell>
-                <TableCell data-label="Pincode · location" className="text-xs">
-                  <span className="font-mono">{r.pincode}</span> · {r.location}
-                </TableCell>
-                <TableCell data-label="Issues">
-                  <div className="flex flex-wrap gap-1">
-                    {(r.reviewReason ?? '')
-                      .split(',')
-                      .filter(Boolean)
-                      .map((i) => (
-                        <Badge key={i} variant="warning">
-                          {ISSUE_LABEL[i] ?? i}
-                        </Badge>
-                      ))}
-                  </div>
-                </TableCell>
-                <TableCell data-label="Reason">
-                  <Input aria-label={`reason ${r.sourceRowNumber}`} value={reason[r.id] ?? ''} onChange={(e) => setReason({ ...reason, [r.id]: e.target.value })} placeholder="why" className="min-w-32" />
-                </TableCell>
-                <TableCell data-label="Action">
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => act(r.id, 'ACCEPT')}>
-                      Accept
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => act(r.id, 'EXCLUDE')}>
-                      Exclude
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ReviewQueueTable rows={rows ?? []} reason={reason} setReason={setReason} act={act} />
       )}
     </SectionCard>
   );
+}
+
+const pv = columnHelper<PreviewRow>();
+const rq = columnHelper<ReviewRow>();
+
+function PreviewTable({ rows }: { rows: PreviewRow[] }) {
+  const columns = pv.columns([
+    pv.accessor('row', { header: 'Row', meta: { align: 'right', cellClassName: 'text-xs text-slate-500' } }),
+    pv.accessor('name', { header: 'Name', meta: { cellClassName: 'font-medium text-slate-800' } }),
+    pv.accessor('mobile', { header: 'Mobile', meta: { cellClassName: 'font-mono text-xs' } }),
+    pv.accessor('pincode', { header: 'Pincode', meta: { cellClassName: 'font-mono text-xs' } }),
+    pv.accessor('pan', { header: 'PAN', meta: { cellClassName: 'font-mono text-xs' }, cell: ({ getValue }) => getValue() ?? '—' }),
+  ]);
+  return <DataTable columns={columns} data={rows} getRowId={(r) => String(r.row)} />;
+}
+
+function ReviewQueueTable({ rows, reason, setReason, act }: { rows: ReviewRow[]; reason: Record<string, string>; setReason: (v: Record<string, string>) => void; act: (id: string, action: 'ACCEPT' | 'EXCLUDE') => void }) {
+  const columns = rq.columns([
+    rq.accessor('sourceRowNumber', { header: 'Row', meta: { align: 'right', cellClassName: 'text-xs text-slate-500' } }),
+    rq.accessor('fullName', { header: 'Name', meta: { cellClassName: 'font-medium text-slate-800' } }),
+    rq.accessor('mobileMasked', { header: 'Mobile', meta: { cellClassName: 'font-mono text-xs' } }),
+    rq.display({
+      id: 'location',
+      header: 'Pincode · location',
+      meta: { cellClassName: 'text-xs' },
+      cell: ({ row }) => (
+        <>
+          <span className="font-mono">{row.original.pincode}</span> · {row.original.location}
+        </>
+      ),
+    }),
+    rq.accessor((r) => r.reviewReason ?? '', {
+      id: 'issues',
+      header: 'Issues',
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {(row.original.reviewReason ?? '')
+            .split(',')
+            .filter(Boolean)
+            .map((i) => (
+              <Badge key={i} variant="warning">
+                {ISSUE_LABEL[i] ?? i}
+              </Badge>
+            ))}
+        </div>
+      ),
+    }),
+    rq.display({
+      id: 'reason',
+      header: 'Reason',
+      cell: ({ row }) => (
+        <Input aria-label={`reason ${row.original.sourceRowNumber}`} value={reason[row.original.id] ?? ''} onChange={(e) => setReason({ ...reason, [row.original.id]: e.target.value })} placeholder="why" className="min-w-32" />
+      ),
+    }),
+    rq.display({
+      id: 'actions',
+      header: '',
+      meta: { hideLabel: true },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <Button size="sm" variant="outline" onClick={() => act(row.original.id, 'ACCEPT')}>
+            Accept
+          </Button>
+          <Button size="sm" variant="destructive" onClick={() => act(row.original.id, 'EXCLUDE')}>
+            Exclude
+          </Button>
+        </div>
+      ),
+    }),
+  ]);
+  return <DataTable columns={columns} data={rows} getRowId={(r) => r.id} />;
 }

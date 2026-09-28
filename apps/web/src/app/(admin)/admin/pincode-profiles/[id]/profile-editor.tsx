@@ -5,12 +5,12 @@ import { CheckCircle2, Eye, FileSpreadsheet, Info, MapPin, Rows3, Save, Settings
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { columnHelper, DataTable } from '@/components/data-table';
 import { FileUploadButton } from '@/components/file-upload-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BankMark, Callout, EmptyState, Field, humanize, PageHeader, SectionCard, selectClass } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
@@ -248,93 +248,85 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
             </div>
           </SectionCard>
           <SectionCard icon={FileSpreadsheet} tone="indigo" title="Batches" flush={p.batches.length > 0}>
-            {p.batches.length === 0 ? (
-              <EmptyState icon={FileSpreadsheet} title="No batches yet." />
-            ) : (
-              <Table responsive>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>File</TableHead>
-                    <TableHead>Uploaded</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Rows</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {p.batches.map((b) => (
-                    <TableRow key={b.id}>
-                      <TableCell data-label="File" className="text-xs break-all">
-                        {b.file.originalName}
-                      </TableCell>
-                      <TableCell data-label="Uploaded" className="text-xs">
-                        {formatDateTime(b.uploadedAt)}
-                        <div className="text-[11px] text-slate-500">{b.uploader.fullName}</div>
-                      </TableCell>
-                      <TableCell data-label="Status">
-                        <Badge variant={b.status === 'IMPORTED' ? 'success' : 'unknown'}>{humanize(b.status)}</Badge>
-                      </TableCell>
-                      <TableCell data-label="Rows" className="tabular-nums sm:text-right">
-                        {b.rowCount ?? '—'}
-                      </TableCell>
-                      <TableCell>
-                        {b.status === 'IMPORTED' ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={async () => {
-                              const r = await clientApi.get<Row[]>(`/pincode-batches/${b.id}/rows?pageSize=50`);
-                              setRows({ batchId: b.id, data: r.data, total: Number(r.meta.total ?? r.data.length) });
-                            }}
-                          >
-                            <Eye />
-                            Explore rows (audited)
-                          </Button>
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <BatchesTable
+              rows={p.batches}
+              onExplore={async (b) => {
+                const r = await clientApi.get<Row[]>(`/pincode-batches/${b.id}/rows?pageSize=50`);
+                setRows({ batchId: b.id, data: r.data, total: Number(r.meta.total ?? r.data.length) });
+              }}
+            />
           </SectionCard>
         </div>
       </div>
       {rows ? (
         <SectionCard icon={Rows3} tone="slate" title={`Rows (first ${rows.data.length} of ${rows.total})`} description="Raw values exactly as in the sheet; this view is logged." flush>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">Row</TableHead>
-                <TableHead>Pincode</TableHead>
-                <TableHead>Sourceability</TableHead>
-                {Object.keys(rows.data[0]?.raw ?? {}).map((h) => (
-                  <TableHead key={h}>{h}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.data.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="text-right text-xs tabular-nums">{r.sourceRowNumber}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {r.pincode || '(invalid)'}
-                    {r.wasPadded ? ' *' : ''}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={r.sourceability === 'SOURCEABLE' ? 'success' : r.sourceability === 'NOT_SOURCEABLE' ? 'unknown' : 'warning'}>{humanize(r.sourceability)}</Badge>
-                  </TableCell>
-                  {Object.keys(rows.data[0]?.raw ?? {}).map((h) => (
-                    <TableCell key={h} className="text-xs">
-                      {r.raw[h]}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <BatchRowsTable rows={rows.data} />
         </SectionCard>
       ) : null}
     </div>
   );
+}
+
+type Batch = ProfileDetail['batches'][number];
+const b = columnHelper<Batch>();
+const rw = columnHelper<Row>();
+
+function BatchesTable({ rows, onExplore }: { rows: Batch[]; onExplore: (b: Batch) => void }) {
+  const columns = b.columns([
+    b.accessor((x) => x.file.originalName, { id: 'file', header: 'File', meta: { cellClassName: 'text-xs break-all' } }),
+    b.accessor('uploadedAt', {
+      header: 'Uploaded',
+      sortFn: 'datetime',
+      meta: { cellClassName: 'text-xs' },
+      cell: ({ row }) => (
+        <>
+          {formatDateTime(row.original.uploadedAt)}
+          <div className="text-[11px] text-slate-500">{row.original.uploader.fullName}</div>
+        </>
+      ),
+    }),
+    b.accessor('status', {
+      header: 'Status',
+      cell: ({ getValue }) => <Badge variant={getValue() === 'IMPORTED' ? 'success' : 'unknown'}>{humanize(getValue())}</Badge>,
+    }),
+    b.accessor((x) => x.rowCount ?? -1, { id: 'rows', header: 'Rows', meta: { align: 'right' }, cell: ({ row }) => row.original.rowCount ?? '—' }),
+    b.display({
+      id: 'actions',
+      header: '',
+      meta: { hideLabel: true },
+      cell: ({ row }) =>
+        row.original.status === 'IMPORTED' ? (
+          <Button size="sm" variant="ghost" onClick={() => onExplore(row.original)}>
+            <Eye />
+            Explore rows (audited)
+          </Button>
+        ) : null,
+    }),
+  ]);
+  return <DataTable columns={columns} data={rows} getRowId={(x) => x.id} empty={<EmptyState icon={FileSpreadsheet} title="No batches yet." />} />;
+}
+
+/** Raw sheet rows exactly as received — dynamic columns from the batch's own header set. */
+function BatchRowsTable({ rows }: { rows: Row[] }) {
+  const rawHeaders = Object.keys(rows[0]?.raw ?? {});
+  const columns = rw.columns([
+    rw.accessor('sourceRowNumber', { header: 'Row', meta: { align: 'right', cellClassName: 'text-xs' } }),
+    rw.accessor('pincode', {
+      header: 'Pincode',
+      meta: { cellClassName: 'font-mono text-xs' },
+      cell: ({ row }) => `${row.original.pincode || '(invalid)'}${row.original.wasPadded ? ' *' : ''}`,
+    }),
+    rw.accessor('sourceability', {
+      header: 'Sourceability',
+      cell: ({ getValue }) => <Badge variant={getValue() === 'SOURCEABLE' ? 'success' : getValue() === 'NOT_SOURCEABLE' ? 'unknown' : 'warning'}>{humanize(getValue())}</Badge>,
+    }),
+    ...rawHeaders.map((h) =>
+      rw.accessor((r) => r.raw[h], {
+        id: `raw-${h}`,
+        header: h,
+        meta: { cellClassName: 'text-xs' },
+      }),
+    ),
+  ]);
+  return <DataTable responsive={false} columns={columns} data={rows} getRowId={(r) => r.id} />;
 }

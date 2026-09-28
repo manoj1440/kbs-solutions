@@ -5,11 +5,11 @@ import { Ban, Eye, EyeOff, Rows3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { columnHelper, DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState, humanize, SectionCard, selectClass } from '@/components/ui/kit';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
@@ -49,7 +49,6 @@ export function BatchRows({ batchId, stage }: { batchId: string; stage: string }
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keep the current reveal/filter; only the stage triggers a reload
   }, [stage]);
-  const blank = <em className="text-slate-400">blank</em>;
   return (
     <SectionCard
       icon={Rows3}
@@ -98,63 +97,67 @@ export function BatchRows({ batchId, stage }: { batchId: string; stage: string }
         {msg ? <p className="text-destructive text-sm">{msg}</p> : null}
         {rows && rows.length === 0 ? <EmptyState icon={Rows3} title="No rows." description={state ? 'No row in this batch has that match state.' : undefined} /> : null}
       </div>
-      {rows && rows.length ? (
-        <Table responsive>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">Row</TableHead>
-              <TableHead>State</TableHead>
-              <TableHead>References</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead>Decision</TableHead>
-              <TableHead>Activation</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Explanation</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell data-label="Row" className="text-xs text-slate-500 tabular-nums sm:text-right">
-                  {r.sourceRowNumber}
-                </TableCell>
-                <TableCell data-label="State">
-                  <Badge variant={STATE[r.matchState] ?? 'unknown'}>{humanize(r.matchState)}</Badge>
-                  {r.matchedLead ? <div className="mt-1 font-mono text-[11px] whitespace-nowrap text-slate-600">{r.matchedLead.publicRef}</div> : null}
-                </TableCell>
-                <TableCell data-label="References">
-                  {r.referenceValues.length ? (
-                    <div className="grid gap-1">
-                      {r.referenceValues.map((x) => (
-                        <span key={`${x.kind}-${x.value}`} className="min-w-0 font-mono text-[11px] text-slate-700">
-                          <span className="block text-[10px] text-slate-400">{x.kind.replace('APPLICATION_', 'APP ').replace('_', ' ')}:</span>
-                          <span className="break-all">{x.value}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    '—'
-                  )}
-                </TableCell>
-                <TableCell data-label="Stage" className="text-xs text-slate-800">{r.mapped.currentStage || blank}</TableCell>
-                <TableCell data-label="Decision" className="text-xs text-slate-800">{r.mapped.finalDecision || blank}</TableCell>
-                <TableCell data-label="Activation" className="text-xs text-slate-800">{r.mapped.cardActivationStatus || blank}</TableCell>
-                <TableCell data-label="Customer" className="text-xs">{r.mapped.customerName}</TableCell>
-                <TableCell data-label="Explanation" className="text-xs text-slate-500">
-                  {r.matchExplanation}
-                  {r.matchState === 'UNMATCHED' || r.matchState === 'CONFLICT' ? (
-                    <div className="mt-1.5">
-                      <Resolve rowId={r.id} refs={r.referenceValues} onDone={() => void load()} />
-                    </div>
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      ) : null}
+      {rows && rows.length ? <BatchRowsTable rows={rows} reload={() => void load()} /> : null}
     </SectionCard>
   );
+}
+
+const c = columnHelper<Row>();
+const BLANK = <em className="text-slate-400">blank</em>;
+
+function BatchRowsTable({ rows, reload }: { rows: Row[]; reload: () => void }) {
+  const columns = c.columns([
+    c.accessor('sourceRowNumber', {
+      header: 'Row',
+      meta: { align: 'right', cellClassName: 'text-xs text-slate-500' },
+    }),
+    c.accessor('matchState', {
+      header: 'State',
+      cell: ({ row }) => (
+        <>
+          <Badge variant={STATE[row.original.matchState] ?? 'unknown'}>{humanize(row.original.matchState)}</Badge>
+          {row.original.matchedLead ? <div className="mt-1 font-mono text-[11px] whitespace-nowrap text-slate-600">{row.original.matchedLead.publicRef}</div> : null}
+        </>
+      ),
+    }),
+    c.display({
+      id: 'references',
+      header: 'References',
+      cell: ({ row }) =>
+        row.original.referenceValues.length ? (
+          <div className="grid gap-1">
+            {row.original.referenceValues.map((x) => (
+              <span key={`${x.kind}-${x.value}`} className="min-w-0 font-mono text-[11px] text-slate-700">
+                <span className="block text-[10px] text-slate-400">{x.kind.replace('APPLICATION_', 'APP ').replace('_', ' ')}:</span>
+                <span className="break-all">{x.value}</span>
+              </span>
+            ))}
+          </div>
+        ) : (
+          '—'
+        ),
+    }),
+    c.accessor((r) => r.mapped.currentStage, { id: 'stage', header: 'Stage', meta: { cellClassName: 'text-xs text-slate-800' }, cell: ({ row }) => row.original.mapped.currentStage || BLANK }),
+    c.accessor((r) => r.mapped.finalDecision, { id: 'decision', header: 'Decision', meta: { cellClassName: 'text-xs text-slate-800' }, cell: ({ row }) => row.original.mapped.finalDecision || BLANK }),
+    c.accessor((r) => r.mapped.cardActivationStatus, { id: 'activation', header: 'Activation', meta: { cellClassName: 'text-xs text-slate-800' }, cell: ({ row }) => row.original.mapped.cardActivationStatus || BLANK }),
+    c.accessor((r) => r.mapped.customerName, { id: 'customer', header: 'Customer', meta: { cellClassName: 'text-xs' } }),
+    c.display({
+      id: 'explanation',
+      header: 'Explanation',
+      meta: { cellClassName: 'text-xs text-slate-500' },
+      cell: ({ row }) => (
+        <>
+          {row.original.matchExplanation}
+          {row.original.matchState === 'UNMATCHED' || row.original.matchState === 'CONFLICT' ? (
+            <div className="mt-1.5">
+              <Resolve rowId={row.original.id} refs={row.original.referenceValues} onDone={reload} />
+            </div>
+          ) : null}
+        </>
+      ),
+    }),
+  ]);
+  return <DataTable columns={columns} data={rows} getRowId={(r) => r.id} />;
 }
 
 /** F-504 §4: resolve a quarantined row — link by KBS lead reference (never by customer name), ignore, or prefer another row. */
