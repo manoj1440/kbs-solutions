@@ -24,6 +24,7 @@
   ],
   "scripts": {
     "build": "tsup && node scripts/emit-css.mjs",
+    "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test",
     "test": "vitest run"

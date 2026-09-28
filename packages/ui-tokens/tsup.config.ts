@@ -1,2 +1,10 @@
 import { defineConfig } from 'tsup';
-export default defineConfig({ entry: ['src/index.ts'], format: ['esm', 'cjs'], dts: true, clean: true, target: 'es2022' });
+// ponytail: clean off in watch (keeps dist present for consumers); onSuccess regenerates tokens.css per rebuild
+export default defineConfig((options) => ({
+  entry: ['src/index.ts'],
+  format: ['esm', 'cjs'],
+  dts: true,
+  clean: !options.watch,
+  onSuccess: options.watch ? 'node scripts/emit-css.mjs' : undefined,
+  target: 'es2022',
+}));

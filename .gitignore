@@ -33,6 +33,8 @@ apps/mobile/ios/
 # local data
 docker/data/
 dump.rdb
+# tsup watch → api recompile trigger (dev only)
+apps/api/src/watch-bump.ts
 
 # Playwright
 apps/web/test-results/

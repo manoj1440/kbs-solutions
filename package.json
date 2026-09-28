@@ -6,7 +6,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
-    "dev": "turbo run dev --filter=api --filter=web",
+    "dev": "turbo run dev --filter=api --filter=web --filter=@kbs/shared --filter=@kbs/ui-tokens",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
