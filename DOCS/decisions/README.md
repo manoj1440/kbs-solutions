@@ -18,3 +18,4 @@ Template: `ADR-000-template.md`.
 | ADR-011 | Single-tenant, one Admin | Accepted |
 | ADR-012 | Identifiers: UUIDv7 internal, Crockford public refs | Accepted |
 | ADR-013 | MIS preview/apply as background jobs above a row threshold | Accepted |
+| ADR-014 | Common DataTable on TanStack Table v9 (shadcn guide) | Accepted |

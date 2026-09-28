@@ -9,7 +9,7 @@ Premium operations console: calm grey canvas, white elevated surfaces, teal prim
 4. **One `h1` per page**, rendered by `PageHeader`.
 5. Links inside tables are styled automatically (teal, no underline) — do not add `underline`.
 6. Use `EmptyState` instead of "No … yet." table rows; `Callout` instead of ad-hoc coloured boxes.
-7. No new dependencies; icons from `lucide-react`; charts are CSS (`Meter`) or inline SVG.
+7. No new dependencies; icons from `lucide-react`; charts are CSS (`Meter`) or inline SVG. Exceptions: the shadcn `dropdown-menu`/`checkbox` primitives and TanStack Table v9 behind the common `DataTable` (ADR-014).
 8. Numbers: `tabular-nums`, right-aligned in tables.
 
 ## Components (`@/components/ui/kit`)
