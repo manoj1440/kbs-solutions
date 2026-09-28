@@ -37,3 +37,4 @@ dump.rdb
 # Playwright
 apps/web/test-results/
 apps/web/playwright-report/
+.playwright-mcp/
