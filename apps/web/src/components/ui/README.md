@@ -31,4 +31,29 @@ Premium operations console: calm grey canvas, white elevated surfaces, teal prim
 
 Tones: `teal` (primary/money), `indigo` (bank data), `sky` (info/activity), `violet` (people), `amber` (attention), `rose` (errors/exceptions), `emerald` (success/paid), `slate` (neutral).
 
+## Tables (`@/components/data-table`, F-813 / ADR-014)
+
+Never hand-write `<Table>` — every table renders through `DataTable` (ESLint enforces this; `ui/table.tsx` is the low-level primitive it wraps).
+
+```tsx
+'use client';
+const c = columnHelper<Row>();
+export function MyTable({ rows }: { rows: Row[] }) {
+  const columns = c.columns([
+    c.accessor('name', { header: 'Name' }),                                          // sortable text
+    c.accessor('amountInr', { header: 'Amount', meta: { align: 'right' } }),          // numeric + right
+    c.accessor('at', { header: 'When', sortFn: 'datetime', cell: DateTimeCell }),    // date sort
+    c.display({ id: 'actions', header: '', meta: { hideLabel: true }, cell: … }),    // no data-label
+  ]);
+  return <DataTable columns={columns} data={rows} getRowId={(r) => r.id} empty={<EmptyState … />} />;
+}
+```
+
+- `variant="panel"` (default when inside `DataTablePanel`) adds edge padding + sticky header for scrollable sections; use `DataTablePanel` + `DataTablePagination` (server `?page=` links) for the F-811 list layout.
+- Column meta: `label` (display name for the View toggle), `hideLabel`, `align:'right'`, `className`/`headerClassName`/`cellClassName`.
+- Features: `initialSorting`, `viewOptions` (column toggle), `enableRowSelection`, `renderSubRow`/`getSubRowId`, `getRowProps`, `pagedOnServer` (labels sorting as page-local).
+- `responsive` (default) = phone card mode via `data-label`; `responsive="compact"` for dense ops tables; `responsive={false}` for raw grids (e.g. dynamic columns).
+- Shared cells: `Dash`, `DateCell`, `DateTimeCell`, `MonoCell`, `PersonCell`, `BankCell`.
+- **RSC boundary:** column defs are functions → table components live in `'use client'` files; server pages pass rows + rendered `empty`/`toolbar`/`footer` nodes only.
+
 Primitives in this folder (`Button` incl. `soft` variant, `Badge` soft tones, `Card`, `Input`, `Table`) keep shadcn APIs.

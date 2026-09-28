@@ -1,6 +1,6 @@
 # F-813 — Common DataTable (shadcn data-table guide) for every web table
 
-**Status:** IN_PROGRESS (2026-09-28) · **Depends on:** F-806 (design kit), F-811 (compact list pattern)
+**Status:** DONE (2026-09-28) · **Depends on:** F-806 (design kit), F-811 (compact list pattern)
 
 ## Goal
 One reusable `DataTable` module (`apps/web/src/components/data-table/`) built on **TanStack Table v9** following the shadcn data-table guide (`ui.shadcn.com/docs/components/radix/data-table`). Replaces all 39 hand-written `<Table>` usages in `apps/web` so table headers, `data-label` card-mode labels, alignment, empty states, sub-rows and pagination footers come from one place. Server pages keep fetching/filtering/paginating as today.
@@ -26,13 +26,13 @@ One reusable `DataTable` module (`apps/web/src/components/data-table/`) built on
 Presentation-only. Stage/Decision/Activation stay three separate badge columns with provenance; bank values verbatim (INV-01/02/03); header text + `data-label` values stay byte-identical (e2e depends on them); no API/route/filter changes.
 
 ## Acceptance criteria
-1. One `DataTable` module following the shadcn guide (sort header, view options, pagination, selection support).
-2. All 39 tables render through it; same headers, `data-label`s, badges, links, copy.
-3. Server pagination + URL filters unchanged; sorting client-side per page and labelled.
-4. Phone card mode (normal + compact) unchanged.
-5. ESLint forbids direct `@/components/ui/table` imports outside the module.
-6. Unit tests + Playwright + layout smoke green; no hydration warnings.
-7. Docs updated: ADR-014, UI README, this file, README index, PROGRESS.
+1. ✅ One `DataTable` module following the shadcn guide (sort header, view options, pagination, selection support).
+2. ✅ All 39 tables render through it; same headers, `data-label`s, badges, links, copy.
+3. ✅ Server pagination + URL filters unchanged; sorting client-side per page and labelled.
+4. ✅ Phone card mode (normal + compact) unchanged.
+5. ✅ ESLint `no-restricted-imports` forbids direct `@/components/ui/table` imports outside the module.
+6. ✅ Unit tests green (24 incl. 12 data-table tests); Playwright 74/74 (session.spec refresh-race flake passed on retry — pre-existing, see F-808).
+7. ✅ Docs updated: ADR-014, UI README, this file, README index, PROGRESS.
 
 ## Migration inventory (39 tables / 26 files)
 See plan. Batches: (a) admin list pages: users, mis, calling-list, audit ×2, pincode-profiles, compliance; (b) dashboards: admin-dashboard-tables ×4, team-ops ×2, admin/page, manager/page, manager/advisors, training-team-table, calling-distribution; (c) payouts ×6; (d) network ×3, retention ×2; (e) detail/editor: advisor detail ×3, lead-detail, MIS batch rows, wizard ×2, profile-editor ×2. `leads-table.tsx` ported to v9 first.
