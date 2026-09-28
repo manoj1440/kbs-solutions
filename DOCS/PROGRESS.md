@@ -41,7 +41,8 @@ pnpm dev                                 # api :4000 (docs /api/docs), web :3000
 
 ### 2026-09-28 — Session 15 (F-812 Admin home = business numbers, on the Mac)
 - User: `/admin` must show the business at first glance (team sizes, calling statuses, MIS applications/cards/payout, banks/cards configured, recent leads) — no config. Built `GET /dashboards/admin/home` (passthrough over F-808/F-809/F-810/F-606 summaries; Admin only) and rewrote `/admin` as one fetch → Team · Calling · Bank MIS & payouts tiles + Recent leads table. Deleted the period/filter helpers (`lib/admin-overview.ts`). Report drill-down links moved off `/admin?period=…`.
-- Checks: typecheck, lint (TanStack warning only), API e2e dashboards 6/6, web unit 7/7, Playwright admin-smoke 61 pass / 1 skip, zero overflow at 1440/390. Details: `DOCS/features/F-812-admin-home-business-numbers.md`.
+- Three feedback rounds the same day: vibrant tiles + page scroll; then the home became date-filtered (default today) — Business (leads → approved → activated → payout) + Calling performance (period tiles + per-caller table) + recent leads, team demoted to pills; `/dashboards/admin/home?from&to`. Unified the approved/declined/active classification into `decisionBucket`/`activationBucket` (`@kbs/shared`) used by home, leads summary and MIS summary.
+- Checks (last round): typecheck, lint (TanStack warning only), shared unit 48/48, web unit 11/11, API e2e dashboards 6/6, Playwright admin-smoke 61 pass / 1 skip, zero overflow at 1440/1280/390. Details: `DOCS/features/F-812-admin-home-business-numbers.md`.
 - Not pushed.
 
 ### 2026-09-27 — Session 14 (F-807 Admin navigation + business home, on the Mac)

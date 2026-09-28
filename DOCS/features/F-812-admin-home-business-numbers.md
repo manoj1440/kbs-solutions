@@ -20,6 +20,12 @@ User (2026-09-28): "/admin should show the business at first glance, not config 
 - [x] API e2e (dashboards suite, F-811 test: totals reconcile with raw table counts, Manager → 403).
 - [x] typecheck, lint, web unit, Playwright admin-smoke (61 pass / 1 skip), zero overflow at 1440 and 390.
 
+## Rounds 2–3 (same day, user feedback)
+- "Too plain, table shows 1 row": removed the viewport lock (`lg:h-[calc(100dvh-6rem)]`) — page scrolls, table shows every row; tinted `Stat` tiles with icon + share `Meter`.
+- "Team cards too big; my business is leads → cards → payout and calling performance, per date, default today": `GET /dashboards/admin/home?from&to` (`DashboardQuery`). Response: `range`, `people`, `catalogue`, `cumulative{mis,leads,payouts}` (all time), `business{leads, approved, activated, declined, inProcess, decision, activation, payouts}` (period, lead created date; payouts by eligible date — from `DashboardMetricsService.advisors`), `calling{records, calls, callbacks, outcomes, shares, byCaller, pipeline}` (period from `DashboardMetricsService.calling` + `telecallers()`; `pipeline` = all-time record statuses), `recentLeads` (period). Web: `PillNav` Today · 7 days · This month · 30 days · All time + custom dates (`lib/admin-overview.ts` restored: `PERIODS`/`resolvePeriod`, default `today`); team as one row of pills; Business hero panel (4 period tiles + All-time strip); Calling performance panel (8 period tiles + per-caller table); Recent leads.
+- Consistency: approved/declined/in-process/active now use one shared rule `decisionBucket` / `activationBucket` (`@kbs/shared` status-tone.ts) in the home, `LeadsService.summary` and `MisImportService.applicationsSummary` (banks write Approve/Approved/APPROVED; the strict `statusTone` vocabulary stays for badges only).
+- "Interested" on the home = outcomes `CONNECTED_INTERESTED` + `CONNECTED_LINK_OR_PDF_SHARED`.
+
 ## Follow-ups
 - Endpoint returns `payouts.approvedUnpaid` / `confirmedTransfersInr` which the home does not show yet.
 - Attention items (payout approvals awaiting Admin, unmatched MIS rows) were dropped from the home on purpose; they remain on their own pages.
