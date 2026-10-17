@@ -6,7 +6,7 @@ Maps REQ-09, REQ-21, REQ-24 to concrete controls. Every row is either **CORE** (
 |---|---|---|
 | OTP-only auth, no password columns | CORE | `OtpChallenge` hashed codes; `User` has no password. |
 | OTP rate limits | CORE | `SystemConfig auth.otp.*`; per-mobile and per-IP; lockout after 5 wrong tries. |
-| Access/refresh JWT with rotation + reuse detection | CORE | Family revoke on reuse. |
+| Access/refresh JWT with rotation + reuse detection | CORE | Family revoke on reuse. Atomic claim + 30 s benign-retry window for lost/concurrent refreshes (ADR-015). |
 | Server-side RBAC + ownership | CORE | `RolesGuard` + scoped query builders; RBAC-01/02 tests. |
 | Telecaller office-network policy | F-301 | Egress IP allowlist, WFH exceptions, fail closed. |
 | Android FLAG_SECURE on protected screens | F-302 | `expo-screen-capture` `preventScreenCaptureAsync` in protected route groups; document residual risk. |
