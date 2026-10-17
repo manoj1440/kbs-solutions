@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EmptyState, Meter, MiniStat, StatusDot } from '@/components/ui/kit';
+import { EmptyState, Meter, MiniStat, StatusDot, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -22,14 +22,14 @@ export default async function TrainingAdmin() {
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Training modules</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+      <StatStrip cols={4}>
         <MiniStat label="Published modules" value={`${published} / ${mods.data.length}`} hint="Live for Telecallers" tone="emerald" />
         <MiniStat label="Live questions" value={liveQuestions} hint="Across all modules" tone="sky" />
         <MiniStat label="Videos uploaded" value={`${videos} / ${mods.data.length}`} hint="One video per module" tone="violet" />
         <MiniStat label="Drafts awaiting publish" value={drafts} hint="Unpublished drafts" tone={drafts ? 'amber' : 'slate'} />
-      </div>
-      <section aria-label="Training modules" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <div className="flex items-center justify-end gap-2 border-b border-slate-100 p-3">
+      </StatStrip>
+      <section aria-label="Training modules" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+        <div className="flex items-center justify-end gap-2 border-b border-border-subtle p-3">
           <Button variant="outline" size="sm" className="h-9" asChild>
             <Link href="/admin/training/team">
               <ListChecks />
@@ -55,7 +55,7 @@ export default async function TrainingAdmin() {
                     key={m.id}
                     href={`/admin/training/${m.sequence}`}
                     prefetch={false}
-                    className="lift group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+                    className="lift group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
                   >
                     <div className={cn('relative flex items-start justify-between gap-3 px-5 pt-5 pb-4', live ? 'bg-gradient-to-br from-sky-50 to-white' : 'bg-gradient-to-br from-amber-50/70 to-white')}>
                       <div className="flex items-center gap-3">
@@ -68,39 +68,39 @@ export default async function TrainingAdmin() {
                           {String(m.sequence).padStart(2, '0')}
                         </span>
                         <div>
-                          <p className="text-[10.5px] font-semibold tracking-[0.14em] text-slate-500 uppercase">Module {m.sequence}</p>
+                          <p className="text-2xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">Module {m.sequence}</p>
                           <Badge variant={live ? 'success' : 'warning'} className="mt-1">
                             {live ? `v${m.version}` : 'Draft'}
                           </Badge>
                         </div>
                       </div>
-                      <ArrowUpRight className="size-4 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-teal-700" aria-hidden="true" />
+                      <ArrowUpRight className="size-4 text-fg-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-teal-700" aria-hidden="true" />
                     </div>
                     <div className="flex flex-1 flex-col gap-4 px-5 pb-5">
-                      <p className="text-[15px] leading-snug font-semibold text-slate-900 group-hover:text-teal-800">{m.title}</p>
+                      <p className="text-[15px] leading-snug font-semibold text-foreground group-hover:text-teal-800">{m.title}</p>
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-xl bg-slate-50 px-3 py-2">
-                          <p className="text-[10.5px] font-medium tracking-wide text-slate-500 uppercase">Questions</p>
-                          <p className="text-lg font-semibold text-slate-900 tabular-nums">{m.questionCount}</p>
+                        <div className="rounded-xl bg-surface-muted px-3 py-2">
+                          <p className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Questions</p>
+                          <p className="text-lg font-semibold text-foreground tabular-nums">{m.questionCount}</p>
                         </div>
-                        <div className="rounded-xl bg-slate-50 px-3 py-2">
-                          <p className="text-[10.5px] font-medium tracking-wide text-slate-500 uppercase">Pass mark</p>
-                          <p className="text-lg font-semibold text-slate-900 tabular-nums">{m.passThresholdPct}%</p>
+                        <div className="rounded-xl bg-surface-muted px-3 py-2">
+                          <p className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Pass mark</p>
+                          <p className="text-lg font-semibold text-foreground tabular-nums">{m.passThresholdPct}%</p>
                         </div>
                       </div>
-                      <div className="text-[12.5px] text-slate-600">
+                      <div className="text-xs text-fg-2">
                         {m.questionCount} live questions{m.draftVersion ? ` · ${m.draftQuestionCount ?? 0} in draft v${m.draftVersion}` : ''}
                       </div>
                       <ul className="grid gap-1.5">
                         {checks.map((c) => (
-                          <li key={c.label} className="flex items-center gap-2 text-[12.5px]">
-                            {c.ok ? <CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> : <CircleDashed className="size-4 text-slate-400" aria-hidden="true" />}
-                            <span className={c.ok ? 'text-slate-700' : 'text-slate-500'}>{c.label}</span>
+                          <li key={c.label} className="flex items-center gap-2 text-xs">
+                            {c.ok ? <CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> : <CircleDashed className="size-4 text-fg-3" aria-hidden="true" />}
+                            <span className={c.ok ? 'text-fg-2' : 'text-muted-foreground'}>{c.label}</span>
                           </li>
                         ))}
                       </ul>
-                      <div className="mt-auto grid gap-1.5 border-t border-slate-100 pt-3">
-                        <div className="flex items-center justify-between text-[11px] font-medium text-slate-500">
+                      <div className="mt-auto grid gap-1.5 border-t border-border-subtle pt-3">
+                        <div className="flex items-center justify-between text-2xs font-medium text-muted-foreground">
                           <StatusDot tone={done === 3 ? 'emerald' : 'amber'}>{done === 3 ? 'Ready' : 'Setup incomplete'}</StatusDot>
                           <span className="tabular-nums">{done} of 3</span>
                         </div>

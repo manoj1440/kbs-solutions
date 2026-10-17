@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Callout, EmptyState, Field, humanize, PageHeader, SectionCard, StatusDot } from '@/components/ui/kit';
+import { Callout, DetailHeader, EmptyState, Field, humanize, IconTile, SectionCard, StatusDot } from '@/components/ui/kit';
 import { Label } from '@/components/ui/label';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
@@ -84,12 +84,11 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
 
   return (
     <div className="grid max-w-4xl gap-6">
-      <PageHeader
-        icon={GraduationCap}
-        tone="sky"
-        eyebrow="People · Training content"
+      <DetailHeader
+        back={{ href: '/admin/training', label: 'Training content' }}
+        visual={<IconTile icon={GraduationCap} tone="sky" size="lg" className="hidden sm:inline-flex" />}
         title={`Module ${initial.sequence}`}
-        description={
+        subtitle={
           <>
             Live version {initial.version} · {initial.questionCount} questions
             {initial.draftVersion ? ` · draft v${initial.draftVersion} (${initial.draftQuestionCount ?? 0} questions) awaiting publish` : ''}
@@ -109,20 +108,20 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
             </Field>
           </div>
           <Field label="Learning material (optional, markdown)" htmlFor="material">
-            <textarea id="material" className="min-h-32 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-[inset_0_1px_1px_rgb(15_23_42/3%)] outline-none hover:border-slate-300 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25" value={material} onChange={(e) => setMaterial(e.target.value)} />
+            <textarea id="material" className="min-h-32 w-full rounded-lg border border-border bg-card p-3 text-sm shadow-pop outline-none hover:border-border-strong focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25" value={material} onChange={(e) => setMaterial(e.target.value)} />
           </Field>
-          <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3">
+          <div className="grid gap-2 rounded-xl border border-border bg-surface-muted p-3">
             <Field label="Video (mp4/webm)" htmlFor="video">
               <Input id="video" type="file" accept="video/mp4,video/webm" onChange={(e) => e.target.files?.[0] && void uploadVideo(e.target.files[0])} />
             </Field>
-            <p className="flex min-w-0 items-center gap-2 text-xs text-slate-500">
+            <p className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
               <Video className="size-3.5 shrink-0" aria-hidden="true" />
               <StatusDot tone={videoFileId ? 'emerald' : 'slate'}>
                 <span className="break-all">{videoFileId ? `Attached file ${videoFileId}` : 'No video attached'}</span>
               </StatusDot>
             </p>
           </div>
-          <div className="border-t border-slate-100 pt-4">
+          <div className="border-t border-border-subtle pt-4">
             <Button onClick={saveDetails} disabled={busy}>
               <Save />
               Save details
@@ -144,10 +143,10 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
       >
         <div className="grid gap-4">
           {questions.map((q, i) => (
-            <div key={i} className="grid gap-2.5 rounded-xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+            <div key={i} className="grid gap-2.5 rounded-xl border border-border bg-card p-4 shadow-card">
               <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-slate-700">
-                  <span className="inline-flex size-6 items-center justify-center rounded-lg bg-violet-50 text-[11px] text-violet-700 tabular-nums ring-1 ring-violet-100">{i + 1}</span>
+                <span className="inline-flex items-center gap-2 text-xs font-semibold text-fg-2">
+                  <span className="inline-flex size-6 items-center justify-center rounded-lg bg-violet-50 text-2xs text-violet-700 tabular-nums ring-1 ring-violet-100">{i + 1}</span>
                   <Label>Question {i + 1}</Label>
                 </span>
                 <Button variant="ghost" size="sm" onClick={() => setQuestions((qs) => qs.filter((_, idx) => idx !== i))}>
@@ -160,7 +159,7 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
                 {q.options.map((o, oi) => (
                   <div key={o.key} className={cn('flex items-center gap-2 rounded-lg px-1.5 py-1', q.correctKey === o.key && 'bg-emerald-50/70 ring-1 ring-emerald-100')}>
                     <input type="radio" className="accent-emerald-600" name={`correct-${i}`} checked={q.correctKey === o.key} onChange={() => setQ(i, { correctKey: o.key })} aria-label={`Mark option ${o.key} correct`} />
-                    <span className={cn('w-5 font-mono text-sm', q.correctKey === o.key ? 'font-semibold text-emerald-700' : 'text-slate-500')}>{o.key}</span>
+                    <span className={cn('w-5 font-mono text-sm', q.correctKey === o.key ? 'font-semibold text-emerald-700' : 'text-muted-foreground')}>{o.key}</span>
                     <Input value={o.text} onChange={(e) => setQ(i, { options: q.options.map((x, xi) => (xi === oi ? { ...x, text: e.target.value } : x)) })} />
                     {q.options.length > 2 ? (
                       <Button variant="ghost" size="sm" onClick={() => setQ(i, { options: q.options.filter((_, xi) => xi !== oi), correctKey: q.correctKey === o.key ? (q.options[0]?.key ?? 'A') : q.correctKey })}>
@@ -179,7 +178,7 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
             </div>
           ))}
           {questions.length === 0 ? <EmptyState icon={ListTodo} title="No questions" description="Add at least one question before saving the draft." /> : null}
-          <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap gap-2 border-t border-border-subtle pt-4">
             <Button variant="outline" onClick={() => setQuestions((qs) => [...qs, { text: '', options: [{ key: 'A', text: '' }, { key: 'B', text: '' }], correctKey: 'A' }])}>
               <Plus />
               Add question

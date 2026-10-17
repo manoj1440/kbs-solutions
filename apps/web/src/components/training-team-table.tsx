@@ -26,7 +26,7 @@ export function TrainingTeamTable({ rows, linkBase }: { rows: TrainingTeamRow[];
               <Link href={`${linkBase}/${t.id}`} className="font-medium">
                 {t.fullName}
               </Link>
-              <div className="font-mono text-[11px] text-slate-500">{t.employeeCode}</div>
+              <div className="font-mono text-2xs text-muted-foreground">{t.employeeCode}</div>
             </div>
           </div>
         );
@@ -43,7 +43,7 @@ export function TrainingTeamTable({ rows, linkBase }: { rows: TrainingTeamRow[];
             {r.modules.length ? (
               <div className="flex items-center gap-2">
                 <Meter value={passed} max={3} tone={passed === 3 ? 'emerald' : r.status === 'EXPIRED_DEACTIVATED' ? 'rose' : 'sky'} className="h-1.5 w-16" label={`${passed} of 3 modules passed`} />
-                <span className="text-[11px] text-slate-500 tabular-nums">{passed}/3</span>
+                <span className="text-2xs text-muted-foreground tabular-nums">{passed}/3</span>
               </div>
             ) : null}
           </div>
@@ -71,7 +71,7 @@ export function TrainingTeamTable({ rows, linkBase }: { rows: TrainingTeamRow[];
           return m ? (
             <span className="inline-flex items-center gap-1 whitespace-nowrap">
               <Badge variant={m.status === 'PASSED' ? 'success' : m.status === 'LOCKED' ? 'unknown' : 'info'}>{m.status === 'PASSED' ? 'Passed' : m.status === 'LOCKED' ? 'Locked' : 'Open'}</Badge>
-              {m.bestScorePct !== null ? <span className="text-slate-500 tabular-nums">{m.bestScorePct}%</span> : null}
+              {m.bestScorePct !== null ? <span className="text-muted-foreground tabular-nums">{m.bestScorePct}%</span> : null}
             </span>
           ) : (
             '—'
