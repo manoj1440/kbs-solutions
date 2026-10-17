@@ -12,9 +12,9 @@ import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
 /**
- * F-809: one-step MIS import — pick the bank, drop the standard-format workbook, done. The server resolves the bank's
- * approved profile, parses + maps on create, and the modal then triggers apply (match runs inside apply). Large files
- * become a background job; either way the batch page shows the result.
+ * F-809/F-816: one-step MIS import — pick the bank, choose the file, done. Every bank sends the same standard format,
+ * so there is nothing to map; the modal creates the batch and applies it (match runs inside apply). Large files become a
+ * background job; either way the upload page shows what changed.
  */
 export function UploadMisButton({ banks }: { banks: { id: string; label: string }[] }) {
   const router = useRouter();
@@ -36,7 +36,7 @@ export function UploadMisButton({ banks }: { banks: { id: string; label: string 
         size="sm"
         className="h-9 shrink-0"
         disabled={banks.length === 0}
-        title={banks.length === 0 ? 'No bank has an approved MIS profile yet' : undefined}
+        title={banks.length === 0 ? 'Add a bank under Products first' : undefined}
         onClick={() => {
           setMsg(null);
           setOpen(true);
@@ -79,7 +79,7 @@ export function UploadMisButton({ banks }: { banks: { id: string; label: string 
             <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-card text-teal-700 shadow-sm ring-1 ring-teal-100">
               <FileUp className="size-5" aria-hidden="true" />
             </span>
-            <p className="text-xs text-muted-foreground">Excel (.xlsx) or CSV in the standard MIS layout — columns are recognised automatically.</p>
+            <p className="text-xs text-muted-foreground">The bank’s MIS file, Excel (.xlsx) or CSV. Lead statuses update as soon as it is read.</p>
             <FileUploadButton
               purpose="mis"
               accept=".xlsx,.csv"
@@ -94,12 +94,12 @@ export function UploadMisButton({ banks }: { banks: { id: string; label: string 
                     try {
                       await clientApi.post(`/mis/batches/${r.data.id}/apply`, {});
                     } catch {
-                      /* apply validation lives on the batch page */
+                      /* the upload page offers "Update leads" again */
                     }
                   }
                   router.push(`/admin/mis/batches/${r.data.id}`);
                 } catch (e) {
-                  setMsg(e instanceof ApiClientError ? e.message : 'Could not create the batch.');
+                  setMsg(e instanceof ApiClientError ? e.message : 'Could not read the file.');
                   setBusy(false);
                 }
               }}

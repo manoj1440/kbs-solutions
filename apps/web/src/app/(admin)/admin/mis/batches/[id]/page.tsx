@@ -1,202 +1,56 @@
 import { formatDateTime } from '@kbs/shared';
-import { Ban, Check, Copy, FileSpreadsheet, Fingerprint, Info, Link2Off, Rows3, ScanLine, TriangleAlert, X } from 'lucide-react';
-import Link from 'next/link';
+import { Ban, FileSpreadsheet } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { Avatar, BankMark, Callout, DetailHeader, humanize, IconTile, SectionCard, StatCard, StatGrid } from '@/components/ui/kit';
+import { BankMark, Callout, DetailHeader, StatCard, StatGrid } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
-import { cn } from '@/lib/utils';
 
-import { type MisJob, PipelineActions } from './pipeline';
+import { type MisJob, UploadStatus } from './result';
 import { BatchRows } from './rows';
 
-interface PreviewReport {
-  generatedAt: string;
-  totals: Record<string, number>;
-  referenceCoverage: number;
-  blankStatusCounts: Record<string, number>;
-  newValues: Record<string, string[]>;
-  duplicateReferences: { reference: string; rows: number }[];
-  samples: Record<string, { row: number; customer: string; references: { kind: string; value: string }[]; explanation: string | null }[]>;
-}
 interface Batch {
   id: string;
   publicRef: string;
   stage: string;
   uploadedAt: string;
-  sheetName: string | null;
-  totals: Record<string, unknown> | null;
-  preview: { headers?: string[]; resolved?: Record<string, string>; missing?: string[]; unmapped?: string[]; report?: PreviewReport } | null;
+  totals: Record<string, number> | null;
   rejectReason: string | null;
-  appliedAt: string | null;
   bank: { code: string; displayName: string };
-  profile: { id: string; name: string; version: number; snapshotMode: string };
-  file: { originalName: string; sizeBytes: number };
-  uploader: { fullName: string; role: string };
+  file: { originalName: string };
+  uploader: { fullName: string };
 }
 
-const STAGE_TONE: Record<string, 'info' | 'warning' | 'success' | 'destructive' | 'unknown'> = { UPLOADED: 'info', PARSED: 'info', MAPPED: 'warning', PREVIEWED: 'warning', APPLYING: 'info', APPLIED: 'success', FAILED: 'destructive', REJECTED: 'destructive' };
-const STEPS = [
-  { key: 'UPLOADED', label: 'Uploaded', hint: 'File stored immutably' },
-  { key: 'PARSED', label: 'Parsed', hint: 'Every cell kept as text' },
-  { key: 'MAPPED', label: 'Mapped', hint: 'Headers resolved to fields' },
-  { key: 'PREVIEWED', label: 'Previewed', hint: 'Dry-run match to leads' },
-  { key: 'APPLIED', label: 'Applied', hint: 'Writes bank status' },
-] as const;
-type StepState = 'done' | 'next' | 'running' | 'failed' | 'todo' | 'stopped' | 'rejected';
-
-/** Presentation of the batch stage only — each stage means that step is complete. */
-function stepStates(stage: string): StepState[] {
-  if (stage === 'REJECTED') return ['stopped', 'stopped', 'stopped', 'stopped', 'rejected'];
-  const reached = { UPLOADED: 0, PARSED: 1, MAPPED: 2, PREVIEWED: 3, APPLYING: 3, FAILED: 3, APPLIED: 4 }[stage] ?? -1;
-  return STEPS.map((_, i) => {
-    if (i <= reached) return 'done';
-    if (i === reached + 1) return stage === 'APPLYING' ? 'running' : stage === 'FAILED' ? 'failed' : 'next';
-    return 'todo';
-  });
-}
-const STEP_TEXT: Record<StepState, string> = { done: 'Done', next: 'Next', running: 'In progress', failed: 'Failed', todo: 'Pending', stopped: '—', rejected: 'Rejected' };
-
-function Stepper({ stage }: { stage: string }) {
-  const states = stepStates(stage);
-  return (
-    <ol aria-label="Batch pipeline" className="grid gap-4 sm:grid-cols-5 sm:gap-3">
-      {STEPS.map((s, i) => {
-        const st = states[i];
-        const label = st === 'rejected' ? 'Rejected' : s.label;
-        return (
-          <li
-            key={s.key}
-            aria-current={st === 'next' || st === 'running' || st === 'failed' ? 'step' : undefined}
-            className={cn(
-              'relative flex min-w-0 items-start gap-3 sm:flex-col sm:gap-2',
-              'after:absolute after:rounded-full last:after:hidden max-sm:after:top-9 max-sm:after:-bottom-3 max-sm:after:left-[15px] max-sm:after:w-0.5 sm:after:top-[15px] sm:after:-right-1.5 sm:after:left-10 sm:after:h-0.5',
-              st === 'done' ? 'after:bg-teal-500' : 'after:bg-surface-strong',
-            )}
-          >
-            <span
-              className={cn(
-                'relative z-10 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums [&>svg]:size-4',
-                st === 'done' && 'bg-teal-600 text-white shadow-sm',
-                st === 'next' && 'bg-card text-teal-700 ring-2 ring-teal-600',
-                st === 'running' && 'bg-sky-50 text-sky-700 ring-2 ring-sky-500',
-                st === 'failed' && 'bg-rose-600 text-white shadow-sm',
-                st === 'rejected' && 'bg-fg-2 text-white shadow-sm',
-                (st === 'todo' || st === 'stopped') && 'bg-muted text-fg-3 ring-1 ring-border',
-              )}
-            >
-              {st === 'done' ? <Check aria-hidden="true" /> : st === 'failed' ? <X aria-hidden="true" /> : st === 'rejected' ? <Ban aria-hidden="true" /> : i + 1}
-            </span>
-            <div className="min-w-0">
-              <p className={cn('text-ui leading-5 font-semibold', st === 'todo' || st === 'stopped' ? 'text-muted-foreground' : 'text-foreground')}>{label}</p>
-              <p
-                className={cn(
-                  'text-2xs leading-4',
-                  st === 'next' ? 'font-semibold text-teal-700' : st === 'running' ? 'font-semibold text-sky-700' : st === 'failed' ? 'font-semibold text-rose-700' : st === 'rejected' ? 'font-semibold text-fg-2' : 'text-muted-foreground',
-                )}
-              >
-                {st === 'done' || st === 'todo' || st === 'stopped' ? s.hint : STEP_TEXT[st]}
-              </p>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-const size = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
-
+/** F-816: one MIS upload = what it did to the leads. The file is in the standard format, so there is nothing to map or review. */
 export default async function MisBatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [b, jobStatus] = await Promise.all([apiFetch<Batch>(`/mis/batches/${id}`).then((r) => r.data), apiFetch<{ job: MisJob }>(`/mis/batches/${id}/job`).then((r) => r.data.job)]);
-  const totals = (b.totals ?? {}) as { rows?: number; unique?: number; duplicateRows?: number; invalid?: number; missingHeaders?: string[]; unmappedColumns?: string[] };
+  const [b, job] = await Promise.all([apiFetch<Batch>(`/mis/batches/${id}`).then((r) => r.data), apiFetch<{ job: MisJob }>(`/mis/batches/${id}/job`).then((r) => r.data.job)]);
+  const t = b.totals ?? {};
+  const notLinked = (t.unmatched ?? 0) + (t.conflicts ?? 0) + (t.invalid ?? 0);
   return (
     <div className="grid gap-6">
       <DetailHeader
-        back={{ href: '/admin/mis', label: 'MIS imports' }}
-        visual={<IconTile icon={FileSpreadsheet} tone="indigo" size="lg" className="hidden sm:inline-flex" />}
-        title={`MIS batch ${b.publicRef}`}
-        subtitle={`${b.bank.displayName} · ${b.profile.name} v${b.profile.version}`}
-        meta={
-          <>
-            <Badge variant={STAGE_TONE[b.stage] ?? 'unknown'}>{humanize(b.stage)}</Badge>
-            <span>Uploaded {formatDateTime(b.uploadedAt)}</span>
-            {b.appliedAt ? <span>· Applied {formatDateTime(b.appliedAt)}</span> : null}
-          </>
-        }
-      >
-        <section aria-label="Batch summary" className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-          <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)] lg:items-center">
-            <div className="flex min-w-0 items-center gap-3">
-              <BankMark code={b.bank.code} />
-              <div className="min-w-0">
-                <p className="truncate text-[15px] font-semibold text-foreground">{b.bank.displayName}</p>
-                <p className="text-xs text-muted-foreground">
-                  <Link href={`/admin/mis/profiles/${b.profile.id}`} className="font-medium text-primary hover:underline">
-                    {b.profile.name} v{b.profile.version}
-                  </Link>
-                </p>
-                <p className="text-2xs text-muted-foreground">{humanize(b.profile.snapshotMode)} mode</p>
-              </div>
-            </div>
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-              <div className="min-w-0">
-                <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">File</dt>
-                <dd className="mt-1 flex min-w-0 items-center gap-1.5 text-foreground">
-                  <FileSpreadsheet className="size-4 shrink-0 text-emerald-600" aria-hidden="true" />
-                  <span className="min-w-0 break-words">{b.file.originalName}</span>
-                </dd>
-                <dd className="text-2xs text-muted-foreground tabular-nums">{size(b.file.sizeBytes)}</dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Sheet</dt>
-                <dd className="mt-1 break-words text-foreground">“{b.sheetName}”</dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Uploaded by</dt>
-                <dd className="mt-1 flex min-w-0 items-center gap-2">
-                  <Avatar name={b.uploader.fullName} size="sm" />
-                  <span className="min-w-0">
-                    <span className="block truncate text-foreground">{b.uploader.fullName}</span>
-                    <span className="block text-2xs text-muted-foreground">{humanize(b.uploader.role)}</span>
-                  </span>
-                </dd>
-              </div>
-            </dl>
-          </div>
-          <div className="border-t border-border-subtle bg-surface-muted px-5 py-5 sm:px-6">
-            <Stepper stage={b.stage} />
-          </div>
-        </section>
-      </DetailHeader>
-      {b.rejectReason ? (
+        back={{ href: '/admin/mis', label: 'Bank MIS upload' }}
+        visual={<BankMark code={b.bank.code} />}
+        title={`${b.bank.displayName} MIS`}
+        subtitle={`${b.file.originalName} · uploaded by ${b.uploader.fullName} · ${formatDateTime(b.uploadedAt)}`}
+      />
+      {b.stage === 'REJECTED' ? (
         <Callout tone="danger" icon={Ban} role="alert">
-          Rejected: {b.rejectReason}
+          This file is not the bank MIS: {b.rejectReason} Upload the MIS file the bank sent.
         </Callout>
-      ) : null}
-      <SectionCard icon={ScanLine} tone="sky" title="Parse & map" description="Every cell stored as text; rows hashed; references extracted in profile order.">
-        <div className="grid gap-4">
-          <StatGrid>
-            <StatCard label="Rows" value={totals.rows ?? '—'} hint="Data rows read from the sheet" icon={Rows3} tone="sky" />
-            <StatCard label="Unique" value={totals.unique ?? '—'} hint="Stored after dropping identical rows" icon={Fingerprint} tone="indigo" />
-            <StatCard label="Duplicate rows" value={totals.duplicateRows ?? 0} hint="Identical to an earlier row in this file" icon={Copy} tone={totals.duplicateRows ? 'amber' : 'slate'} />
-            <StatCard label="No reference" value={totals.invalid ?? 0} hint="No usable bank reference in the row" icon={Link2Off} tone={totals.invalid ? 'rose' : 'slate'} />
-          </StatGrid>
-          {totals.missingHeaders?.length ? (
-            <Callout tone="warning" icon={TriangleAlert}>
-              Profile headers not found in file: {totals.missingHeaders.join(', ')}
-            </Callout>
+      ) : (
+        <>
+          <UploadStatus batchId={b.id} stage={b.stage} job={job} />
+          {b.stage === 'APPLIED' ? (
+            <StatGrid>
+              <StatCard label="Rows in file" value={t.rows ?? 0} icon={FileSpreadsheet} tone="sky" />
+              <StatCard label="Leads updated" value={t.updatedChanged ?? 0} hint="Bank status changed" tone="emerald" />
+              <StatCard label="Leads unchanged" value={t.updatedNoChange ?? 0} hint="Same status as before" tone="slate" />
+              <StatCard label="No KBS lead" value={notLinked} hint="Application not raised through KBS" tone="slate" />
+            </StatGrid>
           ) : null}
-          {totals.unmappedColumns?.length ? (
-            <Callout tone="neutral" icon={Info}>
-              Unmapped columns kept in raw: {totals.unmappedColumns.join(', ')}
-            </Callout>
-          ) : null}
-        </div>
-      </SectionCard>
-      <PipelineActions job={jobStatus} batchId={b.id} stage={b.stage} report={b.preview?.report ?? null} totals={b.totals as Record<string, number> | null} profileId={b.profile.id} />
-      <BatchRows batchId={b.id} stage={b.stage} />
+          <BatchRows batchId={b.id} stage={b.stage} />
+        </>
+      )}
     </div>
   );
 }

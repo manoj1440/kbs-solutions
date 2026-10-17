@@ -121,8 +121,8 @@ export function MisApplicationsTable({ rows, filtered }: { rows: MisApplication[
         <EmptyState
           icon={Inbox}
           className="m-3"
-          title={filtered ? 'No applications match these filters.' : 'No MIS data yet.'}
-          description={filtered ? 'Change or reset the filters.' : 'Upload a bank MIS workbook to begin.'}
+          title={filtered ? 'No applications match these filters.' : 'Nothing reported by the banks yet.'}
+          description={filtered ? 'Change or reset the filters.' : 'Upload the bank MIS file to see application status here.'}
         />
       }
     />

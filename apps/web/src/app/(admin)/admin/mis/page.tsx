@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { DataTablePagination, DataTablePanel } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import { humanize, MiniStat, selectClass, StatStrip } from '@/components/ui/kit';
+import { MiniStat, selectClass, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -15,13 +15,6 @@ export const metadata = { title: 'Bank MIS · KBS Solutions' };
 
 const PAGE_SIZE = 50;
 
-interface Profile {
-  id: string;
-  name: string;
-  version: number;
-  status: string;
-  bank: { id: string; code: string; displayName: string };
-}
 interface Batch {
   id: string;
   publicRef: string;
@@ -47,12 +40,12 @@ interface Bank {
   displayName: string;
 }
 
-/** Batches not APPLIED need attention (still running, or stopped). */
+/** Uploads whose leads are not updated yet (still running, or stopped part-way). */
 const LIVE = new Set(['UPLOADED', 'PARSED', 'MAPPED', 'PREVIEWED', 'APPLYING', 'FAILED']);
 
 /**
- * F-809 Bank MIS: cumulative record counts, every bank-reported application (filters, 50/page, internal scroll)
- * and one-step upload (bank + file → auto apply). Values are bank-verbatim (INV-02/03).
+ * F-809/F-816 Bank MIS: what banks reported per application (filters, 50/page, internal scroll) and one-step upload
+ * (bank + file in the standard format → leads updated). Values are bank-verbatim (INV-02/03).
  */
 export default async function MisPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
@@ -63,15 +56,13 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
   if (sp.stage) qs.set('stage', sp.stage);
   if (sp.decision) qs.set('decision', sp.decision);
   if (sp.activation) qs.set('activation', sp.activation);
-  const [summary, applications, batches, profiles, banks] = await Promise.all([
+  const [summary, applications, batches, banks] = await Promise.all([
     apiFetch<Summary>('/mis/applications/summary').then((r) => r.data),
     apiFetch<MisApplication[]>(`/mis/applications?${qs.toString()}`),
     apiFetch<Batch[]>('/mis/batches?pageSize=50'),
-    apiFetch<Profile[]>('/mis/profiles').then((r) => r.data),
     apiFetch<Bank[]>('/catalogue/banks').then((r) => r.data),
   ]);
-  const approvedProfiles = profiles.filter((p) => p.status === 'APPROVED');
-  const uploadBanks = banks.filter((b) => approvedProfiles.some((p) => p.bank.id === b.id)).map((b) => ({ id: b.id, label: b.displayName }));
+  const uploadBanks = banks.map((b) => ({ id: b.id, label: b.displayName }));
   const total = Number(applications.meta.total ?? applications.data.length);
   const pending = batches.data.filter((b) => LIVE.has(b.stage));
   const filtered = Boolean(sp.bankId || sp.q || sp.stage || sp.decision || sp.activation);
@@ -90,7 +81,7 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
           <TriangleAlert className="size-3.5 shrink-0 text-amber-700" aria-hidden="true" />
           {pending.map((b) => (
             <Link key={b.id} href={`/admin/mis/batches/${b.id}`} className="font-medium underline-offset-2 hover:underline">
-              <span className="font-mono">{b.publicRef}</span> ({b.bank.code}) → {b.stage === 'FAILED' ? `Failed${b.rejectReason ? `: ${b.rejectReason}` : ''}` : humanize(b.stage)}
+              {b.bank.code} upload <span className="font-mono">{b.publicRef}</span>: {b.stage === 'APPLYING' ? 'updating leads…' : 'leads not updated yet — open to finish'}
             </Link>
           ))}
         </div>
@@ -105,7 +96,7 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
       </StatStrip>
 
       <DataTablePanel
-        label="Bank MIS applications"
+        label="Bank applications"
         toolbar={
           <>
             <Form action="/admin/mis" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
