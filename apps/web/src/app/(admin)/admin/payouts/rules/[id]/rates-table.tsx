@@ -37,12 +37,12 @@ export function RatesTable({ rows, currentId }: { rows: Rate[]; currentId: strin
     c.accessor((r) => r.approvedAt ?? '', {
       id: 'approved',
       header: 'Approved',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
       cell: ({ row }) => (row.original.approvedAt ? `${formatDateTime(row.original.approvedAt)} · ${row.original.approvedBy?.fullName ?? '—'}` : '—'),
     }),
     c.accessor('amountInr', {
       header: 'Amount',
-            cell: ({ getValue }) => <span className="text-[15px] font-semibold text-slate-900">₹{getValue().toLocaleString('en-IN')}</span>,
+            cell: ({ getValue }) => <span className="text-[15px] font-semibold text-foreground">₹{getValue().toLocaleString('en-IN')}</span>,
     }),
   ]);
   return (

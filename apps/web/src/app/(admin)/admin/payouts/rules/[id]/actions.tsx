@@ -39,8 +39,8 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
   const draftRates = rule.rates.filter((x) => x.status === 'DRAFT');
   return (
     <SectionCard icon={Gavel} tone="teal" title="Actions" description="Approvals need a reason and are audited. Editing an approved rule creates a new draft version." bodyClassName="grid gap-4 md:grid-cols-2">
-        <div className="grid content-start gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
-          <div className="mb-1 flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+        <div className="grid content-start gap-2 rounded-xl border border-border bg-surface-muted p-4">
+          <div className="mb-1 flex items-center gap-2 text-ui font-semibold text-foreground">
             <BadgeCheck className="size-4 text-teal-700" aria-hidden="true" />
             Approve or retire
           </div>
@@ -68,8 +68,8 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
           </div>
         </div>
         {rule.status !== 'RETIRED' ? (
-          <div className="grid content-start gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
-            <div className="mb-1 flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+          <div className="grid content-start gap-2 rounded-xl border border-border bg-surface-muted p-4">
+            <div className="mb-1 flex items-center gap-2 text-ui font-semibold text-foreground">
               <PencilLine className="size-4 text-teal-700" aria-hidden="true" />
               Edit trigger, hold and rates
             </div>
@@ -92,7 +92,7 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
               <Save />
               {rule.status === 'APPROVED' ? 'Save as new version' : 'Save draft'}
             </Button>
-            <Label htmlFor="ra-amount" className="mt-2 border-t border-slate-200/80 pt-3">
+            <Label htmlFor="ra-amount" className="mt-2 border-t border-border pt-3">
               New rate (₹)
             </Label>
             <div className="flex flex-wrap gap-2 sm:flex-nowrap">
@@ -106,7 +106,7 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
           </div>
         ) : null}
         {msg ? (
-          <p role="status" className="text-sm text-slate-700 md:col-span-2">
+          <p role="status" className="text-sm text-fg-2 md:col-span-2">
             {msg}
           </p>
         ) : null}

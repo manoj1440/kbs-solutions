@@ -80,7 +80,7 @@ export function NewRule({ banks }: { banks: { id: string; code: string; displayN
             ))}
           </select>
         </div>
-        <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 md:col-span-3">
+        <div className="grid gap-2 rounded-xl border border-border bg-surface-muted p-3 md:col-span-3">
           <Label>Trigger values (exact bank text)</Label>
           <div className="flex flex-wrap gap-1.5">
             {(seen ?? []).map((v) => (
@@ -99,7 +99,7 @@ export function NewRule({ banks }: { banks: { id: string; code: string; displayN
               Add
             </Button>
           </div>
-          {values.length ? <p className="text-xs text-slate-700">Selected: {values.map((v) => `“${v}”`).join(', ')}</p> : null}
+          {values.length ? <p className="text-xs text-fg-2">Selected: {values.map((v) => `“${v}”`).join(', ')}</p> : null}
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="pr-hold">Hold days</Label>
@@ -117,7 +117,7 @@ export function NewRule({ banks }: { banks: { id: string; code: string; displayN
           <Label htmlFor="pr-notes">Notes</Label>
           <Input id="pr-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Source document / commission sheet reference" />
         </div>
-        <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 md:col-span-3">
+        <div className="flex flex-wrap items-center gap-3 border-t border-border-subtle pt-4 md:col-span-3">
           <Button disabled={busy || !bankId || name.trim().length < 3 || values.length === 0} onClick={() => void submit()}>
             Create draft rule
           </Button>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 import { type ExceptionItem, PayoutExceptionsTable } from '@/components/payout-exceptions-table';
 import { Button } from '@/components/ui/button';
-import { Callout, Meter, MiniStat, selectClass, TONE, type Tone } from '@/components/ui/kit';
+import { Callout, Meter, MiniStat, selectClass, TONE, type Tone, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -86,7 +86,7 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">{title}</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+      <StatStrip cols={8}>
         {tiles.map((x) => (
           <MiniStat
             key={x.label}
@@ -96,18 +96,18 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
             tone={x.color}
           />
         ))}
-      </div>
-      <Form className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={basePath}>
+      </StatStrip>
+      <Form className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3 shadow-card" action={basePath}>
         <input aria-label="From date" type="date" name="from" defaultValue={sp.from ?? ''} className={cn(selectClass, 'h-9 w-36')} />
         <input aria-label="To date" type="date" name="to" defaultValue={sp.to ?? ''} className={cn(selectClass, 'h-9 w-36')} />
-        <select aria-label="Date basis" className={cn(selectClass, 'h-9 min-w-44')} name="dateBasis" defaultValue={sp.dateBasis ?? 'eligibleAt'}>
+        <select aria-label="Date basis" className={cn(selectClass, 'h-9 w-auto min-w-44')} name="dateBasis" defaultValue={sp.dateBasis ?? 'eligibleAt'}>
           {Object.entries(BASIS_LABEL).map(([k, v]) => (
             <option key={k} value={k}>
               {v}
             </option>
           ))}
         </select>
-        <select aria-label="Bank" className={cn(selectClass, 'h-9 min-w-32')} name="bankId" defaultValue={sp.bankId ?? ''}>
+        <select aria-label="Bank" className={cn(selectClass, 'h-9 w-auto min-w-32')} name="bankId" defaultValue={sp.bankId ?? ''}>
           <option value="">All banks</option>
           {banks.map((b) => (
             <option key={b.id} value={b.id}>
@@ -121,7 +121,7 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
         <Button asChild variant="ghost" size="sm" className="h-9">
           <Link href={basePath}>Reset</Link>
         </Button>
-        <span className="ml-auto text-[11px] text-slate-500">
+        <span className="ml-auto text-2xs text-muted-foreground">
           as of {formatDateTime(d.meta.asOf)} · {d.meta.source}
         </span>
       </Form>
@@ -135,47 +135,47 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
       ) : null}
       <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto lg:overflow-visible">
         <div className="grid items-start gap-3 lg:grid-cols-2">
-          <section aria-label="Where the eligible value sits" className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+          <section aria-label="Where the eligible value sits" className="rounded-2xl border border-border bg-card p-4 shadow-card">
             <div className="grid gap-3">
               {tiles
                 .filter((x) => x.inEligible)
                 .map((x) => (
-                  <div key={x.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 text-[13px]">
-                    <span className="flex min-w-0 items-center gap-2 text-slate-700">
+                  <div key={x.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 text-ui">
+                    <span className="flex min-w-0 items-center gap-2 text-fg-2">
                       <span className={cn('size-2 shrink-0 rounded-full', TONE[x.color].bar)} aria-hidden="true" />
                       <span className="truncate">{x.label}</span>
-                      <span className="shrink-0 text-[11px] text-slate-400 tabular-nums">{x.tot.count}</span>
+                      <span className="shrink-0 text-2xs text-fg-3 tabular-nums">{x.tot.count}</span>
                     </span>
-                    <span className="text-right font-medium text-slate-900 tabular-nums">
-                      {formatInr(x.tot.amountInr)} <span className="ml-1 inline-block w-9 text-[11px] font-normal text-slate-400">{pct(x.tot.amountInr)}</span>
+                    <span className="text-right font-medium text-foreground tabular-nums">
+                      {formatInr(x.tot.amountInr)} <span className="ml-1 inline-block w-9 text-2xs font-normal text-fg-3">{pct(x.tot.amountInr)}</span>
                     </span>
                     <Meter className="col-span-2 h-1.5" value={x.tot.amountInr} max={eligibleAmount} tone={x.color} label={`${x.label}: share of eligible value`} />
                   </div>
                 ))}
-              <div className="mt-1 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-[13px]">
-                <span className="text-slate-500">Eligible card events ({t.eligible.count})</span>
-                <span className="font-semibold text-slate-900 tabular-nums">{formatInr(eligibleAmount)}</span>
+              <div className="mt-1 flex items-center justify-between gap-3 border-t border-border-subtle pt-3 text-ui">
+                <span className="text-muted-foreground">Eligible card events ({t.eligible.count})</span>
+                <span className="font-semibold text-foreground tabular-nums">{formatInr(eligibleAmount)}</span>
               </div>
             </div>
           </section>
           <div className="grid gap-3">
-            <section aria-label="Confirmed transfers" className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-              <div className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{formatInr(d.confirmedTransfers.amountInr)}</div>
-              <div className="mt-1 text-xs text-slate-600">
+            <section aria-label="Confirmed transfers" className="rounded-2xl border border-border bg-card p-4 shadow-card">
+              <div className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">{formatInr(d.confirmedTransfers.amountInr)}</div>
+              <div className="mt-1 text-xs text-fg-2">
                 Confirmed transfers · {d.confirmedTransfers.count} paid request(s) · {d.missingProof} recorded without proof
               </div>
             </section>
-            <section aria-label="Dual-approval backlog" className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-              <div className="mb-3 text-xs text-slate-600">
-                Dual-approval backlog: <span className="font-semibold text-slate-800 tabular-nums">{d.approvals.pendingCount}</span> request(s) · {formatInr(d.approvals.pendingAmountInr)} · Manager {d.approvals.awaitingManager} · Admin {d.approvals.awaitingAdmin}
+            <section aria-label="Dual-approval backlog" className="rounded-2xl border border-border bg-card p-4 shadow-card">
+              <div className="mb-3 text-xs text-fg-2">
+                Dual-approval backlog: <span className="font-semibold text-foreground tabular-nums">{d.approvals.pendingCount}</span> request(s) · {formatInr(d.approvals.pendingAmountInr)} · Manager {d.approvals.awaitingManager} · Admin {d.approvals.awaitingAdmin}
               </div>
               <div className="grid gap-2">
-                <div className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">Age of pending requests</div>
+                <div className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Age of pending requests</div>
                 <div className="grid grid-cols-4 gap-2 text-center text-sm">
                   {aging.map(([l, n], i) => (
-                    <div key={l} className="rounded-xl border border-slate-200/80 p-2.5">
-                      <div className="text-lg font-semibold text-slate-900 tabular-nums">{n}</div>
-                      <div className="text-xs text-slate-500">{l}</div>
+                    <div key={l} className="rounded-xl border border-border p-2.5">
+                      <div className="text-lg font-semibold text-foreground tabular-nums">{n}</div>
+                      <div className="text-xs text-muted-foreground">{l}</div>
                       <Meter className="mt-2 h-1" value={n} max={agingMax} tone={i >= 2 ? 'rose' : i === 1 ? 'amber' : 'sky'} label={`${l} pending`} />
                     </div>
                   ))}
@@ -184,8 +184,8 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
             </section>
           </div>
         </div>
-        <section aria-label="Exceptions" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-          <div className="border-b border-slate-100 px-4 py-2.5 text-xs text-slate-500">
+        <section aria-label="Exceptions" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <div className="border-b border-border-subtle px-4 py-2.5 text-xs text-muted-foreground">
             Exceptions · derived from the ledger — nothing here claws back or refunds money
           </div>
           <div className="min-h-0 flex-1">

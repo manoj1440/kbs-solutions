@@ -2,7 +2,7 @@ import { formatInr, payoutStateLabel } from '@kbs/shared';
 
 import { DataTablePanel } from '@/components/data-table';
 import { EntitlementsTable, type EntitlementDto } from '@/components/entitlements-table';
-import { MiniStat, PillNav, type Tone } from '@/components/ui/kit';
+import { MiniStat, PillNav, type Tone, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
 export type { EntitlementDto } from '@/components/entitlements-table';
@@ -43,11 +43,11 @@ export async function EntitlementsLedger({ basePath, leadBase, sp, title }: { ba
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">{title}</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+      <StatStrip cols={6}>
         {tiles.map((x) => (
           <MiniStat key={x.label} label={x.label} value={x.count} hint={x.amount !== undefined ? formatInr(x.amount) : 'card events'} tone={x.tone} />
         ))}
-      </div>
+      </StatStrip>
       <DataTablePanel
         label="Entitlements"
         toolbar={
@@ -61,7 +61,7 @@ export async function EntitlementsLedger({ basePath, leadBase, sp, title }: { ba
           />
         }
         footer={
-          <div className="flex shrink-0 items-center border-t border-slate-100 px-4 py-2 text-xs text-slate-500 tabular-nums">
+          <div className="flex shrink-0 items-center border-t border-border-subtle px-4 py-2 text-xs text-muted-foreground tabular-nums">
             {total.toLocaleString('en-IN')} entitlement{total === 1 ? '' : 's'} · page {page} of {pages}
           </div>
         }

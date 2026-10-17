@@ -36,7 +36,7 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
       cell: ({ row }) => (
         <>
           <PayoutStateBadge state={row.original.state} />
-          {row.original.reviewReason ? <div className="mt-1 max-w-56 text-[11px] whitespace-normal text-slate-500">{row.original.reviewReason}</div> : null}
+          {row.original.reviewReason ? <div className="mt-1 max-w-56 text-2xs whitespace-normal text-muted-foreground">{row.original.reviewReason}</div> : null}
         </>
       ),
     }),
@@ -49,7 +49,7 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
           <Link className="font-mono text-xs font-semibold" href={`${leadBase}/${row.original.lead.id}`}>
             {row.original.lead.publicRef}
           </Link>
-          <div className="text-[11px] text-slate-500">{row.original.lead.customerFullName}</div>
+          <div className="text-2xs text-muted-foreground">{row.original.lead.customerFullName}</div>
         </>
       ),
     }),
@@ -59,7 +59,7 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Avatar name={row.original.advisor.fullName} size="sm" />
-          <span className="whitespace-nowrap text-slate-800">{row.original.advisor.fullName}</span>
+          <span className="whitespace-nowrap text-foreground">{row.original.advisor.fullName}</span>
         </div>
       ),
     }),
@@ -71,8 +71,8 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
         <div className="flex items-center gap-2">
           <BankMark code={row.original.bank.code} size="sm" />
           <div className="min-w-0">
-            <div className="font-medium text-slate-800">{row.original.bank.displayName}</div>
-            <div className="text-[11px] text-slate-500">{row.original.card}</div>
+            <div className="font-medium text-foreground">{row.original.bank.displayName}</div>
+            <div className="text-2xs text-muted-foreground">{row.original.card}</div>
           </div>
         </div>
       ),
@@ -92,24 +92,24 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
-          {row.original.rule.name} <span className="text-slate-500">v{row.original.rule.version}</span>
+          {row.original.rule.name} <span className="text-muted-foreground">v{row.original.rule.version}</span>
         </>
       ),
     }),
     c.accessor('amountInr', {
       header: 'Amount',
-            cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-slate-900">{formatInr(getValue())}</span>,
+            cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-foreground">{formatInr(getValue())}</span>,
     }),
     c.accessor('eligibleAt', {
       header: 'Eligible at',
       sortFn: 'datetime',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
       cell: ({ getValue }) => formatDateTime(getValue()),
     }),
     c.accessor((r) => r.evidence.uploadedAt, {
       id: 'evidence',
       header: 'Evidence',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
       cell: ({ row }) => (
         <>
           <span className="font-mono">{row.original.evidence.batchRef}</span> · {formatDateTime(row.original.evidence.uploadedAt)}
