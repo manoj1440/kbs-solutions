@@ -7,6 +7,8 @@ import { apiFetch } from '@/lib/api';
 import { type MisJob, UploadStatus } from './result';
 import { BatchRows } from './rows';
 
+export const metadata = { title: 'MIS upload · KBS Solutions' };
+
 interface Batch {
   id: string;
   publicRef: string;

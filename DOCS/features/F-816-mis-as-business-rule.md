@@ -1,6 +1,6 @@
 # F-816 — Web: MIS is a business rule, not the centre of the app (fixed upload formats)
 
-- Group: Web UX · Status: **IN_PROGRESS** · Depends on: F-809 (MIS business view), F-814 (web UI v2), F-303 (calling-list import)
+- Group: Web UX · Status: **DONE** · Depends on: F-809 (MIS business view), F-814 (web UI v2), F-303 (calling-list import)
 - PRD refs: REQ-13 (MIS contract), REQ-14 §14.1 (status labels), REQ-16 §16.3 (freshness), REQ-20 §20.3, REQ-06 §6.1 (customer list)
 - Origin: user request (2026-10-17): "Wherever we are uploading MIS or cards info or calling data, we don't take these as key or main thing of the whole application … it's basically a business logic: when the lead is generated the status of this lead should be from MIS only, and MIS format is always same so there is no need for column mapping or error."
 
@@ -29,17 +29,21 @@
 ## 2. Phases
 | Phase | Scope | Status |
 |---|---|---|
-| P1 | API: `STANDARD_MIS_FORMAT` in `@kbs/shared`; `MisImportService.create` provisions an APPROVED standard profile when the bank has none; seed reuses the constant. | |
-| P2 | Web MIS: upload modal lists every active bank; batch page = result card + rows; profile editor + resolve component removed. | |
-| P3 | Web calling list: auto-confirm mapping on upload, wizard without the map step. | |
-| P4 | Web wording + shell: MIS clock gone, nav item, home/leads/manager/dashboards/payouts wording, `bankText()` display mapper. | |
-| P5 | Checks: typecheck, lint, unit, affected e2e; browser pass. | |
+| P1 | API: `STANDARD_MIS_FORMAT` in `@kbs/shared`; `MisImportService.create` provisions an APPROVED standard profile when the bank has none; seed reuses the constant. | DONE |
+| P2 | Web MIS: upload modal lists every bank; batch page = result tiles + rows; profile editor (route redirects) + resolve component + pipeline removed. | DONE |
+| P3 | Calling list: API `create` reads the fixed columns and validates at once (wrong format → 400, no batch); wizard Upload → Check → Confirm. | DONE |
+| P4 | Web wording + shell: MIS clock gone, "Bank MIS upload" under Sales, home/leads/manager/dashboards/payouts wording, `lib/bank-text.ts`. | DONE |
+| P5 | Checks: typecheck, lint, unit, API e2e, web e2e isolated; browser pass. | see notes |
 
 ## 3. Acceptance
-- [ ] Fresh DB (no profiles): Admin can upload an MIS file for any bank and it applies in one step.
-- [ ] No web page outside `/admin/mis*` shows the word "MIS" to the user (dev gallery excepted).
-- [ ] Lead never matched shows "Awaiting bank update" on web; mobile unchanged.
-- [ ] Calling-list upload goes straight to the check step; wrong-format file gives one message.
-- [ ] Bank status still written only by MIS apply (INV-01 tests green).
+- [x] Fresh DB (no profiles): Admin can upload an MIS file for any bank and it applies in one step.
+- [x] No web page outside `/admin/mis*` shows the word "MIS" to the user (dev gallery excepted).
+- [x] Lead never matched shows "Awaiting bank update" on web; mobile unchanged.
+- [x] Calling-list upload goes straight to the check step; wrong-format file gives one message.
+- [x] Bank status still written only by MIS apply (INV-01 tests green).
 
 ## Progress notes
+- 2026-10-17 (session 19): P1–P4 built in one session; commits `feat(api): built-in standard MIS format…`, `feat(web): MIS upload = upload and done…`, `feat(calling-list): fixed customer-list format…`, `feat(web): bank status in plain words…`.
+- Checks: workspace typecheck; web lint clean; web unit 24/24 (`status-components` now asserts the web wording); API e2e **158/158, 36 suites** on `kbs_test` (new: standard profile auto-provisioned for EQUITAS; calling list wrong format → 400 with no batch); web Playwright isolated (`e2e-isolated.sh`) **73 passed / 1 skipped**.
+- Browser pass on the isolated stack (:3300, `kbs_e2e`): sidebar has no MIS clock and one "Bank MIS upload" item under Sales; upload button enabled with no profile approved; a 2-row standard-format AU file uploaded through the same API calls the modal makes → profile "Standard MIS format" v1 created, result page shows Rows 2 · Leads updated 0 · Unchanged 0 · No KBS lead 2 and the rows table. Server-rendered text of `/admin`, `/admin/leads`, `/admin/calling-list`, `/admin/dashboards/advisors`, `/admin/payouts/entitlements`, `/manager`, `/manager/advisors` contains "MIS" only in that nav item. The file picker itself was not driven (the browser pane cannot choose local files).
+- Not changed (follow-ups): API lead notifications still titled "Matched in bank MIS" / "Bank MIS updated" (shared with mobile); mobile wording; `/mis/rows/:id/resolve`, `/mis/batches/:id/preview`, `/mis/profiles*` API endpoints kept without a web consumer; bank pincode profiles keep their per-bank header mapping (those files really differ per bank).

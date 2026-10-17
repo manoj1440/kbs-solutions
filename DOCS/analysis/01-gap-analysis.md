@@ -92,6 +92,11 @@ REQ-17 mentions "rate/rule version" repeatedly but no entity.
 ### A18. Accessibility vs FLAG_SECURE
 REQ-20 §20.5 warns not to block assistive tech silently. Android `FLAG_SECURE` does not block screen readers, only capture. Documented in the mobile security ADR; no extra restriction on accessibility services.
 
+### A19. MIS as a business rule, fixed upload formats (user decision 2026-10-17, F-816)
+- **DEVIATION (owner instruction):** KBS confirmed the bank MIS always arrives in one standard layout and the customer calling list in one fixed layout. So: no per-bank MIS profile / column mapping to set up or approve (a bank without one gets `STANDARD_MIS_FORMAT` on first upload), MIS upload applies at once with a short result (no preview/resolve/acknowledge screens), and the calling-list upload reads columns by name and refuses a file without NAME / MOBILE / Pincode.
+- **Web wording deviates from REQ-14 §14.1 / REQ-13 / REQ-27 MIS-04 labels:** web shows "Awaiting bank update" (not "Awaiting MIS Update"), "Last bank update", "Bank status"; the per-bank MIS clock (REQ-16 §16.3 / REQ-20 §20.3 freshness) and source footers are gone from web. Mobile, API and `@kbs/shared` keep the PRD labels; web rewords at display time (`apps/web/src/lib/bank-text.ts`).
+- **Unchanged:** INV-01..03 and INV-08 — bank status is still written only by MIS apply, by exact reference only. The API resolve/preview endpoints stay (no web consumer). Rows with no KBS lead are counted on the upload result and are not surfaced as errors.
+
 ---
 
 ## B. Ambiguities in the PRD that would cause divergent implementations
