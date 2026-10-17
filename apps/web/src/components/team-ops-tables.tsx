@@ -41,7 +41,7 @@ export function TeamActivityTable({
               </a>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(t.status)}</Badge>
-                {t.employeeCode ? <span className="font-mono text-[11px] text-slate-500">{t.employeeCode}</span> : null}
+                {t.employeeCode ? <span className="font-mono text-2xs text-muted-foreground">{t.employeeCode}</span> : null}
                 {t.training === 'PASSED' ? null : <Badge variant="warning">not trained</Badge>}
                 {t.wfhActive ? <Badge variant="info">WFH</Badge> : null}
               </div>
@@ -54,8 +54,8 @@ export function TeamActivityTable({
       header: 'Assigned',
             cell: ({ row }) => (
         <>
-          <span className="font-semibold text-slate-900">{row.original.queueSize}</span>
-          {row.original.followUpsDue ? <div className="mt-0.5 text-[11px] font-medium text-rose-700">{row.original.followUpsDue} due</div> : null}
+          <span className="font-semibold text-foreground">{row.original.queueSize}</span>
+          {row.original.followUpsDue ? <div className="mt-0.5 text-2xs font-medium text-rose-700">{row.original.followUpsDue} due</div> : null}
         </>
       ),
     }),
@@ -84,8 +84,8 @@ export function AssignedRecordsTable({ rows }: { rows: CallingQueueRow[] }) {
       header: 'Customer',
       cell: ({ row }) => (
         <>
-          <div className="font-medium text-slate-900">{row.original.fullName}</div>
-          <div className="mt-0.5 font-mono text-xs text-slate-500">
+          <div className="font-medium text-foreground">{row.original.fullName}</div>
+          <div className="mt-0.5 font-mono text-xs text-muted-foreground">
             {row.original.mobileMasked} · {row.original.pincode}
           </div>
         </>
@@ -96,7 +96,7 @@ export function AssignedRecordsTable({ rows }: { rows: CallingQueueRow[] }) {
       cell: ({ row }) => (
         <>
           <Badge variant={RECORD_STATUS_VARIANT[row.original.recordStatus]}>{RECORD_STATUS_LABELS[row.original.recordStatus]}</Badge>
-          {row.original.nextFollowUpAt ? <div className="mt-1 text-[11px] font-medium text-sky-800">Follow-up {formatDateTime(row.original.nextFollowUpAt)}</div> : null}
+          {row.original.nextFollowUpAt ? <div className="mt-1 text-2xs font-medium text-sky-800">Follow-up {formatDateTime(row.original.nextFollowUpAt)}</div> : null}
         </>
       ),
     }),
@@ -108,11 +108,11 @@ export function AssignedRecordsTable({ rows }: { rows: CallingQueueRow[] }) {
       cell: ({ row }) =>
         row.original.lastCall ? (
           <>
-            <div className="font-medium text-slate-800">{fmtCall(row.original.lastCall.durationSec)}</div>
-            <div className="mt-0.5 text-slate-500">{formatDateTime(row.original.lastCall.at)}</div>
+            <div className="font-medium text-foreground">{fmtCall(row.original.lastCall.durationSec)}</div>
+            <div className="mt-0.5 text-muted-foreground">{formatDateTime(row.original.lastCall.at)}</div>
           </>
         ) : (
-          <span className="text-slate-500">No call yet</span>
+          <span className="text-muted-foreground">No call yet</span>
         ),
     }),
     q.display({
@@ -127,7 +127,7 @@ export function AssignedRecordsTable({ rows }: { rows: CallingQueueRow[] }) {
             {row.original.lastCall.canPlay ? <PlayRecordingButton callId={row.original.lastCall.id} /> : null}
           </div>
         ) : (
-          <span className="text-xs text-slate-400">—</span>
+          <span className="text-xs text-fg-3">—</span>
         ),
     }),
   ]);
