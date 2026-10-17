@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Callout,
   MiniStat,
+  StatStrip,
 } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
@@ -41,12 +42,12 @@ export default async function RetentionPage() {
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Data retention &amp; legal hold</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+      <StatStrip cols={4}>
         <MiniStat label="Retention runs" value={blocked ? 'Blocked' : 'Ready'} hint={`execution ${plan.executionEnabled ? 'on' : 'off'} · nightly ${nightly ? 'on' : 'off'}`} tone={blocked ? 'rose' : 'emerald'} />
         <MiniStat label="Durations set" value={`${configured} / ${plan.categories.length}`} hint={unset.length ? 'Awaiting KBS approval' : 'Every category has a duration'} tone={unset.length ? 'amber' : 'emerald'} />
         <MiniStat label="Eligible now" value={counted.length ? n(eligible) : '—'} hint={counted.length ? 'Dry run across configured categories' : 'No durations set'} tone="sky" />
         <MiniStat label="Legal holds" value={n(allHolds.length)} hint="Skipped by every run" tone="violet" />
-      </div>
+      </StatStrip>
       {blocked ? (
         <Callout tone="warning" icon={OctagonAlert} role="status" title={<span className="inline-flex flex-wrap items-center gap-2"><Badge variant="warning">Blocked</Badge> Retention is not running</span>} className="shrink-0">
           <p>
@@ -56,7 +57,7 @@ export default async function RetentionPage() {
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span>Missing:</span>
               {unset.map((c) => (
-                <code key={c.configKey} className="rounded-md bg-white px-2 py-0.5 font-mono text-xs break-all text-amber-900 ring-1 ring-amber-200">
+                <code key={c.configKey} className="rounded-md bg-card px-2 py-0.5 font-mono text-xs break-all text-amber-900 ring-1 ring-amber-200">
                   {c.configKey}
                 </code>
               ))}
@@ -64,21 +65,21 @@ export default async function RetentionPage() {
           ) : null}
         </Callout>
       ) : null}
-      <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:overflow-visible">
-        <section aria-label="Dry run" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 text-xs text-slate-500">
+      <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto 2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] 2xl:overflow-visible">
+        <section aria-label="Dry run" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <div className="flex items-center gap-2 border-b border-border-subtle px-4 py-2.5 text-xs text-muted-foreground">
             Dry run — counts are live and change nothing · nightly 02:00 IST <Badge variant={nightly ? 'success' : 'unknown'}>{nightly ? 'on' : 'off'}</Badge>
           </div>
           <div className="min-h-0 flex-1">
             <RetentionPlanTable rows={plan.categories} />
           </div>
-          <div className="flex shrink-0 gap-2 border-t border-slate-100 px-4 py-2 text-xs text-slate-600">
+          <div className="flex shrink-0 gap-2 border-t border-border-subtle px-4 py-2 text-xs text-fg-2">
             <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
             <p>Never removed: {plan.neverRemoved.join(' · ')}.</p>
           </div>
         </section>
-        <section aria-label="Legal holds" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-          <div className="border-b border-slate-100 p-3">
+        <section aria-label="Legal holds" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <div className="border-b border-border-subtle p-3">
             <LegalHoldForm />
           </div>
           <div className="min-h-0 flex-1">

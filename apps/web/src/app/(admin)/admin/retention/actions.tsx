@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { selectClass } from '@/components/ui/kit';
+import { cn } from '@/lib/utils';
 import { clientApi } from '@/lib/client-api';
 
 function useAction() {
@@ -115,10 +116,11 @@ export function LegalHoldForm() {
     });
   const valid = /^[0-9a-f-]{36}$/i.test(id.trim()) && reason.trim().length >= 5;
   return (
-    <div className="grid gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4 md:grid-cols-[10rem_1fr_1fr_auto_auto] md:items-center">
+    <div className="@container rounded-xl border border-border bg-surface-muted p-3 sm:p-4">
+    <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-[10rem_1fr_1fr_auto_auto] @2xl:items-center">
       <select
         aria-label="Subject"
-        className={selectClass}
+        className={cn(selectClass, 'col-span-2 @2xl:col-span-1')}
         value={subject}
         onChange={(e) => setSubject(e.target.value as 'FILE' | 'CALLING_RECORD')}
       >
@@ -130,13 +132,14 @@ export function LegalHoldForm() {
         value={id}
         onChange={(e) => setId(e.target.value)}
         placeholder="Id (UUID)"
-        className="font-mono text-xs"
+        className="col-span-2 font-mono text-xs @2xl:col-span-1"
       />
       <Input
         aria-label="Hold reason"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="Reason (required)"
+        className="col-span-2 @2xl:col-span-1"
       />
       <Button size="sm" disabled={busy || !valid} onClick={() => submit(true)}>
         <Lock />
@@ -147,10 +150,11 @@ export function LegalHoldForm() {
         Release
       </Button>
       {msg ? (
-        <span className={`md:col-span-5 text-xs ${msg.ok ? 'text-success' : 'text-destructive'}`}>
+        <span className={`col-span-2 @2xl:col-span-5 text-xs ${msg.ok ? 'text-success' : 'text-destructive'}`}>
           {msg.text}
         </span>
       ) : null}
+    </div>
     </div>
   );
 }

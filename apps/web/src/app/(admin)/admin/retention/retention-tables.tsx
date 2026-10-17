@@ -48,8 +48,8 @@ export function RetentionPlanTable({ rows }: { rows: CategoryPlan[] }) {
         <div className="flex items-center gap-2.5">
           <IconTile icon={row.original.action === 'PURGE_FILE' ? FileX2 : UserRoundX} tone={row.original.action === 'PURGE_FILE' ? 'rose' : 'violet'} size="sm" />
           <div className="min-w-0">
-            <div className="font-medium text-slate-800">{row.original.label}</div>
-            <div className="text-xs text-slate-500">{row.original.action === 'PURGE_FILE' ? 'Purge file' : 'Restrict record'}</div>
+            <div className="font-medium text-foreground">{row.original.label}</div>
+            <div className="text-xs text-muted-foreground">{row.original.action === 'PURGE_FILE' ? 'Purge file' : 'Restrict record'}</div>
           </div>
         </div>
       ),
@@ -61,8 +61,8 @@ export function RetentionPlanTable({ rows }: { rows: CategoryPlan[] }) {
       cell: ({ row }) =>
         row.original.configured ? (
           <>
-            <span className="font-medium text-slate-800 tabular-nums">{row.original.days} days</span>
-            <div className="text-slate-500">before {row.original.cutoff ? formatDateTime(row.original.cutoff) : ''}</div>
+            <span className="font-medium text-foreground tabular-nums">{row.original.days} days</span>
+            <div className="text-muted-foreground">before {row.original.cutoff ? formatDateTime(row.original.cutoff) : ''}</div>
           </>
         ) : (
           <Badge variant="unknown" className="whitespace-nowrap">not set</Badge>
@@ -74,7 +74,7 @@ export function RetentionPlanTable({ rows }: { rows: CategoryPlan[] }) {
     c.accessor((r) => r.eligible ?? -1, {
       id: 'eligible',
       header: 'Eligible',
-            cell: ({ row }) => <span className="font-semibold text-slate-900">{nfmt(row.original.eligible)}</span>,
+            cell: ({ row }) => <span className="font-semibold text-foreground">{nfmt(row.original.eligible)}</span>,
     }),
     c.accessor('alreadyDone', { header: 'Done',  cell: ({ getValue }) => nfmt(getValue()) }),
     c.display({
@@ -93,20 +93,20 @@ export function LegalHoldsTable({ rows }: { rows: Hold[] }) {
       header: 'Item',
       cell: ({ row }) => (
         <>
-          <div className="font-medium text-slate-800">{row.original.label}</div>
-          <div className="font-mono text-[11px] break-all text-slate-500">{row.original.id}</div>
+          <div className="font-medium text-foreground">{row.original.label}</div>
+          <div className="font-mono text-2xs break-all text-muted-foreground">{row.original.id}</div>
         </>
       ),
     }),
     h.accessor('reason', {
       header: 'Reason',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
       cell: ({ getValue }) => getValue() ?? <Dash />,
     }),
     h.accessor('createdAt', {
       header: 'Created',
       sortFn: 'datetime',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
       cell: ({ getValue }) => formatDateTime(getValue()),
     }),
   ]);

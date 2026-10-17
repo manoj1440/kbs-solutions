@@ -103,7 +103,7 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
       {editing ? (
         <div
           data-editing=""
-          className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:min-w-64"
+          className="grid gap-2 rounded-xl border border-border bg-surface-muted p-3 sm:min-w-64"
         >
           {entry.valueType === 'BOOL' ? (
             <select
@@ -119,7 +119,7 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
           ) : entry.valueType === 'JSON' ? (
             <textarea
               aria-label={`New value for ${entry.key}`}
-              className="min-h-28 rounded-lg border border-slate-200 bg-white p-2.5 font-mono text-xs leading-relaxed text-slate-900"
+              className="min-h-28 rounded-lg border border-border bg-card p-2.5 font-mono text-xs leading-relaxed text-foreground"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
@@ -140,7 +140,7 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Reason (required)"
-            className="bg-white"
+            className="bg-card"
           />
           <div className="flex flex-wrap gap-1">
             <Button size="sm" disabled={busy || reason.trim().length < 3} onClick={save}>
@@ -175,7 +175,7 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
       <dialog
         ref={drawer}
         aria-label={`History of ${entry.key}`}
-        className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-white p-0 shadow-2xl backdrop:bg-slate-900/40"
+        className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-card p-0 shadow-2xl backdrop:bg-navy/50"
         onClick={(e) => e.target === drawer.current && drawer.current?.close()}
       >
         <div className="grid gap-4 p-5">
@@ -185,8 +185,8 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
                 <History className="size-4" aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-slate-900">Change history</h2>
-                <p className="font-mono text-xs break-all text-slate-500">{entry.key}</p>
+                <h2 className="text-lg font-semibold text-foreground">Change history</h2>
+                <p className="font-mono text-xs break-all text-muted-foreground">{entry.key}</p>
               </div>
             </div>
             <Button size="sm" variant="ghost" onClick={() => drawer.current?.close()}>
@@ -204,14 +204,14 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
           ) : (
             <ol className="grid gap-3">
               {history.map((h) => (
-                <li key={h.id} className="rounded-xl border border-slate-200 p-3 text-sm">
-                  <div className="text-xs text-slate-500">
+                <li key={h.id} className="rounded-xl border border-border p-3 text-sm">
+                  <div className="text-xs text-muted-foreground">
                     {`${formatDateTime(h.at)} · ${h.changedBy?.fullName ?? h.changedBy?.publicRef ?? 'unknown'} (${h.changedBy?.role ?? '—'})`}
                   </div>
-                  <div className="mt-2 rounded-md bg-slate-50 px-2 py-1 font-mono text-xs break-all text-slate-800 ring-1 ring-slate-200 ring-inset">
+                  <div className="mt-2 rounded-md bg-surface-muted px-2 py-1 font-mono text-xs break-all text-foreground ring-1 ring-border ring-inset">
                     {show(h.oldValue)} → {show(h.newValue)}
                   </div>
-                  <div className="mt-2 text-slate-700">{h.reason}</div>
+                  <div className="mt-2 text-fg-2">{h.reason}</div>
                 </li>
               ))}
             </ol>

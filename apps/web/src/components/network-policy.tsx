@@ -43,7 +43,7 @@ export function AddNetworkForm() {
   const { busy, err, run } = useSubmit();
   return (
     <form
-      className="grid gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4 md:grid-cols-[1fr_1fr_1.5fr_auto] md:items-end"
+      className="grid gap-3 rounded-xl border border-border bg-surface-muted p-3 sm:p-4 md:grid-cols-[1fr_1fr_1.5fr_auto] md:items-end"
       onSubmit={(e) => {
         e.preventDefault();
         void run(
@@ -203,7 +203,7 @@ export function GrantWfhForm({
   return (
     <form
       // wraps by its own width: it sits full-width on Office network and half-width beside training on a Telecaller page
-      className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4"
+      className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface-muted p-3 sm:p-4"
       onSubmit={(e) => {
         e.preventDefault();
         void run(

@@ -46,14 +46,14 @@ export function NetworksTable({ rows }: { rows: Network[] }) {
       header: 'Label',
       cell: ({ row }) => (
         <>
-          <div className="font-medium text-slate-800">{row.original.label}</div>
-          <div className="text-[11px] text-slate-500">{formatDateTime(row.original.createdAt)}</div>
+          <div className="font-medium text-foreground">{row.original.label}</div>
+          <div className="text-2xs text-muted-foreground">{formatDateTime(row.original.createdAt)}</div>
         </>
       ),
     }),
     n.accessor('cidr', {
       header: 'CIDR',
-      cell: ({ getValue }) => <code className="rounded-md bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-800 ring-1 ring-slate-200 ring-inset">{getValue()}</code>,
+      cell: ({ getValue }) => <code className="rounded-md bg-surface-muted px-2 py-0.5 font-mono text-xs text-foreground ring-1 ring-border ring-inset">{getValue()}</code>,
     }),
     n.accessor('active', {
       header: 'Status',
@@ -86,8 +86,8 @@ export function WfhTable({ rows }: { rows: WfhRow[] }) {
         <div className="flex items-center gap-2.5">
           <Avatar name={row.original.telecaller?.fullName ?? row.original.telecallerUserId} size="sm" />
           <div className="min-w-0">
-            <div className="font-medium text-slate-800">{row.original.telecaller?.fullName ?? row.original.telecallerUserId}</div>
-            <div className="font-mono text-[11px] text-slate-500">{row.original.telecaller?.employeeCode}</div>
+            <div className="font-medium text-foreground">{row.original.telecaller?.fullName ?? row.original.telecallerUserId}</div>
+            <div className="font-mono text-2xs text-muted-foreground">{row.original.telecaller?.employeeCode}</div>
           </div>
         </div>
       ),
@@ -95,18 +95,18 @@ export function WfhTable({ rows }: { rows: WfhRow[] }) {
     w.accessor('startsAt', {
       header: 'Window',
       sortFn: 'datetime',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
       cell: ({ row }) => (
         <>
           {formatDateTime(row.original.startsAt)} → {row.original.endsAt ? formatDateTime(row.original.endsAt) : 'until revoked'}
           {row.original.revokedAt ? <div className="mt-0.5 text-rose-600">revoked {formatDateTime(row.original.revokedAt)}</div> : null}
-          <div className="text-slate-500">by {row.original.grantedBy ? `${row.original.grantedBy.fullName} (${humanize(row.original.grantedBy.role)})` : '—'}</div>
+          <div className="text-muted-foreground">by {row.original.grantedBy ? `${row.original.grantedBy.fullName} (${humanize(row.original.grantedBy.role)})` : '—'}</div>
         </>
       ),
     }),
     w.accessor('reason', {
       header: 'Reason',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
     }),
     w.display({
       id: 'actions',
@@ -131,7 +131,7 @@ export function AccessEventsTable({ rows }: { rows: AccessEvent[] }) {
     e.accessor('at', {
       header: 'When',
       sortFn: 'datetime',
-      meta: { cellClassName: 'text-xs whitespace-nowrap text-slate-600' },
+      meta: { cellClassName: 'text-xs whitespace-nowrap text-fg-2' },
       cell: ({ getValue }) => formatDateTime(getValue()),
     }),
     e.accessor((r) => r.user.fullName, {
@@ -140,7 +140,7 @@ export function AccessEventsTable({ rows }: { rows: AccessEvent[] }) {
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Avatar name={row.original.user.fullName} size="sm" />
-          <span className="font-medium text-slate-800">{row.original.user.fullName}</span>
+          <span className="font-medium text-foreground">{row.original.user.fullName}</span>
         </div>
       ),
     }),
@@ -149,22 +149,22 @@ export function AccessEventsTable({ rows }: { rows: AccessEvent[] }) {
       cell: ({ row }) => (
         <>
           <Badge variant={OUTCOME[row.original.outcome].variant}>{OUTCOME[row.original.outcome].label}</Badge>
-          {row.original.matchedNetwork ? <span className="ml-1 text-xs text-slate-500">{row.original.matchedNetwork.label}</span> : null}
+          {row.original.matchedNetwork ? <span className="ml-1 text-xs text-muted-foreground">{row.original.matchedNetwork.label}</span> : null}
         </>
       ),
     }),
     e.accessor('ip', {
       header: 'IP',
-      meta: { cellClassName: 'font-mono text-xs text-slate-700' },
+      meta: { cellClassName: 'font-mono text-xs text-fg-2' },
     }),
     e.accessor('ssidHint', {
       header: 'Wi-Fi hint',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
       cell: ({ getValue }) => getValue() ?? '—',
     }),
     e.accessor('route', {
       header: 'Route',
-      meta: { cellClassName: 'font-mono text-xs break-all text-slate-600' },
+      meta: { cellClassName: 'font-mono text-xs break-all text-fg-2' },
       cell: ({ getValue }) => getValue() ?? '—',
     }),
   ]);

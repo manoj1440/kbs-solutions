@@ -30,6 +30,7 @@ import {
   Callout,
   MiniStat,
   type Tone,
+  StatStrip,
 } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
@@ -70,7 +71,7 @@ const isFlat = (o: unknown): o is Flat =>
   !Array.isArray(o) &&
   Object.values(o).every((x) => x === null || typeof x !== 'object');
 const pill =
-  'rounded-md bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-800 ring-1 ring-slate-200 ring-inset';
+  'rounded-md bg-surface-muted px-2 py-0.5 font-mono text-xs text-foreground ring-1 ring-border ring-inset';
 
 /** One flat JSON object as `key: value` lines (values stay JSON, wrapping only between words). */
 function FlatObject({ value }: { value: Flat }) {
@@ -78,7 +79,7 @@ function FlatObject({ value }: { value: Flat }) {
     <dl className={`${pill} grid gap-0.5 py-1.5`}>
       {Object.entries(value).map(([k, v]) => (
         <div key={k} className="flex min-w-0 gap-1.5">
-          <dt className="shrink-0 text-slate-500">{k}:</dt>
+          <dt className="shrink-0 text-muted-foreground">{k}:</dt>
           <dd className="min-w-0 break-words">{JSON.stringify(v)}</dd>
         </div>
       ))}
@@ -91,7 +92,7 @@ function ConfigValue({ entry }: { entry: ConfigEntry }) {
   const v = entry.value;
   if (v === null || v === undefined)
     return (
-      <span className="inline-flex rounded-md border border-dashed border-slate-300 px-2 py-0.5 font-mono text-xs text-slate-400 italic">
+      <span className="inline-flex rounded-md border border-dashed border-border-strong px-2 py-0.5 font-mono text-xs text-fg-3 italic">
         unset
       </span>
     );
@@ -131,7 +132,7 @@ function ConfigValue({ entry }: { entry: ConfigEntry }) {
         className={`${pill} inline-flex items-center gap-1.5 ${v ? 'bg-emerald-50 text-emerald-800 ring-emerald-200' : ''}`}
       >
         <span
-          className={`size-1.5 rounded-full ${v ? 'bg-emerald-500' : 'bg-slate-400'}`}
+          className={`size-1.5 rounded-full ${v ? 'bg-emerald-500' : 'bg-fg-3'}`}
           aria-hidden="true"
         />
         {json}
@@ -178,12 +179,12 @@ export default async function ConfigPage() {
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Configuration</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+      <StatStrip cols={4}>
         <MiniStat label="Launch gates" value={`${setCount} / ${gates.data.length}`} hint={open.length ? `${open.length} ★ unset` : 'All ★ keys set'} tone={open.length ? 'amber' : 'emerald'} />
         <MiniStat label="Settings" value={cfg.data.length} hint={`${groups.size} sections`} tone="sky" />
         <MiniStat label="Changed by an Admin" value={changed} hint="Reasoned + audited" tone="violet" />
         <MiniStat label="Never changed" value={cfg.data.length - changed} hint="Seeded defaults" tone="slate" />
-      </div>
+      </StatStrip>
 
       <section aria-label="Launch gates" className="shrink-0">
         {open.length ? (
@@ -193,7 +194,7 @@ export default async function ConfigPage() {
               {open.map((g) => (
                 <li key={g.key} className="min-w-0">
                   <a
-                    className="inline-flex max-w-full items-center gap-1 rounded-md bg-white px-2 py-0.5 font-mono text-xs break-all text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100"
+                    className="inline-flex max-w-full items-center gap-1 rounded-md bg-card px-2 py-0.5 font-mono text-xs break-all text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100"
                     href={`#cfg-${g.key}`}
                     title={g.description}
                   >
@@ -213,7 +214,7 @@ export default async function ConfigPage() {
 
       <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto xl:grid-cols-[12.5rem_minmax(0,1fr)] xl:items-start">
         <nav aria-label="Configuration sections" className="xl:sticky xl:top-2">
-          <p className="mb-2 hidden px-1 text-[10.5px] font-semibold tracking-[0.16em] text-slate-500 uppercase xl:block">
+          <p className="mb-2 hidden px-1 text-2xs font-semibold tracking-[0.16em] text-muted-foreground uppercase xl:block">
             Sections
           </p>
           <ul className="flex flex-wrap gap-1.5 xl:grid xl:gap-0.5">
@@ -224,11 +225,11 @@ export default async function ConfigPage() {
                 <li key={group}>
                   <a
                     href={`#cfg-group-${group}`}
-                    className="inline-flex h-8 w-full items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-2.5 text-[13px] font-medium text-slate-600 shadow-[0_1px_2px_rgb(15_23_42/4%)] transition-colors hover:border-slate-300 hover:text-slate-900 xl:border-transparent xl:bg-transparent xl:shadow-none xl:hover:bg-white"
+                    className="inline-flex h-8 w-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 text-ui font-medium text-fg-2 shadow-card transition-colors hover:border-border-strong hover:text-foreground xl:border-transparent xl:bg-transparent xl:shadow-none xl:hover:bg-card"
                   >
-                    <Icon className="size-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                    <Icon className="size-3.5 shrink-0 text-fg-3" aria-hidden="true" />
                     <span className="truncate">{m.label}</span>
-                    <span className="ml-auto rounded-full bg-slate-100 px-1.5 text-[10.5px] font-semibold text-slate-500 tabular-nums">
+                    <span className="ml-auto rounded-full bg-muted px-1.5 text-2xs font-semibold text-muted-foreground tabular-nums">
                       {entries.length}
                     </span>
                   </a>
@@ -246,23 +247,23 @@ export default async function ConfigPage() {
               <section
                 key={group}
                 id={`cfg-group-${group}`}
-                className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]"
+                className="overflow-hidden rounded-2xl border border-border bg-card shadow-card"
               >
-                <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
-                  <m.icon className="size-4 text-slate-400" aria-hidden="true" />
-                  <h2 className="text-sm font-semibold text-slate-900">{m.label}</h2>
-                  <span className="text-xs text-slate-500">
+                <div className="flex items-center gap-2 border-b border-border-subtle px-4 py-2.5">
+                  <m.icon className="size-4 text-fg-3" aria-hidden="true" />
+                  <h2 className="text-sm font-semibold text-foreground">{m.label}</h2>
+                  <span className="text-xs text-muted-foreground">
                     {entries.length} key{entries.length === 1 ? '' : 's'}
                     {stars ? ` · ${stars} ★` : ''}
                   </span>
                 </div>
-                <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_10.5rem_9.5rem] gap-4 bg-slate-50 px-4 py-2 text-[10.5px] font-semibold tracking-[0.06em] text-slate-500 uppercase lg:grid">
+                <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_10.5rem_9.5rem] gap-4 bg-surface-muted px-4 py-2 text-2xs font-semibold tracking-[0.06em] text-muted-foreground uppercase lg:grid">
                   <span>Key · description</span>
                   <span>Value</span>
                   <span>Last change</span>
                   <span className="sr-only">Actions</span>
                 </div>
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-border-subtle">
                   {entries.map((c) => (
                     <li
                       key={c.key}
@@ -271,7 +272,7 @@ export default async function ConfigPage() {
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="font-mono text-[12.5px] font-medium [overflow-wrap:anywhere] text-slate-900">
+                          <span className="font-mono text-xs font-medium [overflow-wrap:anywhere] text-foreground">
                             <Key name={c.key} />
                           </span>
                           {c.requiresValueBeforeProd ? (
@@ -283,19 +284,19 @@ export default async function ConfigPage() {
                               ★
                             </Badge>
                           ) : null}
-                          <span className="rounded bg-slate-100 px-1 text-[10px] font-semibold tracking-wide text-slate-500">
+                          <span className="rounded bg-muted px-1 text-2xs font-semibold tracking-wide text-muted-foreground">
                             {c.valueType}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                           {c.description}
                         </p>
                       </div>
                       <div className="min-w-0">
                         <ConfigValue entry={c} />
                       </div>
-                      <div className="text-xs text-slate-500 lg:pt-0.5 lg:whitespace-nowrap">
-                        <span className="text-[10.5px] font-semibold tracking-wide text-slate-400 uppercase lg:hidden">
+                      <div className="text-xs text-muted-foreground lg:pt-0.5 lg:whitespace-nowrap">
+                        <span className="text-2xs font-semibold tracking-wide text-fg-3 uppercase lg:hidden">
                           Last change ·{' '}
                         </span>
                         {c.updatedAt ? formatDateTime(c.updatedAt) : 'default'}

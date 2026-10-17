@@ -28,7 +28,7 @@ const c = columnHelper<Suppression>();
 const columns = c.columns([
   c.accessor('mobile', {
     header: 'Mobile',
-    meta: { cellClassName: 'font-mono text-xs text-slate-800' },
+    meta: { cellClassName: 'font-mono text-xs text-foreground' },
   }),
   c.accessor('reason', {
     header: 'Reason',
@@ -37,7 +37,7 @@ const columns = c.columns([
   c.accessor('at', {
     header: 'Added',
     sortFn: 'datetime',
-    meta: { cellClassName: 'text-xs text-slate-600' },
+    meta: { cellClassName: 'text-xs text-fg-2' },
     cell: ({ getValue }) => formatDateTime(getValue()),
   }),
   c.accessor('liftedAt', {
