@@ -62,13 +62,46 @@ describe('core foundation (F-101…F-111)', () => {
       await prisma.otpChallenge.deleteMany({ where: { mobile: `+91${ADMIN_MOBILE}` } });
     });
 
-    it('refresh rotation: reuse of a consumed refresh token revokes the session family', async () => {
+    it('refresh rotation: reuse of a consumed refresh token after its successor was used revokes the session family', async () => {
+      const refresh = (token: string) => request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: token });
       const s = await loginAs(app, prisma, ADMIN_MOBILE);
-      const first = await request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: s.refreshToken }).expect(201);
+      const first = await refresh(s.refreshToken).expect(201);
       expect(first.body.data.accessToken).toBeTruthy();
-      const reuse = await request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: s.refreshToken }).expect(401);
+      const second = await refresh(first.body.data.refreshToken).expect(201); // the legitimate client moved on
+      const reuse = await refresh(s.refreshToken).expect(401); // so the old token is a replay
       expect(reuse.body.error.code).toBe('AUTH_SESSION_REVOKED');
-      await request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: first.body.data.refreshToken }).expect(401);
+      await refresh(second.body.data.refreshToken).expect(401); // whole session revoked
+    });
+
+    it('ADR-015: a retried refresh whose response was lost gets a sibling token (audited); the session stays usable', async () => {
+      const refresh = (token: string) => request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: token });
+      const s = await loginAs(app, prisma, ADMIN_MOBILE);
+      const gracesBefore = await prisma.auditLog.count({ where: { action: 'auth.refresh.grace' } });
+      await refresh(s.refreshToken).expect(201); // response "lost": the client never stores this successor
+      const retry = await refresh(s.refreshToken).expect(201); // same token again, moments later
+      await refresh(retry.body.data.refreshToken).expect(201); // the sibling chain keeps working
+      expect(await prisma.auditLog.count({ where: { action: 'auth.refresh.grace' } })).toBe(gracesBefore + 1);
+    });
+
+    it('ADR-015: the retry window is 30 s — an older reuse still revokes', async () => {
+      const refresh = (token: string) => request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: token });
+      const s = await loginAs(app, prisma, ADMIN_MOBILE);
+      const first = await refresh(s.refreshToken).expect(201);
+      const session = await prisma.session.findFirstOrThrow({ where: { userId: s.user.id }, orderBy: { createdAt: 'desc' } });
+      const [original] = await prisma.refreshToken.findMany({ where: { sessionId: session.id }, orderBy: { createdAt: 'asc' }, take: 1 });
+      await prisma.refreshToken.update({ where: { id: original.id }, data: { usedAt: new Date(Date.now() - 31_000) } }); // used 31 s ago
+      const reuse = await refresh(s.refreshToken).expect(401);
+      expect(reuse.body.error.code).toBe('AUTH_SESSION_REVOKED');
+      await refresh(first.body.data.refreshToken).expect(401);
+    });
+
+    it('ADR-015: concurrent refreshes with the same token both succeed (no revocation)', async () => {
+      const refresh = (token: string) => request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: token });
+      const s = await loginAs(app, prisma, ADMIN_MOBILE);
+      const [a, b] = await Promise.all([refresh(s.refreshToken), refresh(s.refreshToken)]);
+      expect([a.status, b.status]).toEqual([201, 201]);
+      await refresh(a.body.data.refreshToken).expect(201);
+      await refresh(b.body.data.refreshToken).expect(201);
     });
 
     it('web login sets httpOnly cookies; a Telecaller is refused on the web platform', async () => {

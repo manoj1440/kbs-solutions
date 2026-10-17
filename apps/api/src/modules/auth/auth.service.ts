@@ -19,6 +19,9 @@ import { TokenService } from './token.service';
 
 const MASTER_CODE_ALLOWED_ENVS = new Set(['development', 'test']);
 
+/** ADR-015: a used refresh token is accepted again only within this window, and only while its successor is unused. */
+export const REFRESH_REUSE_GRACE_MS = 30_000;
+
 /** F-101: OTP-only authentication, rotating refresh tokens, session policy. */
 @Injectable()
 export class AuthService {
@@ -141,18 +144,29 @@ export class AuthService {
     const tokenHash = this.crypto.hashToken(rawToken);
     const rt = await this.prisma.client.refreshToken.findUnique({ where: { tokenHash }, include: { session: { include: { user: true } } } });
     if (!rt) throw new AppError('AUTH_INVALID_TOKEN', 'Session is not valid. Please log in again.', undefined, 'LOGIN_AGAIN');
-    if (rt.usedAt) {
-      // Reuse detection → revoke the whole family (REQ-21 §21.5).
-      await this.prisma.client.session.update({ where: { id: rt.sessionId }, data: { revokedAt: new Date(), revokedReason: 'REFRESH_REUSE' } });
-      await this.audit.record({ action: 'auth.refresh.reuse', entityType: 'Session', entityId: rt.sessionId, actor: { userId: rt.session.userId, role: rt.session.user.role } });
-      throw new AppError('AUTH_SESSION_REVOKED', 'Session revoked for security. Please log in again.', undefined, 'LOGIN_AGAIN');
+    // ADR-015: claim the token atomically — of two concurrent requests with the same token only one rotates normally
+    const claimed = rt.usedAt ? 0 : (await this.prisma.client.refreshToken.updateMany({ where: { id: rt.id, usedAt: null }, data: { usedAt: new Date() } })).count;
+    let grace = false;
+    if (!claimed) {
+      // Already used. A retry of a refresh whose response was lost (or a concurrent twin) is benign only while the
+      // token was used moments ago and its successor was never used; anything else is reuse → revoke (REQ-21 §21.5).
+      const used = await this.prisma.client.refreshToken.findUniqueOrThrow({ where: { id: rt.id }, select: { usedAt: true, replacedById: true } });
+      const successor = used.replacedById ? await this.prisma.client.refreshToken.findUnique({ where: { id: used.replacedById }, select: { usedAt: true } }) : null;
+      grace = Boolean(used.usedAt && Date.now() - used.usedAt.getTime() < REFRESH_REUSE_GRACE_MS && !successor?.usedAt && !rt.session.revokedAt);
+      if (!grace) {
+        await this.prisma.client.session.update({ where: { id: rt.sessionId }, data: { revokedAt: new Date(), revokedReason: 'REFRESH_REUSE' } });
+        await this.audit.record({ action: 'auth.refresh.reuse', entityType: 'Session', entityId: rt.sessionId, actor: { userId: rt.session.userId, role: rt.session.user.role } });
+        throw new AppError('AUTH_SESSION_REVOKED', 'Session revoked for security. Please log in again.', undefined, 'LOGIN_AGAIN');
+      }
     }
     const user = rt.session.user;
     // F-804: deactivation also revokes sessions — say why (REQ-25 §25.1 "account-deactivated explanation") rather than "expired"
     if (user.status === 'DEACTIVATED' || user.status === 'BLOCKED') throw new AppError('AUTH_ACCOUNT_DEACTIVATED', 'This account is not active. Contact your Manager or Admin.', undefined, user.role === 'TELECALLER' ? 'CONTACT_MANAGER' : 'CONTACT_ADMIN');
     if (rt.expiresAt.getTime() < Date.now() || rt.session.revokedAt) throw new AppError('AUTH_SESSION_REVOKED', 'Session expired. Please log in again.', undefined, 'LOGIN_AGAIN');
 
-    const newRaw = await this.issueRefresh(rt.sessionId, rt.familyId, rt.id);
+    // normal rotation links the successor; a grace retry gets a sibling in the same family and leaves the chain as is
+    const newRaw = await this.issueRefresh(rt.sessionId, rt.familyId, grace ? undefined : rt.id);
+    if (grace) await this.audit.record({ action: 'auth.refresh.grace', entityType: 'Session', entityId: rt.sessionId, actor: { userId: user.id, role: user.role } });
     await this.prisma.client.session.update({ where: { id: rt.sessionId }, data: { lastSeenAt: new Date() } });
     const accessMinutes = this.config.getInt('auth.accessTokenMinutes') ?? 15;
     const accessToken = this.tokens.signAccess({ sub: user.id, sid: rt.sessionId, role: user.role }, accessMinutes);
@@ -210,7 +224,8 @@ export class AuthService {
     const created = await this.prisma.client.refreshToken.create({
       data: { sessionId, tokenHash: this.crypto.hashToken(raw), familyId: familyId ?? sessionId, expiresAt: new Date(Date.now() + days * 86_400_000) },
     });
-    if (replacesId) await this.prisma.client.refreshToken.update({ where: { id: replacesId }, data: { usedAt: new Date(), replacedById: created.id } });
+    // usedAt was set by the atomic claim in refresh(); this only links the successor
+    if (replacesId) await this.prisma.client.refreshToken.update({ where: { id: replacesId }, data: { replacedById: created.id } });
     return raw;
   }
 
