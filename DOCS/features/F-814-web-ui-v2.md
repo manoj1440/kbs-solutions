@@ -142,13 +142,13 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 | P5 | Reports (telecallers, managers, advisors, bank/card mix) + audit | `/admin/dashboards/*`, `/admin/audit` | DONE |
 | P5 | Compliance, network, config, retention | `/admin/compliance`, `/admin/network`, `/admin/config`, `/admin/retention` | DONE |
 | P5 | Notifications + account (shared, all roles) | `/*/notifications`, `/*/account` | DONE |
-| P6 | Manager home (Team) | `/manager` | TODO |
-| P6 | Manager dashboard + agenda rail | `/manager/dashboard` | TODO |
-| P6 | Team calling + telecaller drill-down | `/manager/calling(/telecaller/[id])` | TODO |
-| P6 | Advisors + advisor detail | `/manager/advisors(/[id])` | TODO |
-| P6 | Pending actions | `/manager/pending-actions` | TODO |
-| P6 | Payouts home | `/manager/payouts` | TODO |
-| P6 | Telecaller detail + create | `/manager/telecallers/[id]`, `/manager/telecallers/new` | TODO |
+| P6 | Manager home (Team) | `/manager` | DONE |
+| P6 | Manager dashboard + agenda rail | `/manager/dashboard` | DONE |
+| P6 | Team calling + telecaller drill-down | `/manager/calling(/telecaller/[id])` | DONE |
+| P6 | Advisors + advisor detail | `/manager/advisors(/[id])` | DONE |
+| P6 | Pending actions | `/manager/pending-actions` | DONE |
+| P6 | Payouts home | `/manager/payouts` | DONE |
+| P6 | Telecaller detail + create | `/manager/telecallers/[id]`, `/manager/telecallers/new` | DONE |
 | P7 | Login | `/login` | TODO |
 | P7 | Status screens + public verify | `/session`, `/access-denied`, not-found/error, `/verify/[ref]` | TODO |
 | P7 | Final sweep + audit re-score + docs | — | TODO |
@@ -202,4 +202,10 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 - Found and fixed on the way: `` `${selectClass} w-36` `` string concatenation kept both `w-full` and `w-36` (w-full won → full-width date filters on Reports and Manager advisors) — now `cn()`. Retention: dry-run table fell into card mode beside the legal-holds panel and the hold form clipped "Release" — columns stack below `2xl`, the form uses a container query (`@container` / `@2xl:`).
 - Back links added where detail pages had none: module editor, card editor, bank coverage profile (via `DetailHeader`). Advisor review detail typechecks but was not rendered — the demo data has no advisor awaiting review.
 - P5 checks: web typecheck/lint, unit 24/24, Playwright 73 passed / 1 skipped; 1440 + 390 sweeps of every P5 route: overflow 0 (retention also checked at 1920).
-- Next: P6 Manager workspace.
+- Session 19, P6 done. Commits: `feat(web): Manager Team + dashboard v2 — real tables, greeting, Today rail` (U2) → `feat(web): Manager advisors, pending actions, telecaller pages v2`.
+- U2 cause: Team put the telecaller and advisor tables side by side; each panel was under the 700 px container threshold, so both rendered phone cards on desktop. Now full width each; the advisors panel scrolls inside 32 rem.
+- Manager dashboard: greeting h1 + Today rail (pending actions, payouts awaiting you, team callbacks due) built from existing Manager endpoints (`/pending-actions`, `/payouts/requests?awaitingMe=true`, `/calling/team/overview`) — no new API. `OperationsDashboard` gained `heading`/`aside` slots (without `aside` it keeps the one-screen layout). Each rail card fails on its own (warning callout), never as zeros.
+- Team calling + drill-down were done in P3 (shared `team-ops`); payouts home is the shared entitlements ledger (P4).
+- Kit: `StatCard` source footer is sentence case.
+- P6 checks: web typecheck/lint; Playwright 73 passed / 1 skipped; 1440 + 390 sweep of all Manager routes: overflow 0.
+- Next: P7 Auth, status screens, final QA.
