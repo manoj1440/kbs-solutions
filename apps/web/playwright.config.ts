@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * F-901 web e2e. Runs against an already-started web (E2E_BASE_URL) + API with the dev OTP master code.
+ * Local, preferred: `bash apps/web/test/e2e-isolated.sh` — its own disposable DB + servers (never the demo kbs_dev).
  * Local: E2E_CHROMIUM=/opt/pw-browsers/chromium E2E_BASE_URL=http://localhost:3200 E2E_DB_URL=… pnpm --filter web test:e2e
  * Mac without host psql: E2E_PG_CONTAINER=kbs-test-pg E2E_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" (+ E2E_API_URL).
  */

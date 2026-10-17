@@ -40,3 +40,4 @@ apps/api/src/watch-bump.ts
 apps/web/test-results/
 apps/web/playwright-report/
 .playwright-mcp/
+.next-e2e/
