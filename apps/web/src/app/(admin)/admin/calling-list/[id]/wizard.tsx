@@ -1,7 +1,7 @@
 'use client';
 
 import { ApiClientError, formatDateTime } from '@kbs/shared';
-import { ArrowLeft, Check, CheckCircle2, ClipboardCheck, Columns3, EyeOff, FileSpreadsheet, Info, ListChecks, Phone, ShieldAlert, ShieldCheck, TableProperties, UserCheck, Users } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ClipboardCheck, EyeOff, FileSpreadsheet, Info, ListChecks, Phone, ShieldAlert, ShieldCheck, TableProperties, UserCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -10,16 +10,16 @@ import { columnHelper, DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Callout, EmptyState, Field, humanize, Meter, PageHeader, SectionCard, selectClass, StatCard, StatGrid, TONE, type Tone } from '@/components/ui/kit';
+import { Callout, EmptyState, Field, humanize, Meter, PageHeader, SectionCard, StatCard, StatGrid, TONE, type Tone } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
-const STEPS = ['Upload', 'Map columns', 'Validate', 'Confirm import'] as const;
+const STEPS = ['Upload', 'Check', 'Confirm import'] as const;
 
-/** F-806: progress indicator for the existing import steps (presentation only). `current` = index of the step in progress; 4 = all done. */
+/** F-806/F-816: progress indicator for the import steps (presentation only). `current` = index of the step in progress; 3 = all done. */
 export function ImportSteps({ current, failed }: { current: number; failed?: boolean }) {
   return (
-    <ol aria-label="Import steps" className="grid grid-cols-4 gap-1 sm:gap-2">
+    <ol aria-label="Import steps" className="grid grid-cols-3 gap-1 sm:gap-2">
       {STEPS.map((label, i) => {
         const done = i < current;
         const on = i === current;
@@ -45,7 +45,7 @@ export function ImportSteps({ current, failed }: { current: number; failed?: boo
   );
 }
 
-const STEP_OF: Record<BatchDetail['status'], number> = { UPLOADED: 1, VALIDATED: 3, IMPORTED: 4, FAILED: 1, REJECTED: 1 };
+const STEP_OF: Record<BatchDetail['status'], number> = { UPLOADED: 1, VALIDATED: 2, IMPORTED: 3, FAILED: 1, REJECTED: 1 };
 const STATUS_VARIANT: Record<BatchDetail['status'], 'info' | 'warning' | 'success' | 'destructive' | 'unknown'> = { UPLOADED: 'info', VALIDATED: 'warning', IMPORTED: 'success', FAILED: 'destructive', REJECTED: 'unknown' };
 
 function Count({ label, value, total, tone, icon: Icon }: { label: string; value: number; total: number; tone: Tone; icon: typeof Check }) {
@@ -125,29 +125,22 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
   const router = useRouter();
   const [batch, setBatch] = useState<BatchDetail>(initial);
   const hm = batch.headerMapping;
-  const [mapping, setMapping] = useState<Mapping>({
-    name: hm?.confirmed?.name ?? hm?.proposed.name ?? '',
-    mobile: hm?.confirmed?.mobile ?? hm?.proposed.mobile ?? '',
-    pincode: hm?.confirmed?.pincode ?? hm?.proposed.pincode ?? '',
-    pan: hm?.confirmed?.pan ?? hm?.proposed.pan ?? null,
-  });
   const [attest, setAttest] = useState(false);
   const [vendor, setVendor] = useState('');
   const [basis, setBasis] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fail = (e: unknown, fallback: string) => setMsg(e instanceof ApiClientError ? e.message : fallback);
-  const headers = hm?.headers ?? [];
 
-  const validate = async () => {
+  /** Batches uploaded before F-816 still sit in UPLOADED: check them with the columns read by name. */
+  const check = async () => {
     setBusy(true);
     setMsg(null);
     try {
-      const r = await clientApi.put<BatchDetail>(`/calling-list/batches/${batch.id}/mapping`, mapping);
+      const r = await clientApi.put<BatchDetail>(`/calling-list/batches/${batch.id}/mapping`, hm?.proposed ?? {});
       setBatch(r.data);
-      setMsg('Mapping confirmed — review the validation report below.');
     } catch (e) {
-      fail(e, 'Could not validate.');
+      fail(e, 'This file is not in the customer-list format (NAME, MOBILE, Pincode).');
     } finally {
       setBusy(false);
     }
@@ -193,7 +186,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
         icon={Phone}
         eyebrow="Calling"
         title={`Batch ${batch.publicRef}`}
-        description="Upload → map columns → validate → confirm. Every batch keeps its file, uploader and time; rows are never redistributed automatically."
+        description="Upload → check → confirm. Every batch keeps its file, uploader and time; rows are never redistributed automatically."
         actions={
           <Button variant="outline" asChild>
             <Link href="/admin/calling-list">
@@ -225,34 +218,16 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
         </Callout>
       ) : null}
 
-      {batch.status !== 'IMPORTED' ? (
-        <SectionCard icon={Columns3} tone="teal" title="1 · Map columns" description={`Detected headers: ${headers.join(', ') || '(none)'}. Location is never mapped — it is resolved from the pincode master.`}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {(['name', 'mobile', 'pincode', 'pan'] as const).map((field) => (
-              <Field key={field} htmlFor={`map-${field}`} label={field === 'pan' ? 'PAN (optional)' : field.charAt(0).toUpperCase() + field.slice(1)}>
-                <select
-                  id={`map-${field}`}
-                  className={selectClass}
-                  value={mapping[field] ?? ''}
-                  onChange={(e) => setMapping({ ...mapping, [field]: e.target.value || (field === 'pan' ? null : '') })}
-                >
-                  <option value="">{field === 'pan' ? '— not present —' : '— choose —'}</option>
-                  {headers.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            ))}
-            <div className="sm:col-span-2 lg:col-span-4">
-              <Button disabled={busy || !mapping.name || !mapping.mobile || !mapping.pincode} onClick={validate}>
-                <ClipboardCheck />
-                {busy ? 'Validating…' : 'Confirm mapping & validate'}
-              </Button>
-            </div>
+      {batch.status === 'UPLOADED' ? (
+        <Callout tone="neutral" icon={ClipboardCheck}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>This file has not been checked yet.</span>
+            <Button size="sm" disabled={busy} onClick={check}>
+              <ClipboardCheck />
+              {busy ? 'Checking…' : 'Check file'}
+            </Button>
           </div>
-        </SectionCard>
+        </Callout>
       ) : null}
 
       {batch.preview?.length ? (
@@ -265,7 +240,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
         <SectionCard
           icon={ListChecks}
           tone="amber"
-          title="2 · Validation report"
+          title="Check"
           description={
             <>
               {batch.totals?.rows} rows: <strong>{v.accepted}</strong> accepted · <strong>{v.needsReview}</strong> need review · <strong>{v.excluded}</strong> excluded.
@@ -296,7 +271,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
             </ul>
             <div className="grid gap-3 rounded-xl border border-teal-200 bg-teal-50/40 p-4">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <ShieldCheck className="size-4 text-teal-700" aria-hidden="true" />3 · Confirm import
+                <ShieldCheck className="size-4 text-teal-700" aria-hidden="true" />Confirm import
               </h3>
               {batch.complianceGlobalConfirmed ? (
                 <Callout tone="success" icon={ShieldCheck}>

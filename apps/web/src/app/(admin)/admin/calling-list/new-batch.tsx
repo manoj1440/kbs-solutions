@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Callout, IconTile } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 
-/** Step (a) in a dialog: pick the workbook, upload, create the batch, continue in the mapping wizard. */
+/** F-816: pick the workbook → the server reads the fixed columns and checks every row → continue on the batch page. */
 export function UploadListButton() {
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -42,7 +42,7 @@ export function UploadListButton() {
                 Upload customer list
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Excel (.xlsx) or CSV with NAME, MOBILE, Pincode and optional PAN. Columns are mapped and checked before anything is imported.
+                Excel (.xlsx) or CSV with the columns NAME, MOBILE, Pincode and optional PAN. Every row is checked before anything is imported.
               </p>
             </div>
           </div>
@@ -59,13 +59,13 @@ export function UploadListButton() {
                 dialog.current?.close();
                 router.push(`/admin/calling-list/${r.data.id}`);
               } catch (e) {
-                setMsg(e instanceof ApiClientError ? e.message : 'Could not create the batch.');
+                setMsg(e instanceof ApiClientError ? e.message : 'Could not read the file.');
               } finally {
                 setBusy(false);
               }
             }}
           />
-          {busy ? <p className="text-xs text-muted-foreground">Creating batch…</p> : null}
+          {busy ? <p className="text-xs text-muted-foreground">Checking file…</p> : null}
           {msg ? (
             <Callout tone="danger" icon={TriangleAlert} role="alert">
               {msg}

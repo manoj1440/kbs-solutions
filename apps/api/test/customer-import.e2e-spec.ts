@@ -56,20 +56,23 @@ describe('F-303 customer list import + F-305 allocation', () => {
     const fileId = await upload(await workbook(rows));
     const created = await api().post('/api/v1/calling-list/batches').set(auth(adminToken)).set('idempotency-key', idem()).send({ fileId }).expect(201);
     batchId = created.body.data.id;
-    expect(created.body.data.status).toBe('UPLOADED');
-    expect(created.body.data.headerMapping.proposed).toEqual({ name: 'NAME', mobile: 'MOBILE', pincode: 'Pincode', pan: 'PAN NO' });
+    // F-816: fixed format — columns read by name and validated on upload, no mapping step
+    expect(created.body.data.status).toBe('VALIDATED');
+    expect(created.body.data.headerMapping.confirmed).toEqual({ name: 'NAME', mobile: 'MOBILE', pincode: 'Pincode', pan: 'PAN NO' });
     expect(created.body.data.headerMapping.proposed.location).toBeUndefined();
     expect(created.body.data.preview[0].mobile).toBe('+91••••••0001');
     expect(created.body.data.preview[0].pan).toBe('•••••1234F');
     expect(created.body.data.preview[0].name).toBe('Customer 1');
-
-    const mapped = await api().put(`/api/v1/calling-list/batches/${batchId}/mapping`).set(auth(adminToken)).send({ name: 'NAME', mobile: 'MOBILE', pincode: 'Pincode', pan: 'PAN NO' }).expect(200);
-    expect(mapped.body.data.status).toBe('VALIDATED');
-    const v = mapped.body.data.totals.validation;
+    const v = created.body.data.totals.validation;
     expect(v).toMatchObject({ accepted: 10, needsReview: 2, excluded: 2 });
     expect(v.byIssue).toMatchObject({ INVALID_MOBILE: 1, BLANK_NAME: 1, INVALID_PAN: 1, DUPLICATE_IN_BATCH: 1, SUPPRESSED: 1 });
     // wrong column name is rejected
     await api().put(`/api/v1/calling-list/batches/${batchId}/mapping`).set(auth(adminToken)).send({ name: 'Nope', mobile: 'MOBILE', pincode: 'Pincode' }).expect(400);
+    // a file without the required columns is refused before any batch is created
+    const before = await prisma.customerImportBatch.count();
+    const wrong = await api().post('/api/v1/calling-list/batches').set(auth(adminToken)).set('idempotency-key', idem()).send({ fileId: await upload(await workbook([['x', 'y', 'z', 'w']], ['A', 'B', 'C', 'D']), 'wrong.xlsx') }).expect(400);
+    expect(wrong.body.error.message).toContain('not in the customer-list format');
+    expect(await prisma.customerImportBatch.count()).toBe(before);
   });
 
   it('CUST-02: confirm without compliance confirmation imports but does not allocate; attestation + trained Telecallers → 4/3/3 split', async () => {
@@ -136,10 +139,9 @@ describe('F-303 customer list import + F-305 allocation', () => {
     const buf = await workbook(rows, ['Customer Name', 'Pan No', 'Mobile No', 'PIN']);
     const fileId = await upload(buf, 'reimport.xlsx');
     const created = await api().post('/api/v1/calling-list/batches').set(auth(adminToken)).set('idempotency-key', idem()).send({ fileId }).expect(201);
-    expect(created.body.data.headerMapping.proposed).toEqual({ name: 'Customer Name', mobile: 'Mobile No', pincode: 'PIN', pan: 'Pan No' });
+    expect(created.body.data.headerMapping.confirmed).toEqual({ name: 'Customer Name', mobile: 'Mobile No', pincode: 'PIN', pan: 'Pan No' });
     const id2 = created.body.data.id as string;
-    const mapped = await api().put(`/api/v1/calling-list/batches/${id2}/mapping`).set(auth(adminToken)).send({ name: 'Customer Name', mobile: 'Mobile No', pincode: 'PIN', pan: 'Pan No' }).expect(200);
-    expect(mapped.body.data.totals.validation).toMatchObject({ accepted: 1, excluded: 2, byIssue: { DUPLICATE_OF_EXISTING: 1, SUPPRESSED: 1 } });
+    expect(created.body.data.totals.validation).toMatchObject({ accepted: 1, excluded: 2, byIssue: { DUPLICATE_OF_EXISTING: 1, SUPPRESSED: 1 } });
     const confirmed = await api().post(`/api/v1/calling-list/batches/${id2}/confirm`).set(auth(adminToken)).set('idempotency-key', idem()).send({ consentRepresentationConfirmed: true, sourceVendor: 'Vendor X', permittedUseBasis: 'consented list' }).expect(201);
     expect(confirmed.body.data.allocation).toMatchObject({ ran: true, assigned: 1 });
     expect(confirmed.body.data.consentRepresentationConfirmed).toBe(true);

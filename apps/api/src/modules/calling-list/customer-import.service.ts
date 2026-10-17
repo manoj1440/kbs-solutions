@@ -75,12 +75,18 @@ export class CustomerImportService {
     };
   }
 
-  /** Step (a)+(b)+(c): create the batch, detect headers, propose a mapping, masked preview. Identical file → prior batch. */
+  /**
+   * Upload → batch → validation report in one step (F-816): the customer list has a fixed format, so columns are read by
+   * name and the mapping is confirmed at once. A file without NAME / MOBILE / Pincode is refused before any batch exists.
+   * Identical file → prior batch.
+   */
   async create(actor: Actor, input: { fileId: string; sheetName?: string }) {
     const { file, checksum, sheets, sheet } = await this.load(input.fileId, input.sheetName, 20);
     const existing = await this.prisma.client.customerImportBatch.findUnique({ where: { checksum } });
     if (existing) return { ...(await this.get(existing.id)), duplicateOf: existing.publicRef };
     const mapping = this.autoMap(sheet.headers);
+    const missing = (['name', 'mobile', 'pincode'] as const).filter((k) => !mapping[k]).map((k) => ({ name: 'NAME', mobile: 'MOBILE', pincode: 'Pincode' })[k]);
+    if (missing.length) throw new AppError('VALIDATION_FAILED', `This file is not in the customer-list format: no ${missing.join(', ')} column. The list needs NAME, MOBILE and Pincode (PAN optional).`, { headers: sheet.headers });
     const batch = await this.prisma.client.customerImportBatch.create({
       data: {
         publicRef: makePublicRef(RefPrefix.IMPORT_BATCH),
@@ -93,7 +99,7 @@ export class CustomerImportService {
       },
     });
     RequestContextStore.audit({ entityId: batch.id, after: { publicRef: batch.publicRef, fileId: file.id, sheet: sheet.name, headers: sheet.headers } });
-    return { ...(await this.get(batch.id)), preview: this.maskedPreview(sheet, mapping) };
+    return this.setMapping(batch.id, mapping as CustomerHeaderMapping);
   }
 
   private maskedPreview(sheet: ParsedSheet, mapping: Partial<CustomerHeaderMapping>) {

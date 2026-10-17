@@ -41,9 +41,9 @@ interface Caller {
 
 const WORKED: RecordStatus[] = ['UNREACHABLE', 'FOLLOW_UP', 'INTERESTED', 'LINK_SHARED', 'DECLINED', 'COMPLETED'];
 
-/** What the Admin still has to do with a batch (mapping, review, consent, allocation) — null when nothing. */
+/** What the Admin still has to do with a batch (check, consent, allocation) — null when nothing. */
 function batchAction(b: BatchRow) {
-  if (b.status === 'UPLOADED') return 'Map columns';
+  if (b.status === 'UPLOADED') return 'Check file';
   if (b.status === 'VALIDATED') return 'Confirm import';
   if (b.status === 'IMPORTED' && !b.allocatedAt) return b.attested ? 'Allocate to callers' : 'Confirm consent to allocate';
   return null;
