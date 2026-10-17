@@ -44,10 +44,9 @@ export function IconTile({ icon: Icon, tone = 'teal', size = 'md', className }: 
   );
 }
 
-/** Every page starts with this: icon tile, section eyebrow, the page's single h1, purpose line, actions, optional KPI strip. */
+/** Every page starts with this: icon tile, the page's single h1, purpose line, actions, optional KPI strip. F-814 U9: `eyebrow` is accepted but no longer rendered (the breadcrumb names the section). */
 export function PageHeader({
   icon,
-  eyebrow,
   title,
   description,
   actions,
@@ -70,9 +69,6 @@ export function PageHeader({
         <div className="flex min-w-0 items-start gap-4">
           {icon ? <IconTile icon={icon} tone={tone} size="lg" className="hidden shadow-sm sm:inline-flex" /> : null}
           <div className="min-w-0">
-            {eyebrow ? (
-              <div className={cn('mb-1 text-2xs font-semibold tracking-[0.16em] uppercase', TONE[tone].text)}>{eyebrow}</div>
-            ) : null}
             <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px] sm:leading-9">{title}</h1>
             {description ? <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
             {meta ? <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">{meta}</div> : null}

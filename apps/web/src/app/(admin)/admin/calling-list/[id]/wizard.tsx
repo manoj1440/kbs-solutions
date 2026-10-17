@@ -25,16 +25,16 @@ export function ImportSteps({ current, failed }: { current: number; failed?: boo
         const on = i === current;
         return (
           <li key={label} aria-current={on ? 'step' : undefined} className="relative flex min-w-0 flex-col items-center gap-1.5 text-center">
-            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-4 right-[calc(50%+1rem)] h-0.5 w-[calc(100%-1.5rem)] rounded-full', done || on ? 'bg-teal-500' : 'bg-slate-200')} /> : null}
+            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-4 right-[calc(50%+1rem)] h-0.5 w-[calc(100%-1.5rem)] rounded-full', done || on ? 'bg-teal-500' : 'bg-surface-strong')} /> : null}
             <span
               className={cn(
-                'relative z-10 inline-flex size-8 items-center justify-center rounded-full text-xs font-semibold ring-4 ring-white tabular-nums',
-                done ? 'bg-teal-600 text-white' : on ? (failed ? 'bg-rose-600 text-white' : 'bg-slate-900 text-white') : 'bg-slate-100 text-slate-500',
+                'relative z-10 inline-flex size-8 items-center justify-center rounded-full text-xs font-semibold ring-4 ring-card tabular-nums',
+                done ? 'bg-primary text-primary-foreground' : on ? (failed ? 'bg-rose-600 text-white' : 'bg-foreground text-background') : 'bg-muted text-muted-foreground',
               )}
             >
               {done ? <Check className="size-4" aria-hidden="true" /> : i + 1}
             </span>
-            <span className={cn('text-[11px] leading-tight font-medium sm:text-xs', done ? 'text-teal-700' : on ? 'text-slate-900' : 'text-slate-500')}>
+            <span className={cn('text-2xs leading-tight font-medium sm:text-xs', done ? 'text-teal-700' : on ? 'text-foreground' : 'text-muted-foreground')}>
               {label}
               <span className="sr-only">{done ? ' (done)' : on ? ' (current)' : ''}</span>
             </span>
@@ -50,12 +50,12 @@ const STATUS_VARIANT: Record<BatchDetail['status'], 'info' | 'warning' | 'succes
 
 function Count({ label, value, total, tone, icon: Icon }: { label: string; value: number; total: number; tone: Tone; icon: typeof Check }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-3.5">
-      <div className="flex items-center gap-2 text-[12px] font-medium text-slate-600">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-3.5">
+      <div className="flex items-center gap-2 text-xs font-medium text-fg-2">
         <Icon className={cn('size-3.5', TONE[tone].text)} aria-hidden="true" />
         {label}
       </div>
-      <div className="mt-1 text-xl font-semibold text-slate-900 tabular-nums">{value}</div>
+      <div className="mt-1 text-xl font-semibold text-foreground tabular-nums">{value}</div>
       <Meter value={value} max={total} tone={tone} className="mt-2 h-1.5" label={label} />
     </div>
   );
@@ -215,7 +215,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
           </>
         }
       >
-        <div className="rounded-2xl border border-slate-200/80 bg-white px-3 py-4 shadow-[0_1px_2px_rgb(15_23_42/4%)] sm:px-6">
+        <div className="rounded-2xl border border-border bg-card px-3 py-4 shadow-card sm:px-6">
           <ImportSteps current={STEP_OF[batch.status] ?? 1} failed={batch.status === 'FAILED' || batch.status === 'REJECTED'} />
         </div>
       </PageHeader>
@@ -280,22 +280,22 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
             </div>
             <ul className="grid gap-2 text-sm md:grid-cols-2">
               {Object.entries(v.byIssue).map(([k, n]) => (
-                <li key={k} className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2">
+                <li key={k} className="flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-muted px-3 py-2">
                   <Badge variant={k === 'INVALID_PAN' ? 'info' : k.startsWith('DUPLICATE') || k === 'SUPPRESSED' ? 'unknown' : 'warning'} className="tabular-nums">
                     {n}
                   </Badge>{' '}
-                  <span className="min-w-0 text-slate-700">{ISSUE_LABEL[k] ?? k}</span>
+                  <span className="min-w-0 text-fg-2">{ISSUE_LABEL[k] ?? k}</span>
                 </li>
               ))}
               {Object.keys(v.byIssue).length === 0 ? (
-                <li className="flex items-center gap-2 text-slate-500">
+                <li className="flex items-center gap-2 text-muted-foreground">
                   <CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" />
                   No issues found.
                 </li>
               ) : null}
             </ul>
             <div className="grid gap-3 rounded-xl border border-teal-200 bg-teal-50/40 p-4">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <ShieldCheck className="size-4 text-teal-700" aria-hidden="true" />3 · Confirm import
               </h3>
               {batch.complianceGlobalConfirmed ? (
@@ -307,7 +307,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
                   <Callout tone="warning" icon={ShieldAlert}>
                     Compliance has not confirmed calling-list consent globally. Attest for this batch to allow allocation, or import now and allocate later (REQ-21 §21.2).
                   </Callout>
-                  <label className="flex items-start gap-2 text-sm text-slate-800">
+                  <label className="flex items-start gap-2 text-sm text-foreground">
                     <input id="attest" type="checkbox" className="mt-0.5 size-4 shrink-0 accent-teal-700" checked={attest} onChange={(e) => setAttest(e.target.checked)} />I confirm this list was obtained with customer consent / a permitted use basis.
                   </label>
                   {attest ? (
@@ -355,7 +355,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
             <div className="grid gap-4">
               {alloc ? (
                 <div className="grid gap-2">
-                  <p className="text-sm text-slate-700">
+                  <p className="text-sm text-fg-2">
                     Assigned <strong className="tabular-nums">{alloc.assigned}</strong> · unassigned <strong className="tabular-nums">{alloc.unassigned}</strong> · hidden <span className="tabular-nums">{alloc.hidden}</span> · suppressed{' '}
                     <span className="tabular-nums">{alloc.suppressed}</span>
                     {batch.allocatedAt ? ` · last allocation ${formatDateTime(batch.allocatedAt)}` : ''}
@@ -439,8 +439,8 @@ const rq = columnHelper<ReviewRow>();
 
 function PreviewTable({ rows }: { rows: PreviewRow[] }) {
   const columns = pv.columns([
-    pv.accessor('row', { header: 'Row', meta: { cellClassName: 'text-xs text-slate-500' } }),
-    pv.accessor('name', { header: 'Name', meta: { cellClassName: 'font-medium text-slate-800' } }),
+    pv.accessor('row', { header: 'Row', meta: { cellClassName: 'text-xs text-muted-foreground' } }),
+    pv.accessor('name', { header: 'Name', meta: { cellClassName: 'font-medium text-foreground' } }),
     pv.accessor('mobile', { header: 'Mobile', meta: { cellClassName: 'font-mono text-xs' } }),
     pv.accessor('pincode', { header: 'Pincode', meta: { cellClassName: 'font-mono text-xs' } }),
     pv.accessor('pan', { header: 'PAN', meta: { cellClassName: 'font-mono text-xs' }, cell: ({ getValue }) => getValue() ?? '—' }),
@@ -450,8 +450,8 @@ function PreviewTable({ rows }: { rows: PreviewRow[] }) {
 
 function ReviewQueueTable({ rows, reason, setReason, act }: { rows: ReviewRow[]; reason: Record<string, string>; setReason: (v: Record<string, string>) => void; act: (id: string, action: 'ACCEPT' | 'EXCLUDE') => void }) {
   const columns = rq.columns([
-    rq.accessor('sourceRowNumber', { header: 'Row', meta: { cellClassName: 'text-xs text-slate-500' } }),
-    rq.accessor('fullName', { header: 'Name', meta: { cellClassName: 'font-medium text-slate-800' } }),
+    rq.accessor('sourceRowNumber', { header: 'Row', meta: { cellClassName: 'text-xs text-muted-foreground' } }),
+    rq.accessor('fullName', { header: 'Name', meta: { cellClassName: 'font-medium text-foreground' } }),
     rq.accessor('mobileMasked', { header: 'Mobile', meta: { cellClassName: 'font-mono text-xs' } }),
     rq.display({
       id: 'location',

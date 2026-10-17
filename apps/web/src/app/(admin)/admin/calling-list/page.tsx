@@ -11,7 +11,7 @@ import Link from 'next/link';
 
 import { DataTablePagination, DataTablePanel } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import { MiniStat, selectClass } from '@/components/ui/kit';
+import { MiniStat, selectClass, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -105,7 +105,7 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
           ) : null}
         </div>
       ) : null}
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+      <StatStrip cols={8}>
         <MiniStat label="Customer records" value={summary.total.toLocaleString('en-IN')} hint={`${summary.batches.total} upload${summary.batches.total === 1 ? '' : 's'}`} tone="sky" />
         <MiniStat label="Waiting for a caller" value={by.UNASSIGNED} hint="Accepted, not assigned" tone="amber" />
         <MiniStat label="Not yet called" value={by.UNTOUCHED} hint={`Assigned, no outcome · ${pct(by.UNTOUCHED)}`} tone="violet" />
@@ -114,7 +114,7 @@ export default async function CallingRecordsPage({ searchParams }: { searchParam
         <MiniStat label="Interested / link shared" value={positive} hint={`${by.INTERESTED} interested · ${by.LINK_SHARED} shared`} tone="emerald" />
         <MiniStat label="Follow-ups due now" value={summary.followUpsDue} hint={`${by.FOLLOW_UP} scheduled`} tone="amber" />
         <MiniStat label="Closed or blocked" value={closed} hint={`${by.DECLINED + by.COMPLETED} closed · ${by.DO_NOT_CONTACT + by.EXCLUDED} blocked`} tone="slate" />
-      </div>
+      </StatStrip>
 
       <DataTablePanel
         id="records"
