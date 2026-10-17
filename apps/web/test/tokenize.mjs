@@ -10,7 +10,7 @@ const map = [
   [/\bbg-slate-(100)(?:\/\d+)?\b/g, () => 'bg-muted'],
   [/\bbg-slate-(200)(?:\/\d+)?\b/g, () => 'bg-surface-strong'],
   [/\btext-slate-(\d+)\b(?!\/)/g, (_, n) =>
-    shade(n) >= 800 ? 'text-foreground' : shade(n) >= 600 ? 'text-fg-2' : shade(n) === 500 ? 'text-muted-foreground' : shade(n) === 400 ? 'text-fg-3' : null],
+    shade(n) >= 800 ? 'text-foreground' : shade(n) >= 600 ? 'text-fg-2' : shade(n) === 500 ? 'text-muted-foreground' : shade(n) >= 300 ? 'text-fg-3' : null],
   [/\b(border|ring|divide)-slate-(\d+)(?:\/\d+)?\b/g, (_, k, n) =>
     shade(n) <= 100 ? `${k}-border-subtle` : shade(n) === 200 ? `${k}-border` : shade(n) <= 400 ? `${k}-border-strong` : null],
 ];

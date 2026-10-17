@@ -1,6 +1,6 @@
 'use client';
 
-import type { MeResponse } from '@kbs/shared';
+import type { MeResponse, MisFreshness } from '@kbs/shared';
 import {
   AlertTriangle,
   Archive,
@@ -47,6 +47,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
 import { LogoutButton } from '@/components/logout-button';
+import { MisClock } from '@/components/mis-clock';
 import { SessionKeepAlive } from '@/components/session-keep-alive';
 import { Button } from '@/components/ui/button';
 import { Avatar, humanize } from '@/components/ui/kit';
@@ -197,10 +198,13 @@ function matchLength(href: string, pathname: string, params: URLSearchParams, ro
 export function WorkspaceShell({
   session,
   area,
+  misFreshness = null,
   children,
 }: {
   session: MeResponse;
   area: WorkspaceArea;
+  /** F-814 MIS clock data, fetched by the layout (null = unavailable) */
+  misFreshness?: MisFreshness | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -265,7 +269,7 @@ export function WorkspaceShell({
   function navigation() {
     return GROUPS.map((group) => (
       <div key={group.label} className="mb-5">
-        <p className="mb-1.5 px-3 text-[10px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+        <p className="mb-1.5 px-3 text-[10px] font-semibold tracking-[0.14em] text-white/45 uppercase">
           {group.label}
         </p>
         <div className="grid gap-0.5">
@@ -282,13 +286,13 @@ export function WorkspaceShell({
                   'group relative flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300',
                   on
                     ? 'bg-teal-400/15 text-white ring-1 ring-teal-300/20 ring-inset'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-100',
+                    : 'text-white/65 hover:bg-white/5 hover:text-white',
                 )}
               >
                 <Icon
                   className={cn(
                     'size-4 shrink-0 transition-colors',
-                    on ? 'text-teal-300' : 'text-slate-500 group-hover:text-slate-300',
+                    on ? 'text-teal-300' : 'text-white/40 group-hover:text-white/70',
                   )}
                   aria-hidden="true"
                 />
@@ -303,30 +307,47 @@ export function WorkspaceShell({
 
   const brand = (
     <Link href={home} className="flex items-center gap-3">
-      <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-300 to-emerald-400 text-[#0b1a2e] shadow-[0_6px_20px_-6px_rgb(45_212_191/70%)]">
+      <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-300 to-emerald-400 text-navy">
         <Building2 className="size-5" />
       </span>
       <span>
         <span className="block text-[17px] font-bold tracking-tight text-white">
-          KBS<span className="font-normal text-slate-400"> Solutions</span>
+          KBS<span className="font-normal text-white/60"> Solutions</span>
         </span>
-        <span className="text-[9.5px] tracking-[0.22em] text-slate-500 uppercase">
-          {subtitle}
-        </span>
+        <span className="block text-[11px] text-white/50">{subtitle}</span>
       </span>
     </Link>
   );
 
+  const footer = (
+    <>
+      <MisClock freshness={misFreshness} href={area === 'admin' ? '/admin/mis' : undefined} />
+      <Link
+        href={`${accountBase}/account`}
+        onClick={() => mobileNav.current?.close()}
+        className="relative flex items-center gap-3 border-t border-white/10 px-5 py-4 hover:bg-white/5"
+      >
+        <Avatar name={name} className="bg-teal-300/15 text-teal-200 ring-1 ring-teal-300/30" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-semibold text-white/90">{name}</span>
+          <span className="flex items-center gap-1 text-[11px] text-white/55">
+            <ShieldCheck className="size-3 text-teal-300" /> {roleLabel}
+          </span>
+        </span>
+        <ChevronRight className="size-4 text-white/40" />
+      </Link>
+    </>
+  );
+
   return (
-    <div className="admin-workspace admin-canvas min-h-screen text-slate-900">
+    <div className="admin-workspace admin-canvas min-h-screen text-foreground">
       <a
         href="#admin-content"
-        className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-white p-3 text-sm focus:not-sr-only"
+        className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-card p-3 text-sm focus:not-sr-only"
       >
         Skip to content
       </a>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-[linear-gradient(180deg,#0b1a2e_0%,#0e2236_60%,#0b1a2e_100%)] text-white lg:flex">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(220px_120px_at_30%_0%,rgb(45_212_191/16%),transparent)]" />
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-[linear-gradient(180deg,hsl(var(--navy))_0%,hsl(var(--navy-2))_60%,hsl(var(--navy))_100%)] text-white lg:flex">
         <div className="relative flex h-20 shrink-0 items-center px-6">{brand}</div>
         <nav
           aria-label={`${humanize(area)} navigation`}
@@ -334,22 +355,10 @@ export function WorkspaceShell({
         >
           {navigation()}
         </nav>
-        <Link
-          href={`${accountBase}/account`}
-          className="relative flex items-center gap-3 border-t border-white/10 px-5 py-4 hover:bg-white/5"
-        >
-          <Avatar name={name} className="bg-teal-300/15 text-teal-200 ring-1 ring-teal-300/30" />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-semibold text-slate-100">{name}</span>
-            <span className="flex items-center gap-1 text-[11px] text-slate-400">
-              <ShieldCheck className="size-3 text-teal-300" /> {roleLabel}
-            </span>
-          </span>
-          <ChevronRight className="size-4 text-slate-500" />
-        </Link>
+        {footer}
       </aside>
       <div className="min-w-0 lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-12 items-center justify-between gap-3 border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur-xl sm:px-8">
+        <header className="sticky top-0 z-20 flex h-12 items-center justify-between gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-xl sm:px-8">
           <div className="flex min-w-0 items-center gap-2.5">
             <Button
               variant="ghost"
@@ -360,23 +369,23 @@ export function WorkspaceShell({
             >
               <Menu />
             </Button>
-            <span className="hidden text-[13px] text-slate-500 sm:inline">{active.group}</span>
-            <ChevronRight className="hidden size-3.5 text-slate-300 sm:block" />
-            <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-800">
-              <active.icon className="size-4 shrink-0 text-teal-700" aria-hidden="true" />
+            <span className="hidden text-[13px] text-muted-foreground sm:inline">{active.group}</span>
+            <ChevronRight className="hidden size-3.5 text-fg-3 sm:block" />
+            <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-foreground">
+              <active.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
               <span className="truncate">{active.label}</span>
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Button
               variant="outline"
-              className="gap-2 rounded-lg text-slate-500 xl:min-w-72 xl:justify-start"
+              className="gap-2 rounded-lg text-muted-foreground xl:min-w-72 xl:justify-start"
               aria-label="Search workspace"
               onClick={() => search.current?.showModal()}
             >
               <Search />
               <span className="hidden font-normal xl:inline">Jump to a page…</span>
-              <kbd className="ml-auto hidden rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-sans text-[10px] font-medium xl:inline">
+              <kbd className="ml-auto hidden rounded-md border border-border bg-surface-muted px-1.5 py-0.5 font-sans text-[10px] font-medium xl:inline">
                 ⌘K
               </kbd>
             </Button>
@@ -386,6 +395,7 @@ export function WorkspaceShell({
               size="icon"
               aria-label="Refresh business data"
               title="Refresh data"
+              className="hidden sm:inline-flex"
               disabled={refreshing}
               onClick={() => startRefresh(() => router.refresh())}
             >
@@ -393,38 +403,38 @@ export function WorkspaceShell({
             </Button>
             <details className="relative">
               <summary
-                className="flex cursor-pointer list-none items-center gap-2 rounded-full p-0.5 pr-1 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-teal-700 sm:pr-2"
+                className="flex cursor-pointer list-none items-center gap-2 rounded-full p-0.5 pr-1 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring sm:pr-2"
                 aria-label="Account menu"
               >
-                <Avatar name={name} className="bg-gradient-to-br from-teal-600 to-teal-800 text-white" />
+                <Avatar name={name} className="bg-primary text-primary-foreground" />
                 <span className="hidden text-left sm:block">
                   <span className="block max-w-32 truncate text-xs font-semibold">{name}</span>
-                  <span className="text-[11px] text-slate-500">{roleLabel}</span>
+                  <span className="text-[11px] text-muted-foreground">{roleLabel}</span>
                 </span>
               </summary>
-              <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_20px_50px_-20px_rgb(15_23_42/35%)]">
-                <div className="flex items-center gap-3 bg-slate-50 px-4 py-3">
+              <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-card shadow-pop">
+                <div className="flex items-center gap-3 bg-surface-muted px-4 py-3">
                   <Avatar name={name} />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{name}</p>
-                    <p className="text-xs text-slate-500">{session.user.mobileMasked}</p>
+                    <p className="text-xs text-muted-foreground">{session.user.mobileMasked}</p>
                   </div>
                 </div>
                 <div className="grid p-1.5">
                   <Link
                     href={`${accountBase}/account`}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-fg-2 hover:bg-muted"
                   >
-                    <UserRound className="size-4 text-slate-400" /> Account & support
+                    <UserRound className="size-4 text-fg-3" /> Account & support
                   </Link>
                   <Link
                     href={`${accountBase}/notifications`}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-fg-2 hover:bg-muted"
                   >
-                    <Bell className="size-4 text-slate-400" /> All notifications
+                    <Bell className="size-4 text-fg-3" /> All notifications
                   </Link>
                 </div>
-                <div className="border-t border-slate-100 p-3">
+                <div className="border-t border-border-subtle p-3">
                   <LogoutButton />
                 </div>
               </div>
@@ -443,9 +453,9 @@ export function WorkspaceShell({
       <dialog
         ref={mobileNav}
         aria-label={`${humanize(area)} navigation menu`}
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] bg-[#0b1a2e] p-4 text-white backdrop:bg-slate-950/50 backdrop:backdrop-blur-sm"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] bg-navy p-0 text-white backdrop:bg-navy/60 backdrop:backdrop-blur-sm open:flex open:flex-col"
       >
-        <div className="mb-6 flex items-center justify-between pl-2">
+        <div className="flex shrink-0 items-center justify-between px-6 py-5">
           {brand}
           <button
             type="button"
@@ -456,9 +466,10 @@ export function WorkspaceShell({
             <X className="size-5" />
           </button>
         </div>
-        <nav aria-label={`Mobile ${area} navigation`} className="pl-4">
+        <nav aria-label={`Mobile ${area} navigation`} className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
           {navigation()}
         </nav>
+        <div className="shrink-0">{footer}</div>
       </dialog>
       <dialog
         ref={search}
@@ -467,13 +478,13 @@ export function WorkspaceShell({
           setQuery('');
           setCursor(0);
         }}
-        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-[0_30px_80px_-20px_rgb(15_23_42/45%)] backdrop:bg-slate-950/40 backdrop:backdrop-blur-sm"
+        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-pop backdrop:bg-navy/50 backdrop:backdrop-blur-sm"
       >
         <h2 id="workspace-search-title" className="sr-only">
           Find your workspace
         </h2>
-        <div className="flex items-center gap-3 border-b border-slate-100 px-4">
-          <Search className="size-5 text-slate-400" />
+        <div className="flex items-center gap-3 border-b border-border-subtle px-4">
+          <Search className="size-5 text-fg-3" />
           <input
             autoFocus
             aria-label="Search pages"
@@ -495,7 +506,7 @@ export function WorkspaceShell({
                 go(matches[cursor].href);
               }
             }}
-            className="h-14 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-slate-400"
+            className="h-14 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-fg-3"
           />
           <Button
             variant="ghost"
@@ -517,34 +528,34 @@ export function WorkspaceShell({
                 search.current?.close();
               }}
               data-active={i === cursor || undefined}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 data-[active]:bg-teal-50 data-[active]:text-teal-900"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-fg-2 data-[active]:bg-accent data-[active]:text-foreground"
             >
-              <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                 <Icon className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{label}</span>
-                <span className="text-[11px] text-slate-400">{group}</span>
+                <span className="text-[11px] text-fg-3">{group}</span>
               </span>
-              <ArrowRight className="size-4 text-slate-300" />
+              <ArrowRight className="size-4 text-fg-3" />
             </Link>
           ))}
           {matches.length === 0 ? (
-            <p className="p-8 text-center text-sm text-slate-500">
+            <p className="p-8 text-center text-sm text-muted-foreground">
               No workspace matches. Try “MIS” or “payout”.
             </p>
           ) : null}
         </div>
-        <div className="flex items-center gap-4 border-t border-slate-100 bg-slate-50 px-4 py-2 text-[11px] text-slate-500">
+        <div className="flex items-center gap-4 border-t border-border-subtle bg-surface-muted px-4 py-2 text-[11px] text-muted-foreground">
           <span>
-            <kbd className="rounded border bg-white px-1">↑</kbd>{' '}
-            <kbd className="rounded border bg-white px-1">↓</kbd> to move
+            <kbd className="rounded border bg-card px-1">↑</kbd>{' '}
+            <kbd className="rounded border bg-card px-1">↓</kbd> to move
           </span>
           <span>
-            <kbd className="rounded border bg-white px-1">Enter</kbd> to open
+            <kbd className="rounded border bg-card px-1">Enter</kbd> to open
           </span>
           <span>
-            <kbd className="rounded border bg-white px-1">Esc</kbd> to close
+            <kbd className="rounded border bg-card px-1">Esc</kbd> to close
           </span>
         </div>
       </dialog>
