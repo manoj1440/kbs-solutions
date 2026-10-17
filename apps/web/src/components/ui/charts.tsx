@@ -49,7 +49,7 @@ export function DeltaBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] leading-none font-semibold tabular-nums',
+        'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs leading-none font-semibold tabular-nums',
         mood === 'good' ? 'bg-emerald-50 text-emerald-700' : mood === 'bad' ? 'bg-rose-50 text-rose-700' : 'bg-muted text-fg-2',
         className,
       )}
@@ -102,7 +102,7 @@ export function MiniBars({
         const pct = max ? Math.round((item.value / max) * 100) : 0;
         return (
           <li key={i} className="grid gap-1">
-            <div className="flex items-baseline justify-between gap-3 text-[12.5px]">
+            <div className="flex items-baseline justify-between gap-3 text-xs">
               <span className="min-w-0 truncate text-fg-2">{item.label}</span>
               <span className="shrink-0 font-semibold text-foreground tabular-nums">
                 {formatValue(item.value, format)}

@@ -31,7 +31,7 @@ export function MisClock({ freshness, href }: { freshness: MisFreshness | null; 
   }, []);
 
   if (!freshness) {
-    return <p className="mx-3 mb-3 rounded-xl px-3 py-2.5 text-[11px] text-white/50 ring-1 ring-white/10">Bank MIS freshness unavailable.</p>;
+    return <p className="mx-3 mb-3 rounded-xl px-3 py-2.5 text-2xs text-white/50 ring-1 ring-white/10">Bank MIS freshness unavailable.</p>;
   }
   const reported = freshness.banks
     .filter((b): b is typeof b & { lastAppliedAt: string } => b.lastAppliedAt != null)
@@ -48,11 +48,11 @@ export function MisClock({ freshness, href }: { freshness: MisFreshness | null; 
           <FileSpreadsheet className="size-4" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] text-white/55">Bank MIS</span>
-          <span className="block truncate text-[13px] font-semibold text-white/90">
+          <span className="block text-2xs text-white/55">Bank MIS</span>
+          <span className="block truncate text-ui font-semibold text-white/90">
             {latest ? `${latest.bankCode} · ${sinceLabel(latest.lastAppliedAt, now)}` : 'No import yet'}
           </span>
-          <span className="block text-[11px] text-white/55 tabular-nums">
+          <span className="block text-2xs text-white/55 tabular-nums">
             {reported.length} of {freshness.banks.length} banks imported
           </span>
         </span>
@@ -60,7 +60,7 @@ export function MisClock({ freshness, href }: { freshness: MisFreshness | null; 
       </summary>
       <ul className="max-h-48 overflow-y-auto border-t border-white/10 px-3 py-2" aria-label="Last accepted MIS import per bank">
         {freshness.banks.map((b) => (
-          <li key={b.bankCode} className="flex items-baseline justify-between gap-3 py-1 text-[12px]">
+          <li key={b.bankCode} className="flex items-baseline justify-between gap-3 py-1 text-xs">
             <span className="min-w-0 truncate text-white/75">{b.bankName}</span>
             <span
               className={cn('shrink-0 tabular-nums', b.lastAppliedAt ? 'text-white/90' : 'text-white/45')}
@@ -72,7 +72,7 @@ export function MisClock({ freshness, href }: { freshness: MisFreshness | null; 
         ))}
       </ul>
       {href ? (
-        <Link href={href} prefetch={false} className="flex items-center justify-between border-t border-white/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-white/5">
+        <Link href={href} prefetch={false} className="flex items-center justify-between border-t border-white/10 px-3 py-2 text-xs font-semibold text-teal-300 hover:bg-white/5">
           Open MIS imports
           <ChevronRight className="size-3.5" aria-hidden="true" />
         </Link>

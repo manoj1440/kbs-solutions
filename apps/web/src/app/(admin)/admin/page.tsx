@@ -153,7 +153,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         <details className="group/period relative ml-auto">
           <summary
             aria-label="Period"
-            className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl border border-border bg-card px-3 text-[13px] font-medium text-fg-2 shadow-card hover:bg-surface-muted [&::-webkit-details-marker]:hidden"
+            className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl border border-border bg-card px-3 text-ui font-medium text-fg-2 shadow-card hover:bg-surface-muted [&::-webkit-details-marker]:hidden"
           >
             <CalendarRange className="size-3.5" aria-hidden="true" />
             {period.label} <span className="text-xs text-muted-foreground">{rangeLabel}</span>
@@ -359,7 +359,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         }
       >
         <RecentLeadsTable rows={recentLeads} />
-        <p className="border-t border-border-subtle px-5 py-2 text-[11px] text-muted-foreground sm:px-6">
+        <p className="border-t border-border-subtle px-5 py-2 text-2xs text-muted-foreground sm:px-6">
           Source: KBS records + latest accepted bank MIS + payout ledger · {rangeLabel} · as of {formatDateTime(home.asOf)}. {home.note}
         </p>
       </SectionCard>

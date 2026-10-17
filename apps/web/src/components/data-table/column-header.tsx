@@ -29,7 +29,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
       <Button
         variant="ghost"
         size="sm"
-        className="-ml-2 h-7 px-2 text-[11px] font-semibold tracking-wide uppercase"
+        className="-ml-2 h-7 px-2 text-2xs font-semibold tracking-wide uppercase"
         onClick={column.getToggleSortingHandler()}
         title={paged ? 'Sorts this page only' : undefined}
         aria-label={`Sort by ${title}`}

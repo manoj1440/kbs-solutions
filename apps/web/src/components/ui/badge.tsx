@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 /** Soft tinted badges (F-806): tone groups visually, the text always carries the meaning (REQ-20 §20.2). */
 const badgeVariants = cva(
-  'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[11px] leading-5 font-semibold w-fit whitespace-nowrap shrink-0 ring-1 ring-inset [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none transition-[color,box-shadow] overflow-hidden',
+  'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-2xs leading-5 font-semibold w-fit whitespace-nowrap shrink-0 ring-1 ring-inset [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none transition-[color,box-shadow] overflow-hidden',
   {
     variants: {
       variant: {

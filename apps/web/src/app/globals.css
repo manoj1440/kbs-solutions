@@ -52,6 +52,11 @@
   --color-navy-3: hsl(var(--navy-3));
   --shadow-card: var(--elev-card);
   --shadow-pop: var(--elev-pop);
+  /* F-814 type scale additions: dense data labels (11px) and UI body (13px) */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);

@@ -94,7 +94,7 @@ export function TrendChart({
       </figcaption>
 
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
-        <div className="flex flex-col justify-between text-right text-[10.5px] text-muted-foreground tabular-nums" style={{ height }} aria-hidden="true">
+        <div className="flex flex-col justify-between text-right text-2xs text-muted-foreground tabular-nums" style={{ height }} aria-hidden="true">
           {ticks.map((t) => (
             <span key={t} className="-translate-y-1/2 first:translate-y-0 last:translate-y-0">
               {formatValue(t, format)}
@@ -131,7 +131,7 @@ export function TrendChart({
           {peak >= 0 && active == null ? (
             <div className="pointer-events-none absolute -translate-x-1/2" style={{ left: `${x(peak)}%`, top: `${y(lead.values[peak])}%` }}>
               <span className={cn('block size-2.5 -translate-y-1/2 rounded-full ring-2 ring-card', TONE[lead.tone].bar)} />
-              <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md border border-border bg-card px-1.5 py-0.5 text-[10.5px] font-semibold whitespace-nowrap text-foreground shadow-card tabular-nums">
+              <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md border border-border bg-card px-1.5 py-0.5 text-2xs font-semibold whitespace-nowrap text-foreground shadow-card tabular-nums">
                 Peak {formatValue(lead.values[peak], format)}
               </span>
             </div>
@@ -171,7 +171,7 @@ export function TrendChart({
         </div>
 
         <div />
-        <div className="relative mt-1.5 h-4 text-[10.5px] text-muted-foreground" aria-hidden="true">
+        <div className="relative mt-1.5 h-4 text-2xs text-muted-foreground" aria-hidden="true">
           {labels.map((l, i) =>
             i === n - 1 || (i % step === 0 && n - 1 - i >= step * 0.75) ? (
               <span

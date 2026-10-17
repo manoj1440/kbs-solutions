@@ -68,7 +68,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
       role="columnheader"
       data-slot="table-head"
       className={cn(
-        'h-10 px-3 text-left align-middle text-[11px] font-semibold tracking-wide text-muted-foreground uppercase whitespace-normal break-words',
+        'h-10 px-3 text-left align-middle text-2xs font-semibold tracking-wide text-muted-foreground uppercase whitespace-normal break-words',
         className,
       )}
       {...props}

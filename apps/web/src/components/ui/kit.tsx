@@ -71,7 +71,7 @@ export function PageHeader({
           {icon ? <IconTile icon={icon} tone={tone} size="lg" className="hidden shadow-sm sm:inline-flex" /> : null}
           <div className="min-w-0">
             {eyebrow ? (
-              <div className={cn('mb-1 text-[10.5px] font-semibold tracking-[0.16em] uppercase', TONE[tone].text)}>{eyebrow}</div>
+              <div className={cn('mb-1 text-2xs font-semibold tracking-[0.16em] uppercase', TONE[tone].text)}>{eyebrow}</div>
             ) : null}
             <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px] sm:leading-9">{title}</h1>
             {description ? <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
@@ -120,7 +120,7 @@ export function StatCard({
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <span className={cn('text-[12.5px] font-medium', emphasis ? 'text-teal-50' : 'text-fg-2')}>{label}</span>
+        <span className={cn('text-xs font-medium', emphasis ? 'text-teal-50' : 'text-fg-2')}>{label}</span>
         {icon ? (
           emphasis ? (
             <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/20 [&>svg]:size-[18px]">
@@ -140,7 +140,7 @@ export function StatCard({
       {source || href ? (
         <div
           className={cn(
-            'mt-4 flex items-center justify-between gap-2 border-t pt-3 text-[10px] font-semibold tracking-wider uppercase',
+            'mt-4 flex items-center justify-between gap-2 border-t pt-3 text-2xs font-semibold tracking-wider uppercase',
             emphasis ? 'border-white/15 text-teal-50/90' : 'border-border-subtle text-fg-3',
           )}
         >
@@ -206,7 +206,7 @@ export function SectionCard({
           {icon ? <IconTile icon={icon} tone={tone} size="sm" /> : null}
           <div className="min-w-0">
             <h2 className="text-[15px] leading-6 font-semibold tracking-tight text-foreground">{title}</h2>
-            {description ? <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{description}</p> : null}
+            {description ? <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
           </div>
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -263,12 +263,12 @@ export function MiniStat({
 }) {
   const body = (
     <>
-      <span className="flex items-start gap-1.5 text-[11.5px] leading-tight font-medium text-fg-2">
+      <span className="flex items-start gap-1.5 text-2xs leading-tight font-medium text-fg-2">
         <span className={cn('mt-1 size-1.5 shrink-0 rounded-full', TONE[tone].bar)} aria-hidden="true" />
         {label}
       </span>
       <span className="mt-0.5 block text-xl leading-7 font-semibold tracking-tight text-foreground tabular-nums">{value}</span>
-      {hint ? <span className="line-clamp-2 block text-[10.5px] leading-snug text-muted-foreground">{hint}</span> : null}
+      {hint ? <span className="line-clamp-2 block text-2xs leading-snug text-muted-foreground">{hint}</span> : null}
     </>
   );
   const cls = cn(
@@ -311,14 +311,14 @@ export function PillNav({
               prefetch={false}
               aria-current={on ? 'page' : undefined}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-ring',
+                'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-ui font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-ring',
                 on ? 'bg-foreground text-background shadow-sm' : 'text-fg-2 hover:bg-muted hover:text-foreground',
               )}
             >
               {Icon ? <Icon className="size-3.5" aria-hidden="true" /> : null}
               {text}
               {count != null ? (
-                <span className={cn('rounded-full px-1.5 text-[10.5px] font-semibold tabular-nums', on ? 'bg-background/20 text-background' : 'bg-muted text-fg-2')}>
+                <span className={cn('rounded-full px-1.5 text-2xs font-semibold tabular-nums', on ? 'bg-background/20 text-background' : 'bg-muted text-fg-2')}>
                   {count}
                 </span>
               ) : null}
@@ -355,7 +355,7 @@ export function Avatar({ name, size = 'md', className }: { name: string | null |
       aria-hidden="true"
       className={cn(
         'inline-flex shrink-0 items-center justify-center rounded-full font-semibold',
-        size === 'sm' ? 'size-7 text-[10px]' : size === 'lg' ? 'size-14 text-lg' : 'size-9 text-xs',
+        size === 'sm' ? 'size-7 text-2xs' : size === 'lg' ? 'size-14 text-lg' : 'size-9 text-xs',
         AVATAR_TONES[hash(name ?? '') % AVATAR_TONES.length],
         className,
       )}
@@ -384,7 +384,7 @@ export function BankMark({ code, size = 'md', className }: { code: string; size?
       aria-hidden="true"
       className={cn(
         'inline-flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-br font-bold tracking-tight text-white shadow-sm',
-        size === 'sm' ? 'h-7 min-w-7 px-1 text-[8.5px]' : 'h-10 min-w-10 px-1.5 text-[10px]',
+        size === 'sm' ? 'h-7 min-w-7 px-1 text-[8.5px]' : 'h-10 min-w-10 px-1.5 text-2xs',
         bankGradient(code),
         className,
       )}
@@ -422,7 +422,7 @@ export function KeyValueGrid({ items, className, cols = 2 }: { items: [React.Rea
     >
       {items.map(([k, v], i) => (
         <div key={i} className="min-w-0">
-          <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{k}</dt>
+          <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">{k}</dt>
           <dd className="mt-1 text-sm break-words text-foreground">{v}</dd>
         </div>
       ))}
@@ -457,7 +457,7 @@ export function Callout({
       {Icon ? <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" /> : null}
       <div className="min-w-0 leading-relaxed">
         {title ? <p className="font-semibold">{title}</p> : null}
-        {children ? <div className={cn(title && 'mt-0.5', 'text-[13px] opacity-90')}>{children}</div> : null}
+        {children ? <div className={cn(title && 'mt-0.5', 'text-ui opacity-90')}>{children}</div> : null}
       </div>
     </div>
   );
@@ -466,7 +466,7 @@ export function Callout({
 /** Small status dot + text, for KBS states (user status, job health). */
 export function StatusDot({ tone = 'slate', children }: { tone?: Tone; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-fg-2">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-2">
       <span className={cn('size-2 rounded-full ring-2 ring-card', TONE[tone].bar)} aria-hidden="true" />
       {children}
     </span>
@@ -477,11 +477,11 @@ export function StatusDot({ tone = 'slate', children }: { tone?: Tone; children:
 export function Field({ label, htmlFor, hint, children, className }: { label: React.ReactNode; htmlFor?: string; hint?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <div className={cn('grid min-w-0 gap-1.5', className)}>
-      <label htmlFor={htmlFor} className="text-[12px] font-medium text-fg-2">
+      <label htmlFor={htmlFor} className="text-xs font-medium text-fg-2">
         {label}
       </label>
       {children}
-      {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="text-2xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
@@ -562,7 +562,7 @@ export function RailCard({
             const row = (
               <>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-medium text-foreground">{it.title}</span>
+                  <span className="block truncate text-ui font-medium text-foreground">{it.title}</span>
                   {it.meta ? <span className="block truncate text-xs text-muted-foreground">{it.meta}</span> : null}
                 </span>
                 {it.aside ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{it.aside}</span> : null}
@@ -592,5 +592,25 @@ export function RailCard({
         </Link>
       ) : null}
     </section>
+  );
+}
+
+const STRIP_COLS = { 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-2 lg:grid-cols-4', 5: 'sm:grid-cols-3 xl:grid-cols-5', 6: 'sm:grid-cols-3 xl:grid-cols-6', 8: 'sm:grid-cols-4 xl:grid-cols-8' } as const;
+
+/**
+ * F-814 U12: KPI tiles (`MiniStat`s) — a grid from `sm`, a swipeable single row on phones so the first screen shows the
+ * task, not six tiles. Every tile stays in the DOM (no hidden figures).
+ */
+export function StatStrip({ cols = 6, className, children }: { cols?: keyof typeof STRIP_COLS; className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      className={cn(
+        'flex shrink-0 snap-x gap-2 overflow-x-auto pb-1 max-sm:-mx-4 max-sm:px-4 max-sm:[&>*]:w-40 max-sm:[&>*]:shrink-0 max-sm:[&>*]:snap-start sm:grid sm:overflow-visible sm:pb-0',
+        STRIP_COLS[cols],
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }

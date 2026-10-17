@@ -269,7 +269,7 @@ export function WorkspaceShell({
   function navigation() {
     return GROUPS.map((group) => (
       <div key={group.label} className="mb-5">
-        <p className="mb-1.5 px-3 text-[10px] font-semibold tracking-[0.14em] text-white/45 uppercase">
+        <p className="mb-1.5 px-3 text-2xs font-semibold tracking-[0.14em] text-white/45 uppercase">
           {group.label}
         </p>
         <div className="grid gap-0.5">
@@ -283,7 +283,7 @@ export function WorkspaceShell({
                 onClick={() => mobileNav.current?.close()}
                 aria-current={on ? 'page' : undefined}
                 className={cn(
-                  'group relative flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300',
+                  'group relative flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-ui font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300',
                   on
                     ? 'bg-teal-400/15 text-white ring-1 ring-teal-300/20 ring-inset'
                     : 'text-white/65 hover:bg-white/5 hover:text-white',
@@ -314,7 +314,7 @@ export function WorkspaceShell({
         <span className="block text-[17px] font-bold tracking-tight text-white">
           KBS<span className="font-normal text-white/60"> Solutions</span>
         </span>
-        <span className="block text-[11px] text-white/50">{subtitle}</span>
+        <span className="block text-2xs text-white/50">{subtitle}</span>
       </span>
     </Link>
   );
@@ -329,8 +329,8 @@ export function WorkspaceShell({
       >
         <Avatar name={name} className="bg-teal-300/15 text-teal-200 ring-1 ring-teal-300/30" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-semibold text-white/90">{name}</span>
-          <span className="flex items-center gap-1 text-[11px] text-white/55">
+          <span className="block truncate text-ui font-semibold text-white/90">{name}</span>
+          <span className="flex items-center gap-1 text-2xs text-white/55">
             <ShieldCheck className="size-3 text-teal-300" /> {roleLabel}
           </span>
         </span>
@@ -369,9 +369,9 @@ export function WorkspaceShell({
             >
               <Menu />
             </Button>
-            <span className="hidden text-[13px] text-muted-foreground sm:inline">{active.group}</span>
+            <span className="hidden text-ui text-muted-foreground sm:inline">{active.group}</span>
             <ChevronRight className="hidden size-3.5 text-fg-3 sm:block" />
-            <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-foreground">
+            <span className="flex min-w-0 items-center gap-2 text-ui font-semibold text-foreground">
               <active.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
               <span className="truncate">{active.label}</span>
             </span>
@@ -385,7 +385,7 @@ export function WorkspaceShell({
             >
               <Search />
               <span className="hidden font-normal xl:inline">Jump to a page…</span>
-              <kbd className="ml-auto hidden rounded-md border border-border bg-surface-muted px-1.5 py-0.5 font-sans text-[10px] font-medium xl:inline">
+              <kbd className="ml-auto hidden rounded-md border border-border bg-surface-muted px-1.5 py-0.5 font-sans text-2xs font-medium xl:inline">
                 ⌘K
               </kbd>
             </Button>
@@ -409,7 +409,7 @@ export function WorkspaceShell({
                 <Avatar name={name} className="bg-primary text-primary-foreground" />
                 <span className="hidden text-left sm:block">
                   <span className="block max-w-32 truncate text-xs font-semibold">{name}</span>
-                  <span className="text-[11px] text-muted-foreground">{roleLabel}</span>
+                  <span className="text-2xs text-muted-foreground">{roleLabel}</span>
                 </span>
               </summary>
               <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-card shadow-pop">
@@ -535,7 +535,7 @@ export function WorkspaceShell({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{label}</span>
-                <span className="text-[11px] text-fg-3">{group}</span>
+                <span className="text-2xs text-fg-3">{group}</span>
               </span>
               <ArrowRight className="size-4 text-fg-3" />
             </Link>
@@ -546,7 +546,7 @@ export function WorkspaceShell({
             </p>
           ) : null}
         </div>
-        <div className="flex items-center gap-4 border-t border-border-subtle bg-surface-muted px-4 py-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-4 border-t border-border-subtle bg-surface-muted px-4 py-2 text-2xs text-muted-foreground">
           <span>
             <kbd className="rounded border bg-card px-1">↑</kbd>{' '}
             <kbd className="rounded border bg-card px-1">↓</kbd> to move

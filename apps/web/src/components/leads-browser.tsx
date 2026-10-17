@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 import { LeadsLayoutProvider, LeadsLayoutToggle, LeadsTable } from '@/components/leads-table';
 import { Button } from '@/components/ui/button';
-import { Field, MiniStat, selectClass } from '@/components/ui/kit';
+import { Field, MiniStat, selectClass, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -89,18 +89,18 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">{title}</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+      <StatStrip cols={6}>
         <MiniStat label="Leads" value={summary.total.toLocaleString('en-IN')} hint={filtered ? `${total} match the filters` : `${summary.matched} matched to bank MIS`} tone="sky" />
         <MiniStat label="Approved" value={summary.approved} hint="Bank decision = approved" tone="emerald" />
         <MiniStat label="Declined" value={summary.declined} hint="Bank decision = declined/rejected" tone="rose" />
         <MiniStat label="In process" value={summary.inProcess} hint="Decision reported, not final" tone="amber" />
         <MiniStat label="Cards active" value={summary.cardsActive} hint={`${summary.cardsInactive} reported inactive`} tone="teal" />
         <MiniStat label="Awaiting MIS" value={summary.awaitingMis} hint={`No accepted MIS row · ${summary.decisionBlank} matched w/o decision`} tone="slate" />
-      </div>
+      </StatStrip>
 
       <LeadsLayoutProvider>
-      <section aria-label={title} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <Form action={basePath} aria-label="Search & filters" className="border-b border-slate-100">
+      <section aria-label={title} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+        <Form action={basePath} aria-label="Search & filters" className="border-b border-border-subtle">
           <div className="flex flex-wrap items-center gap-2 p-3">
             <input aria-label="Search" name="q" className={cn(selectClass, 'h-9 min-w-44 flex-[2_1_12rem]')} defaultValue={sp.q ?? ''} placeholder="Name, mobile, KBS-L-…, bank application no." />
             <select aria-label="Bank" name="bankId" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} defaultValue={sp.bankId ?? ''}>
@@ -137,14 +137,14 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
             ) : null}
             <LeadsLayoutToggle className="ml-auto h-9" />
           </div>
-          <details open={advanced > 0} className="group border-t border-slate-100">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 select-none">
-              <SlidersHorizontal className="size-3.5 text-slate-400" aria-hidden="true" />
+          <details open={advanced > 0} className="group border-t border-border-subtle">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-1.5 text-xs font-medium text-fg-2 select-none">
+              <SlidersHorizontal className="size-3.5 text-fg-3" aria-hidden="true" />
               More filters
-              {advanced ? <span className="rounded-full bg-teal-600 px-1.5 text-[10.5px] font-semibold text-white tabular-nums">{advanced}</span> : null}
-              <ChevronRight className="ml-auto size-4 text-slate-400 transition-transform group-open:rotate-90" aria-hidden="true" />
+              {advanced ? <span className="rounded-full bg-primary px-1.5 text-2xs font-semibold text-primary-foreground tabular-nums">{advanced}</span> : null}
+              <ChevronRight className="ml-auto size-4 text-fg-3 transition-transform group-open:rotate-90" aria-hidden="true" />
             </summary>
-            <div className="grid gap-3 border-t border-slate-100 p-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 border-t border-border-subtle p-3 sm:grid-cols-2 lg:grid-cols-4">
               <Field label="Created from" htmlFor="from">
                 <input id="from" name="from" type="date" defaultValue={sp.from ?? ''} className={cn(selectClass, 'h-9')} />
               </Field>
@@ -195,8 +195,8 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
         <div className="min-h-0 flex-1">
           <LeadsTable rows={list.data} basePath={basePath} />
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-xs">
-          <span className="text-slate-500 tabular-nums">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-4 py-2 text-xs">
+          <span className="text-muted-foreground tabular-nums">
             {total ? `${((page - 1) * 50 + 1).toLocaleString('en-IN')}–${Math.min(page * 50, total).toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')}` : '0 leads'} · page {page} of {pages}
           </span>
           <div className="flex gap-2">

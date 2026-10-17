@@ -47,7 +47,7 @@ export function PersonCell({
           <div className="font-medium">{name}</div>
         )}
         {status || code ? (
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-2xs text-muted-foreground">
             {status ? <span>{humanize(status)}</span> : null}
             {code ? <span className="font-mono">{code}</span> : null}
           </div>

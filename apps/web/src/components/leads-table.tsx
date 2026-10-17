@@ -59,10 +59,10 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         <div className="flex min-w-0 items-center gap-2.5">
           <Avatar name={row.original.customer.name} size="sm" className="hidden sm:inline-flex" />
           <div className="grid min-w-0 gap-0.5">
-            <Link className="truncate font-semibold text-slate-900 hover:text-teal-700" href={`${basePath}/${row.original.id}`}>
+            <Link className="truncate font-semibold text-foreground hover:text-primary" href={`${basePath}/${row.original.id}`}>
               {row.original.customer.name}
             </Link>
-            <div className="truncate text-xs text-slate-500 tabular-nums">
+            <div className="truncate text-xs text-muted-foreground tabular-nums">
               {row.original.customer.mobileMasked ?? ''} · <code>{row.original.kbsRef}</code>
             </div>
           </div>
@@ -74,11 +74,11 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       header: 'Bank / card',
       cell: ({ row }) => (
         <div className="grid min-w-0 gap-0.5">
-          <div className="flex min-w-0 items-center gap-2 font-medium text-slate-800">
+          <div className="flex min-w-0 items-center gap-2 font-medium text-foreground">
             <BankMark code={row.original.bank.code} size="sm" className="h-6 min-w-6 shrink-0 text-[7.5px]" />
             <span className="truncate">{row.original.bank.displayName}</span>
           </div>
-          <div className="truncate text-xs text-slate-500">
+          <div className="truncate text-xs text-muted-foreground">
             {row.original.card.name}
             {row.original.card.crosswalked && row.original.card.crosswalked.id !== row.original.card.id
               ? ` · ${row.original.card.crosswalked.productCode} → ${row.original.card.crosswalked.name}`
@@ -128,7 +128,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         row.original.bankCreationDate.value ? (
           <span title={`Source column: ${row.original.bankCreationDate.source}`}>
             {formatDate(row.original.bankCreationDate.value)}{' '}
-            <span className="text-muted-foreground text-[10px]">
+            <span className="text-muted-foreground text-2xs">
               ({row.original.bankCreationDate.source})
             </span>
           </span>
@@ -214,7 +214,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
-        responsive={!fullTable}
+        responsive={fullTable ? false : 'compact'}
         className={fullTable ? 'min-w-[1800px]' : 'lead-overview-table'}
         containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto"
         initialSorting={[{ id: 'leadCreatedAt', desc: true }]}
@@ -236,9 +236,9 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
 
 function RawPanel({ row }: { row: LeadStatusRow }) {
   const awaiting = row.matched ? 'Not reported' : 'Awaiting MIS Update';
-  const blank = <em className="text-slate-400">blank</em>;
+  const blank = <em className="text-fg-3">blank</em>;
   return (
-    <div className="grid gap-4 rounded-xl border border-slate-200/80 bg-white p-4 text-xs">
+    <div className="grid gap-4 rounded-xl border border-border bg-card p-4 text-xs">
       <div className="flex flex-wrap items-center gap-2">
         <ProvenanceChip
           provenance="BANK_MIS"
@@ -246,14 +246,14 @@ function RawPanel({ row }: { row: LeadStatusRow }) {
           batchRef={row.stage.batchRef}
         />
         {!row.matched ? (
-          <span className="text-slate-500">
+          <span className="text-muted-foreground">
             No accepted MIS row has matched this lead yet; nothing below is inferred.
           </span>
         ) : null}
       </div>
       <KeyValueGrid
         cols={3}
-        className="[&_dd]:text-[12.5px]"
+        className="[&_dd]:text-xs"
         items={[
           ['KBS Lead ID', <code key="k">{row.kbsRef}</code>],
           ['Bank Application No.', row.bankApplicationNo ?? awaiting],
@@ -268,7 +268,7 @@ function RawPanel({ row }: { row: LeadStatusRow }) {
           ['CURRENT_STAGE (raw)', row.stage.raw ?? blank],
           ['FINAL_DECISION (raw)', row.decision.raw ?? blank],
           ['Card Activation Staus (raw)', row.activation.raw ?? blank],
-          ['Bank reason preview', row.remarksPreview ?? <em className="text-slate-400">none reported</em>],
+          ['Bank reason preview', row.remarksPreview ?? <em className="text-fg-3">none reported</em>],
           [
             'Bank reference (KBS linkage)',
             row.bankReference
