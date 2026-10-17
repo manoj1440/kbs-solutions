@@ -14,6 +14,27 @@ import { HierarchyService } from '../users/hierarchy.service';
 
 import { DATE_BASIS, DashboardMetricsService } from './dashboard-metrics.service';
 
+const DAY = 86_400_000;
+/** 'YYYY-MM-DD' ± n calendar days. */
+const shiftDay = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
+
+/**
+ * Same loose bank-verbatim buckets as LeadsService.summary / MisImportService.applicationsSummary (F-811):
+ * banks write Approve/Approved/APPROVED; 'Awaiting MIS' / 'Not reported' are not bank values.
+ */
+function bizBuckets(advisors: { decision: { buckets: { value: string; count: number }[] }; activation: { buckets: { value: string; count: number }[] } }) {
+  const UNKNOWN = new Set(['Awaiting MIS', 'Not reported']);
+  const biz = { approved: 0, declined: 0, inProcess: 0, activated: 0 };
+  for (const b of advisors.decision.buckets) {
+    if (UNKNOWN.has(b.value)) continue;
+    biz[decisionBucket(b.value)] += b.count;
+  }
+  for (const b of advisors.activation.buckets) {
+    if (!UNKNOWN.has(b.value) && activationBucket(b.value) === 'active') biz.activated += b.count;
+  }
+  return biz;
+}
+
 export interface Alert {
   kind: 'MIS_UNMATCHED' | 'MIS_CONFLICT' | 'PAYOUT_EXCEPTIONS' | 'LAUNCH_GATES_OPEN' | 'BANK_NEVER_APPLIED';
   count: number;
@@ -75,16 +96,25 @@ export class AdminDashboardsService {
       if (g.status === 'ACTIVE') slot.active += g._count._all;
     }
     const { values: _ignored, ...misSummary } = mis;
-    // Same loose bank-verbatim buckets as LeadsService.summary / MisImportService.applicationsSummary (F-811):
-    // banks write Approve/Approved/APPROVED; 'Awaiting MIS' / 'Not reported' are not bank values.
-    const UNKNOWN = new Set(['Awaiting MIS', 'Not reported']);
-    const biz = { approved: 0, declined: 0, inProcess: 0, activated: 0 };
-    for (const b of advisors.decision.buckets) {
-      if (UNKNOWN.has(b.value)) continue;
-      biz[decisionBucket(b.value)] += b.count;
-    }
-    for (const b of advisors.activation.buckets) {
-      if (!UNKNOWN.has(b.value) && activationBucket(b.value) === 'active') biz.activated += b.count;
+    const biz = bizBuckets(advisors);
+    // F-814: the same figures for the equal-length period just before [from, to] — for "▲ 12% vs prev." deltas
+    let previous = null;
+    if (q.from && q.to) {
+      const days = Math.round((Date.parse(q.to) - Date.parse(q.from)) / DAY) + 1;
+      const prevQ = { ...q, from: shiftDay(q.from, -days), to: shiftDay(q.from, -1) };
+      const [pa, pc] = await Promise.all([this.metrics.advisors(scope, prevQ), this.metrics.calling(scope, prevQ)]);
+      const pb = bizBuckets(pa);
+      previous = {
+        range: { from: prevQ.from, to: prevQ.to },
+        leads: pa.leads.created.value,
+        approved: pb.approved,
+        activated: pb.activated,
+        declined: pb.declined,
+        inProcess: pb.inProcess,
+        payoutEarnedInr: pa.payouts.eligible.amountInr ?? 0,
+        calls: pc.calls.attempts.value,
+        connected: pc.calls.connected.value,
+      };
     }
     return {
       range: { from: q.from ?? null, to: q.to ?? null },
@@ -114,6 +144,7 @@ export class AdminDashboardsService {
         byCaller: telecallers.rows,
         pipeline: pipeline as CallingRecordsSummary,
       },
+      previous,
       recentLeads: recent.data as LeadStatusRow[],
       asOf: new Date().toISOString(),
       note: 'Bank values are the latest accepted MIS only — never live bank status.',

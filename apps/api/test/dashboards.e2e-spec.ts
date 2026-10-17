@@ -171,6 +171,22 @@ describe('F-702 Manager dashboard / F-703 Admin dashboards (DASH-01, DASH-02)', 
     await get('/dashboards/admin/home', team[0].managerToken, 403);
   });
 
+  it('F-814: admin home carries the previous equal-length period for deltas; none without a range', async () => {
+    const day = (n: number) => new Date(Date.now() + 5.5 * 3_600_000 + n * 86_400_000).toISOString().slice(0, 10); // IST calendar day
+    expect((await get('/dashboards/admin/home', admin)).previous).toBeNull();
+    // tomorrow → previous = today, where the whole fixture lives
+    const d = await get(`/dashboards/admin/home?from=${day(1)}&to=${day(1)}`, admin);
+    expect(d.business.leads.created.value).toBe(0);
+    expect(d.previous).toMatchObject({ range: { from: day(0), to: day(0) }, leads: 5, approved: 2, activated: 2, declined: 1, calls: 7 });
+    const today = await get(`/dashboards/admin/home?from=${day(0)}&to=${day(0)}`, admin);
+    expect(d.previous.connected).toBe(today.calling.calls.connected.value);
+    expect(d.previous.payoutEarnedInr).toBe(today.business.payouts.eligible.amountInr ?? 0);
+    // a 3-day range compares with the 3 days before it
+    const w = await get(`/dashboards/admin/home?from=${day(1)}&to=${day(3)}`, admin);
+    expect(w.previous.range).toEqual({ from: day(-2), to: day(0) });
+    expect(w.previous.leads).toBe(5);
+  });
+
   it('F-703 executive = Manager dashboard filtered to that team (same engine)', async () => {
     const strip = (x: { calling: unknown; advisors: unknown }) => JSON.parse(JSON.stringify({ calling: x.calling, advisors: x.advisors }));
     for (const t of team) expect(strip(await get(`/dashboards/admin/executive?managerId=${t.managerId}`, admin))).toEqual(strip(await get('/dashboards/manager', t.managerToken)));
