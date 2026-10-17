@@ -126,14 +126,14 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 | P3 | Calling records + list detail/wizard | `/admin/calling-list`, `/admin/calling-list/[id]` | DONE |
 | P3 | Caller performance + telecaller drill-down | `/admin/calling-list/performance(/telecaller/[id])` | DONE |
 | P3 | Distribution | `/admin/calling-list/distribution(/telecaller/[id])` — redirects only (F-808), no UI | DONE |
-| P4 | MIS records | `/admin/mis` | TODO |
-| P4 | MIS batch + profile + integrity | `/admin/mis/batches/[id]`, `/admin/mis/profiles/[id]`, `/admin/mis/integrity` | TODO |
-| P4 | Payout requests list (shared) | `/admin/payouts/requests`, `/manager/payouts/requests`, `/accounts` | TODO |
-| P4 | Payout request detail (shared) | `/admin/payouts/requests/[id]`, `/manager/…/[id]`, `/accounts/requests/[id]` | TODO |
-| P4 | Entitlements ledger | `/admin/payouts/entitlements` | TODO |
-| P4 | Liability (shared) | `/admin/payouts/liability`, `/manager/payouts/liability` | TODO |
-| P4 | Payout rules + rule detail | `/admin/payouts/rules(/[id])` | TODO |
-| P4 | Accounts reconciliation | `/accounts/reconciliation` | TODO |
+| P4 | MIS records | `/admin/mis` | DONE |
+| P4 | MIS batch + profile + integrity | `/admin/mis/batches/[id]`, `/admin/mis/profiles/[id]`, `/admin/mis/integrity` | DONE |
+| P4 | Payout requests list (shared) | `/admin/payouts/requests`, `/manager/payouts/requests`, `/accounts` | DONE |
+| P4 | Payout request detail (shared) | `/admin/payouts/requests/[id]`, `/manager/…/[id]`, `/accounts/requests/[id]` | DONE |
+| P4 | Entitlements ledger | `/admin/payouts/entitlements` | DONE |
+| P4 | Liability (shared) | `/admin/payouts/liability`, `/manager/payouts/liability` | DONE |
+| P4 | Payout rules + rule detail | `/admin/payouts/rules(/[id])` | DONE |
+| P4 | Accounts reconciliation | `/accounts/reconciliation` | DONE |
 | P5 | Users + user detail | `/admin/users(/[id])` | TODO |
 | P5 | Advisor approvals + review | `/admin/onboarding(/[userId])` | TODO |
 | P5 | Training content, module, progress, team detail | `/admin/training(/[seq])`, `/admin/training/team(/[id])` | TODO |
@@ -192,4 +192,9 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 - Lead detail: letters A–D dropped — REQ-11 §11.9 lists them as content groups, not labels; groups kept. Blank bank fields collapse behind a count; MIS history + payout full width (the 5-column history table clipped beside the side column). Shared by Admin and Manager.
 - Distribution routes are F-808 redirects — nothing to redesign.
 - P3 checks: web typecheck/lint clean; Playwright 72 passed / 1 skipped / 1 failed (phone `session.spec` "lapsed access cookie" — the known dev-server refresh race; the spec alone failed 2 then passed 6/6 on re-run; P3 touched no session code); 1440 + 390 sweeps of leads, lead detail, calling records, wizard, performance, Manager team calling + drill-down: overflow 0. `test/admin-layout-smoke.mjs` selector fixed ("All columns").
-- Next: P4 Bank MIS, payouts, Accounts.
+- Session 19, P4 done. Commits: `feat(web): Bank MIS pages v2` → `feat(web): payout requests — one queue row + state filter` (U7) → `feat(web): payout request detail v2` → `feat(web): entitlements, liability/reconciliation, payout rules v2`.
+- Payout requests: queues are one tab row (Awaiting my approval / All requests / Payment exceptions); request state is a select shown on All requests (was a second 8-pill row). Accounts mode keeps its three payment queues.
+- Detail pages on `DetailHeader`: MIS batch, MIS profile, payout request (Admin/Manager/Accounts), payout rule. `/admin/mis/integrity` is an F-809 redirect — nothing to redesign.
+- Codemod (`test/tokenize.mjs`) now also maps arbitrary slate shadows → `shadow-card`/`shadow-pop`, slate dialog backdrops → `backdrop:bg-navy/50`, slate-300/400 dots. Session-local helper scripts converted tile grids and back-button headers mechanically; every result was screenshot-checked (one `.map()` tile grid got the wrong column count and was fixed by hand).
+- P4 checks: web typecheck/lint clean; Playwright 73 passed / 1 skipped; 1440 + 390 sweeps of MIS, payouts (Admin/Manager) and Accounts pages: overflow 0.
+- Next: P5 People, products, settings.
