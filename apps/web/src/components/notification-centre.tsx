@@ -174,7 +174,6 @@ export function NotificationCentre({ area }: { area: WebArea }) {
             const { icon, tone } = look(n);
             return (
               <li key={n.id} className="relative">
-                {n.readAt ? null : <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-teal-600" />}
                 <button
                   type="button"
                   onClick={() => void open(n)}

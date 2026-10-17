@@ -281,16 +281,10 @@ export function WorkspaceShell({
                 className={cn(
                   'group relative flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300',
                   on
-                    ? 'bg-gradient-to-r from-teal-400/20 to-teal-400/5 text-white'
+                    ? 'bg-teal-400/15 text-white ring-1 ring-teal-300/20 ring-inset'
                     : 'text-slate-400 hover:bg-white/5 hover:text-slate-100',
                 )}
               >
-                {on ? (
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-y-1.5 -left-4 w-1 rounded-r-full bg-teal-300 shadow-[0_0_12px_rgb(94_234_212/70%)]"
-                  />
-                ) : null}
                 <Icon
                   className={cn(
                     'size-4 shrink-0 transition-colors',

@@ -4,7 +4,7 @@ import type { LeadStatusRow } from '@kbs/shared';
 import { formatDate, formatDateTime } from '@kbs/shared';
 import { ArrowUpRight, ChevronDown, Columns3, LayoutList, ListChecks } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 import { columnHelper, type ColumnVisibilityState, DataTable } from '@/components/data-table';
 import {
@@ -20,13 +20,37 @@ import { Avatar, BankMark, EmptyState, KeyValueGrid } from '@/components/ui/kit'
 
 const c = columnHelper<LeadStatusRow>();
 
+// F-814 U6: the layout toggle lives in the filter row, so the table and the button share state here.
+const FullTableContext = createContext<[boolean, (fn: (v: boolean) => boolean) => void] | null>(null);
+
+export function LeadsLayoutProvider({ children }: { children: React.ReactNode }) {
+  const state = useState(false);
+  return <FullTableContext.Provider value={state}>{children}</FullTableContext.Provider>;
+}
+
+function useFullTable() {
+  const ctx = useContext(FullTableContext);
+  const local = useState(false);
+  return ctx ?? local;
+}
+
+export function LeadsLayoutToggle({ className }: { className?: string }) {
+  const [fullTable, setFullTable] = useFullTable();
+  return (
+    <Button type="button" size="sm" variant="outline" className={className} aria-pressed={fullTable} onClick={() => setFullTable((value) => !value)}>
+      {fullTable ? <LayoutList aria-hidden="true" /> : <Columns3 aria-hidden="true" />}
+      {fullTable ? 'Overview layout' : 'All columns'}
+    </Button>
+  );
+}
+
 /**
  * F-506 — the REQ-14 §14.2 status table. Stage / Decision / Activation are separate columns with their own badges;
  * the expandable panel shows the remarks preview and raw bank values. There is no "next stage" action (§14.2 row 13).
  * F-813: renders through the common `DataTable` (TanStack v9).
  */
 export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath: string }) {
-  const [fullTable, setFullTable] = useState(false);
+  const [fullTable] = useFullTable();
   const columns = c.columns([
     c.accessor((r) => r.customer.name, {
       id: 'customer',
@@ -186,17 +210,6 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       };
   return (
     <div className="grid min-w-0 gap-3">
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          variant="outline"
-          aria-pressed={fullTable}
-          onClick={() => setFullTable((value) => !value)}
-        >
-          {fullTable ? <LayoutList aria-hidden="true" /> : <Columns3 aria-hidden="true" />}
-          {fullTable ? 'Overview layout' : 'All columns'}
-        </Button>
-      </div>
       <DataTable
         columns={columns}
         data={rows}

@@ -1,7 +1,7 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
-import { Upload } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ export function FileUploadButton({ purpose, accept, label, onUploaded, variant =
         }}
       />
       <Button type="button" variant={variant} disabled={busy} onClick={() => ref.current?.click()}>
-        <Upload className={busy ? 'animate-bounce' : undefined} />
+        {busy ? <Loader2 className="animate-spin" /> : <Upload />}
         {busy ? 'Uploading…' : label}
       </Button>
       {error ? (

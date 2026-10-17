@@ -10,7 +10,7 @@ import { ChevronLeft, ChevronRight, Filter, SlidersHorizontal } from 'lucide-rea
 import Form from 'next/form';
 import Link from 'next/link';
 
-import { LeadsTable } from '@/components/leads-table';
+import { LeadsLayoutProvider, LeadsLayoutToggle, LeadsTable } from '@/components/leads-table';
 import { Button } from '@/components/ui/button';
 import { Field, MiniStat, selectClass } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
@@ -98,6 +98,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
         <MiniStat label="Awaiting MIS" value={summary.awaitingMis} hint={`No accepted MIS row · ${summary.decisionBlank} matched w/o decision`} tone="slate" />
       </div>
 
+      <LeadsLayoutProvider>
       <section aria-label={title} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
         <Form action={basePath} aria-label="Search & filters" className="border-b border-slate-100">
           <div className="flex flex-wrap items-center gap-2 p-3">
@@ -134,6 +135,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
                 <Link href={basePath}>Reset</Link>
               </Button>
             ) : null}
+            <LeadsLayoutToggle className="ml-auto h-9" />
           </div>
           <details open={advanced > 0} className="group border-t border-slate-100">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 select-none">
@@ -217,6 +219,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
           </div>
         </div>
       </section>
+      </LeadsLayoutProvider>
     </div>
   );
 }
