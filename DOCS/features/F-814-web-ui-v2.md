@@ -119,8 +119,8 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 | P0 | Detector fixes (side stripes, bounce), column toggle placement | — | DONE |
 | P1 | Sidebar + MIS clock + user card | all workspaces | DONE |
 | P1 | Top bar + mobile drawer | all workspaces | DONE |
-| P2 | Dashboard API: previous period, trend, today (+ e2e) | `/dashboards/admin/*` | TODO |
-| P2 | Business overview | `/admin` | TODO |
+| P2 | Dashboard API: previous period, trend, today (+ e2e) | `/dashboards/admin/*` | DONE |
+| P2 | Business overview | `/admin` | DONE |
 | P3 | Leads browser | `/admin/leads` (+ shared Manager browser) | TODO |
 | P3 | Lead detail | `/admin/leads/[id]`, `/manager/leads/[id]` | TODO |
 | P3 | Calling records + list detail/wizard | `/admin/calling-list`, `/admin/calling-list/[id]` | TODO |
@@ -183,4 +183,7 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 - Session 19, P1 done. Commits: `feat(api): GET /mis/freshness` (per active bank: last APPLIED import or null; Admin/Manager/Accounts, Telecaller 403; e2e in `mis-apply.e2e-spec.ts`) → `feat(web): shell v2` (`components/mis-clock.tsx` in sidebar + drawer, navy tokens, brand subtitle without eyebrow, top bar/menus/search on tokens, refresh hidden on phones, drawer = scrolling nav + pinned clock and user card).
 - MIS clock rules: per bank, never one global status (REQ-16 §16.3); age neutral ("2 h ago", date after 7 days, exact time on hover), "Never imported" explicit; tooltip says bank values are the latest accepted MIS only. SSR uses the API's `asOf` as "now" so hydration matches; ticks every minute.
 - P1 checks: api typecheck/lint, `mis-apply` e2e 6/6; web typecheck/lint; Playwright 73 passed / 1 skipped; screenshots Admin/Manager/Accounts at 1440 + phone drawer at 390 (overflow 0).
-- Next: P2 Admin home (API: previous period, trend, today; web: greeting, KPI deltas, trend chart, Today rail).
+- Session 19, P2 done. Commits: `feat(api): previous-period figures on /dashboards/admin/home` → `feat(api): admin trend and today endpoints` (shared `AdminTrendQuery`/`AdminTrendResponse`/`AdminTodayResponse`; e2e: trend buckets reconcile with home for the same range, weeks, ≤366 days, from ≤ to, Manager 403; today counts equal raw table counts, overdue follow-ups included, future ones excluded) → `feat(web): Admin home v2`.
+- Admin home decisions: the h1 is now the greeting ("Good afternoon, KBS Owner"; breadcrumb still says Business overview; `admin-smoke` updated). Trend window = the selected period when it spans ≥ 7 days, otherwise the 14 days ending with it (labelled). Deltas only when the period has from+to (always, via the picker). MIS rows to resolve sit at the top of the Today rail as a danger callout when > 0 (REQ-20.4: conflicts never hidden). The Today rail is Admin-only data; on phones it stacks after the business sections. Recent leads span the full width (the 6-column table clipped beside the rail).
+- P2 checks: api typecheck/lint, dashboards e2e 9/9; web typecheck/lint, unit 24/24, Playwright 73 passed / 1 skipped; `/admin` and `/admin?period=30d` at 1440 and 390 → overflow 0 (a 48 px phone overflow from the chart's sr-only `<table>` was found and fixed in the kit).
+- Next: P3 Sales & calling (leads browser, lead detail, calling records + wizard, caller performance + drill-down, distribution).
