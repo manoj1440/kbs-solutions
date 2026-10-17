@@ -38,3 +38,14 @@ export function resolvePeriod(sp: { period?: string; from?: string; to?: string 
   }
   return { key, label, current: { from: addDays(today, key === '30d' ? -29 : -89), to: today } };
 }
+
+/** F-814: request-time clock for the server-rendered home (IST day + greeting). */
+export function istNow(now = Date.now()) {
+  const h = new Date(now + IST).getUTCHours();
+  return {
+    now,
+    today: istDay(now),
+    greeting: h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening',
+    dateLabel: new Date(now).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Kolkata' }),
+  };
+}

@@ -27,7 +27,7 @@ const FILL: Partial<Record<Tone, string>> = {
 function niceMax(v: number) {
   if (v <= 0) return 1;
   const p = 10 ** Math.floor(Math.log10(v));
-  return ([1, 2, 2.5, 5, 10].find((m) => m * p >= v) ?? 10) * p;
+  return ([1, 2, 4, 5, 10].find((m) => m * p >= v) ?? 10) * p;
 }
 
 export function TrendChart({
@@ -55,7 +55,8 @@ export function TrendChart({
   const line = (vals: number[]) => vals.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join(' ');
   const lead = visible[0];
   const peak = lead && Math.max(...lead.values) > 0 ? lead.values.indexOf(Math.max(...lead.values)) : -1;
-  const ticks = [max, max / 2, 0];
+  // whole-number data gets whole-number ticks (no "2.5 leads")
+  const ticks = Number.isInteger(max / 2) || format === 'inr' ? [max, max / 2, 0] : [max, 0];
   const step = Math.max(1, Math.ceil(n / 7));
 
   function pick(e: React.PointerEvent<HTMLDivElement>) {
@@ -123,6 +124,10 @@ export function TrendChart({
             {active != null ? <line x1={x(active)} x2={x(active)} y1={0} y2={100} className="stroke-border-strong" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" /> : null}
           </svg>
 
+          {visible.every((s) => s.values.every((v) => v === 0)) ? (
+            <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">Nothing recorded in this window.</p>
+          ) : null}
+
           {peak >= 0 && active == null ? (
             <div className="pointer-events-none absolute -translate-x-1/2" style={{ left: `${x(peak)}%`, top: `${y(lead.values[peak])}%` }}>
               <span className={cn('block size-2.5 -translate-y-1/2 rounded-full ring-2 ring-card', TONE[lead.tone].bar)} />
@@ -168,10 +173,15 @@ export function TrendChart({
         <div />
         <div className="relative mt-1.5 h-4 text-[10.5px] text-muted-foreground" aria-hidden="true">
           {labels.map((l, i) =>
-            i === n - 1 || (i % step === 0 && n - 1 - i >= step / 2) ? (
+            i === n - 1 || (i % step === 0 && n - 1 - i >= step * 0.75) ? (
               <span
                 key={i}
-                className={cn('absolute whitespace-nowrap', i === 0 ? '' : i === n - 1 ? '-translate-x-full' : '-translate-x-1/2')}
+                className={cn(
+                  'absolute whitespace-nowrap',
+                  i === 0 ? '' : i === n - 1 ? '-translate-x-full' : '-translate-x-1/2',
+                  // phones: first, middle and last label only
+                  i !== 0 && i !== n - 1 && i !== Math.floor((n - 1) / 2 / step) * step && 'max-sm:hidden',
+                )}
                 style={{ left: `${x(i)}%` }}
               >
                 {l}
@@ -181,7 +191,9 @@ export function TrendChart({
         </div>
       </div>
 
-      <table className="sr-only">
+      {/* sr-only on the wrapper: a <table> ignores width:1px and would overflow the page */}
+      <div className="sr-only">
+      <table>
         <caption>{title}</caption>
         <thead>
           <tr>
@@ -204,6 +216,7 @@ export function TrendChart({
           ))}
         </tbody>
       </table>
+      </div>
     </figure>
   );
 }
