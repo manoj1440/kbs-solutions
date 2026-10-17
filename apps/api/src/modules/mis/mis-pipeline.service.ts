@@ -306,7 +306,7 @@ export class MisPipelineService {
       const counts = Object.fromEntries((await this.prisma.client.misRow.groupBy({ by: ['matchState'], where: { batchId }, _count: { _all: true } })).map((g) => [g.matchState, g._count._all]));
       const totals = { ...((batch.totals as Record<string, unknown>) ?? {}), updatedChanged, updatedNoChange, unmatched: counts.UNMATCHED ?? 0, conflicts: counts.CONFLICT ?? 0, invalid: counts.INVALID ?? 0, ignored: counts.IGNORED ?? 0, needsReview: (counts.UNMATCHED ?? 0) + (counts.CONFLICT ?? 0), appliedRows: rows.length };
       await this.prisma.client.misImportBatch.update({ where: { id: batchId }, data: { stage: 'APPLIED', appliedAt: batch.appliedAt ?? new Date(), totals } });
-      await this.notifications.notify({ recipientUserId: actor.userId, kind: 'MIS_IMPORT_RESULT', title: `MIS batch ${batch.publicRef} applied`, body: `${updatedChanged} lead(s) changed, ${updatedNoChange} confirmed, ${totals.needsReview} row(s) need review.`, deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:applied:${batchId}:${rows.length}` });
+      await this.notifications.notify({ recipientUserId: actor.userId, kind: 'MIS_IMPORT_RESULT', title: `MIS upload ${batch.publicRef} done`, body: `${updatedChanged} lead(s) updated, ${updatedNoChange} unchanged, ${totals.needsReview + totals.invalid} row(s) with no KBS lead.`, deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:applied:${batchId}:${rows.length}` });
       RequestContextStore.audit({ entityId: batchId, after: { stage: 'APPLIED', totals } });
       return totals;
     }

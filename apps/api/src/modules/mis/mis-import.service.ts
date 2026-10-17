@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { activationBucket, type CreateMisBatchBody, decisionBucket, makePublicRef, maskMobile, maskName, MIS_DATE_FIELDS, MIS_PII_FIELDS, type MisApplicationsQuery, type MisBatchListQuery, type MisRowsQuery, RefPrefix } from '@kbs/shared';
+import { activationBucket, type CreateMisBatchBody, decisionBucket, makePublicRef, maskMobile, maskName, MIS_DATE_FIELDS, MIS_PII_FIELDS, type MisApplicationsQuery, type MisBatchListQuery, type MisRowsQuery, RefPrefix, STANDARD_MIS_FORMAT } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -76,10 +76,11 @@ export class MisImportService {
   }
 
   async create(actor: Actor, body: CreateMisBatchBody) {
-    // F-809: every bank uses the same MIS layout, so the upload only names the bank; the latest APPROVED profile resolves the field map.
+    // F-809/F-816: every bank uses the same MIS layout, so the upload only names the bank; the latest APPROVED profile
+    // resolves the field map, and a bank without one gets the built-in standard format (no mapping to set up).
     const profile = body.profileId
       ? await this.prisma.client.misImportProfile.findUnique({ where: { id: body.profileId } })
-      : await this.prisma.client.misImportProfile.findFirst({ where: { bankId: body.bankId, status: 'APPROVED' }, orderBy: { version: 'desc' } });
+      : await this.standardProfileFor(actor, body.bankId);
     if (!profile || profile.bankId !== body.bankId) throw new AppError('VALIDATION_FAILED', 'Profile does not belong to that bank.');
     if (profile.status !== 'APPROVED') throw new AppError('MIS_PROFILE_NOT_APPROVED', 'The MIS profile for this bank is not approved yet.');
     const { file, checksum, sheets, sheet } = await this.load(body.fileId, body.sheetName ?? profile.sheetSelector);
@@ -99,6 +100,21 @@ export class MisImportService {
     RequestContextStore.audit({ entityId: batch.id, after: { publicRef: batch.publicRef, fileId: file.id, sheet: sheet.name, rows: sheet.rows.length, missingHeaders: check.missing, unmappedColumns: check.unmapped } });
     await this.parse(batch.id, profile, sheet, check);
     return this.get(batch.id);
+  }
+
+  /** F-816: latest APPROVED profile for the bank, or a new APPROVED version built from `STANDARD_MIS_FORMAT`. */
+  private async standardProfileFor(actor: Actor, bankId: string) {
+    const approved = await this.prisma.client.misImportProfile.findFirst({ where: { bankId, status: 'APPROVED' }, orderBy: { version: 'desc' } });
+    if (approved) return approved;
+    const bank = await this.prisma.client.bank.findUnique({ where: { id: bankId }, select: { id: true } });
+    if (!bank) throw AppError.notFound('Bank');
+    const max = await this.prisma.client.misImportProfile.aggregate({ where: { bankId }, _max: { version: true } });
+    const f = STANDARD_MIS_FORMAT;
+    const created = await this.prisma.client.misImportProfile.create({
+      data: { bankId, version: (max._max.version ?? 0) + 1, name: f.name, sheetSelector: null, headerAliases: {}, fieldMap: f.fieldMap, referenceFields: f.referenceFields, snapshotMode: f.snapshotMode, blankOverwrites: false, timezone: f.timezone, timezoneAssumed: true, dateFormats: f.dateFormats, knownValues: f.knownValues, status: 'APPROVED', approvedByUserId: actor.userId, approvedAt: new Date() },
+    });
+    await this.audit.record({ action: 'misProfile.standard', entityType: 'MisImportProfile', entityId: created.id, after: { bankId, version: created.version } });
+    return created;
   }
 
   /** Parse + map in one pass (rows are small); re-runnable while the batch is not APPLIED. */

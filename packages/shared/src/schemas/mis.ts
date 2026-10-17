@@ -10,6 +10,74 @@ export const MIS_PII_FIELDS: readonly string[] = ['customerName', 'companyName',
 /** Fields that are shown to Advisors as the three status badges (INV-02). */
 export const MIS_STATUS_FIELDS = ['currentStage', 'finalDecision', 'cardActivationStatus'] as const;
 
+/**
+ * F-816: every bank sends the MIS in this one layout (the 36-column HDFC sample, REQ-13 §13.2), so there is no
+ * per-bank column mapping to set up. Uploads for a bank without an approved profile get one built from this.
+ */
+export const STANDARD_MIS_FORMAT = {
+  name: 'Standard MIS format',
+  fieldMap: {
+    applicationNo: 'Application No',
+    lc2Code: 'LC2_CODE',
+    currentStage: 'CURRENT_STAGE',
+    applicationReferenceNumber: 'APPLICATION_REFERENCE_NUMBER',
+    creationDateTime: 'CREATION_DATE_TIME',
+    customerType: 'CUSTOMER_TYPE',
+    customerName: 'CUSTOMER_NAME',
+    channel: 'CHANNEL',
+    ipaStatus: 'IPA_STATUS',
+    dapFinalFlag: 'DAP_FINAL_FLAG',
+    dropoffReason: 'DROPOFF_REASON',
+    idcomStatus: 'IDCOM_STATUS',
+    vkycStatus: 'VKYC_STATUS',
+    vkycConsentDate: 'VKYC_CONSENT_DATE',
+    vkycExpiryDate: 'VKYC_EXPIRY_DATE',
+    captureLink: 'CAPTURE_LINK',
+    promoCode: 'PROMO_CODE',
+    productCode: 'PRODUCT_CODE',
+    finalDecision: 'FINAL_DECISION',
+    finalDecisionDate: 'FINAL_DECISION_DATE',
+    declineCode: 'DECLINE_CODE',
+    declineDescription: 'DECLINE_DESCRIPTION',
+    curableFlag: 'CURABLE_FLAG',
+    companyName: 'COMPANY_NAME',
+    bkycStatus: 'BKYC Status',
+    reason: 'Reason',
+    kycStatus: 'KYC Status',
+    decisionMonth: 'Decision Month',
+    declineDescription2: 'Decline Descreption', // original misspelling preserved (REQ-13 §13.2 #29)
+    declineType: 'Decline Type',
+    productDescription: 'Product Des',
+    securedUnsecured: 'Secured/Unsecured',
+    kycSuccessNr: 'KYC Success/NR',
+    cardType: 'Card Type',
+    creationDate: 'Creation Date',
+    cardActivationStatus: 'Card Activation Staus', // original misspelling preserved (REQ-13 §13.2 #36)
+  } as Record<string, string>,
+  referenceFields: [
+    { kind: 'APPLICATION_NO', header: 'Application No' },
+    { kind: 'APPLICATION_REFERENCE_NUMBER', header: 'APPLICATION_REFERENCE_NUMBER' },
+  ] as { kind: 'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER'; header: string }[],
+  snapshotMode: 'DELTA' as const,
+  timezone: 'Asia/Kolkata',
+  dateFormats: ['dd-MM-yyyy HH:mm:ss', 'dd-MM-yyyy', 'dd/MM/yyyy HH:mm:ss', 'dd/MM/yyyy', 'yyyy-MM-dd HH:mm:ss', 'yyyy-MM-dd'],
+  knownValues: {
+    currentStage: [
+      'Decisioned Cases',
+      'Decisioned Cases and Card setup completed',
+      'Document Curing',
+      'In-Complete Application',
+      'Pending for Biokyc',
+      'System Queue',
+    ],
+    finalDecision: ['Approve', 'Decline', 'Inprocess'],
+    cardActivationStatus: ['INACTIVE', 'V + ACTIVE', 'TXN ACTIVE - Rs 100', '#N/A'],
+    kycStatus: ['Expired', 'NR', 'Not Eligible', 'Success'],
+    vkycStatus: ['VKYC InComplete', 'vKYC Success'],
+    bkycStatus: ['Closed', 'Completed', '#N/A'],
+  } as Record<string, string[]>,
+};
+
 export const MisReferenceKind = z.enum(['APPLICATION_NO', 'APPLICATION_REFERENCE_NUMBER', 'OTHER']);
 export const MisReferenceField = z.object({ kind: MisReferenceKind, header: z.string().min(1) });
 

@@ -10,64 +10,9 @@
  */
 import 'dotenv/config';
 
-import { CONFIG_KEYS, makePublicRef, RefPrefix, toE164India } from '@kbs/shared';
+import { CONFIG_KEYS, makePublicRef, RefPrefix, STANDARD_MIS_FORMAT, toE164India } from '@kbs/shared';
 
 import { createPrismaClient } from './client';
-
-const HDFC_FIELD_MAP: Record<string, string> = {
-  applicationNo: 'Application No',
-  lc2Code: 'LC2_CODE',
-  currentStage: 'CURRENT_STAGE',
-  applicationReferenceNumber: 'APPLICATION_REFERENCE_NUMBER',
-  creationDateTime: 'CREATION_DATE_TIME',
-  customerType: 'CUSTOMER_TYPE',
-  customerName: 'CUSTOMER_NAME',
-  channel: 'CHANNEL',
-  ipaStatus: 'IPA_STATUS',
-  dapFinalFlag: 'DAP_FINAL_FLAG',
-  dropoffReason: 'DROPOFF_REASON',
-  idcomStatus: 'IDCOM_STATUS',
-  vkycStatus: 'VKYC_STATUS',
-  vkycConsentDate: 'VKYC_CONSENT_DATE',
-  vkycExpiryDate: 'VKYC_EXPIRY_DATE',
-  captureLink: 'CAPTURE_LINK',
-  promoCode: 'PROMO_CODE',
-  productCode: 'PRODUCT_CODE',
-  finalDecision: 'FINAL_DECISION',
-  finalDecisionDate: 'FINAL_DECISION_DATE',
-  declineCode: 'DECLINE_CODE',
-  declineDescription: 'DECLINE_DESCRIPTION',
-  curableFlag: 'CURABLE_FLAG',
-  companyName: 'COMPANY_NAME',
-  bkycStatus: 'BKYC Status',
-  reason: 'Reason',
-  kycStatus: 'KYC Status',
-  decisionMonth: 'Decision Month',
-  declineDescription2: 'Decline Descreption', // original misspelling preserved (REQ-13 §13.2 #29)
-  declineType: 'Decline Type',
-  productDescription: 'Product Des',
-  securedUnsecured: 'Secured/Unsecured',
-  kycSuccessNr: 'KYC Success/NR',
-  cardType: 'Card Type',
-  creationDate: 'Creation Date',
-  cardActivationStatus: 'Card Activation Staus', // original misspelling preserved (REQ-13 §13.2 #36)
-};
-
-const HDFC_KNOWN_VALUES = {
-  currentStage: [
-    'Decisioned Cases',
-    'Decisioned Cases and Card setup completed',
-    'Document Curing',
-    'In-Complete Application',
-    'Pending for Biokyc',
-    'System Queue',
-  ],
-  finalDecision: ['Approve', 'Decline', 'Inprocess'],
-  cardActivationStatus: ['INACTIVE', 'V + ACTIVE', 'TXN ACTIVE - Rs 100', '#N/A'],
-  kycStatus: ['Expired', 'NR', 'Not Eligible', 'Success'],
-  vkycStatus: ['VKYC InComplete', 'vKYC Success'],
-  bkycStatus: ['Closed', 'Completed', '#N/A'],
-};
 
 const BANKS = [
   ['HDFC', 'HDFC Bank'],
@@ -226,17 +171,14 @@ export async function seed(databaseUrl: string, env: NodeJS.ProcessEnv = process
         name: 'HDFC MIS v1 (36 columns, sample KBS804)',
         sheetSelector: 'Sheet1',
         headerAliases: {},
-        fieldMap: HDFC_FIELD_MAP,
-        referenceFields: [
-          { kind: 'APPLICATION_NO', header: 'Application No' },
-          { kind: 'APPLICATION_REFERENCE_NUMBER', header: 'APPLICATION_REFERENCE_NUMBER' },
-        ],
+        fieldMap: STANDARD_MIS_FORMAT.fieldMap,
+        referenceFields: STANDARD_MIS_FORMAT.referenceFields,
         snapshotMode: 'DELTA',
         blankOverwrites: false,
         timezone: 'Asia/Kolkata',
         timezoneAssumed: true,
-        dateFormats: ['dd-MM-yyyy HH:mm:ss', 'dd-MM-yyyy', 'dd/MM/yyyy HH:mm:ss', 'dd/MM/yyyy', 'yyyy-MM-dd HH:mm:ss', 'yyyy-MM-dd'],
-        knownValues: HDFC_KNOWN_VALUES,
+        dateFormats: STANDARD_MIS_FORMAT.dateFormats,
+        knownValues: STANDARD_MIS_FORMAT.knownValues,
         status: 'DRAFT',
       },
     });

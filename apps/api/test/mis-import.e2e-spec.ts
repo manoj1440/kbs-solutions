@@ -126,4 +126,17 @@ describe('F-501 MIS profiles / F-502 upload, parse, map (MIS-01, MIS-08, MIS-11)
     expect(list.body.data).toHaveLength(1);
     await api().post(`/api/v1/mis/batches/${list.body.data[0].id}/reject`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'wrong month' }).expect(201);
   });
+
+  it('F-816: a bank with no approved profile imports in the standard format without any setup', async () => {
+    const equitasId = (await prisma.bank.findUniqueOrThrow({ where: { code: 'EQUITAS' } })).id;
+    expect(await prisma.misImportProfile.count({ where: { bankId: equitasId } })).toBe(0);
+    const fileId = await upload(await hdfcWorkbook([{ 'Application No': 'EQ-1', CURRENT_STAGE: 'System Queue' }], { sheetName: 'Report' }), 'equitas.xlsx');
+    const b = await api().post('/api/v1/mis/batches').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: equitasId, fileId }).expect(201);
+    expect(b.body.data.stage).toBe('MAPPED');
+    expect(b.body.data.profile).toMatchObject({ name: 'Standard MIS format', version: 1 });
+    expect(await prisma.misImportProfile.findMany({ where: { bankId: equitasId }, select: { status: true } })).toEqual([{ status: 'APPROVED' }]);
+    // second upload reuses it
+    await api().post('/api/v1/mis/batches').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: equitasId, fileId: await upload(await hdfcWorkbook([{ 'Application No': 'EQ-2', CURRENT_STAGE: 'System Queue' }]), 'equitas2.xlsx') }).expect(201);
+    expect(await prisma.misImportProfile.count({ where: { bankId: equitasId } })).toBe(1);
+  });
 });

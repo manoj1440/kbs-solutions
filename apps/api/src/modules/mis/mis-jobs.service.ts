@@ -122,7 +122,7 @@ export class MisJobsService implements OnModuleInit {
       this.logger.error({ batchId, kind, err: msg }, 'MIS background job failed');
       await this.prisma.client.misImportBatch.update({ where: { id: batchId }, data: { jobStatus: 'FAILED', jobError: msg, jobFinishedAt: new Date(), ...(kind === 'APPLY' ? { stage: 'FAILED', error: msg } : {}) } });
       await this.audit.record({ action: 'misBatch.jobFailed', entityType: 'MisImportBatch', entityId: batchId, actor: { userId: requester, role }, after: { kind, error: msg } });
-      await this.notifications.notify({ recipientUserId: requester, kind: 'MIS_IMPORT_RESULT', title: `MIS batch ${batch.publicRef} ${kind === 'PREVIEW' ? 'preview' : 'apply'} failed`, body: `The background ${kind === 'PREVIEW' ? 'preview' : 'apply'} stopped: ${msg.slice(0, 160)}. Rows already applied are kept; run it again to continue.`, deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:failed:${batchId}:${start.getTime()}` });
+      await this.notifications.notify({ recipientUserId: requester, kind: 'MIS_IMPORT_RESULT', title: `MIS upload ${batch.publicRef} stopped`, body: `Updating leads stopped: ${msg.slice(0, 160)}. Leads already updated are kept; open the upload and choose Update leads.`, deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:failed:${batchId}:${start.getTime()}` });
       return { failed: true, error: msg };
     }
   }
