@@ -193,7 +193,7 @@ export function PaymentActions({ request }: { request: PayoutRequestDto }) {
   const any = f.canRecord || f.canAttachProof || f.canCorrect || f.canDecideCorrection || f.canFlag || f.canResolve;
   if (!any) return null;
   return (
-    <SectionCard icon={Banknote} tone="emerald" title={f.canRecord ? 'Record external payment' : 'Payment actions'} description="Pay using your bank or finance tools outside KBS, then record exactly what the bank shows. KBS never transfers money." bodyClassName="grid gap-5 [&>*+*]:border-t [&>*+*]:border-slate-100 [&>*+*]:pt-5">
+    <SectionCard icon={Banknote} tone="emerald" title={f.canRecord ? 'Record external payment' : 'Payment actions'} description="Pay using your bank or finance tools outside KBS, then record exactly what the bank shows. KBS never transfers money." bodyClassName="grid gap-5 [&>*+*]:border-t [&>*+*]:border-border-subtle [&>*+*]:pt-5">
         {f.canRecord ? <PaymentForm request={request} mode="record" /> : null}
         {f.canAttachProof ? <AttachProof request={request} /> : null}
         {f.canDecideCorrection ? <CorrectionDecision request={request} /> : null}

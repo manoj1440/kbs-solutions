@@ -69,7 +69,7 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
           ) : (
             <span className="font-mono text-xs font-semibold">{row.original.lead.publicRef}</span>
           )}
-          <div className="text-[11px] text-slate-500">{row.original.lead.customerFullName}</div>
+          <div className="text-2xs text-muted-foreground">{row.original.lead.customerFullName}</div>
         </>
       ),
     }),
@@ -81,8 +81,8 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
         <div className="flex items-center gap-2.5">
           <BankMark code={row.original.bank.code} size="sm" />
           <div className="min-w-0">
-            <div className="font-medium text-slate-800">{row.original.bank.displayName}</div>
-            <div className="text-[11px] text-slate-500">{row.original.card}</div>
+            <div className="font-medium text-foreground">{row.original.bank.displayName}</div>
+            <div className="text-2xs text-muted-foreground">{row.original.card}</div>
           </div>
         </div>
       ),
@@ -94,7 +94,7 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
       cell: ({ row }) => (
         <>
           <code>{row.original.triggerField}</code> = “{row.original.triggerFieldValue}”
-          <div className="mt-0.5 text-[11px] text-slate-500">
+          <div className="mt-0.5 text-2xs text-muted-foreground">
             batch {row.original.evidence.batchRef} · {formatDateTime(row.original.evidence.uploadedAt)} · eligible {formatDateTime(row.original.eligibleAt)}
           </div>
         </>
@@ -106,13 +106,13 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
-          {row.original.rule.name} <span className="text-slate-500">v{row.original.rule.version}</span>
+          {row.original.rule.name} <span className="text-muted-foreground">v{row.original.rule.version}</span>
         </>
       ),
     }),
     i.accessor('amountSnapshotInr', {
       header: 'Amount',
-            cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-slate-900">{formatInr(getValue())}</span>,
+            cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-foreground">{formatInr(getValue())}</span>,
     }),
     i.display({
       id: 'warnings',
@@ -127,9 +127,9 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
                 {w}
               </Badge>
             ))}
-            {r.priorRequests.length ? <div className="text-slate-500">Prior: {r.priorRequests.map((p) => `${p.publicRef} (${p.state.toLowerCase()})`).join(', ')}</div> : null}
-            {r.entitlementState !== 'RESERVED' && r.entitlementState !== 'PAID' ? <div className="text-slate-500">entitlement now {r.entitlementState.toLowerCase()}</div> : null}
-            {!r.warnings.length && !r.priorRequests.length && (r.entitlementState === 'RESERVED' || r.entitlementState === 'PAID') ? <span className="text-slate-400">—</span> : null}
+            {r.priorRequests.length ? <div className="text-muted-foreground">Prior: {r.priorRequests.map((p) => `${p.publicRef} (${p.state.toLowerCase()})`).join(', ')}</div> : null}
+            {r.entitlementState !== 'RESERVED' && r.entitlementState !== 'PAID' ? <div className="text-muted-foreground">entitlement now {r.entitlementState.toLowerCase()}</div> : null}
+            {!r.warnings.length && !r.priorRequests.length && (r.entitlementState === 'RESERVED' || r.entitlementState === 'PAID') ? <span className="text-fg-3">—</span> : null}
           </>
         );
       },
@@ -149,7 +149,7 @@ export function PaymentHistoryTable({ rows }: { rows: PaymentEntry[] }) {
       cell: ({ row }) => (
         <>
           <Badge variant={PAYMENT_STATE[row.original.state]?.tone ?? 'unknown'}>{PAYMENT_STATE[row.original.state]?.label ?? row.original.state}</Badge>
-          <div className="mt-1 text-[11px] text-slate-500">
+          <div className="mt-1 text-2xs text-muted-foreground">
             {row.original.recordedBy.fullName} · {formatDateTime(row.original.recordedAt)}
           </div>
         </>
@@ -160,8 +160,8 @@ export function PaymentHistoryTable({ rows }: { rows: PaymentEntry[] }) {
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
-          <span className="font-semibold text-slate-900 tabular-nums">{formatInr(row.original.amountInr)}</span> · {row.original.method ?? '—'}
-          <div className="text-slate-600">
+          <span className="font-semibold text-foreground tabular-nums">{formatInr(row.original.amountInr)}</span> · {row.original.method ?? '—'}
+          <div className="text-fg-2">
             <code>{row.original.transferReference}</code> · paid {formatDateTime(row.original.paidAt)}
           </div>
         </>
@@ -171,7 +171,7 @@ export function PaymentHistoryTable({ rows }: { rows: PaymentEntry[] }) {
       id: 'proof',
       header: 'Proof',
       meta: { cellClassName: 'text-xs' },
-      cell: ({ row }) => (row.original.proofFileId ? <ProofLink fileId={row.original.proofFileId} /> : <span className="text-slate-500">none</span>),
+      cell: ({ row }) => (row.original.proofFileId ? <ProofLink fileId={row.original.proofFileId} /> : <span className="text-muted-foreground">none</span>),
     }),
     p.display({
       id: 'notes',
@@ -183,13 +183,13 @@ export function PaymentHistoryTable({ rows }: { rows: PaymentEntry[] }) {
           <>
             {r.correctionReason ? <div>Correction: {r.correctionReason}</div> : null}
             {r.correctionDecision ? (
-              <div className="text-slate-500">
+              <div className="text-muted-foreground">
                 Admin {r.state === 'CORRECTION_REJECTED' ? 'rejected' : 'approved'} ({r.correctionDecision.by?.fullName ?? '—'}, {formatDateTime(r.correctionDecision.at)}): {r.correctionDecision.reason}
               </div>
             ) : null}
             {r.exceptionReason ? <div className="text-destructive">{r.exceptionReason}</div> : null}
-            {r.resolutionNote ? <div className="text-slate-500">Resolved: {r.resolutionNote}</div> : null}
-            {r.supersededAt ? <div className="text-slate-500">Superseded {formatDateTime(r.supersededAt)}</div> : null}
+            {r.resolutionNote ? <div className="text-muted-foreground">Resolved: {r.resolutionNote}</div> : null}
+            {r.supersededAt ? <div className="text-muted-foreground">Superseded {formatDateTime(r.supersededAt)}</div> : null}
           </>
         );
       },

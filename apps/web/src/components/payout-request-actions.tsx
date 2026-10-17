@@ -67,7 +67,7 @@ export function RequestActions({ request }: { request: PayoutRequestDto }) {
           ) : null}
         </div>
         {msg ? (
-          <p role="status" className="text-sm text-slate-700">
+          <p role="status" className="text-sm text-fg-2">
             {msg}
           </p>
         ) : null}

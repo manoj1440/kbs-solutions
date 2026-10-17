@@ -1,14 +1,12 @@
 import { formatDateTime, formatInr } from '@kbs/shared';
 import { Ban, Banknote, Check, Circle, Clock, CreditCard, PauseCircle, UserCheck, Wallet, X, type LucideIcon } from 'lucide-react';
-import Link from 'next/link';
 
 import { PayeeReveal, PaymentActions } from '@/components/payment-actions';
 import { RequestActions } from '@/components/payout-request-actions';
 import { type PaymentEntry, PaymentHistoryTable, type RequestItem, RequestItemsTable } from '@/components/payout-request-tables';
 import { PayoutStateBadge } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar, Callout, KeyValueGrid, PageHeader, SectionCard } from '@/components/ui/kit';
+import { Avatar, Callout, DetailHeader, IconTile, KeyValueGrid, SectionCard } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { PAYMENT_STATE } from '@/lib/payment-states';
 import { cn } from '@/lib/utils';
@@ -76,30 +74,25 @@ export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: stri
   const pending = r.state === 'PENDING_APPROVALS';
   return (
     <div className="grid gap-6">
-      <PageHeader
-        icon={Wallet}
-        eyebrow={backHref.startsWith('/admin') ? 'Payouts' : backHref.startsWith('/accounts') ? 'Accounts' : 'Team payouts'}
+      <DetailHeader
+        back={{ href: backHref, label: 'Requests' }}
+        visual={<IconTile icon={Wallet} tone="teal" size="lg" className="hidden sm:inline-flex" />}
         title={<span className="tabular-nums">{formatInr(r.totalAmountInr)}</span>}
         meta={
           <>
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11.5px] font-semibold text-slate-700">{r.publicRef}</span>
+            <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-2xs font-semibold text-fg-2">{r.publicRef}</span>
             <PayoutStateBadge state={r.state} />
             <span>{r.itemCount} card event(s)</span>
           </>
         }
-        description={
+        subtitle={
           <>
             Submitted {formatDateTime(r.submittedAt)} by {r.advisor.fullName} · Manager approver {r.managerApprover?.fullName ?? '—'} · order {r.approvals.order}
           </>
         }
-        actions={
-          <Button asChild variant="outline">
-            <Link href={backHref}>← Requests</Link>
-          </Button>
-        }
       >
         <Journey r={r} />
-      </PageHeader>
+      </DetailHeader>
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <SectionCard icon={UserCheck} tone="violet" title="Approvals" description="Both the assigned Manager and the Admin must approve. One person never holds both.">
           <ol className="grid gap-0">
@@ -138,8 +131,8 @@ type StepState = 'done' | 'rejected' | 'current' | 'upcoming';
 const STEP_CLS: Record<StepState, string> = {
   done: 'bg-emerald-500 text-white ring-emerald-500',
   rejected: 'bg-rose-500 text-white ring-rose-500',
-  current: 'bg-white text-amber-600 ring-amber-400',
-  upcoming: 'bg-white text-slate-400 ring-slate-200',
+  current: 'bg-card text-amber-600 ring-amber-400',
+  upcoming: 'bg-card text-fg-3 ring-border',
 };
 const STEP_ICON: Record<StepState, LucideIcon> = {
   done: Check,
@@ -180,19 +173,19 @@ function Journey({ r }: { r: PayoutRequestDto }) {
     },
   ];
   return (
-    <ol aria-label="Request progress" className="grid gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)] sm:grid-cols-5 sm:gap-0 sm:p-5">
+    <ol aria-label="Request progress" className="grid gap-3 rounded-2xl border border-border bg-card p-4 shadow-card sm:grid-cols-5 sm:gap-0 sm:p-5">
       {steps.map((s, i) => {
         const Icon = STEP_ICON[s.state];
         return (
           <li key={s.title} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:gap-2 sm:text-center">
-            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-3.5 right-1/2 hidden h-0.5 w-full -translate-x-3.5 sm:block', steps[i - 1].state === 'done' ? 'bg-emerald-300' : 'bg-slate-200')} /> : null}
+            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-3.5 right-1/2 hidden h-0.5 w-full -translate-x-3.5 sm:block', steps[i - 1].state === 'done' ? 'bg-emerald-300' : 'bg-surface-strong')} /> : null}
             <span className={cn('relative z-10 inline-flex size-7 shrink-0 items-center justify-center rounded-full ring-2', STEP_CLS[s.state])} aria-hidden="true">
               <Icon className="size-3.5" strokeWidth={3} />
             </span>
             <div className="min-w-0 sm:px-2">
-              <div className="text-[13px] font-semibold text-slate-900">{s.title}</div>
-              <div className="text-[12px] text-slate-600">{s.detail}</div>
-              {s.at ? <div className="text-[11px] text-slate-400">{formatDateTime(s.at)}</div> : null}
+              <div className="text-ui font-semibold text-foreground">{s.title}</div>
+              <div className="text-xs text-fg-2">{s.detail}</div>
+              {s.at ? <div className="text-2xs text-fg-3">{formatDateTime(s.at)}</div> : null}
             </div>
           </li>
         );
@@ -206,17 +199,17 @@ function ApprovalRow({ label, a, pending, last }: { label: string; a: Approval |
   const Icon = STEP_ICON[state];
   return (
     <li className="relative flex gap-3 pb-4 last:pb-0">
-      {!last ? <span aria-hidden="true" className="absolute top-8 bottom-0 left-[13px] w-0.5 bg-slate-200" /> : null}
+      {!last ? <span aria-hidden="true" className="absolute top-8 bottom-0 left-[13px] w-0.5 bg-surface-strong" /> : null}
       <span className={cn('relative inline-flex size-7 shrink-0 items-center justify-center rounded-full ring-2', STEP_CLS[state])} aria-hidden="true">
         <Icon className="size-3.5" strokeWidth={3} />
       </span>
       <div className="min-w-0 flex-1 text-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium text-slate-900">{label}</span>
+          <span className="font-medium text-foreground">{label}</span>
           {a ? <Badge variant={a.decision === 'APPROVED' ? 'success' : 'destructive'}>{a.decision.toLowerCase()}</Badge> : <Badge variant={pending ? 'warning' : 'unknown'}>{pending ? 'pending' : '—'}</Badge>}
         </div>
         {a ? (
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             <Avatar name={a.by.fullName} size="sm" className="size-5 text-[8px]" />
             {a.by.fullName} · {formatDateTime(a.at)}
             {a.reason ? ` · ${a.reason}` : ''}
@@ -248,7 +241,7 @@ function PaymentTrace({ r }: { r: PayoutRequestDto }) {
         {r.payee ? (
           <KeyValueGrid
             cols={3}
-            className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4"
+            className="rounded-xl border border-border bg-surface-muted p-4"
             items={[
               [
                 'Payee',
@@ -273,7 +266,7 @@ function PaymentTrace({ r }: { r: PayoutRequestDto }) {
           />
         ) : null}
         {r.paymentHistory.length ? (
-          <div className="-mx-5 border-t border-slate-100 sm:-mx-6">
+          <div className="-mx-5 border-t border-border-subtle sm:-mx-6">
             <PaymentHistoryTable rows={r.paymentHistory} />
           </div>
         ) : r.receipt ? (

@@ -41,7 +41,7 @@ export function PayoutExceptionsTable({ rows, requestBase, canAcknowledge }: { r
       cell: ({ row }) => (
         <>
           <Badge variant="warning">{KIND_LABEL[row.original.kind] ?? row.original.kind}</Badge>
-          <div className="mt-1 text-[11px] text-slate-500">{formatDateTime(row.original.raisedAt)}</div>
+          <div className="mt-1 text-2xs text-muted-foreground">{formatDateTime(row.original.raisedAt)}</div>
         </>
       ),
     }),
@@ -62,7 +62,7 @@ export function PayoutExceptionsTable({ rows, requestBase, canAcknowledge }: { r
               ) : (
                 '—'
               )}
-              <div className="text-slate-500">{e.advisor?.fullName ?? ''}</div>
+              <div className="text-muted-foreground">{e.advisor?.fullName ?? ''}</div>
             </div>
           </div>
         );
@@ -70,7 +70,7 @@ export function PayoutExceptionsTable({ rows, requestBase, canAcknowledge }: { r
     }),
     c.accessor('detail', {
       header: 'Detail',
-      meta: { cellClassName: 'max-w-md text-xs whitespace-normal text-slate-700' },
+      meta: { cellClassName: 'max-w-md text-xs whitespace-normal text-fg-2' },
     }),
     c.accessor((r) => r.amountInr ?? -1, {
       id: 'amount',
@@ -85,7 +85,7 @@ export function PayoutExceptionsTable({ rows, requestBase, canAcknowledge }: { r
         row.original.acknowledgeable && canAcknowledge ? (
           <AcknowledgeException kind={row.original.kind} subjectId={row.original.subjectId} />
         ) : (
-          <span className="text-slate-500">{row.original.resolvedVia ?? 'Admin/Accounts acknowledge'}</span>
+          <span className="text-muted-foreground">{row.original.resolvedVia ?? 'Admin/Accounts acknowledge'}</span>
         ),
     }),
   ]);
