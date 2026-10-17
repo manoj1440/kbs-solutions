@@ -39,11 +39,11 @@ export async function AccountPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <SectionCard icon={UserRound} tone="violet" title="Profile" description="Changes to name or mobile go through the Admin (mobile changes are audited).">
           <div className="grid gap-5">
-            <div className="flex min-w-0 items-center gap-4 rounded-xl bg-[linear-gradient(135deg,rgb(245_243_255)_0%,rgb(240_253_250)_100%)] p-4 ring-1 ring-slate-100 ring-inset">
+            <div className="flex min-w-0 items-center gap-4 rounded-xl bg-[linear-gradient(135deg,rgb(245_243_255)_0%,rgb(240_253_250)_100%)] p-4 ring-1 ring-border-subtle ring-inset">
               <Avatar name={u.fullName || u.publicRef} size="lg" className="shadow-sm ring-4 ring-card" />
               <div className="min-w-0">
-                <p className="truncate text-base font-semibold text-slate-900">{u.fullName || '—'}</p>
-                <p className="font-mono text-xs text-slate-500">{u.publicRef}</p>
+                <p className="truncate text-base font-semibold text-foreground">{u.fullName || '—'}</p>
+                <p className="font-mono text-xs text-muted-foreground">{u.publicRef}</p>
               </div>
             </div>
             <KeyValueGrid items={rows} />
@@ -56,7 +56,7 @@ export async function AccountPage() {
                 href={supportHref}
                 className="lift flex min-w-0 items-center gap-3 rounded-xl border border-teal-100 bg-teal-50/60 p-4 text-teal-900 hover:border-teal-200"
               >
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm ring-1 ring-teal-100">
+                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-teal-700 shadow-sm ring-1 ring-teal-100">
                   {support.includes('@') ? <Mail className="size-5" aria-hidden="true" /> : <Phone className="size-5" aria-hidden="true" />}
                 </span>
                 <span className="min-w-0 font-semibold break-words">{support}</span>

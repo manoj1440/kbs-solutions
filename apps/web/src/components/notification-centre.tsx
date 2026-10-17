@@ -114,12 +114,12 @@ export function NotificationCentre({ area }: { area: WebArea }) {
     }
   };
   const pages = Math.max(1, Math.ceil(total / PAGE));
-  const seg = (on: boolean) => cn('h-8 rounded-lg px-3 text-[13px] shadow-none', on ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100');
+  const seg = (on: boolean) => cn('h-8 rounded-lg px-3 text-ui shadow-none', on ? 'bg-foreground text-background hover:bg-foreground/90' : 'text-fg-2 hover:bg-muted');
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Notifications</h1>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <div className="inline-flex gap-1 rounded-xl border border-slate-200/80 bg-white p-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+        <div className="inline-flex gap-1 rounded-xl border border-border bg-card p-1 shadow-card">
           <Button size="sm" variant="ghost" className={seg(!unreadOnly)} aria-pressed={!unreadOnly} onClick={() => (setUnreadOnly(false), setPage(1))}>
             All
           </Button>
@@ -127,7 +127,7 @@ export function NotificationCentre({ area }: { area: WebArea }) {
             Unread
           </Button>
         </div>
-        <span className="text-xs text-slate-500 tabular-nums">{unread === null ? 'Loading…' : `${unread} unread`} · {total} total · newest first</span>
+        <span className="text-xs text-muted-foreground tabular-nums">{unread === null ? 'Loading…' : `${unread} unread`} · {total} total · newest first</span>
         <Button
           size="sm"
           variant="outline"
@@ -151,15 +151,15 @@ export function NotificationCentre({ area }: { area: WebArea }) {
           {msg}
         </Callout>
       ) : null}
-      <section aria-label={unreadOnly ? 'Unread notifications' : 'All notifications'} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+      <section aria-label={unreadOnly ? 'Unread notifications' : 'All notifications'} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="min-h-0 flex-1 overflow-y-auto">
-        <ul className="divide-y divide-slate-100 border-t border-slate-100">
+        <ul className="divide-y divide-border-subtle border-t border-border-subtle">
           {rows === null
             ? [0, 1, 2].map((i) => (
                 <li key={i} className="flex items-start gap-3 px-5 py-4 sm:px-6" aria-hidden={i > 0 || undefined}>
                   <Skeleton className="size-8 shrink-0 rounded-xl" />
                   <span className="grid flex-1 gap-2">
-                    {i === 0 ? <span className="text-sm text-slate-500">Loading…</span> : <Skeleton className="h-3 w-1/3" />}
+                    {i === 0 ? <span className="text-sm text-muted-foreground">Loading…</span> : <Skeleton className="h-3 w-1/3" />}
                     <Skeleton className="h-3 w-2/3" />
                   </span>
                 </li>
@@ -178,27 +178,27 @@ export function NotificationCentre({ area }: { area: WebArea }) {
                   type="button"
                   onClick={() => void open(n)}
                   className={cn(
-                    'group flex w-full min-w-0 items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700 sm:px-6',
+                    'group flex w-full min-w-0 items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700 sm:px-6',
                     n.readAt ? '' : 'bg-teal-50/50',
                   )}
                 >
                   <IconTile icon={icon} tone={tone} size="sm" className={cn(n.readAt && 'opacity-70')} />
                   <span className="grid min-w-0 flex-1 gap-1">
-                    <span className={cn('flex flex-wrap items-center gap-2 text-sm', n.readAt ? 'font-medium text-slate-700' : 'font-semibold text-slate-900')}>
+                    <span className={cn('flex flex-wrap items-center gap-2 text-sm', n.readAt ? 'font-medium text-fg-2' : 'font-semibold text-foreground')}>
                       {n.title}
                       {n.readAt ? null : <Badge variant="info">Unread</Badge>}
                     </span>
-                    <span className="text-sm break-words text-slate-600">{n.body}</span>
-                    <span className="text-xs text-slate-400 tabular-nums">{formatDateTime(n.createdAt)}</span>
+                    <span className="text-sm break-words text-fg-2">{n.body}</span>
+                    <span className="text-xs text-fg-3 tabular-nums">{formatDateTime(n.createdAt)}</span>
                   </span>
-                  <ChevronRight className="mt-2 size-4 shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-500" aria-hidden="true" />
+                  <ChevronRight className="mt-2 size-4 shrink-0 text-fg-3 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground" aria-hidden="true" />
                 </button>
               </li>
             );
           })}
         </ul>
         </div>
-        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border-subtle px-4 py-2 text-xs text-muted-foreground">
           <span className="tabular-nums">Page {page} of {pages}</span>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="h-8" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
