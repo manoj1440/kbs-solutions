@@ -1,6 +1,6 @@
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 
-import { assertHealthyPage, login } from './helpers';
+import { assertHealthyPage, ensureTelecaller, login } from './helpers';
 
 const ADMIN = process.env.E2E_ADMIN_MOBILE ?? '9999999999';
 
@@ -84,6 +84,7 @@ test.describe('Admin workspace smoke', () => {
   });
 
   test('F-808: calling records filters by status, upload opens a dialog, old allocation URL lands on caller performance', async () => {
+    await ensureTelecaller(ctx.request, ADMIN);
     await page.goto('/admin/calling-list');
     await page.getByRole('button', { name: 'Upload customer list' }).click();
     const upload = page.getByRole('dialog', { name: 'Upload customer list' });
