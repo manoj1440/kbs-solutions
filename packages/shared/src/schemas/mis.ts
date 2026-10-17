@@ -50,3 +50,9 @@ export const MisResolveBody = z.discriminatedUnion('action', [
   z.object({ action: z.literal('PREFER_ROW'), rowId: z.string().uuid(), reason: z.string().trim().min(3).max(500) }),
 ]);
 export type MisResolveBody = z.infer<typeof MisResolveBody>;
+
+/** F-814: per-bank Bank MIS freshness for the web shell (REQ-20 §20.3 upload freshness; REQ-16 §16.3 never one global status). */
+export type MisFreshness = {
+  banks: { bankCode: string; bankName: string; lastAppliedAt: string | null }[];
+  asOf: string;
+};

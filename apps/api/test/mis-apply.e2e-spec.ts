@@ -4,7 +4,7 @@ import request from 'supertest';
 
 import type { PrismaService } from '../src/infra/prisma/prisma.service';
 
-import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase } from './helpers';
+import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase, setupManagerAndTelecaller } from './helpers';
 import { hdfcWorkbook, type MisRowInput, XLSX_TYPE } from './mis-fixture';
 
 describe('F-503 preview / F-504 matching + resolution / F-505 apply (MIS-02…MIS-10, INV-01)', () => {
@@ -245,5 +245,19 @@ describe('F-503 preview / F-504 matching + resolution / F-505 apply (MIS-02…MI
     expect(sum.declined).toBeGreaterThanOrEqual(1);
     expect(sum.values.decisions).toContain('Declined');
     expect(sum.values.activations).toContain('INACTIVE');
+  });
+
+  it('F-814: /mis/freshness lists every active bank with its last applied import; Manager + Accounts may read, Telecaller may not', async () => {
+    const res = (await api().get('/api/v1/mis/freshness').set(auth(adminToken)).expect(200)).body.data;
+    const hdfc = res.banks.find((b: { bankCode: string }) => b.bankCode === 'HDFC');
+    const last = await prisma.misImportBatch.aggregate({ where: { bankId: hdfcId, stage: 'APPLIED' }, _max: { appliedAt: true } });
+    expect(hdfc.lastAppliedAt).toBe(last._max.appliedAt?.toISOString());
+    expect(res.banks.length).toBe(await prisma.bank.count({ where: { active: true } }));
+    expect(res.banks.some((b: { lastAppliedAt: string | null }) => b.lastAppliedAt === null)).toBe(true); // never-imported banks stay explicit
+    const { manager, telecallerMobile } = await setupManagerAndTelecaller(app, prisma, '814');
+    await api().get('/api/v1/mis/freshness').set(auth(manager.accessToken)).expect(200);
+    const accounts = await prisma.user.create({ data: { publicRef: makePublicRef(RefPrefix.USER), mobile: '+919555999814', role: 'ACCOUNTS', status: 'ACTIVE', fullName: 'Accounts 814' } });
+    await api().get('/api/v1/mis/freshness').set(auth((await loginAs(app, prisma, accounts.mobile)).accessToken)).expect(200);
+    await api().get('/api/v1/mis/freshness').set(auth((await loginAs(app, prisma, telecallerMobile)).accessToken)).expect(403);
   });
 });

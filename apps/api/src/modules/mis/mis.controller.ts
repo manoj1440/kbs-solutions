@@ -53,6 +53,13 @@ export class MisController {
     return this.profiles.acknowledgeValues(id, b.values, b.reason);
   }
 
+  /** F-814: Admin, Manager and Accounts web shells show it; bank names + timestamps only. */
+  @Get('freshness')
+  @RequirePermission('MIS_IMPORT', 'DASHBOARD_MANAGER', 'PAYMENT_QUEUE_READ')
+  freshness() {
+    return this.imports.freshness();
+  }
+
   @Get('batches')
   @RequirePermission('MIS_IMPORT')
   batches(@Query() raw: unknown) {

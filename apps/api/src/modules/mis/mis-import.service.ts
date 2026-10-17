@@ -137,6 +137,19 @@ export class MisImportService {
     return b;
   }
 
+  /** F-814 MIS clock: last applied import per active bank, timestamps only (REQ-20 §20.3, REQ-16 §16.3 — per bank, never one global status). */
+  async freshness() {
+    const [banks, last] = await Promise.all([
+      this.prisma.client.bank.findMany({ where: { active: true }, select: { id: true, code: true, displayName: true }, orderBy: { displayName: 'asc' } }),
+      this.prisma.client.misImportBatch.groupBy({ by: ['bankId'], where: { stage: 'APPLIED' }, _max: { appliedAt: true } }),
+    ]);
+    const byBank = new Map(last.map((l) => [l.bankId, l._max.appliedAt]));
+    return {
+      banks: banks.map((b) => ({ bankCode: b.code, bankName: b.displayName, lastAppliedAt: byBank.get(b.id)?.toISOString() ?? null })),
+      asOf: new Date().toISOString(),
+    };
+  }
+
   async list(q: MisBatchListQuery) {
     const where = { ...(q.bankId ? { bankId: q.bankId } : {}), ...(q.stage ? { stage: q.stage as 'UPLOADED' } : {}) };
     const [rows, total] = await Promise.all([
