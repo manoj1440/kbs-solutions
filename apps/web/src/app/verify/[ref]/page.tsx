@@ -24,8 +24,8 @@ export default async function VerifyPage({ params }: { params: Promise<{ ref: st
       {v.valid ? (
         <div className="grid justify-items-center gap-1.5">
           <Badge variant="success">Valid</Badge>
-          <p className="text-lg font-semibold text-slate-900">{v.fullName}</p>
-          <p className="text-slate-700">
+          <p className="text-lg font-semibold text-foreground">{v.fullName}</p>
+          <p className="text-fg-2">
             {humanize(v.role)}
             {v.employeeCode ? ` · ${v.employeeCode}` : ''}
           </p>
@@ -36,7 +36,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ ref: st
       ) : v.reason === 'REVOKED' ? (
         <div className="grid justify-items-center gap-1.5">
           <Badge variant="destructive">Revoked</Badge>
-          <p className="text-lg font-semibold text-slate-900">{v.fullName}</p>
+          <p className="text-lg font-semibold text-foreground">{v.fullName}</p>
           <p>This ID is no longer valid{v.revokedAt ? ` (since ${formatDate(v.revokedAt)})` : ''}. Please do not rely on it.</p>
         </div>
       ) : (

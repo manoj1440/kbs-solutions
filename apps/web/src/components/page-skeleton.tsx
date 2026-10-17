@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
  */
 function TileSkeleton() {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+    <div className="min-w-0 rounded-xl border border-border bg-card px-3 py-2 shadow-card">
       <Skeleton className="h-3 w-3/5" />
       <Skeleton className="mt-1.5 h-6 w-1/3" />
       <Skeleton className="mt-1.5 h-2.5 w-4/5" />
@@ -30,16 +30,16 @@ function RowSkeleton({ wide }: { wide?: boolean }) {
 
 function CardSkeleton({ bar = true, rows = 8, className }: { bar?: boolean; rows?: number; className?: string }) {
   return (
-    <section className={cn('flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]', className)}>
+    <section className={cn('flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card', className)}>
       {bar ? (
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border-subtle p-3">
           <Skeleton className="h-9 min-w-44 flex-[2_1_12rem]" />
           <Skeleton className="h-9 min-w-32 flex-[1_1_8rem]" />
           <Skeleton className="h-9 min-w-32 flex-[1_1_8rem]" />
           <Skeleton className="h-9 w-20 flex-none" />
         </div>
       ) : (
-        <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-3 border-b border-border-subtle px-5 py-4 sm:px-6">
           <Skeleton className="size-8 shrink-0 rounded-xl" />
           <div className="grid flex-1 gap-1.5">
             <Skeleton className="h-4 w-40" />
@@ -47,13 +47,13 @@ function CardSkeleton({ bar = true, rows = 8, className }: { bar?: boolean; rows
           </div>
         </div>
       )}
-      <div className="min-h-0 flex-1 divide-y divide-slate-100">
+      <div className="min-h-0 flex-1 divide-y divide-border-subtle">
         {Array.from({ length: rows }, (_, i) => (
           <RowSkeleton key={i} wide={i % 3 === 0} />
         ))}
       </div>
       {bar ? (
-        <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-4 py-2">
+        <div className="flex items-center justify-between gap-2 border-t border-border-subtle px-4 py-2">
           <Skeleton className="h-3 w-48" />
           <Skeleton className="h-8 w-40" />
         </div>
