@@ -281,10 +281,8 @@ export function LoginForm({ next }: { next?: string }) {
           <span className="text-2xs font-medium tracking-widest text-fg-3">OR</span>
           <span className="h-px flex-1 bg-surface-strong" />
         </div>
-        <div className="flex items-center gap-3.5 rounded-2xl border border-teal-100 bg-teal-50/80 p-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-600/10">
-            <Lock className="size-5 text-teal-700" />
-          </span>
+        <div className="flex items-center gap-3">
+          <Lock className="size-5 shrink-0 text-primary" aria-hidden="true" />
           <span>
             <span className="block text-sm font-semibold text-foreground">Secure & Private</span>
             <span className="block text-xs text-muted-foreground">

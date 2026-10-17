@@ -40,9 +40,10 @@ export function StatusScreen({
         aria-live={role === 'status' ? 'polite' : undefined}
         className="grid w-full max-w-md justify-items-center gap-3 rounded-2xl border border-border bg-card px-6 py-8 text-center shadow-card"
       >
-        <span className={cn('relative mb-1 inline-flex size-14 items-center justify-center rounded-2xl ring-1 ring-inset', TONE[tone].tile)}>
-          {busy ? <span className="absolute -inset-1.5 animate-spin rounded-[20px] border-2 border-transparent border-t-teal-500" aria-hidden="true" /> : null}
-          <Icon className="size-6" aria-hidden="true" />
+        {/* F-814: icon in flow, no tile container (the icon-tile-above-heading template) */}
+        <span className={cn('relative inline-flex size-10 items-center justify-center', TONE[tone].text)}>
+          {busy ? <span className="absolute -inset-1 animate-spin rounded-full border-2 border-transparent border-t-primary" aria-hidden="true" /> : null}
+          <Icon className="size-8" strokeWidth={1.75} aria-hidden="true" />
         </span>
         <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
         {children ? <div className="grid gap-2 text-sm leading-relaxed text-muted-foreground">{children}</div> : null}

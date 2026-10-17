@@ -105,7 +105,7 @@
   --surface-strong: 214 32% 91%;
   --surface-selected: 168 33% 96%;
   --fg-2: 215 19% 35%;
-  --fg-3: 215 20% 65%;
+  --fg-3: 215 14% 46%; /* F-814: ≥4.5:1 on white — it is used for placeholders and small text too */
   --border-subtle: 216 33% 95%;
   --border-strong: 213 27% 84%;
   --navy: 215 61% 11%;
