@@ -87,8 +87,8 @@ test.describe('Admin workspace smoke', () => {
     await expect(upload).toBeVisible();
     await upload.getByRole('button', { name: 'Cancel' }).click();
     await expect(upload).toBeHidden();
-    const total = Number((await page.getByLabel('Current status').locator('option').first().textContent())?.match(/\((\d+)\)/)?.[1]);
-    await page.getByLabel('Current status').selectOption('UNTOUCHED');
+    const total = Number((await page.getByLabel('Current status', { exact: true }).locator('option').first().textContent())?.match(/\((\d+)\)/)?.[1]);
+    await page.getByLabel('Current status', { exact: true }).selectOption('UNTOUCHED');
     await page.getByRole('button', { name: 'Apply' }).click();
     await expect(page).toHaveURL(/status=UNTOUCHED/);
     const statuses = await page.locator('td[data-label="Current status"]').allTextContents();
