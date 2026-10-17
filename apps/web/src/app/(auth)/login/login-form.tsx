@@ -140,9 +140,9 @@ export function LoginForm({ next }: { next?: string }) {
   const mobileValid = isValidE164India(mobile);
 
   return (
-    <Card className="relative w-full max-w-md gap-0 overflow-hidden rounded-[28px] border-0 bg-white py-0 shadow-[0_30px_80px_-30px_rgba(13,60,70,0.35)]">
+    <Card className="relative w-full max-w-md gap-0 overflow-hidden rounded-[28px] border-0 bg-card py-0 shadow-[0_30px_80px_-30px_rgba(13,60,70,0.35)]">
       <CardHeader className="px-8 pt-8 pb-5">
-        <CardTitle className="text-[28px] font-bold tracking-tight text-slate-900">
+        <CardTitle className="text-[28px] font-bold tracking-tight text-foreground">
           {step.kind === 'mobile' ? 'Welcome back!' : 'Check your phone'}
         </CardTitle>
         <CardDescription className="text-[15px] leading-6">
@@ -161,11 +161,11 @@ export function LoginForm({ next }: { next?: string }) {
             }}
           >
             <div className="grid gap-2">
-              <Label htmlFor="mobile" className="text-[13px] font-medium text-slate-700">
+              <Label htmlFor="mobile" className="text-ui font-medium text-fg-2">
                 Mobile number
               </Label>
               <div className="relative">
-                <Phone className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-slate-400" />
+                <Phone className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-fg-3" />
                 <Input
                   id="mobile"
                   inputMode="tel"
@@ -174,13 +174,13 @@ export function LoginForm({ next }: { next?: string }) {
                   value={mobile}
                   onChange={(e) => setMobile(mobileInput(e.target.value))}
                   autoFocus
-                  className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 pr-12 pl-12 text-[15px] tracking-wide transition-colors focus:border-teal-600 focus:bg-white"
+                  className="h-14 rounded-2xl border-border bg-surface-muted pr-12 pl-12 text-[15px] tracking-wide transition-colors focus:border-teal-600 focus:bg-card"
                 />
                 {mobileValid ? (
                   <CheckCircle2 className="absolute top-1/2 right-4 size-5 -translate-y-1/2 text-emerald-500" />
                 ) : null}
               </div>
-              <p className="text-xs text-slate-400">Enter your registered mobile number</p>
+              <p className="text-xs text-fg-3">Enter your registered mobile number</p>
             </div>
             <Button
               type="submit"
@@ -202,7 +202,7 @@ export function LoginForm({ next }: { next?: string }) {
             }}
           >
             <div className="grid gap-2">
-              <Label id="otp-label" className="text-[13px] font-medium text-slate-700">
+              <Label id="otp-label" className="text-ui font-medium text-fg-2">
                 One-time code
               </Label>
               <div
@@ -231,8 +231,8 @@ export function LoginForm({ next }: { next?: string }) {
                     value={d}
                     onChange={(e) => setDigit(i, e.target.value)}
                     onKeyDown={(e) => onDigitKeyDown(i, e)}
-                    className={`h-14 w-full min-w-0 rounded-xl border-2 bg-slate-50/50 text-center font-mono text-xl font-bold transition-all focus:border-teal-600 focus:bg-white focus:ring-4 focus:ring-teal-600/15 focus:outline-none ${
-                      d ? 'border-teal-600/60 text-teal-900' : 'border-slate-200 text-slate-900'
+                    className={`h-14 w-full min-w-0 rounded-xl border-2 bg-surface-muted text-center font-mono text-xl font-bold transition-all focus:border-teal-600 focus:bg-card focus:ring-4 focus:ring-teal-600/15 focus:outline-none ${
+                      d ? 'border-teal-600/60 text-teal-900' : 'border-border text-foreground'
                     }`}
                   />
                 ))}
@@ -259,7 +259,7 @@ export function LoginForm({ next }: { next?: string }) {
               <button
                 type="button"
                 disabled={!canResend || busy}
-                className="font-medium text-teal-700 underline-offset-4 hover:underline disabled:text-slate-400"
+                className="font-medium text-teal-700 underline-offset-4 hover:underline disabled:text-fg-3"
                 onClick={() => void requestOtp(step.mobile)}
               >
                 {canResend ? 'Resend code' : `Resend in ${secondsLeft}s`}
@@ -277,22 +277,22 @@ export function LoginForm({ next }: { next?: string }) {
           </p>
         ) : null}
         <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-slate-200" />
-          <span className="text-[11px] font-medium tracking-widest text-slate-400">OR</span>
-          <span className="h-px flex-1 bg-slate-200" />
+          <span className="h-px flex-1 bg-surface-strong" />
+          <span className="text-2xs font-medium tracking-widest text-fg-3">OR</span>
+          <span className="h-px flex-1 bg-surface-strong" />
         </div>
         <div className="flex items-center gap-3.5 rounded-2xl border border-teal-100 bg-teal-50/80 p-4">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-600/10">
             <Lock className="size-5 text-teal-700" />
           </span>
           <span>
-            <span className="block text-sm font-semibold text-slate-800">Secure & Private</span>
-            <span className="block text-xs text-slate-500">
+            <span className="block text-sm font-semibold text-foreground">Secure & Private</span>
+            <span className="block text-xs text-muted-foreground">
               Your data is encrypted and never shared.
             </span>
           </span>
         </div>
-        <p className="text-center text-xs text-slate-500">
+        <p className="text-center text-xs text-muted-foreground">
           Need access? Contact your <span className="font-semibold text-teal-800">KBS administrator</span>.
         </p>
       </CardContent>

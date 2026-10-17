@@ -22,7 +22,7 @@ const STATS = [
 
 export function LoginShowcase() {
   return (
-    <section className="relative hidden h-dvh flex-col overflow-hidden bg-[#0a1220] p-10 text-white lg:flex xl:px-14">
+    <section className="relative hidden h-dvh flex-col overflow-hidden bg-navy p-10 text-white lg:flex xl:px-14">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -top-56 -right-56 size-[620px] rounded-full border border-white/5 bg-[radial-gradient(ellipse_at_center,rgba(45,212,191,0.13),transparent_65%)]"
@@ -37,32 +37,27 @@ export function LoginShowcase() {
       />
 
       <header className="relative flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-teal-400 text-slate-900 shadow-lg shadow-teal-400/20">
+        <span className="flex size-11 items-center justify-center rounded-xl bg-teal-400 text-navy shadow-lg shadow-teal-400/20">
           <Building2 className="size-6" />
         </span>
         <span className="flex flex-col">
           <span className="text-xl leading-tight font-bold tracking-tight">
-            KBS<span className="font-normal text-slate-300"> Solutions</span>
+            KBS<span className="font-normal text-white/70"> Solutions</span>
           </span>
-          <span className="text-[9px] font-semibold tracking-[0.28em] text-teal-300/80">
-            CREDIT CARD DSA PLATFORM
-          </span>
+          <span className="text-xs text-white/60">Credit card DSA platform</span>
         </span>
       </header>
 
       <div className="relative flex min-h-0 flex-1 items-center gap-6">
         <div className="min-w-0 max-w-xl">
-          <span className="inline-block rounded-full border border-teal-400/30 bg-teal-400/10 px-4 py-1.5 text-[10px] font-semibold tracking-[0.22em] text-teal-300">
-            EMPOWERING FINANCIAL OPPORTUNITIES
-          </span>
-          <h1 className="mt-5 text-5xl leading-[1.08] font-bold tracking-tight xl:text-6xl">
+          <h1 className="text-5xl leading-[1.08] font-bold tracking-tight xl:text-6xl">
             Every lead.
             <br />
             Every decision.
             <br />
             <span className="text-teal-300">One clear view.</span>
           </h1>
-          <p className="mt-5 max-w-md text-[15px] leading-7 text-slate-300">
+          <p className="mt-5 max-w-md text-[15px] leading-7 text-white/70">
             People, bank data and payouts—connected in one workspace.
           </p>
           <div className="mt-8 grid max-w-md grid-cols-4 gap-3">
@@ -71,7 +66,7 @@ export function LoginShowcase() {
                 <span className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
                   <Icon className="size-5 text-teal-300" />
                 </span>
-                <span className="text-[11px] leading-tight text-slate-300">{label}</span>
+                <span className="text-[11px] leading-tight text-white/70">{label}</span>
               </div>
             ))}
           </div>
@@ -88,15 +83,14 @@ export function LoginShowcase() {
             </span>
             <span>
               <span className="block text-lg leading-tight font-bold">{value}</span>
-              <span className="block text-[11px] text-slate-400">{label}</span>
+              <span className="block text-[11px] text-white/60">{label}</span>
             </span>
           </div>
         ))}
       </div>
 
-      <footer className="relative flex items-center justify-between text-[11px] text-slate-500">
-        <span>© 2025 KBS Solutions. All rights reserved.</span>
-        <span className="tracking-[0.25em]">TRUST&nbsp;&nbsp;•&nbsp;&nbsp;GROW&nbsp;&nbsp;•&nbsp;&nbsp;SUCCEED</span>
+      <footer className="relative flex items-center justify-between text-[11px] text-white/50">
+        <span>© KBS Solutions</span>
       </footer>
     </section>
   );
