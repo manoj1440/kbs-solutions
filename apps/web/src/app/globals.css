@@ -39,6 +39,19 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-canvas: hsl(var(--canvas));
+  --color-surface-muted: hsl(var(--surface-muted));
+  --color-surface-strong: hsl(var(--surface-strong));
+  --color-surface-selected: hsl(var(--surface-selected));
+  --color-fg-2: hsl(var(--fg-2));
+  --color-fg-3: hsl(var(--fg-3));
+  --color-border-subtle: hsl(var(--border-subtle));
+  --color-border-strong: hsl(var(--border-strong));
+  --color-navy: hsl(var(--navy));
+  --color-navy-2: hsl(var(--navy-2));
+  --color-navy-3: hsl(var(--navy-3));
+  --shadow-card: var(--elev-card);
+  --shadow-pop: var(--elev-pop);
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
@@ -70,8 +83,9 @@
   animation: login-float 7s ease-in-out infinite;
 }
 
-.admin-workspace,
-.admin-login {
+/* F-814: one web palette (teal primary, navy shell) on :root so portaled popovers get it too.
+   The @kbs/ui-tokens package stays as is — mobile reads it. Values are HSL triplets. */
+:root {
   --primary: 175 77% 26%;
   --ring: 175 77% 26%;
   --foreground: 219 37% 17%;
@@ -80,6 +94,20 @@
   --muted-foreground: 215 16% 43%;
   --accent: 170 35% 95%;
   --radius: 8px;
+
+  --canvas: 222 33% 97%;
+  --surface-muted: 210 40% 98%;
+  --surface-strong: 214 32% 91%;
+  --surface-selected: 168 33% 96%;
+  --fg-2: 215 19% 35%;
+  --fg-3: 215 20% 65%;
+  --border-subtle: 216 33% 95%;
+  --border-strong: 213 27% 84%;
+  --navy: 215 61% 11%;
+  --navy-2: 208 59% 13%;
+  --navy-3: 214 47% 13%;
+  --elev-card: 0 1px 2px hsl(222 47% 11% / 4%), 0 4px 12px -6px hsl(222 47% 11% / 8%);
+  --elev-pop: 0 1px 2px hsl(222 47% 11% / 4%), 0 12px 28px -12px hsl(222 47% 11% / 18%);
 }
 
 .admin-content > *,
@@ -108,12 +136,12 @@
 }
 
 .admin-content [data-slot='table-header'] {
-  background: #f8fafc;
+  background: hsl(var(--surface-muted));
 }
 
 .admin-content [data-slot='table-head'] {
   height: 40px;
-  color: #64748b;
+  color: hsl(var(--muted-foreground));
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -126,13 +154,13 @@
 }
 
 .admin-content [data-slot='table-container'] {
-  border: 1px solid #eef1f5;
+  border: 1px solid hsl(var(--border-subtle));
   border-radius: 12px;
-  background: white;
+  background: hsl(var(--card));
 }
 
 .admin-content [data-slot='table-container'] a:not([data-slot='button']) {
-  color: #0f766e;
+  color: hsl(var(--primary));
   font-weight: 500;
   text-decoration: none;
 }
@@ -151,30 +179,30 @@
     position: sticky;
     left: 0;
     z-index: 5;
-    box-shadow: inset -1px 0 0 0 #eef1f5;
+    box-shadow: inset -1px 0 0 0 hsl(var(--border-subtle));
   }
   .admin-content [data-slot='table-row'] > [data-slot='table-head']:last-child,
   .admin-content [data-slot='table-row'] > [data-slot='table-cell']:last-child:not([colspan]) {
     position: sticky;
     right: 0;
     z-index: 5;
-    box-shadow: inset 1px 0 0 0 #eef1f5;
+    box-shadow: inset 1px 0 0 0 hsl(var(--border-subtle));
   }
   .admin-content [data-slot='table-head']:first-child,
   .admin-content [data-slot='table-head']:last-child {
-    background: #f8fafc;
+    background: hsl(var(--surface-muted));
   }
   .admin-content [data-slot='table-cell']:first-child,
   .admin-content [data-slot='table-cell']:last-child {
-    background: white;
+    background: hsl(var(--card));
   }
   .admin-content [data-slot='table-row']:hover > [data-slot='table-cell']:first-child,
   .admin-content [data-slot='table-row']:hover > [data-slot='table-cell']:last-child {
-    background: #f8fafc;
+    background: hsl(var(--surface-muted));
   }
   .admin-content [data-slot='table-row'][data-state='selected'] > [data-slot='table-cell']:first-child,
   .admin-content [data-slot='table-row'][data-state='selected'] > [data-slot='table-cell']:last-child {
-    background: #f2f8f7;
+    background: hsl(var(--surface-selected));
   }
 }
 
@@ -182,7 +210,7 @@
 select:not([multiple]):not([size]) {
   appearance: none;
   padding-right: 2rem;
-  background-color: white;
+  background-color: hsl(var(--card));
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-position: right 0.6rem center;
   background-repeat: no-repeat;
@@ -192,14 +220,14 @@ select:not([multiple]):not([size]) {
 
 .admin-workspace select {
   border-radius: 0.5rem;
-  border-color: #e2e8f0;
+  border-color: hsl(var(--input));
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
 }
 
 .admin-workspace select:hover {
-  border-color: #cbd5e1;
+  border-color: hsl(var(--border-strong));
 }
 
 .admin-workspace select:focus-visible {
@@ -210,8 +238,8 @@ select:not([multiple]):not([size]) {
 
 .admin-workspace textarea {
   border-radius: 0.5rem;
-  border-color: #e2e8f0;
-  background: white;
+  border-color: hsl(var(--input));
+  background: hsl(var(--card));
 }
 
 /* F-806: calm canvas with a faint brand glow at the top */
@@ -219,7 +247,7 @@ select:not([multiple]):not([size]) {
   background:
     radial-gradient(900px 320px at 85% -80px, rgb(20 184 166 / 9%), transparent 70%),
     radial-gradient(700px 280px at 20% -120px, rgb(79 70 229 / 6%), transparent 70%),
-    #f4f6fa;
+    hsl(var(--canvas));
 }
 
 @keyframes admin-in {
@@ -258,9 +286,7 @@ select:not([multiple]):not([size]) {
 
 .lift:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 1px 2px rgb(15 23 42 / 4%),
-    0 12px 28px -12px rgb(15 23 42 / 18%);
+  box-shadow: var(--elev-pop);
 }
 
 [data-slot='table-container'][data-responsive] {
@@ -357,7 +383,7 @@ select:not([multiple]):not([size]) {
   [data-responsive] [data-slot='table-cell'][data-label]::before {
     display: block;
     margin-bottom: 4px;
-    color: #64748b;
+    color: hsl(var(--muted-foreground));
     font-size: 11px;
     font-weight: 600;
     content: attr(data-label);
@@ -366,7 +392,7 @@ select:not([multiple]):not([size]) {
 
 .admin-workspace a:focus-visible,
 .admin-workspace summary:focus-visible {
-  outline: 2px solid #0f766e;
+  outline: 2px solid hsl(var(--ring));
   outline-offset: 3px;
 }
 
@@ -393,36 +419,36 @@ html:has(.admin-workspace)::-webkit-scrollbar,
 html:has(.admin-workspace)::-webkit-scrollbar-track,
 .admin-workspace ::-webkit-scrollbar-track,
 .admin-workspace ::-webkit-scrollbar-corner {
-  background: #e2e8f0;
+  background: hsl(var(--surface-strong));
 }
 
 html:has(.admin-workspace)::-webkit-scrollbar-thumb,
 .admin-workspace ::-webkit-scrollbar-thumb {
-  border: 3px solid #e2e8f0;
+  border: 3px solid hsl(var(--surface-strong));
   border-radius: 8px;
-  background: #64748b;
+  background: hsl(var(--muted-foreground));
 }
 
 html:has(.admin-workspace)::-webkit-scrollbar-thumb:hover,
 .admin-workspace ::-webkit-scrollbar-thumb:hover {
-  background: #0f766e;
+  background: hsl(var(--primary));
 }
 
 .admin-workspace aside ::-webkit-scrollbar-track,
 .admin-workspace dialog[aria-label$='navigation menu']::-webkit-scrollbar-track {
-  background: #111e30;
+  background: hsl(var(--navy-3));
 }
 
 .admin-workspace aside ::-webkit-scrollbar-thumb,
 .admin-workspace dialog[aria-label$='navigation menu']::-webkit-scrollbar-thumb {
-  border-color: #111e30;
-  background: #94a3b8;
+  border-color: hsl(var(--navy-3));
+  background: hsl(var(--fg-3));
 }
 
 @supports not selector(::-webkit-scrollbar) {
   html:has(.admin-workspace),
   .admin-workspace * {
-    scrollbar-color: #64748b #e2e8f0;
+    scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--surface-strong));
     scrollbar-width: auto;
   }
 }

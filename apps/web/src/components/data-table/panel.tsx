@@ -25,9 +25,9 @@ export function DataTablePanel({
     <section
       id={id}
       aria-label={label}
-      className={cn('flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]', className)}
+      className={cn('flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgb(15_23_42/4%)]', className)}
     >
-      {toolbar ? <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 p-3">{toolbar}</div> : null}
+      {toolbar ? <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle p-3">{toolbar}</div> : null}
       <div className="min-h-0 flex-1">{children}</div>
       {footer}
     </section>

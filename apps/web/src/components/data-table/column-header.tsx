@@ -40,7 +40,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
         ) : sorted === 'asc' ? (
           <ArrowUp className="size-3 text-teal-700" aria-hidden="true" />
         ) : (
-          <ChevronsUpDown className="size-3 text-slate-400" aria-hidden="true" />
+          <ChevronsUpDown className="size-3 text-fg-3" aria-hidden="true" />
         )}
       </Button>
     </div>

@@ -7,18 +7,18 @@ import { cn } from '@/lib/utils';
 
 /** Muted em-dash for empty values — replaces the repeated `—` spans. */
 export function Dash() {
-  return <span className="text-slate-400">—</span>;
+  return <span className="text-fg-3">—</span>;
 }
 
 export function DateTimeCell({ value, className }: { value: string | null | undefined; className?: string }) {
-  return <span className={cn('text-xs whitespace-nowrap text-slate-600 tabular-nums', className)}>{formatDateTime(value)}</span>;
+  return <span className={cn('text-xs whitespace-nowrap text-fg-2 tabular-nums', className)}>{formatDateTime(value)}</span>;
 }
 export function DateCell({ value, className }: { value: string | null | undefined; className?: string }) {
-  return <span className={cn('text-xs whitespace-nowrap text-slate-600 tabular-nums', className)}>{formatDate(value)}</span>;
+  return <span className={cn('text-xs whitespace-nowrap text-fg-2 tabular-nums', className)}>{formatDate(value)}</span>;
 }
 
 export function MonoCell({ value, className }: { value: React.ReactNode; className?: string }) {
-  return <span className={cn('font-mono text-xs text-slate-600', className)}>{value ?? <Dash />}</span>;
+  return <span className={cn('font-mono text-xs text-fg-2', className)}>{value ?? <Dash />}</span>;
 }
 
 /** Avatar + linked name + optional status/code sub-line (users, team-ops, dashboards). */
@@ -47,7 +47,7 @@ export function PersonCell({
           <div className="font-medium">{name}</div>
         )}
         {status || code ? (
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
             {status ? <span>{humanize(status)}</span> : null}
             {code ? <span className="font-mono">{code}</span> : null}
           </div>
@@ -62,7 +62,7 @@ export function BankCell({ code, name }: { code: string; name?: string }) {
   return (
     <span className="inline-flex items-center gap-2">
       <BankMark code={code} size="sm" />
-      <span className="text-xs font-medium text-slate-700">{name ?? code}</span>
+      <span className="text-xs font-medium text-fg-2">{name ?? code}</span>
     </span>
   );
 }

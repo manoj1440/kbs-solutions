@@ -27,8 +27,8 @@ export function DataTablePagination({
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return (
-    <div className={cn('flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-2 text-xs', className)}>
-      <span className="text-slate-500 tabular-nums">
+    <div className={cn('flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-4 py-2 text-xs', className)}>
+      <span className="text-muted-foreground tabular-nums">
         {total
           ? `${((page - 1) * pageSize + 1).toLocaleString('en-IN')}–${Math.min(page * pageSize, total).toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')}`
           : `0 ${noun}`}{' '}

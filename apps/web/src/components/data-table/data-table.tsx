@@ -205,7 +205,7 @@ export function DataTable<TData extends RowData>({
                 })}
               </TableRow>
               {renderSubRow && row.getIsExpanded() ? (
-                <TableRow id={getSubRowId?.(row.original)} className="bg-slate-50/80 hover:bg-slate-50/80">
+                <TableRow id={getSubRowId?.(row.original)} className="bg-surface-muted hover:bg-surface-muted">
                   <TableCell colSpan={leafCount}>{renderSubRow(row)}</TableCell>
                 </TableRow>
               ) : null}
@@ -219,7 +219,7 @@ export function DataTable<TData extends RowData>({
   if (!toolbarNode) return body;
   return (
     <div className="grid min-w-0 lg:h-full lg:grid-rows-[auto_minmax(0,1fr)]">
-      <div className="flex shrink-0 items-center justify-end gap-2 border-b border-slate-100 px-3 py-2">{toolbarNode}</div>
+      <div className="flex shrink-0 items-center justify-end gap-2 border-b border-border-subtle px-3 py-2">{toolbarNode}</div>
       {body}
     </div>
   );

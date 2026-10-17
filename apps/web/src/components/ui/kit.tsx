@@ -19,7 +19,7 @@ export const TONE: Record<Tone, { tile: string; text: string; bar: string; soft:
   amber: { tile: 'bg-amber-50 text-amber-700 ring-amber-100', text: 'text-amber-700', bar: 'bg-amber-500', soft: 'bg-amber-50' },
   rose: { tile: 'bg-rose-50 text-rose-700 ring-rose-100', text: 'text-rose-700', bar: 'bg-rose-500', soft: 'bg-rose-50' },
   emerald: { tile: 'bg-emerald-50 text-emerald-700 ring-emerald-100', text: 'text-emerald-700', bar: 'bg-emerald-500', soft: 'bg-emerald-50' },
-  slate: { tile: 'bg-slate-100 text-slate-600 ring-slate-200', text: 'text-slate-600', bar: 'bg-slate-400', soft: 'bg-slate-50' },
+  slate: { tile: 'bg-muted text-fg-2 ring-border', text: 'text-fg-2', bar: 'bg-fg-3', soft: 'bg-surface-muted' },
 };
 
 /** KBS enum constant → sentence case (`PENDING_ONBOARDING` → "Pending onboarding"). Never use on bank MIS values. */
@@ -73,9 +73,9 @@ export function PageHeader({
             {eyebrow ? (
               <div className={cn('mb-1 text-[10.5px] font-semibold tracking-[0.16em] uppercase', TONE[tone].text)}>{eyebrow}</div>
             ) : null}
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[28px] sm:leading-9">{title}</h1>
-            {description ? <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-slate-500">{description}</p> : null}
-            {meta ? <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">{meta}</div> : null}
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px] sm:leading-9">{title}</h1>
+            {description ? <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+            {meta ? <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">{meta}</div> : null}
           </div>
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -114,7 +114,7 @@ export function StatCard({
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <span className={cn('text-[12.5px] font-medium', emphasis ? 'text-teal-50' : 'text-slate-600')}>{label}</span>
+        <span className={cn('text-[12.5px] font-medium', emphasis ? 'text-teal-50' : 'text-fg-2')}>{label}</span>
         {icon ? (
           emphasis ? (
             <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/20 [&>svg]:size-[18px]">
@@ -126,12 +126,12 @@ export function StatCard({
         ) : null}
       </div>
       <div className="mt-2 truncate text-2xl font-semibold tracking-tight tabular-nums sm:text-[28px] sm:leading-9">{value}</div>
-      {hint ? <p className={cn('mt-1 text-xs leading-relaxed', emphasis ? 'text-teal-50/90' : 'text-slate-500')}>{hint}</p> : null}
+      {hint ? <p className={cn('mt-1 text-xs leading-relaxed', emphasis ? 'text-teal-50/90' : 'text-muted-foreground')}>{hint}</p> : null}
       {source || href ? (
         <div
           className={cn(
             'mt-4 flex items-center justify-between gap-2 border-t pt-3 text-[10px] font-semibold tracking-wider uppercase',
-            emphasis ? 'border-white/15 text-teal-50/90' : 'border-slate-100 text-slate-400',
+            emphasis ? 'border-white/15 text-teal-50/90' : 'border-border-subtle text-fg-3',
           )}
         >
           <span className="truncate">{source}</span>
@@ -144,7 +144,7 @@ export function StatCard({
     'group relative min-w-0 overflow-hidden rounded-2xl border p-4 sm:p-5',
     emphasis
       ? 'border-transparent bg-[linear-gradient(135deg,#0f766e_0%,#115e59_55%,#134e4a_100%)] text-white shadow-[0_12px_30px_-14px_rgb(15_118_110/70%)]'
-      : 'border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]',
+      : 'border-border bg-card shadow-[0_1px_2px_rgb(15_23_42/4%)]',
     href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700',
     className,
   );
@@ -187,7 +187,7 @@ export function SectionCard({
       id={id}
       data-slot="card"
       className={cn(
-        'min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)]',
+        'min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)]',
         className,
       )}
     >
@@ -195,8 +195,8 @@ export function SectionCard({
         <div className="flex min-w-0 flex-1 basis-64 items-start gap-3">
           {icon ? <IconTile icon={icon} tone={tone} size="sm" /> : null}
           <div className="min-w-0">
-            <h2 className="text-[15px] leading-6 font-semibold tracking-tight text-slate-900">{title}</h2>
-            {description ? <p className="mt-0.5 text-[12.5px] leading-relaxed text-slate-500">{description}</p> : null}
+            <h2 className="text-[15px] leading-6 font-semibold tracking-tight text-foreground">{title}</h2>
+            {description ? <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{description}</p> : null}
           </div>
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -224,12 +224,12 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-10 text-center', className)}>
-      <span className="mb-1 inline-flex size-12 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200">
+    <div className={cn('flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface-muted px-6 py-10 text-center', className)}>
+      <span className="mb-1 inline-flex size-12 items-center justify-center rounded-2xl bg-card text-fg-3 shadow-sm ring-1 ring-border">
         <Icon className="size-5" aria-hidden="true" />
       </span>
-      <p className="text-sm font-semibold text-slate-800">{title}</p>
-      {description ? <p className="max-w-md text-xs leading-relaxed text-slate-500">{description}</p> : null}
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      {description ? <p className="max-w-md text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>
   );
@@ -253,18 +253,18 @@ export function MiniStat({
 }) {
   const body = (
     <>
-      <span className="flex items-start gap-1.5 text-[11.5px] leading-tight font-medium text-slate-600">
+      <span className="flex items-start gap-1.5 text-[11.5px] leading-tight font-medium text-fg-2">
         <span className={cn('mt-1 size-1.5 shrink-0 rounded-full', TONE[tone].bar)} aria-hidden="true" />
         {label}
       </span>
-      <span className="mt-0.5 block text-xl leading-7 font-semibold tracking-tight text-slate-900 tabular-nums">{value}</span>
-      {hint ? <span className="line-clamp-2 block text-[10.5px] leading-snug text-slate-500">{hint}</span> : null}
+      <span className="mt-0.5 block text-xl leading-7 font-semibold tracking-tight text-foreground tabular-nums">{value}</span>
+      {hint ? <span className="line-clamp-2 block text-[10.5px] leading-snug text-muted-foreground">{hint}</span> : null}
     </>
   );
   const cls = cn(
-    'block min-w-0 rounded-xl border bg-white px-3 py-2 shadow-[0_1px_2px_rgb(15_23_42/4%)]',
-    active ? 'border-teal-600 ring-2 ring-teal-600/15' : 'border-slate-200/80',
-    href && 'transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700',
+    'block min-w-0 rounded-xl border bg-card px-3 py-2 shadow-[0_1px_2px_rgb(15_23_42/4%)]',
+    active ? 'border-teal-600 ring-2 ring-teal-600/15' : 'border-border',
+    href && 'transition-colors hover:border-border-strong hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700',
   );
   return href ? (
     <Link href={href} prefetch={false} title={hint} aria-current={active ? 'true' : undefined} className={cls}>
@@ -291,7 +291,7 @@ export function PillNav({
 }) {
   return (
     <nav aria-label={label} className={cn('-mx-1 overflow-x-auto px-1 pb-1', className)}>
-      <div className="inline-flex min-w-max gap-1 rounded-xl border border-slate-200/80 bg-white p-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+      <div className="inline-flex min-w-max gap-1 rounded-xl border border-border bg-card p-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
         {items.map(({ href, label: text, count, icon: Icon }) => {
           const on = href === active;
           return (
@@ -302,13 +302,13 @@ export function PillNav({
               aria-current={on ? 'page' : undefined}
               className={cn(
                 'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-teal-700',
-                on ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                on ? 'bg-foreground text-background shadow-sm' : 'text-fg-2 hover:bg-muted hover:text-foreground',
               )}
             >
               {Icon ? <Icon className="size-3.5" aria-hidden="true" /> : null}
               {text}
               {count != null ? (
-                <span className={cn('rounded-full px-1.5 text-[10.5px] font-semibold tabular-nums', on ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600')}>
+                <span className={cn('rounded-full px-1.5 text-[10.5px] font-semibold tabular-nums', on ? 'bg-background/20 text-background' : 'bg-muted text-fg-2')}>
                   {count}
                 </span>
               ) : null}
@@ -393,7 +393,7 @@ export function Meter({ value, max, tone = 'teal', className, label }: { value: 
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={value}
-      className={cn('h-2 w-full overflow-hidden rounded-full bg-slate-100', className)}
+      className={cn('h-2 w-full overflow-hidden rounded-full bg-muted', className)}
     >
       <div className={cn('h-full rounded-full transition-[width] duration-500', TONE[tone].bar)} style={{ width: `${pct}%` }} />
     </div>
@@ -412,8 +412,8 @@ export function KeyValueGrid({ items, className, cols = 2 }: { items: [React.Rea
     >
       {items.map(([k, v], i) => (
         <div key={i} className="min-w-0">
-          <dt className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">{k}</dt>
-          <dd className="mt-1 text-sm break-words text-slate-900">{v}</dd>
+          <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{k}</dt>
+          <dd className="mt-1 text-sm break-words text-foreground">{v}</dd>
         </div>
       ))}
     </dl>
@@ -425,7 +425,7 @@ const CALLOUT = {
   warning: 'border-amber-200 bg-amber-50 text-amber-950 [&_svg]:text-amber-600',
   danger: 'border-rose-200 bg-rose-50 text-rose-900 [&_svg]:text-rose-600',
   success: 'border-emerald-200 bg-emerald-50 text-emerald-900 [&_svg]:text-emerald-600',
-  neutral: 'border-slate-200 bg-slate-50 text-slate-700 [&_svg]:text-slate-500',
+  neutral: 'border-border bg-surface-muted text-fg-2 [&_svg]:text-muted-foreground',
 };
 export function Callout({
   tone = 'info',
@@ -456,8 +456,8 @@ export function Callout({
 /** Small status dot + text, for KBS states (user status, job health). */
 export function StatusDot({ tone = 'slate', children }: { tone?: Tone; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-slate-700">
-      <span className={cn('size-2 rounded-full ring-2 ring-white', TONE[tone].bar)} aria-hidden="true" />
+    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-fg-2">
+      <span className={cn('size-2 rounded-full ring-2 ring-card', TONE[tone].bar)} aria-hidden="true" />
       {children}
     </span>
   );
@@ -467,14 +467,14 @@ export function StatusDot({ tone = 'slate', children }: { tone?: Tone; children:
 export function Field({ label, htmlFor, hint, children, className }: { label: React.ReactNode; htmlFor?: string; hint?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <div className={cn('grid min-w-0 gap-1.5', className)}>
-      <label htmlFor={htmlFor} className="text-[12px] font-medium text-slate-600">
+      <label htmlFor={htmlFor} className="text-[12px] font-medium text-fg-2">
         {label}
       </label>
       {children}
-      {hint ? <p className="text-[11px] text-slate-500">{hint}</p> : null}
+      {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
 
 /** The class a native <select> should carry to match Input. */
-export const selectClass = 'h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900';
+export const selectClass = 'h-10 w-full min-w-0 rounded-lg border border-border bg-card px-3 text-sm text-foreground';
