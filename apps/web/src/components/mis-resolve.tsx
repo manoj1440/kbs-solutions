@@ -41,10 +41,10 @@ export function Resolve({ rowId, refs, onDone }: { rowId: string; refs: { kind: 
     }
   };
   return (
-    <div className="grid w-full min-w-0 gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-left sm:min-w-72">
-      <Input aria-label="reason" className="h-8 bg-white text-xs" placeholder="reason (required)" value={reason} onChange={(e) => setReason(e.target.value)} />
+    <div className="grid w-full min-w-0 gap-2 rounded-xl border border-border bg-surface-muted p-3 text-left sm:min-w-72">
+      <Input aria-label="reason" className="h-8 bg-card text-xs" placeholder="reason (required)" value={reason} onChange={(e) => setReason(e.target.value)} />
       <div className="flex flex-wrap gap-1.5">
-        <Input aria-label="kbs lead ref" className="h-8 min-w-0 flex-1 basis-28 bg-white font-mono text-xs" placeholder="KBS-L-…" value={leadRef} onChange={(e) => setLeadRef(e.target.value.toUpperCase())} />
+        <Input aria-label="kbs lead ref" className="h-8 min-w-0 flex-1 basis-28 bg-card font-mono text-xs" placeholder="KBS-L-…" value={leadRef} onChange={(e) => setLeadRef(e.target.value.toUpperCase())} />
         <select aria-label="reference kind" className={cn(selectClass, 'h-8 w-auto min-w-0 flex-1 basis-24 px-2 text-xs')} value={kind} onChange={(e) => setKind(e.target.value)}>
           {refs.map((r) => (
             <option key={r.kind} value={r.kind}>
@@ -58,13 +58,13 @@ export function Resolve({ rowId, refs, onDone }: { rowId: string; refs: { kind: 
         </Button>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <Input aria-label="prefer row id" className="h-8 min-w-0 flex-1 basis-28 bg-white text-xs" placeholder="prefer row id" value={preferRow} onChange={(e) => setPreferRow(e.target.value)} />
+        <Input aria-label="prefer row id" className="h-8 min-w-0 flex-1 basis-28 bg-card text-xs" placeholder="prefer row id" value={preferRow} onChange={(e) => setPreferRow(e.target.value)} />
         <Button size="sm" variant="outline" disabled={reason.trim().length < 3 || !preferRow} onClick={() => void act({ action: 'PREFER_ROW', rowId: preferRow, reason })}>
           <ListChecks />
           Prefer
         </Button>
       </div>
-      <div className="flex flex-wrap justify-end gap-1.5 border-t border-slate-200 pt-2">
+      <div className="flex flex-wrap justify-end gap-1.5 border-t border-border pt-2">
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
           <X />
           Cancel

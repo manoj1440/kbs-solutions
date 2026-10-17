@@ -43,7 +43,7 @@ export function ReassignForm({
       <dialog
         ref={dialog}
         aria-labelledby={`reassign-title-${recordId}`}
-        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 text-foreground shadow-xl backdrop:bg-slate-950/40 backdrop:backdrop-blur-[2px]"
+        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl backdrop:bg-navy/50 backdrop:backdrop-blur-[2px]"
       >
         <form
           className="grid gap-4"
@@ -73,11 +73,11 @@ export function ReassignForm({
             <div className="min-w-0">
               <h2
                 id={`reassign-title-${recordId}`}
-                className="text-lg font-semibold tracking-tight text-slate-900"
+                className="text-lg font-semibold tracking-tight text-foreground"
               >
                 Reassign calling record
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Choose an eligible telecaller and provide a reason. This change is logged.
               </p>
             </div>
@@ -120,7 +120,7 @@ export function ReassignForm({
               {msg}
             </Callout>
           ) : null}
-          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap justify-end gap-2 border-t border-border-subtle pt-4">
             <Button
               type="button"
               variant="outline"

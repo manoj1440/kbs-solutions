@@ -18,7 +18,7 @@ const columns = c.columns([
         <Link href={`/admin/leads/${row.original.id}`} className="text-xs font-medium text-teal-700 hover:underline">
           {row.original.customer.name}
         </Link>
-        <div className="mt-0.5 text-[11px] text-slate-500">
+        <div className="mt-0.5 text-2xs text-muted-foreground">
           {row.original.kbsRef}
           {row.original.customer.mobileMasked ? ` · ${row.original.customer.mobileMasked}` : ''}
         </div>
@@ -31,7 +31,7 @@ const columns = c.columns([
     cell: ({ row }) => (
       <>
         <BankCell code={row.original.bank.code} />
-        <div className="mt-0.5 max-w-40 truncate text-[11px] text-slate-500">{row.original.card.name}</div>
+        <div className="mt-0.5 max-w-40 truncate text-2xs text-muted-foreground">{row.original.card.name}</div>
       </>
     ),
   }),
@@ -55,8 +55,8 @@ const columns = c.columns([
     sortFn: 'datetime',
     cell: ({ row }) => (
       <>
-        <div className="text-xs text-slate-700">{formatDateTime(row.original.leadCreatedAt)}</div>
-        <div className="mt-0.5 text-[11px] text-slate-500">{row.original.lastMatchedAt ? `MIS ${formatDateTime(row.original.lastMatchedAt)}` : 'Awaiting MIS'}</div>
+        <div className="text-xs text-fg-2">{formatDateTime(row.original.leadCreatedAt)}</div>
+        <div className="mt-0.5 text-2xs text-muted-foreground">{row.original.lastMatchedAt ? `MIS ${formatDateTime(row.original.lastMatchedAt)}` : 'Awaiting MIS'}</div>
       </>
     ),
   }),

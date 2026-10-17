@@ -15,15 +15,15 @@ const TONE_TEXT: Record<StatusTone, string> = {
   destructive: 'text-destructive',
   warning: 'text-warning',
   info: 'text-info',
-  unknown: 'text-slate-600',
-  secondary: 'text-slate-700',
+  unknown: 'text-fg-2',
+  secondary: 'text-fg-2',
 };
 
 function StatusBadge({ kind, field, label }: { kind: StatusKind; field: StatusField; label?: string }) {
   return (
     <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
-      {label ? <span className="shrink-0 text-[11px] font-medium text-slate-500">{label}:</span> : null}
-      <span title={field.raw ?? undefined} className={cn('min-w-0 max-w-full truncate text-[12.5px] font-semibold', TONE_TEXT[statusTone(kind, field)])}>
+      {label ? <span className="shrink-0 text-2xs font-medium text-muted-foreground">{label}:</span> : null}
+      <span title={field.raw ?? undefined} className={cn('min-w-0 max-w-full truncate text-xs font-semibold', TONE_TEXT[statusTone(kind, field)])}>
         {field.display}
       </span>
     </span>
@@ -42,7 +42,7 @@ const PROVENANCE_CLASS: Record<Provenance, string> = {
 
 export function ProvenanceChip({ provenance, asOf, batchRef }: { provenance: Provenance; asOf?: string | null; batchRef?: string | null }) {
   return (
-    <span className={cn('inline-flex max-w-full flex-wrap items-center gap-x-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset', PROVENANCE_CLASS[provenance])}>
+    <span className={cn('inline-flex max-w-full flex-wrap items-center gap-x-1 rounded-full px-2 py-0.5 text-2xs font-semibold ring-1 ring-inset', PROVENANCE_CLASS[provenance])}>
       <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
       {PROVENANCE_LABEL[provenance]}
       {asOf ? <span className="opacity-80">· as of {formatDateTime(asOf)}</span> : null}

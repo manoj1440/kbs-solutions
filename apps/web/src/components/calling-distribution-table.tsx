@@ -34,8 +34,8 @@ export function DistributionRecordsTable({
       header: 'Customer / mobile',
       cell: ({ row }) => (
         <>
-          <div className="font-medium text-slate-900">{row.original.fullName}</div>
-          <div className="mt-0.5 font-mono text-xs text-slate-500">{row.original.mobileMasked}</div>
+          <div className="font-medium text-foreground">{row.original.fullName}</div>
+          <div className="mt-0.5 font-mono text-xs text-muted-foreground">{row.original.mobileMasked}</div>
         </>
       ),
     }),
@@ -45,7 +45,7 @@ export function DistributionRecordsTable({
       cell: ({ row }) => (
         <>
           <div className="font-mono">{row.original.pincode}</div>
-          <div className="mt-0.5 text-slate-500">{row.original.location}</div>
+          <div className="mt-0.5 text-muted-foreground">{row.original.location}</div>
         </>
       ),
     }),
@@ -66,10 +66,10 @@ export function DistributionRecordsTable({
         row.original.assignedTelecaller ? (
           <span className="inline-flex items-center gap-2">
             <Avatar name={row.original.assignedTelecaller.fullName} size="sm" />
-            <span className="font-medium text-slate-800">{row.original.assignedTelecaller.fullName}</span>
+            <span className="font-medium text-foreground">{row.original.assignedTelecaller.fullName}</span>
           </span>
         ) : (
-          <em className="text-slate-500">unassigned</em>
+          <em className="text-muted-foreground">unassigned</em>
         ),
     }),
     c.display({
@@ -80,11 +80,11 @@ export function DistributionRecordsTable({
         const r = row.original;
         return (
           <>
-            <div className={cn('inline-flex items-center gap-1', r.nextFollowUpAt ? 'font-medium text-slate-800' : 'text-slate-500')}>
+            <div className={cn('inline-flex items-center gap-1', r.nextFollowUpAt ? 'font-medium text-foreground' : 'text-muted-foreground')}>
               {r.nextFollowUpAt ? <CalendarClock className="size-3.5 text-sky-600" aria-hidden="true" /> : null}
               {r.nextFollowUpAt ? `Due ${formatDateTime(r.nextFollowUpAt)}` : 'No follow-up scheduled'}
             </div>
-            <div className="mt-1 text-slate-500">
+            <div className="mt-1 text-muted-foreground">
               {r.lastOutcome ? (
                 <>
                   <Badge variant="outline" title={r.lastOutcome.outcome} className="whitespace-normal">

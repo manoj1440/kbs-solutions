@@ -71,15 +71,15 @@ export async function CallingDistribution({
                   <li
                     key={t.id}
                     className={cn(
-                      'flex min-w-0 flex-col gap-3 rounded-xl border bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]',
-                      t.needsReassignment ? 'border-rose-200' : telecallerId === t.id ? 'border-teal-300 ring-2 ring-teal-100' : 'border-slate-200/80',
+                      'flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4 shadow-card',
+                      t.needsReassignment ? 'border-rose-200' : telecallerId === t.id ? 'border-teal-300 ring-2 ring-teal-100' : 'border-border',
                     )}
                   >
                     <div className="flex min-w-0 items-start gap-3">
                       <Avatar name={t.fullName} />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium text-slate-900">{t.fullName}</div>
-                        {t.employeeCode ? <div className="truncate text-xs text-slate-500">{t.employeeCode}</div> : null}
+                        <div className="truncate font-medium text-foreground">{t.fullName}</div>
+                        {t.employeeCode ? <div className="truncate text-xs text-muted-foreground">{t.employeeCode}</div> : null}
                         <div className="mt-1.5 flex flex-wrap gap-1">
                           <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(t.status)}</Badge>
                           {t.eligible ? (
@@ -92,11 +92,11 @@ export async function CallingDistribution({
                     </div>
                     <div className="grid gap-1.5">
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-[12px] font-medium text-slate-600">Active records</span>
-                        <span className="text-lg font-semibold text-slate-900 tabular-nums">{t.active}</span>
+                        <span className="text-xs font-medium text-fg-2">Active records</span>
+                        <span className="text-lg font-semibold text-foreground tabular-nums">{t.active}</span>
                       </div>
                       <Meter value={t.active} max={totalActive} tone={t.needsReassignment ? 'rose' : 'violet'} label={`${t.fullName} active records`} />
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-2xs text-muted-foreground">
                         {totalActive > 0 ? `${Math.round((t.active / totalActive) * 100)}% of ${totalActive} active records` : 'No active records'}
                       </p>
                     </div>
@@ -106,19 +106,19 @@ export async function CallingDistribution({
                         needs reassignment
                       </Badge>
                     ) : null}
-                    <div className="flex flex-wrap gap-1 text-[11px]">
+                    <div className="flex flex-wrap gap-1 text-2xs">
                       {breakdown.length ? (
                         breakdown.map(([k, n]) => (
-                          <span key={k} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-slate-600">
+                          <span key={k} className="rounded-md bg-muted px-1.5 py-0.5 text-fg-2">
                             {k.toLowerCase().replace('_', ' ')} <span className="font-semibold tabular-nums">{n}</span>
                           </span>
                         ))
                       ) : (
-                        <span className="text-slate-400">—</span>
+                        <span className="text-fg-3">—</span>
                       )}
                     </div>
-                    <div className="mt-auto border-t border-slate-100 pt-3">
-                      <a className="text-[13px] font-medium text-teal-700 hover:text-teal-800" href={`${base}?telecallerId=${t.id}`}>
+                    <div className="mt-auto border-t border-border-subtle pt-3">
+                      <a className="text-ui font-medium text-teal-700 hover:text-teal-800" href={`${base}?telecallerId=${t.id}`}>
                         view records
                       </a>
                     </div>
