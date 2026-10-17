@@ -187,6 +187,49 @@ describe('F-702 Manager dashboard / F-703 Admin dashboards (DASH-01, DASH-02)', 
     expect(w.previous.leads).toBe(5);
   });
 
+  it('F-814: admin trend buckets reconcile with admin/home for the same range; weeks; limits; Admin only', async () => {
+    const day = (n: number) => new Date(Date.now() + 5.5 * 3_600_000 + n * 86_400_000).toISOString().slice(0, 10);
+    const sum = (pts: Record<string, number>[], k: string) => pts.reduce((a, p) => a + p[k], 0);
+    const t = await get(`/dashboards/admin/trend?from=${day(-2)}&to=${day(0)}`, admin);
+    expect(t.bucket).toBe('day');
+    expect(t.points.map((p: { start: string }) => p.start)).toEqual([day(-2), day(-1), day(0)]);
+    const h = await get(`/dashboards/admin/home?from=${day(-2)}&to=${day(0)}`, admin);
+    expect(sum(t.points, 'leads')).toBe(h.business.leads.created.value);
+    expect(sum(t.points, 'approved')).toBe(h.business.approved);
+    expect(sum(t.points, 'activated')).toBe(h.business.activated);
+    expect(sum(t.points, 'calls')).toBe(h.calling.calls.attempts.value);
+    expect(sum(t.points, 'connected')).toBe(h.calling.calls.connected.value);
+    expect(sum(t.points, 'payoutEarnedInr')).toBeCloseTo(h.business.payouts.eligible.amountInr ?? 0, 2);
+    expect(t.points[2].leads).toBe(5); // the fixture is today
+    const w = await get(`/dashboards/admin/trend?from=${day(-20)}&to=${day(0)}&bucket=week`, admin);
+    expect(w.points).toHaveLength(3);
+    expect(sum(w.points, 'leads')).toBe(5);
+    expect((await get(`/dashboards/admin/trend?from=${day(-200)}&to=${day(0)}`, admin)).bucket).toBe('week');
+    await get(`/dashboards/admin/trend?from=${day(-400)}&to=${day(0)}`, admin, 400);
+    await get(`/dashboards/admin/trend?from=${day(0)}&to=${day(-1)}`, admin, 400);
+    await get('/dashboards/admin/trend', admin, 400);
+    await get(`/dashboards/admin/trend?from=${day(-2)}&to=${day(0)}`, team[0].managerToken, 403);
+  });
+
+  it('F-814: admin today = follow-ups due (incl. overdue), advisors awaiting review, payouts awaiting the Admin, MIS rows to resolve', async () => {
+    const owner = await prisma.user.findFirstOrThrow({ where: { role: 'ADMIN' } });
+    await prisma.followUpTask.createMany({ data: [
+      { ownerUserId: owner.id, text: 'overdue', dueAt: new Date(Date.now() - 3 * 86_400_000) },
+      { ownerUserId: owner.id, text: 'next week', dueAt: new Date(Date.now() + 7 * 86_400_000) },
+    ] });
+    const d = await get('/dashboards/admin/today', admin);
+    const endToday = new Date(Date.parse(`${new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10)}T00:00:00+05:30`) + 86_400_000);
+    expect(d.followUps.count).toBe(await prisma.followUpTask.count({ where: { doneAt: null, dueAt: { lt: endToday } } }));
+    expect(d.followUps.overdue).toBeGreaterThanOrEqual(1);
+    expect(d.followUps.items.map((i: { text: string }) => i.text)).toContain('overdue');
+    expect(d.followUps.items.map((i: { text: string }) => i.text)).not.toContain('next week');
+    expect(d.followUps.items.length).toBeLessThanOrEqual(5);
+    expect(d.onboarding.count).toBe(await prisma.advisorProfile.count({ where: { onboardingStep: 'AWAITING_REVIEW' } }));
+    expect(d.payoutApprovals.count).toBe(await prisma.payoutRequest.count({ where: { state: 'PENDING_APPROVALS', approvals: { none: { approverRole: 'ADMIN' } } } }));
+    expect(d.misExceptions).toEqual({ unmatched: await prisma.misRow.count({ where: { matchState: 'UNMATCHED' } }), conflicts: await prisma.misRow.count({ where: { matchState: 'CONFLICT' } }) });
+    await get('/dashboards/admin/today', team[0].managerToken, 403);
+  });
+
   it('F-703 executive = Manager dashboard filtered to that team (same engine)', async () => {
     const strip = (x: { calling: unknown; advisors: unknown }) => JSON.parse(JSON.stringify({ calling: x.calling, advisors: x.advisors }));
     for (const t of team) expect(strip(await get(`/dashboards/admin/executive?managerId=${t.managerId}`, admin))).toEqual(strip(await get('/dashboards/manager', t.managerToken)));

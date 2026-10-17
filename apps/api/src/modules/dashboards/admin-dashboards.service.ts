@@ -1,4 +1,4 @@
-import { activationBucket, type AdvisorTeamResponse, type CallingRecordsSummary, type DashboardQuery, decisionBucket, LeadListQuery, type LeadStatusRow, maskMobile, PayoutDashboardQuery } from '@kbs/shared';
+import { activationBucket, type AdminTodayResponse, type AdminTrendPoint, type AdminTrendQuery, type AdminTrendResponse, type AdvisorTeamResponse, type CallingRecordsSummary, type DashboardQuery, decisionBucket, isBlankBankValue, LeadListQuery, type LeadStatusRow, maskMobile, PayoutDashboardQuery } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -17,6 +17,9 @@ import { DATE_BASIS, DashboardMetricsService } from './dashboard-metrics.service
 const DAY = 86_400_000;
 /** 'YYYY-MM-DD' ± n calendar days. */
 const shiftDay = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
+const istStart = (d: string) => new Date(`${d}T00:00:00+05:30`);
+/** IST calendar day of an instant. */
+const istDay = (t: Date) => new Date(t.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 
 /**
  * Same loose bank-verbatim buckets as LeadsService.summary / MisImportService.applicationsSummary (F-811):
@@ -149,6 +152,77 @@ export class AdminDashboardsService {
       asOf: new Date().toISOString(),
       note: 'Bank values are the latest accepted MIS only — never live bank status.',
       dateBases: DATE_BASIS,
+    };
+  }
+
+  /**
+   * F-814 Admin home trend: per IST day (or week) the same figures as `home` — leads by created date, approved /
+   * activated from the latest accepted MIS of those leads (same buckets), payout earned by eligible date, calls by
+   * initiated date. Buckets sum to the `home` figures for the same range. Organisation-wide.
+   */
+  async trend(actor: Actor, q: AdminTrendQuery): Promise<AdminTrendResponse> {
+    this.assertAdmin(actor);
+    const days = Math.round((Date.parse(q.to) - Date.parse(q.from)) / DAY) + 1;
+    if (days < 1) throw new AppError('VALIDATION_FAILED', '"From" must be on or before "To".');
+    if (days > 366) throw new AppError('VALIDATION_FAILED', 'Choose a range of one year or less.');
+    const bucket = q.bucket ?? (days <= 92 ? 'day' : 'week');
+    const step = bucket === 'day' ? 1 : 7;
+    const points: AdminTrendPoint[] = Array.from({ length: Math.ceil(days / step) }, (_, i) => ({ start: shiftDay(q.from, i * step), leads: 0, approved: 0, activated: 0, payoutEarnedInr: 0, calls: 0, connected: 0 }));
+    const at = (t: Date) => points[Math.floor(Math.round((Date.parse(istDay(t)) - Date.parse(q.from)) / DAY) / step)];
+    const range = { gte: istStart(q.from), lt: new Date(istStart(q.to).getTime() + DAY) };
+    const tokens = this.config.getJson<string[]>('mis.blankValueTokens');
+    const known = (v: string | null | undefined): v is string => v != null && !isBlankBankValue(v, tokens);
+    const [leads, ents, attempts] = await Promise.all([
+      this.prisma.client.lead.findMany({ where: { createdAt: range }, select: { createdAt: true, statusSnapshot: { select: { finalDecision: true, cardActivationStatus: true } } } }),
+      this.prisma.client.payoutEntitlement.findMany({ where: { eligibleAt: range }, select: { eligibleAt: true, state: true, amountInr: true, requestItems: { where: { active: true }, take: 1, select: { request: { select: { state: true } } } } } }),
+      this.prisma.client.callAttempt.findMany({ where: { initiatedAt: range }, select: { initiatedAt: true, providerCallId: true, connectedAt: true } }),
+    ]);
+    for (const l of leads) {
+      const p = at(l.createdAt);
+      p.leads += 1;
+      const s = l.statusSnapshot;
+      if (s && known(s.finalDecision) && decisionBucket(s.finalDecision.trim()) === 'approved') p.approved += 1;
+      if (s && known(s.cardActivationStatus) && activationBucket(s.cardActivationStatus.trim()) === 'active') p.activated += 1;
+    }
+    const perPoint = new Map<AdminTrendPoint, { bucket: ReturnType<typeof bucketOf>; amountInr: number }[]>();
+    for (const e of ents) {
+      if (!e.eligibleAt) continue;
+      const p = at(e.eligibleAt);
+      perPoint.set(p, [...(perPoint.get(p) ?? []), { bucket: bucketOf(e.state, e.requestItems[0]?.request.state), amountInr: Number(e.amountInr) }]);
+    }
+    for (const [p, rows] of perPoint) p.payoutEarnedInr = totalsOf(rows).eligible.amountInr;
+    for (const a of attempts) {
+      const p = at(a.initiatedAt);
+      if (a.providerCallId) p.calls += 1;
+      if (a.connectedAt) p.connected += 1;
+    }
+    return { range: { from: q.from, to: q.to }, bucket, points, note: 'Bank values are the latest accepted MIS only — never live bank status.' };
+  }
+
+  /** F-814 "Today" rail: follow-ups due by end of today (incl. overdue), advisors awaiting review, payout requests awaiting the Admin, MIS rows needing resolution. */
+  async today(actor: Actor): Promise<AdminTodayResponse> {
+    this.assertAdmin(actor);
+    const now = new Date();
+    const startToday = istStart(istDay(now));
+    const due = { doneAt: null, dueAt: { lt: new Date(startToday.getTime() + DAY) } };
+    const awaitingAdmin = { state: 'PENDING_APPROVALS' as const, approvals: { none: { approverRole: 'ADMIN' as const } } };
+    const [fuCount, fuOverdue, fu, onbCount, onb, payCount, pay, unmatched, conflicts] = await Promise.all([
+      this.prisma.client.followUpTask.count({ where: due }),
+      this.prisma.client.followUpTask.count({ where: { doneAt: null, dueAt: { lt: startToday } } }),
+      this.prisma.client.followUpTask.findMany({ where: due, orderBy: { dueAt: 'asc' }, take: 5, select: { id: true, text: true, dueAt: true, leadId: true, owner: { select: { fullName: true } } } }),
+      this.prisma.client.advisorProfile.count({ where: { onboardingStep: 'AWAITING_REVIEW' } }),
+      this.prisma.client.advisorProfile.findMany({ where: { onboardingStep: 'AWAITING_REVIEW' }, orderBy: { submittedAt: 'asc' }, take: 5, select: { submittedAt: true, user: { select: { id: true, fullName: true, publicRef: true } } } }),
+      this.prisma.client.payoutRequest.count({ where: awaitingAdmin }),
+      this.prisma.client.payoutRequest.findMany({ where: awaitingAdmin, orderBy: { submittedAt: 'asc' }, take: 5, select: { id: true, publicRef: true, totalAmountInr: true, submittedAt: true, advisor: { select: { fullName: true } } } }),
+      this.prisma.client.misRow.count({ where: { matchState: 'UNMATCHED' } }),
+      this.prisma.client.misRow.count({ where: { matchState: 'CONFLICT' } }),
+    ]);
+    return {
+      followUps: { count: fuCount, overdue: fuOverdue, items: fu.map((t) => ({ id: t.id, text: t.text, dueAt: t.dueAt.toISOString(), ownerName: t.owner.fullName, kind: t.leadId ? 'LEAD' : 'CALLBACK', leadId: t.leadId })) },
+      onboarding: { count: onbCount, items: onb.map((p) => ({ userId: p.user.id, fullName: p.user.fullName, publicRef: p.user.publicRef, submittedAt: p.submittedAt?.toISOString() ?? null })) },
+      payoutApprovals: { count: payCount, items: pay.map((r) => ({ id: r.id, publicRef: r.publicRef, advisorName: r.advisor.fullName, amountInr: Number(r.totalAmountInr), submittedAt: r.submittedAt.toISOString() })) },
+      misExceptions: { unmatched, conflicts },
+      asOf: now.toISOString(),
     };
   }
 

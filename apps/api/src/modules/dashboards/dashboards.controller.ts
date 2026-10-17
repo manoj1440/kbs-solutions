@@ -1,4 +1,4 @@
-import { DashboardQuery } from '@kbs/shared';
+import { AdminTrendQuery, DashboardQuery } from '@kbs/shared';
 import { Controller, Get, Query } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -35,6 +35,20 @@ export class DashboardsController {
   @RequirePermission('DASHBOARD_ADMIN')
   home(@CurrentActor() actor: Actor, @Query() raw: unknown) {
     return this.admin.home(actor, DashboardQuery.parse(raw));
+  }
+
+  /** F-814 Admin home trend (per day / week) — buckets reconcile with admin/home. */
+  @Get('admin/trend')
+  @RequirePermission('DASHBOARD_ADMIN')
+  trend(@CurrentActor() actor: Actor, @Query() raw: unknown) {
+    return this.admin.trend(actor, AdminTrendQuery.parse(raw));
+  }
+
+  /** F-814 Admin home "Today" rail. */
+  @Get('admin/today')
+  @RequirePermission('DASHBOARD_ADMIN')
+  today(@CurrentActor() actor: Actor) {
+    return this.admin.today(actor);
   }
 
   @Get('admin/executive')

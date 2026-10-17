@@ -65,3 +65,32 @@ export const REPORTING_SOURCE_LABELS: Record<string, string> = {
   ADMIN_REASSIGNED: 'Reassigned by Admin',
   MANAGER_CREATED_TELECALLER: 'Created by Manager',
 };
+
+/** F-814 Admin home trend: [from, to] inclusive IST days (max 366); bucket defaults to day up to 92 days, else week. */
+export const AdminTrendQuery = z.object({ from: day, to: day, bucket: z.enum(['day', 'week']).optional() });
+export type AdminTrendQuery = z.infer<typeof AdminTrendQuery>;
+export interface AdminTrendPoint {
+  /** first IST day of the bucket, YYYY-MM-DD */
+  start: string;
+  leads: number;
+  approved: number;
+  activated: number;
+  payoutEarnedInr: number;
+  calls: number;
+  connected: number;
+}
+export interface AdminTrendResponse {
+  range: { from: string; to: string };
+  bucket: 'day' | 'week';
+  points: AdminTrendPoint[];
+  note: string;
+}
+
+/** F-814 Admin home "Today" rail: what is waiting on the Admin now (counts + up to 5 items each). */
+export interface AdminTodayResponse {
+  followUps: { count: number; overdue: number; items: { id: string; text: string; dueAt: string; ownerName: string | null; kind: 'LEAD' | 'CALLBACK'; leadId: string | null }[] };
+  onboarding: { count: number; items: { userId: string; fullName: string | null; publicRef: string; submittedAt: string | null }[] };
+  payoutApprovals: { count: number; items: { id: string; publicRef: string; advisorName: string | null; amountInr: number; submittedAt: string }[] };
+  misExceptions: { unmatched: number; conflicts: number };
+  asOf: string;
+}
