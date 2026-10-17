@@ -1,4 +1,4 @@
-import { ApiClientError, type UserSummary } from '@kbs/shared';
+import { ApiClientError, formatInr, type MisFreshness, type PendingAction, type UserSummary } from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, Text as RNText, View } from 'react-native';
@@ -16,7 +16,6 @@ import {
   Appear,
   Avatar,
   Badge,
-  Button,
   Card,
   EmptyState,
   ErrorState,
@@ -31,9 +30,10 @@ import {
   SkeletonList,
   Text,
 } from '@/components/ui';
+import { ago, TodayCard, todayLabel } from '@/components/today';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/session';
-import { colors, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 type TeamUser = UserSummary & { lastLoginAt: string | null };
 type M = MetricLike;
@@ -41,6 +41,22 @@ interface Summary {
   calling: { calls: { attempts: M; connected: M }; callbacks: { due: M }; shares: { total: M } };
   advisors: { leads: { created: M; misMatched: M }; payouts: { approvedUnpaid: M; paid: M } };
 }
+
+interface AwaitingRow {
+  id: string;
+  publicRef: string;
+  advisor: { fullName: string };
+  totalAmountInr: number;
+}
+interface CallerRow {
+  id: string;
+  fullName: string;
+  queueSize: number;
+  followUpsDue: number;
+}
+
+/** MIS older than this reads as stale (amber dot) — the point where the web MIS clock switches to a date. */
+const MIS_STALE_DAYS = 7;
 
 /** Hero meta line: where the number comes from, plus its denominator when there is one. */
 function HeroMeta({ m }: { m: M }) {
@@ -51,6 +67,33 @@ function HeroMeta({ m }: { m: M }) {
         <RNText className="font-medium text-[11px] text-white/60">
           · of {m.denominator.value}
         </RNText>
+      ) : null}
+    </View>
+  );
+}
+
+/** F-815: how old the bank numbers are — one line per bank, amber when stale. Bank values come from MIS only. */
+function MisFreshnessLine({ mis }: { mis: MisFreshness }) {
+  const applied = mis.banks.filter((b) => b.lastAppliedAt);
+  const none = mis.banks.length - applied.length;
+  return (
+    <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1 px-1">
+      <Icon name="time-outline" size={14} color={colors.muted} />
+      {applied.map((b) => {
+        const stale = new Date(mis.asOf).getTime() - new Date(b.lastAppliedAt!).getTime() > MIS_STALE_DAYS * 86_400_000;
+        return (
+          <View key={b.bankCode} className="flex-row items-center gap-1.5">
+            <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: stale ? colors.warning : colors.success }} />
+            <Muted className="text-[12px]">
+              {b.bankName} MIS · {ago(b.lastAppliedAt!)}
+            </Muted>
+          </View>
+        );
+      })}
+      {none ? (
+        <Muted className="text-[12px]">
+          {applied.length ? `+${none} bank${none === 1 ? '' : 's'} with no MIS yet` : 'No bank MIS applied yet'}
+        </Muted>
       ) : null}
     </View>
   );
@@ -109,6 +152,10 @@ export default function ManagerHome() {
   const { user } = useSession();
   const [rows, setRows] = useState<TeamUser[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [awaiting, setAwaiting] = useState<{ rows: AwaitingRow[]; total: number } | null>(null);
+  const [pending, setPending] = useState<PendingAction[] | null>(null);
+  const [callers, setCallers] = useState<CallerRow[] | null>(null);
+  const [mis, setMis] = useState<MisFreshness | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -116,6 +163,13 @@ export default function ManagerHome() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    // F-815 Today + MIS freshness: own lists, so a failure shows on its row instead of blanking the home.
+    const extra = Promise.allSettled([
+      api.get<AwaitingRow[]>('/payouts/requests?awaitingMe=true&pageSize=3'),
+      api.get<PendingAction[]>('/pending-actions'),
+      api.get<{ telecallers: CallerRow[] }>('/calling/team/overview'),
+      api.get<MisFreshness>('/mis/freshness'),
+    ]);
     try {
       const [r, d] = await Promise.all([
         api.get<TeamUser[]>('/users?pageSize=200'),
@@ -125,10 +179,22 @@ export default function ManagerHome() {
       setSummary(d?.data ?? null);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load your team.');
-    } finally {
-      setLoading(false);
-      setLoaded(true);
     }
+    const [aw, pa, ov, mf] = await extra;
+    setAwaiting(
+      aw.status === 'fulfilled'
+        ? { rows: aw.value.data, total: Number((aw.value.meta as { total?: number }).total ?? aw.value.data.length) }
+        : null,
+    );
+    setPending(pa.status === 'fulfilled' ? pa.value.data.filter((a) => !a.doneAt) : null);
+    setCallers(
+      ov.status === 'fulfilled'
+        ? ov.value.data.telecallers.filter((t) => t.followUpsDue > 0).sort((a, b) => b.followUpsDue - a.followUpsDue)
+        : null,
+    );
+    setMis(mf.status === 'fulfilled' ? mf.value.data : null);
+    setLoading(false);
+    setLoaded(true);
   }, []);
 
   useFocusEffect(
@@ -185,6 +251,7 @@ export default function ManagerHome() {
                     <RNText numberOfLines={1} className="font-bold text-[20px] text-white">
                       {first}
                     </RNText>
+                    <RNText className="font-medium text-[12px] text-white/60">{todayLabel()}</RNText>
                   </View>
                 </PressableScale>
                 <IconButton
@@ -244,25 +311,60 @@ export default function ManagerHome() {
 
             <View className="-mt-10 gap-5 px-4">
               <Appear index={1}>
-                <View
-                  className="flex-row items-center gap-3 rounded-3xl bg-white p-4"
-                  style={shadow.lg}
-                >
-                  <View className="h-12 w-12 items-center justify-center rounded-2xl bg-[#E6F4EC]">
-                    <Icon name="person-add" size={22} color={colors.success} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-bold text-[15px]">Create Telecaller</Text>
-                    <Muted className="text-[12px]">Only a name and mobile number are needed.</Muted>
-                  </View>
-                  <Button
-                    title="Create"
-                    icon="add"
-                    size="sm"
-                    accessibilityLabel="Create Telecaller"
-                    onPress={() => router.push('/(manager)/create-telecaller')}
-                  />
-                </View>
+                <TodayCard
+                  light
+                  loaded={loaded}
+                  caughtUp="No payout approvals, pending actions or callbacks waiting on you."
+                  sections={[
+                    {
+                      key: 'awaiting',
+                      title: 'Payouts awaiting you',
+                      icon: 'checkmark-done-circle',
+                      tone: 'gold',
+                      count: awaiting?.total ?? null,
+                      empty: 'No payout request is waiting for your approval.',
+                      rows: (awaiting?.rows ?? []).map((r) => ({
+                        key: r.id,
+                        title: r.advisor.fullName,
+                        subtitle: r.publicRef,
+                        right: formatInr(r.totalAmountInr, { decimals: 0 }),
+                        onPress: () => router.push({ pathname: '/(manager)/payout-request', params: { id: r.id } }),
+                      })),
+                      seeAll: awaiting?.total
+                        ? { label: 'All approvals', onPress: () => router.push('/(manager)/approvals') }
+                        : undefined,
+                    },
+                    {
+                      key: 'pending',
+                      title: 'Pending actions',
+                      icon: 'alarm',
+                      tone: 'warning',
+                      count: pending?.length ?? null,
+                      empty: "Nothing pending on your team's leads.",
+                      rows: (pending ?? []).slice(0, 3).map((a) => ({
+                        key: a.id,
+                        title: a.whatToDo,
+                        subtitle: [a.customer, a.owner.name].filter(Boolean).join(' · '),
+                        onPress: () => router.push({ pathname: '/(manager)/lead', params: { id: a.leadId } }),
+                      })),
+                    },
+                    {
+                      key: 'callbacks',
+                      title: 'Callbacks due',
+                      icon: 'call',
+                      tone: 'info',
+                      count: callers ? callers.reduce((n, t) => n + t.followUpsDue, 0) : null,
+                      empty: 'No callbacks due for your team.',
+                      rows: (callers ?? []).slice(0, 3).map((t) => ({
+                        key: t.id,
+                        title: t.fullName,
+                        subtitle: `${t.queueSize} records held`,
+                        right: `${t.followUpsDue} due`,
+                        onPress: () => router.push({ pathname: '/(manager)/telecaller', params: { id: t.id } }),
+                      })),
+                    },
+                  ]}
+                />
               </Appear>
 
               {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
@@ -307,11 +409,16 @@ export default function ManagerHome() {
                       tone="success"
                     />
                   </View>
+                  {mis ? <MisFreshnessLine mis={mis} /> : null}
                 </Appear>
               ) : null}
 
               <Appear index={3} className="gap-3">
-                <SectionHeader title={`My team${loaded ? ` · ${team.length}` : ''}`} />
+                <SectionHeader
+                  title={`My team${loaded ? ` · ${team.length}` : ''}`}
+                  action="Create Telecaller"
+                  onAction={() => router.push('/(manager)/create-telecaller')}
+                />
                 {!loaded ? (
                   <SkeletonList rows={3} />
                 ) : team.length === 0 && !error ? (

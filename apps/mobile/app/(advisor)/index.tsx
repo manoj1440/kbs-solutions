@@ -1,4 +1,4 @@
-import { ApiClientError, formatInr, type LeadStatusRow } from '@kbs/shared';
+import { ApiClientError, formatInr, type LeadStatusRow, type PendingAction } from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
@@ -21,6 +21,7 @@ import {
   Skeleton,
   Text,
 } from '@/components/ui';
+import { ago, TodayCard, todayLabel } from '@/components/today';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
@@ -46,11 +47,10 @@ interface NotificationRow {
   readAt: string | null;
 }
 
-function ago(iso: string) {
-  const s = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+interface Draft {
+  id: string;
+  card: { name: string; bank: { displayName: string } } | null;
+  customer: string | null;
 }
 
 function greeting() {
@@ -89,6 +89,8 @@ export default function AdvisorHome() {
   const [totals, setTotals] = useState<LedgerTotals['totals'] | null>(null);
   const [notes, setNotes] = useState<NotificationRow[]>([]);
   const [unread, setUnread] = useState(0);
+  const [pending, setPending] = useState<PendingAction[] | null>([]);
+  const [drafts, setDrafts] = useState<Draft[] | null>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -96,6 +98,11 @@ export default function AdvisorHome() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    // F-815 Today: own lists, so a failure shows on its row instead of blanking the home.
+    const agenda = Promise.allSettled([
+      api.get<PendingAction[]>('/pending-actions'),
+      api.get<Draft[]>('/leads/drafts'),
+    ]);
     try {
       const [l, p, n] = await Promise.all([
         api.get<LeadStatusRow[]>('/leads?pageSize=100'),
@@ -109,10 +116,12 @@ export default function AdvisorHome() {
       setUnread(typeof meta.unread === 'number' ? meta.unread : 0);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load the dashboard.');
-    } finally {
-      setLoading(false);
-      setLoaded(true);
     }
+    const [pa, dr] = await agenda;
+    setPending(pa.status === 'fulfilled' ? pa.value.data.filter((a) => !a.doneAt) : null);
+    setDrafts(dr.status === 'fulfilled' ? dr.value.data : null);
+    setLoading(false);
+    setLoaded(true);
   }, []);
 
   useFocusEffect(
@@ -157,6 +166,7 @@ export default function AdvisorHome() {
             <View>
               <RNText className="font-medium text-[13px] text-white/70">{greeting()},</RNText>
               <RNText className="font-bold text-[20px] text-white">{first}</RNText>
+              <RNText className="font-medium text-[12px] text-white/60">{todayLabel()}</RNText>
             </View>
           </PressableScale>
           <IconButton
@@ -248,6 +258,67 @@ export default function AdvisorHome() {
         </Appear>
 
         <Appear index={3}>
+          <TodayCard
+            loaded={loaded}
+            caughtUp="No follow-ups, unfinished leads or payouts waiting on you."
+            sections={[
+              {
+                key: 'pending',
+                title: 'Follow-ups to do',
+                icon: 'alarm',
+                tone: 'warning',
+                count: pending?.length ?? null,
+                empty: 'Nothing pending on your leads.',
+                rows: (pending ?? []).slice(0, 3).map((a) => ({
+                  key: a.id,
+                  title: a.whatToDo,
+                  subtitle: `${a.customer} · ${a.issuer}`,
+                  onPress: () => router.push({ pathname: '/(advisor)/lead', params: { id: a.leadId } }),
+                })),
+                seeAll: pending?.length
+                  ? { label: 'All pending actions', onPress: () => router.push('/(advisor)/pending' as never) }
+                  : undefined,
+              },
+              {
+                key: 'drafts',
+                title: 'Leads to finish',
+                icon: 'create-outline',
+                tone: 'default',
+                count: drafts?.length ?? null,
+                empty: 'No unfinished leads.',
+                rows: (drafts ?? []).slice(0, 3).map((d) => ({
+                  key: d.id,
+                  title: d.customer || 'Customer not added yet',
+                  subtitle: d.card ? `${d.card.name} · ${d.card.bank.displayName}` : null,
+                  onPress: () => router.push({ pathname: '/(advisor)/lead-new', params: { draftId: d.id } }),
+                })),
+                seeAll: drafts?.length
+                  ? { label: 'My leads', onPress: () => router.push('/(advisor)/leads' as never) }
+                  : undefined,
+              },
+              {
+                key: 'claim',
+                title: 'Ready to claim',
+                icon: 'wallet',
+                tone: 'gold',
+                count: totals ? totals.available.count : null,
+                empty: 'Nothing to claim yet.',
+                rows: available
+                  ? [
+                      {
+                        key: 'available',
+                        title: `Claim ${formatInr(available, { decimals: 0 })}`,
+                        subtitle: `${totals?.available.count ?? 0} card event(s) available`,
+                        onPress: () => router.push('/(advisor)/payouts' as never),
+                      },
+                    ]
+                  : [],
+              },
+            ]}
+          />
+        </Appear>
+
+        <Appear index={4}>
           <PressableScale
             onPress={() => router.push('/(advisor)/cards' as never)}
             className="overflow-hidden rounded-3xl p-5"
@@ -272,7 +343,7 @@ export default function AdvisorHome() {
           </PressableScale>
         </Appear>
 
-        <Appear index={4} className="gap-3">
+        <Appear index={5} className="gap-3">
           <SectionHeader
             title="Recent activity"
             action="See all"

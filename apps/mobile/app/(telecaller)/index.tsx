@@ -23,6 +23,7 @@ import {
   SkeletonList,
   Text,
 } from '@/components/ui';
+import { todayLabel } from '@/components/today';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { colors } from '@/lib/theme';
@@ -223,6 +224,7 @@ export default function TelecallerHome() {
                     <RNText numberOfLines={1} className="font-bold text-[20px] text-white">
                       {first}
                     </RNText>
+                    <RNText className="font-medium text-[12px] text-white/60">{todayLabel()}</RNText>
                   </View>
                 </PressableScale>
                 <IconButton
