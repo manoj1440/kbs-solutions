@@ -60,13 +60,15 @@ describe('F-601 payout rules and rates (versioned, per bank)', () => {
 
   it('rate versioning: a new approved rate closes the previous one at its effectiveFrom; seen-values picker lists MIS values', async () => {
     const rule = (await api().get(`/api/v1/payouts/rules?bankId=${hdfcId}&status=APPROVED`).set(auth(adminToken)).expect(200)).body.data[0];
-    const nr = await api().post(`/api/v1/payouts/rules/${rule.id}/rates`).set(auth(adminToken)).set('idempotency-key', idem()).send({ amountInr: 1800, effectiveFrom: '2026-10-01T00:00:00.000Z' }).expect(201);
+    // always in the future (was a fixed 2026-10-01, which stopped being "future" on that day)
+    const future = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 1)).toISOString();
+    const nr = await api().post(`/api/v1/payouts/rules/${rule.id}/rates`).set(auth(adminToken)).set('idempotency-key', idem()).send({ amountInr: 1800, effectiveFrom: future }).expect(201);
     const newRate = nr.body.data.rates.find((x: { amountInr: number }) => x.amountInr === 1800);
     await api().post(`/api/v1/payouts/rates/${newRate.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'Oct revision' }).expect(201);
     const after = (await api().get(`/api/v1/payouts/rules/${rule.id}`).set(auth(adminToken)).expect(200)).body.data;
     const old = after.rates.find((x: { amountInr: number }) => x.amountInr === 1500);
-    expect(old.effectiveTo).toBe('2026-10-01T00:00:00.000Z');
-    expect(after.currentRate.amountInr).toBe(1500); // today (Sep 2026) the old rate still applies
+    expect(old.effectiveTo).toBe(future);
+    expect(after.currentRate.amountInr).toBe(1500); // today the old rate still applies
     const seen = await api().get(`/api/v1/payouts/rules/seen-values?bankId=${hdfcId}&field=cardActivationStatus`).set(auth(adminToken)).expect(200);
     expect(seen.body.data).toEqual({ field: 'cardActivationStatus', values: [] });
   });
