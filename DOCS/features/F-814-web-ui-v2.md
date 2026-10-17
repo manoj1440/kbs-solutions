@@ -134,14 +134,14 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 | P4 | Liability (shared) | `/admin/payouts/liability`, `/manager/payouts/liability` | DONE |
 | P4 | Payout rules + rule detail | `/admin/payouts/rules(/[id])` | DONE |
 | P4 | Accounts reconciliation | `/accounts/reconciliation` | DONE |
-| P5 | Users + user detail | `/admin/users(/[id])` | TODO |
-| P5 | Advisor approvals + review | `/admin/onboarding(/[userId])` | TODO |
-| P5 | Training content, module, progress, team detail | `/admin/training(/[seq])`, `/admin/training/team(/[id])` | TODO |
-| P5 | Card catalogue + card editor | `/admin/catalogue(/[id])` | TODO |
-| P5 | Bank coverage + profile editor | `/admin/pincode-profiles(/[id])` | TODO |
-| P5 | Reports (telecallers, managers, advisors, bank/card mix) + audit | `/admin/dashboards/*`, `/admin/audit` | TODO |
-| P5 | Compliance, network, config, retention | `/admin/compliance`, `/admin/network`, `/admin/config`, `/admin/retention` | TODO |
-| P5 | Notifications + account (shared, all roles) | `/*/notifications`, `/*/account` | TODO |
+| P5 | Users + user detail | `/admin/users(/[id])` | DONE |
+| P5 | Advisor approvals + review | `/admin/onboarding(/[userId])` | DONE |
+| P5 | Training content, module, progress, team detail | `/admin/training(/[seq])`, `/admin/training/team(/[id])` | DONE |
+| P5 | Card catalogue + card editor | `/admin/catalogue(/[id])` | DONE |
+| P5 | Bank coverage + profile editor | `/admin/pincode-profiles(/[id])` | DONE |
+| P5 | Reports (telecallers, managers, advisors, bank/card mix) + audit | `/admin/dashboards/*`, `/admin/audit` | DONE |
+| P5 | Compliance, network, config, retention | `/admin/compliance`, `/admin/network`, `/admin/config`, `/admin/retention` | DONE |
+| P5 | Notifications + account (shared, all roles) | `/*/notifications`, `/*/account` | DONE |
 | P6 | Manager home (Team) | `/manager` | TODO |
 | P6 | Manager dashboard + agenda rail | `/manager/dashboard` | TODO |
 | P6 | Team calling + telecaller drill-down | `/manager/calling(/telecaller/[id])` | TODO |
@@ -197,4 +197,9 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 - Detail pages on `DetailHeader`: MIS batch, MIS profile, payout request (Admin/Manager/Accounts), payout rule. `/admin/mis/integrity` is an F-809 redirect — nothing to redesign.
 - Codemod (`test/tokenize.mjs`) now also maps arbitrary slate shadows → `shadow-card`/`shadow-pop`, slate dialog backdrops → `backdrop:bg-navy/50`, slate-300/400 dots. Session-local helper scripts converted tile grids and back-button headers mechanically; every result was screenshot-checked (one `.map()` tile grid got the wrong column count and was fixed by hand).
 - P4 checks: web typecheck/lint clean; Playwright 73 passed / 1 skipped; 1440 + 390 sweeps of MIS, payouts (Admin/Manager) and Accounts pages: overflow 0.
-- Next: P5 People, products, settings.
+- Session 19, P5 done. Commits: users → advisor approvals (+ avatar `ring-card`) → training → `fix(web): card catalogue clipping + card editor back link` (U3) → bank coverage → reports + audit → settings → notifications + account.
+- U3 cause: card grid used bare `fr` columns and the card body had no `min-w-0`, so a long card name widened its column past the card; now `minmax(0,…)` columns and two-line titles (full name on hover).
+- Found and fixed on the way: `` `${selectClass} w-36` `` string concatenation kept both `w-full` and `w-36` (w-full won → full-width date filters on Reports and Manager advisors) — now `cn()`. Retention: dry-run table fell into card mode beside the legal-holds panel and the hold form clipped "Release" — columns stack below `2xl`, the form uses a container query (`@container` / `@2xl:`).
+- Back links added where detail pages had none: module editor, card editor, bank coverage profile (via `DetailHeader`). Advisor review detail typechecks but was not rendered — the demo data has no advisor awaiting review.
+- P5 checks: web typecheck/lint, unit 24/24, Playwright 73 passed / 1 skipped; 1440 + 390 sweeps of every P5 route: overflow 0 (retention also checked at 1920).
+- Next: P6 Manager workspace.
