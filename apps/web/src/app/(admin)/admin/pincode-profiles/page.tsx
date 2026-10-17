@@ -1,5 +1,5 @@
 import { DataTablePanel } from '@/components/data-table';
-import { MiniStat } from '@/components/ui/kit';
+import { MiniStat, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
 import { PincodeProfilesTable, type PincodeProfileRow } from './profiles-table';
@@ -16,16 +16,16 @@ export default async function PincodeProfilesPage() {
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Bank pincode profiles</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+      <StatStrip cols={4}>
         <MiniStat label="Profile versions" value={p.data.length} hint={`${new Set(p.data.map((r) => r.bank.code)).size} banks`} tone="sky" />
         <MiniStat label="Approved" value={approved.length} hint={`${banksApproved} bank${banksApproved === 1 ? '' : 's'} sourceable`} tone="emerald" />
         <MiniStat label="Drafts" value={drafts} hint="Not sourceable until approved" tone={drafts ? 'amber' : 'slate'} />
         <MiniStat label="Batches imported" value={batches} hint="Across all versions" tone="violet" />
-      </div>
+      </StatStrip>
       <DataTablePanel
         label="Profiles"
         footer={
-          <div className="flex shrink-0 items-center border-t border-slate-100 px-4 py-2 text-xs text-slate-500 tabular-nums">
+          <div className="flex shrink-0 items-center border-t border-border-subtle px-4 py-2 text-xs text-muted-foreground tabular-nums">
             {p.data.length} profile version{p.data.length === 1 ? '' : 's'}
           </div>
         }

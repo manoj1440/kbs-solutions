@@ -32,8 +32,8 @@ const columns = c.columns([
     header: 'Profile',
     cell: ({ row }) => (
       <>
-        <Link className="font-medium text-slate-900 hover:text-teal-700" href={`/admin/pincode-profiles/${row.original.id}`}>{row.original.name}</Link>{' '}
-        <span className="text-[11px] text-slate-500">v{row.original.version}</span>
+        <Link className="font-medium text-foreground hover:text-teal-700" href={`/admin/pincode-profiles/${row.original.id}`}>{row.original.name}</Link>{' '}
+        <span className="text-2xs text-muted-foreground">v{row.original.version}</span>
       </>
     ),
   }),
@@ -42,7 +42,7 @@ const columns = c.columns([
     cell: ({ row }) => (
       <>
         <Badge variant={row.original.status === 'APPROVED' ? 'success' : row.original.status === 'DRAFT' ? 'warning' : 'unknown'}>{humanize(row.original.status)}</Badge>
-        {row.original.approvedAt ? <div className="mt-0.5 text-[11px] text-slate-500">{formatDateTime(row.original.approvedAt)}</div> : null}
+        {row.original.approvedAt ? <div className="mt-0.5 text-2xs text-muted-foreground">{formatDateTime(row.original.approvedAt)}</div> : null}
       </>
     ),
   }),

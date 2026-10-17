@@ -10,12 +10,12 @@ import { FileUploadButton } from '@/components/file-upload-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BankMark, Callout, EmptyState, Field, humanize, PageHeader, SectionCard, selectClass } from '@/components/ui/kit';
+import { BankMark, Callout, DetailHeader, EmptyState, Field, humanize, IconTile, SectionCard, selectClass } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
 const areaClass =
-  'w-full rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-[inset_0_1px_1px_rgb(15_23_42/3%)] outline-none hover:border-slate-300 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60';
+  'w-full rounded-lg border border-border bg-card p-3 text-sm shadow-pop outline-none hover:border-border-strong focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-60';
 
 type Rule = { rule: 'PRESENT_PINCODE_IS_SOURCEABLE' | 'REQUIRES_BANK_MAPPING'; preserve?: string[]; note?: string; ignoreEmptyAutoHeaders?: boolean } | { rule: 'FLAG_EQUALS'; column: string; trueValues: string[]; preserve?: string[]; note?: string; ignoreEmptyAutoHeaders?: boolean };
 export interface ProfileDetail {
@@ -82,10 +82,9 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
   const imported = p.batches.filter((b) => b.status === 'IMPORTED').length;
   return (
     <div className="grid gap-6">
-      <PageHeader
-        icon={MapPin}
-        tone="violet"
-        eyebrow="Products · Bank coverage"
+      <DetailHeader
+        back={{ href: '/admin/pincode-profiles', label: 'Bank coverage' }}
+        visual={<IconTile icon={MapPin} tone="violet" size="lg" className="hidden sm:inline-flex" />}
         title={
           <>
             {p.bank.displayName} — {p.name}
@@ -143,11 +142,11 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
             <Field label="Preserved columns (comma-separated; shown in preview, never a filter)" htmlFor="pp-preserve">
               <Input id="pp-preserve" disabled={readOnly} value={form.preserve} onChange={(e) => setForm({ ...form, preserve: e.target.value })} />
             </Field>
-            <label className="flex items-start gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+            <label className="flex items-start gap-2.5 rounded-xl border border-border bg-surface-muted px-3 py-2.5 text-sm text-fg-2">
               <input type="checkbox" className="mt-0.5 accent-teal-700" disabled={readOnly} checked={form.padNumericPincodes} onChange={(e) => setForm({ ...form, padNumericPincodes: e.target.checked })} />
               Zero-pad numeric cells to 6 digits (recorded per row as wasPadded)
             </label>
-            <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+            <div className="flex flex-wrap gap-2 border-t border-border-subtle pt-4">
               <Button disabled={readOnly} onClick={save}>
                 <Save />
                 {p.status === 'APPROVED' ? 'Save as new version' : 'Save'}
@@ -177,10 +176,10 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
             <div className="grid gap-3">
               {!readOnly ? (
                 <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-sky-200 bg-sky-50/40 px-4 py-5 text-center">
-                  <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-white text-sky-700 shadow-sm ring-1 ring-sky-100">
+                  <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-card text-sky-700 shadow-sm ring-1 ring-sky-100">
                     <FileSpreadsheet className="size-5" aria-hidden="true" />
                   </span>
-                  <p className="text-xs text-slate-500">Excel (.xlsx) or CSV</p>
+                  <p className="text-xs text-muted-foreground">Excel (.xlsx) or CSV</p>
                   <FileUploadButton
                     purpose="bank_pincode"
                     accept=".xlsx,.csv"
@@ -211,14 +210,14 @@ export function ProfileEditor({ initial }: { initial: ProfileDetail }) {
                   )}
                   <div className="flex flex-wrap gap-1.5 text-xs">
                     {Object.entries(batch.preview.counts).map(([k, v]) => (
-                      <span key={k} className="rounded-lg bg-slate-100 px-2 py-1 text-slate-600">
-                        {k} <strong className="text-slate-900 tabular-nums">{v}</strong>
+                      <span key={k} className="rounded-lg bg-muted px-2 py-1 text-fg-2">
+                        {k} <strong className="text-foreground tabular-nums">{v}</strong>
                       </span>
                     ))}
                   </div>
                   {Object.entries(batch.preview.distinctFlagValues).map(([col, vals]) => (
-                    <p key={col} className="text-xs text-slate-600">
-                      <strong className="text-slate-900">{col}</strong>:{' '}
+                    <p key={col} className="text-xs text-fg-2">
+                      <strong className="text-foreground">{col}</strong>:{' '}
                       {Object.entries(vals)
                         .map(([v, n]) => `${v} (${n})`)
                         .join(', ')}
@@ -281,7 +280,7 @@ function BatchesTable({ rows, onExplore }: { rows: Batch[]; onExplore: (b: Batch
       cell: ({ row }) => (
         <>
           {formatDateTime(row.original.uploadedAt)}
-          <div className="text-[11px] text-slate-500">{row.original.uploader.fullName}</div>
+          <div className="text-2xs text-muted-foreground">{row.original.uploader.fullName}</div>
         </>
       ),
     }),
