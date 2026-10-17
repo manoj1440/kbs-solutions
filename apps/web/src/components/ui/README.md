@@ -11,7 +11,8 @@ Premium operations console: calm grey canvas, white elevated surfaces, teal prim
 6. Use `EmptyState` instead of "No … yet." table rows; `Callout` instead of ad-hoc coloured boxes.
 7. No new dependencies; icons from `lucide-react`; charts are the kit's SVG components (`TrendChart`, `Sparkline`, `MiniBars`, `Meter`). Exceptions: the shadcn `checkbox` primitive and TanStack Table v9 behind the common `DataTable` (ADR-014).
 8. Numbers: `tabular-nums`, right-aligned in tables.
-9. **Tokens only (F-814).** No `slate-*`, `bg-white`, hex, `text-[Npx]` or `shadow-[…]` in files you touch. Run `node test/tokenize.mjs <files>` first, then fix what it lists as "left".
+9. **Tokens only (F-814).** No `slate-*`, `bg-white`, hex or `shadow-[…]` in files you touch; text sizes are `text-2xs` (11) / `text-xs` (12) / `text-ui` (13) / `text-sm`+ — `text-[Npx]` only for display headings (15 px+) or glyphs inside marks. Run `node test/tokenize.mjs <files>` first, then fix what it lists as "left". New custom tokens must be added to `extendTailwindMerge` in `lib/utils.ts`.
+10. **No eyebrows** (uppercase kicker above a heading). `PageHeader` ignores `eyebrow`; the breadcrumb names the section.
 
 ## Tokens (F-814, `app/globals.css` `:root`)
 | Utility | Use |
@@ -43,6 +44,7 @@ Fonts: Inter (`font-sans`) and JetBrains Mono (`font-mono`) via `next/font` in `
 | `IconTile`, `TONE`, `humanize` | Building blocks. |
 | `DetailHeader` (F-814) | Detail pages: `back`, `visual`, `title` (the h1), `subtitle`, `meta`, `actions`, children = summary strip. No eyebrow. |
 | `RailCard` (F-814) | Right-rail / agenda list: `title`, `count`, linked `items`, `empty`, `footer`. |
+| `StatStrip` (F-814) | Wrap the `MiniStat` tiles of list pages: `cols` 3/4/5/6/8; grid from `sm`, swipeable row on phones. |
 | `StatCard` `delta` / `chart` (F-814) | Pass `<DeltaBadge current previous />` and `<Sparkline values label />`. |
 
 ## Data visuals (F-814)

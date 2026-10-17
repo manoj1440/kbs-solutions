@@ -121,11 +121,11 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 | P1 | Top bar + mobile drawer | all workspaces | DONE |
 | P2 | Dashboard API: previous period, trend, today (+ e2e) | `/dashboards/admin/*` | DONE |
 | P2 | Business overview | `/admin` | DONE |
-| P3 | Leads browser | `/admin/leads` (+ shared Manager browser) | TODO |
-| P3 | Lead detail | `/admin/leads/[id]`, `/manager/leads/[id]` | TODO |
-| P3 | Calling records + list detail/wizard | `/admin/calling-list`, `/admin/calling-list/[id]` | TODO |
-| P3 | Caller performance + telecaller drill-down | `/admin/calling-list/performance(/telecaller/[id])` | TODO |
-| P3 | Distribution | `/admin/calling-list/distribution(/telecaller/[id])` | TODO |
+| P3 | Leads browser | `/admin/leads` (+ shared Manager browser) | DONE |
+| P3 | Lead detail | `/admin/leads/[id]`, `/manager/leads/[id]` | DONE |
+| P3 | Calling records + list detail/wizard | `/admin/calling-list`, `/admin/calling-list/[id]` | DONE |
+| P3 | Caller performance + telecaller drill-down | `/admin/calling-list/performance(/telecaller/[id])` | DONE |
+| P3 | Distribution | `/admin/calling-list/distribution(/telecaller/[id])` — redirects only (F-808), no UI | DONE |
 | P4 | MIS records | `/admin/mis` | TODO |
 | P4 | MIS batch + profile + integrity | `/admin/mis/batches/[id]`, `/admin/mis/profiles/[id]`, `/admin/mis/integrity` | TODO |
 | P4 | Payout requests list (shared) | `/admin/payouts/requests`, `/manager/payouts/requests`, `/accounts` | TODO |
@@ -186,4 +186,10 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 - Session 19, P2 done. Commits: `feat(api): previous-period figures on /dashboards/admin/home` → `feat(api): admin trend and today endpoints` (shared `AdminTrendQuery`/`AdminTrendResponse`/`AdminTodayResponse`; e2e: trend buckets reconcile with home for the same range, weeks, ≤366 days, from ≤ to, Manager 403; today counts equal raw table counts, overdue follow-ups included, future ones excluded) → `feat(web): Admin home v2`.
 - Admin home decisions: the h1 is now the greeting ("Good afternoon, KBS Owner"; breadcrumb still says Business overview; `admin-smoke` updated). Trend window = the selected period when it spans ≥ 7 days, otherwise the 14 days ending with it (labelled). Deltas only when the period has from+to (always, via the picker). MIS rows to resolve sit at the top of the Today rail as a danger callout when > 0 (REQ-20.4: conflicts never hidden). The Today rail is Admin-only data; on phones it stacks after the business sections. Recent leads span the full width (the 6-column table clipped beside the rail).
 - P2 checks: api typecheck/lint, dashboards e2e 9/9; web typecheck/lint, unit 24/24, Playwright 73 passed / 1 skipped; `/admin` and `/admin?period=30d` at 1440 and 390 → overflow 0 (a 48 px phone overflow from the chart's sr-only `<table>` was found and fixed in the kit).
-- Next: P3 Sales & calling (leads browser, lead detail, calling records + wizard, caller performance + drill-down, distribution).
+- Session 19, P3 done. Commits: `feat(web): leads browser v2, StatStrip, type tokens` → `feat(web): lead detail v2` → `fix(web): tailwind-merge knows text-2xs/text-ui …` → `feat(web): calling records + import wizard on tokens; no eyebrows` → `feat(web): caller performance + telecaller drill-down v2`.
+- New kit pieces: `StatStrip` (tiles = grid from `sm`, one swipeable row on phones — U12); type tokens `text-2xs` (11 px) and `text-ui` (13 px), codemod maps 10–13.5 px. **Gotcha:** custom tokens must be registered in `lib/utils.ts` `extendTailwindMerge`, or `cn()` treats `text-ui` as a colour and drops it (it did, between `b30ed51` and `76aecaf`: sidebar labels fell back to 16 px).
+- `PageHeader` no longer renders `eyebrow` (U9, every page at once); `TelecallerActivity` lost its eyebrow prop (back link instead).
+- Lead detail: letters A–D dropped — REQ-11 §11.9 lists them as content groups, not labels; groups kept. Blank bank fields collapse behind a count; MIS history + payout full width (the 5-column history table clipped beside the side column). Shared by Admin and Manager.
+- Distribution routes are F-808 redirects — nothing to redesign.
+- P3 checks: web typecheck/lint clean; Playwright 72 passed / 1 skipped / 1 failed (phone `session.spec` "lapsed access cookie" — the known dev-server refresh race; the spec alone failed 2 then passed 6/6 on re-run; P3 touched no session code); 1440 + 390 sweeps of leads, lead detail, calling records, wizard, performance, Manager team calling + drill-down: overflow 0. `test/admin-layout-smoke.mjs` selector fixed ("All columns").
+- Next: P4 Bank MIS, payouts, Accounts.

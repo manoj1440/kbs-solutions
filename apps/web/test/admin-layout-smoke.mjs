@@ -68,7 +68,7 @@ globalThis.kbsAdminLayoutSmoke = async (page) => {
   }
   await page.getByRole('button', { name: 'Bank decision', exact: true }).click();
   check(await details.isVisible(), 'Sorting lost expanded details.');
-  await page.getByRole('button', { name: 'Full table view', exact: true }).click();
+  await page.getByRole('button', { name: 'All columns', exact: true }).click();
   check((await page.locator('table thead th').count()) === 13, 'Full table lost required fields.');
   check(
     (await details.locator('td').getAttribute('colspan')) === '13',
