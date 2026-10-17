@@ -34,7 +34,7 @@ const STEP: Record<'approved' | 'rejected' | 'pending' | 'none', { icon: LucideI
     cls: 'bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-300',
     text: 'pending',
   },
-  none: { icon: Minus, cls: 'bg-slate-100 text-slate-400', text: '—' },
+  none: { icon: Minus, cls: 'bg-muted text-fg-3', text: '—' },
 };
 
 /** Two-step approval trail (Manager → Admin) built from the row's approval records; text is always rendered. */
@@ -50,13 +50,13 @@ function ApprovalSteps({ row }: { row: PayoutRequestRow }) {
         const s = STEP[status];
         return (
           <li key={role} className="flex items-center gap-1.5">
-            {i > 0 ? <span className={cn('h-px w-3 sm:w-4', steps[0].status === 'approved' ? 'bg-emerald-300' : 'bg-slate-200')} aria-hidden="true" /> : null}
+            {i > 0 ? <span className={cn('h-px w-3 sm:w-4', steps[0].status === 'approved' ? 'bg-emerald-300' : 'bg-surface-strong')} aria-hidden="true" /> : null}
             <span className={cn('inline-flex size-5 shrink-0 items-center justify-center rounded-full', s.cls)} aria-hidden="true">
               <s.icon className="size-3" strokeWidth={3} />
             </span>
             <span className="leading-tight">
-              <span className="block text-[12px] font-medium text-slate-800">{humanize(role)}</span>
-              <span className="block text-[10.5px] text-slate-500">{s.text}</span>
+              <span className="block text-xs font-medium text-foreground">{humanize(role)}</span>
+              <span className="block text-2xs text-muted-foreground">{s.text}</span>
             </span>
           </li>
         );
@@ -77,7 +77,7 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
           <Link className="font-mono text-xs font-semibold" href={`${basePath}/${row.original.id}`}>
             {row.original.publicRef}
           </Link>
-          <div className="mt-0.5 text-[11px] text-slate-500">{row.original.itemCount} card event(s)</div>
+          <div className="mt-0.5 text-2xs text-muted-foreground">{row.original.itemCount} card event(s)</div>
         </>
       ),
     }),
@@ -87,13 +87,13 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
       cell: ({ row }) => (
         <div className="flex items-center gap-2.5">
           <Avatar name={row.original.advisor.fullName} size="sm" />
-          <span className="font-medium text-slate-800">{row.original.advisor.fullName}</span>
+          <span className="font-medium text-foreground">{row.original.advisor.fullName}</span>
         </div>
       ),
     }),
     c.accessor('totalAmountInr', {
       header: 'Amount',
-            cell: ({ getValue }) => <span className="text-[15px] font-semibold whitespace-nowrap text-slate-900 tabular-nums">{formatInr(getValue())}</span>,
+            cell: ({ getValue }) => <span className="text-[15px] font-semibold whitespace-nowrap text-foreground tabular-nums">{formatInr(getValue())}</span>,
     }),
     c.accessor('state', {
       header: 'State',
@@ -109,11 +109,11 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
             return (
               <>
                 {x.payment ? (
-                  <span className="text-slate-700">
+                  <span className="text-fg-2">
                     {humanize(x.payment.state)} · <span className="tabular-nums">{formatInr(x.payment.amountInr)}</span>
                   </span>
                 ) : x.state === 'APPROVED' ? (
-                  <span className="text-slate-500">Not yet recorded</span>
+                  <span className="text-muted-foreground">Not yet recorded</span>
                 ) : (
                   '—'
                 )}
@@ -136,7 +136,7 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
             return (
               <>
                 <ApprovalSteps row={x} />
-                {x.payment ? <div className="mt-1.5 text-[11px] text-slate-500">Payment {humanize(x.payment.state).toLowerCase()}</div> : null}
+                {x.payment ? <div className="mt-1.5 text-2xs text-muted-foreground">Payment {humanize(x.payment.state).toLowerCase()}</div> : null}
                 {x.correctionPending ? (
                   <Badge variant="warning" className="mt-1.5">
                     correction awaiting Admin
@@ -149,7 +149,7 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
     c.accessor('submittedAt', {
       header: 'Submitted',
       sortFn: 'datetime',
-      meta: { cellClassName: 'text-xs whitespace-nowrap text-slate-600' },
+      meta: { cellClassName: 'text-xs whitespace-nowrap text-fg-2' },
       cell: ({ getValue }) => formatDateTime(getValue()),
     }),
   ]);

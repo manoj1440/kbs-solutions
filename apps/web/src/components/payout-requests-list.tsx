@@ -1,9 +1,13 @@
 import { formatInr, payoutStateLabel } from '@kbs/shared';
+import { Filter } from 'lucide-react';
+import Form from 'next/form';
 
 import { DataTablePagination } from '@/components/data-table';
 import { PayoutRequestsTable, type PayoutRequestRow } from '@/components/payout-requests-table';
-import { MiniStat, PillNav } from '@/components/ui/kit';
+import { Button } from '@/components/ui/button';
+import { MiniStat, PillNav, selectClass, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface Queues {
   awaiting: { count: number; amountInr: number };
@@ -37,7 +41,8 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, mode = 'a
     for (const [k, v] of Object.entries({ ...sp, ...p })) if (v) q.set(k, v);
     return `${basePath}?${q.toString()}`;
   };
-  const active = sp.awaitingMe === 'true' ? `${basePath}?awaitingMe=true` : sp.queue === 'exceptions' ? `${basePath}?queue=exceptions` : `${basePath}${sp.state ? `?state=${sp.state}` : ''}`;
+  // F-814 U7: one row — queues as tabs, request state as a filter of "All requests"
+  const active = sp.awaitingMe === 'true' ? `${basePath}?awaitingMe=true` : sp.queue === 'exceptions' ? `${basePath}?queue=exceptions` : basePath;
   const filters = mode === 'accounts' || sp.queue ? (
     <PillNav
       label="Payment queues"
@@ -51,20 +56,35 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, mode = 'a
   ) : (
     <>
       <PillNav
-        label="My queues"
+        label="Payout request queues"
         active={active}
         items={[
           { href: `${basePath}?awaitingMe=true`, label: 'Awaiting my approval' },
+          { href: basePath, label: 'All requests' },
           { href: `${basePath}?queue=exceptions`, label: `Payment exceptions${queues ? ` (${queues.exceptions.count})` : ''}` },
         ]}
       />
-      <PillNav label="Payout request states" active={active} items={STATES.map((s) => ({ href: `${basePath}${s ? `?state=${s}` : ''}`, label: s ? payoutStateLabel(s) : 'All' }))} />
+      {active === basePath ? (
+        <Form action={basePath} className="ml-auto flex items-center gap-2">
+          <select aria-label="Request state" name="state" defaultValue={sp.state ?? ''} className={cn(selectClass, 'h-9 min-w-48')}>
+            {STATES.map((s) => (
+              <option key={s} value={s}>
+                {s ? payoutStateLabel(s) : 'Any state'}
+              </option>
+            ))}
+          </select>
+          <Button type="submit" size="sm" className="h-9">
+            <Filter />
+            Apply
+          </Button>
+        </Form>
+      ) : null}
     </>
   );
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">{title}</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+      <StatStrip cols={4}>
         {mode === 'accounts' ? (
           <>
             <MiniStat label="Awaiting payment" value={queues?.awaiting.count ?? '—'} hint={queues ? formatInr(queues.awaiting.amountInr) : 'unavailable'} tone="amber" />
@@ -80,9 +100,9 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, mode = 'a
             <MiniStat label="Correction awaiting Admin" value={corrections} hint={scope} tone={corrections ? 'rose' : 'slate'} />
           </>
         )}
-      </div>
-      <section aria-label="Payout requests" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 p-3">{filters}</div>
+      </StatStrip>
+      <section aria-label="Payout requests" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle p-3">{filters}</div>
         <div className="min-h-0 flex-1">
           <PayoutRequestsTable rows={r.data} basePath={basePath} mode={mode} />
         </div>
