@@ -1,4 +1,4 @@
-import { ArrowUpRight, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, ChevronRight, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
@@ -99,6 +99,8 @@ export function StatCard({
   tone = 'teal',
   href,
   emphasis,
+  delta,
+  chart,
   className,
 }: {
   label: React.ReactNode;
@@ -109,6 +111,10 @@ export function StatCard({
   tone?: Tone;
   href?: string;
   emphasis?: boolean;
+  /** F-814: change vs previous period, e.g. <DeltaBadge /> */
+  delta?: React.ReactNode;
+  /** F-814: recent history, e.g. <Sparkline /> */
+  chart?: React.ReactNode;
   className?: string;
 }) {
   const body = (
@@ -125,8 +131,12 @@ export function StatCard({
           )
         ) : null}
       </div>
-      <div className="mt-2 truncate text-2xl font-semibold tracking-tight tabular-nums sm:text-[28px] sm:leading-9">{value}</div>
+      <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="truncate text-2xl font-semibold tracking-tight tabular-nums sm:text-[28px] sm:leading-9">{value}</span>
+        {delta}
+      </div>
       {hint ? <p className={cn('mt-1 text-xs leading-relaxed', emphasis ? 'text-teal-50/90' : 'text-muted-foreground')}>{hint}</p> : null}
+      {chart ? <div className="mt-3">{chart}</div> : null}
       {source || href ? (
         <div
           className={cn(
@@ -143,9 +153,9 @@ export function StatCard({
   const cls = cn(
     'group relative min-w-0 overflow-hidden rounded-2xl border p-4 sm:p-5',
     emphasis
-      ? 'border-transparent bg-[linear-gradient(135deg,#0f766e_0%,#115e59_55%,#134e4a_100%)] text-white shadow-[0_12px_30px_-14px_rgb(15_118_110/70%)]'
-      : 'border-border bg-card shadow-[0_1px_2px_rgb(15_23_42/4%)]',
-    href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700',
+      ? 'border-transparent bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(175_77%_21%)_55%,hsl(var(--navy-2))_100%)] text-white shadow-pop'
+      : 'border-border bg-card shadow-card',
+    href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
     className,
   );
   return href ? (
@@ -187,7 +197,7 @@ export function SectionCard({
       id={id}
       data-slot="card"
       className={cn(
-        'min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)]',
+        'min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-card shadow-card',
         className,
       )}
     >
@@ -262,9 +272,9 @@ export function MiniStat({
     </>
   );
   const cls = cn(
-    'block min-w-0 rounded-xl border bg-card px-3 py-2 shadow-[0_1px_2px_rgb(15_23_42/4%)]',
-    active ? 'border-teal-600 ring-2 ring-teal-600/15' : 'border-border',
-    href && 'transition-colors hover:border-border-strong hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700',
+    'block min-w-0 rounded-xl border bg-card px-3 py-2 shadow-card',
+    active ? 'border-primary ring-2 ring-primary/15' : 'border-border',
+    href && 'transition-colors hover:border-border-strong hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
   );
   return href ? (
     <Link href={href} prefetch={false} title={hint} aria-current={active ? 'true' : undefined} className={cls}>
@@ -291,7 +301,7 @@ export function PillNav({
 }) {
   return (
     <nav aria-label={label} className={cn('-mx-1 overflow-x-auto px-1 pb-1', className)}>
-      <div className="inline-flex min-w-max gap-1 rounded-xl border border-border bg-card p-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+      <div className="inline-flex min-w-max gap-1 rounded-xl border border-border bg-card p-1 shadow-card">
         {items.map(({ href, label: text, count, icon: Icon }) => {
           const on = href === active;
           return (
@@ -301,7 +311,7 @@ export function PillNav({
               prefetch={false}
               aria-current={on ? 'page' : undefined}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-teal-700',
+                'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-ring',
                 on ? 'bg-foreground text-background shadow-sm' : 'text-fg-2 hover:bg-muted hover:text-foreground',
               )}
             >
@@ -478,3 +488,109 @@ export function Field({ label, htmlFor, hint, children, className }: { label: Re
 
 /** The class a native <select> should carry to match Input. */
 export const selectClass = 'h-10 w-full min-w-0 rounded-lg border border-border bg-card px-3 text-sm text-foreground';
+
+/** F-814 detail-page identity (U14): back link, visual, the page's single h1, subtitle, meta chips, actions, optional summary strip. No eyebrow. */
+export function DetailHeader({
+  back,
+  visual,
+  title,
+  subtitle,
+  meta,
+  actions,
+  children,
+}: {
+  back?: { href: string; label: string };
+  visual?: React.ReactNode;
+  title: React.ReactNode;
+  subtitle?: React.ReactNode;
+  meta?: React.ReactNode;
+  actions?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <header className="grid gap-4">
+      {back ? (
+        <Link href={back.href} prefetch={false} className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-3.5" aria-hidden="true" />
+          {back.label}
+        </Link>
+      ) : null}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          {visual}
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight text-balance text-foreground sm:text-[28px] sm:leading-9">{title}</h1>
+            {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
+          </div>
+        </div>
+        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      </div>
+      {meta ? <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">{meta}</div> : null}
+      {children}
+    </header>
+  );
+}
+
+/** F-814 right-rail card (Today / agenda): count in the title, short linked rows, one footer link. */
+export function RailCard({
+  title,
+  icon,
+  tone = 'slate',
+  count,
+  items,
+  empty,
+  footer,
+}: {
+  title: string;
+  icon?: LucideIcon;
+  tone?: Tone;
+  count?: number | null;
+  items: { key: string; href?: string; title: React.ReactNode; meta?: React.ReactNode; aside?: React.ReactNode }[];
+  empty: string;
+  footer?: { href: string; label: string };
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-card shadow-card">
+      <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
+        {icon ? <IconTile icon={icon} tone={tone} size="sm" /> : null}
+        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{title}</h2>
+        {count != null ? <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums', count ? TONE[tone].tile : 'bg-muted text-muted-foreground')}>{count}</span> : null}
+      </div>
+      {items.length ? (
+        <ul className="divide-y divide-border-subtle border-t border-border-subtle">
+          {items.map((it) => {
+            const row = (
+              <>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-medium text-foreground">{it.title}</span>
+                  {it.meta ? <span className="block truncate text-xs text-muted-foreground">{it.meta}</span> : null}
+                </span>
+                {it.aside ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{it.aside}</span> : null}
+                {it.href ? <ChevronRight className="size-4 shrink-0 text-fg-3" aria-hidden="true" /> : null}
+              </>
+            );
+            return (
+              <li key={it.key}>
+                {it.href ? (
+                  <Link href={it.href} prefetch={false} className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring">
+                    {row}
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-3 px-4 py-2.5">{row}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="border-t border-border-subtle px-4 py-4 text-xs text-muted-foreground">{empty}</p>
+      )}
+      {footer ? (
+        <Link href={footer.href} prefetch={false} className="flex items-center justify-between border-t border-border-subtle px-4 py-2.5 text-xs font-semibold text-primary hover:bg-surface-muted">
+          {footer.label}
+          <ArrowUpRight className="size-3.5" aria-hidden="true" />
+        </Link>
+      ) : null}
+    </section>
+  );
+}
