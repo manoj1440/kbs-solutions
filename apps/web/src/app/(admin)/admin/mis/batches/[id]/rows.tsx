@@ -73,7 +73,7 @@ export function BatchRows({ batchId, stage }: { batchId: string; stage: string }
           </Button>
           {stage !== 'APPLIED' && stage !== 'REJECTED' ? (
             <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
-              <Input className="h-9 min-w-0 flex-1 text-[13px] sm:w-56 sm:flex-none" placeholder="reject reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+              <Input className="h-9 min-w-0 flex-1 text-ui sm:w-56 sm:flex-none" placeholder="reject reason" value={reason} onChange={(e) => setReason(e.target.value)} />
               <Button
                 size="sm"
                 variant="destructive"
@@ -103,20 +103,20 @@ export function BatchRows({ batchId, stage }: { batchId: string; stage: string }
 }
 
 const c = columnHelper<Row>();
-const BLANK = <em className="text-slate-400">blank</em>;
+const BLANK = <em className="text-fg-3">blank</em>;
 
 function BatchRowsTable({ rows, reload }: { rows: Row[]; reload: () => void }) {
   const columns = c.columns([
     c.accessor('sourceRowNumber', {
       header: 'Row',
-      meta: { cellClassName: 'text-xs text-slate-500' },
+      meta: { cellClassName: 'text-xs text-muted-foreground' },
     }),
     c.accessor('matchState', {
       header: 'State',
       cell: ({ row }) => (
         <>
           <Badge variant={STATE[row.original.matchState] ?? 'unknown'}>{humanize(row.original.matchState)}</Badge>
-          {row.original.matchedLead ? <div className="mt-1 font-mono text-[11px] whitespace-nowrap text-slate-600">{row.original.matchedLead.publicRef}</div> : null}
+          {row.original.matchedLead ? <div className="mt-1 font-mono text-2xs whitespace-nowrap text-fg-2">{row.original.matchedLead.publicRef}</div> : null}
         </>
       ),
     }),
@@ -127,8 +127,8 @@ function BatchRowsTable({ rows, reload }: { rows: Row[]; reload: () => void }) {
         row.original.referenceValues.length ? (
           <div className="grid gap-1">
             {row.original.referenceValues.map((x) => (
-              <span key={`${x.kind}-${x.value}`} className="min-w-0 font-mono text-[11px] text-slate-700">
-                <span className="block text-[10px] text-slate-400">{x.kind.replace('APPLICATION_', 'APP ').replace('_', ' ')}:</span>
+              <span key={`${x.kind}-${x.value}`} className="min-w-0 font-mono text-2xs text-fg-2">
+                <span className="block text-2xs text-fg-3">{x.kind.replace('APPLICATION_', 'APP ').replace('_', ' ')}:</span>
                 <span className="break-all">{x.value}</span>
               </span>
             ))}
@@ -137,14 +137,14 @@ function BatchRowsTable({ rows, reload }: { rows: Row[]; reload: () => void }) {
           '—'
         ),
     }),
-    c.accessor((r) => r.mapped.currentStage, { id: 'stage', header: 'Stage', meta: { cellClassName: 'text-xs text-slate-800' }, cell: ({ row }) => row.original.mapped.currentStage || BLANK }),
-    c.accessor((r) => r.mapped.finalDecision, { id: 'decision', header: 'Decision', meta: { cellClassName: 'text-xs text-slate-800' }, cell: ({ row }) => row.original.mapped.finalDecision || BLANK }),
-    c.accessor((r) => r.mapped.cardActivationStatus, { id: 'activation', header: 'Activation', meta: { cellClassName: 'text-xs text-slate-800' }, cell: ({ row }) => row.original.mapped.cardActivationStatus || BLANK }),
+    c.accessor((r) => r.mapped.currentStage, { id: 'stage', header: 'Stage', meta: { cellClassName: 'text-xs text-foreground' }, cell: ({ row }) => row.original.mapped.currentStage || BLANK }),
+    c.accessor((r) => r.mapped.finalDecision, { id: 'decision', header: 'Decision', meta: { cellClassName: 'text-xs text-foreground' }, cell: ({ row }) => row.original.mapped.finalDecision || BLANK }),
+    c.accessor((r) => r.mapped.cardActivationStatus, { id: 'activation', header: 'Activation', meta: { cellClassName: 'text-xs text-foreground' }, cell: ({ row }) => row.original.mapped.cardActivationStatus || BLANK }),
     c.accessor((r) => r.mapped.customerName, { id: 'customer', header: 'Customer', meta: { cellClassName: 'text-xs' } }),
     c.display({
       id: 'explanation',
       header: 'Explanation',
-      meta: { cellClassName: 'text-xs text-slate-500' },
+      meta: { cellClassName: 'text-xs text-muted-foreground' },
       cell: ({ row }) => (
         <>
           {row.original.matchExplanation}

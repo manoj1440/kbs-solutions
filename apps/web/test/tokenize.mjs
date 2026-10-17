@@ -6,6 +6,10 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const shade = (s) => Number(s);
 const map = [
   [/\bbg-white\b(?!\/)/g, () => 'bg-card'],
+  [/\bshadow-\[[^\]\s"']*rgb\(15_23_42[^\]\s"']*\]/g, (m) => (/^shadow-\[0_1px_2px/.test(m) ? 'shadow-card' : 'shadow-pop')],
+  [/\bbackdrop:bg-slate-9\d0\/\d+\b/g, () => 'backdrop:bg-navy/50'],
+  [/\bbg-slate-300\b/g, () => 'bg-border-strong'],
+  [/\bbg-slate-400\b/g, () => 'bg-fg-3'],
   [/\bbg-slate-(50)(?:\/\d+)?\b/g, () => 'bg-surface-muted'],
   [/\bbg-slate-(100)(?:\/\d+)?\b/g, () => 'bg-muted'],
   [/\bbg-slate-(200)(?:\/\d+)?\b/g, () => 'bg-surface-strong'],

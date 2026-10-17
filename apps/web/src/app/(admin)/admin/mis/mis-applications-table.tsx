@@ -29,7 +29,7 @@ export interface MisApplication {
 
 /** Bank values render verbatim (INV-02/03); only the tone is guessed for the badge. */
 const statusBadge = (v: string | null) => {
-  if (!v) return <span className="text-xs text-slate-400">—</span>;
+  if (!v) return <span className="text-xs text-fg-3">—</span>;
   const low = v.toLowerCase();
   const variant = low.includes('approv') || (low.includes('active') && !low.includes('inactiv')) ? 'success' : low.includes('declin') || low.includes('reject') || low.includes('inactiv') ? 'destructive' : 'info';
   return <Badge variant={variant as 'success' | 'destructive' | 'info'}>{v}</Badge>;
@@ -46,7 +46,7 @@ const columns = c.columns([
           {row.original.applicationNo ?? row.original.applicationReferenceNumber ?? row.original.leadRef}
         </Link>
         {row.original.applicationReferenceNumber && row.original.applicationNo ? (
-          <div className="mt-0.5 font-mono text-[11px] text-slate-500">{row.original.applicationReferenceNumber}</div>
+          <div className="mt-0.5 font-mono text-2xs text-muted-foreground">{row.original.applicationReferenceNumber}</div>
         ) : null}
       </>
     ),
@@ -61,8 +61,8 @@ const columns = c.columns([
     meta: { cellClassName: 'text-xs' },
     cell: ({ row }) => (
       <>
-        <div className="font-medium text-slate-800">{row.original.customer}</div>
-        <div className="mt-0.5 text-slate-500">
+        <div className="font-medium text-foreground">{row.original.customer}</div>
+        <div className="mt-0.5 text-muted-foreground">
           {row.original.leadRef} · {row.original.mobileMasked ?? '—'} · {row.original.pincode}
         </div>
       </>
@@ -75,15 +75,15 @@ const columns = c.columns([
     cell: ({ row }) => (
       <>
         <div className="font-mono">{row.original.productCode ?? '—'}</div>
-        {row.original.productDescription ? <div className="mt-0.5 max-w-40 truncate text-slate-500">{row.original.productDescription}</div> : null}
+        {row.original.productDescription ? <div className="mt-0.5 max-w-40 truncate text-muted-foreground">{row.original.productDescription}</div> : null}
       </>
     ),
   }),
   c.accessor((r) => r.currentStage ?? '', {
     id: 'stage',
     header: 'Stage',
-    meta: { cellClassName: 'text-xs font-medium text-slate-700' },
-    cell: ({ getValue }) => getValue() || <span className="text-slate-400">—</span>,
+    meta: { cellClassName: 'text-xs font-medium text-fg-2' },
+    cell: ({ getValue }) => getValue() || <span className="text-fg-3">—</span>,
   }),
   c.accessor((r) => r.finalDecision ?? '', {
     id: 'decision',
@@ -100,8 +100,8 @@ const columns = c.columns([
     sortFn: 'datetime',
     cell: ({ row }) => (
       <>
-        <div className="text-xs text-slate-700">{formatDateTime(row.original.reportedAt)}</div>
-        <Link href={`/admin/mis/batches/${row.original.batchId}`} className="mt-0.5 block font-mono text-[11px] text-slate-500 hover:text-teal-700 hover:underline">
+        <div className="text-xs text-fg-2">{formatDateTime(row.original.reportedAt)}</div>
+        <Link href={`/admin/mis/batches/${row.original.batchId}`} className="mt-0.5 block font-mono text-2xs text-muted-foreground hover:text-teal-700 hover:underline">
           {row.original.batchRef}
         </Link>
       </>

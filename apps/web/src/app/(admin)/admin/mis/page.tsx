@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { DataTablePagination, DataTablePanel } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import { humanize, MiniStat, selectClass } from '@/components/ui/kit';
+import { humanize, MiniStat, selectClass, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -95,14 +95,14 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
           ))}
         </div>
       ) : null}
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+      <StatStrip cols={6}>
         <MiniStat label="Applications reported" value={summary.total.toLocaleString('en-IN')} hint="Latest bank-reported state per application" tone="sky" />
         <MiniStat label="Approved" value={summary.approved} hint="Bank decision = approved" tone="emerald" />
         <MiniStat label="Declined" value={summary.declined} hint="Bank decision = declined/rejected" tone="rose" />
         <MiniStat label="In process" value={summary.inProcess} hint="Decision reported, not final" tone="amber" />
         <MiniStat label="Cards active" value={summary.cardsActive} hint={`${summary.cardsInactive} reported inactive`} tone="teal" />
         <MiniStat label="Not reported" value={summary.decisionBlank} hint={`No decision · ${summary.activationBlank} no activation`} tone="slate" />
-      </div>
+      </StatStrip>
 
       <DataTablePanel
         label="Bank MIS applications"

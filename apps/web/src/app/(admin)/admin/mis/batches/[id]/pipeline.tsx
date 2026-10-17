@@ -66,9 +66,9 @@ function JobProgress({ batchId, job, onDone }: { batchId: string; job: MisJob; o
           <Loader2 className="size-4 animate-spin text-sky-600" aria-hidden="true" />
           {what} running in the background · {PHASE[p?.phase ?? 'queued'] ?? p?.phase}
         </span>
-        <span className="text-[13px] tabular-nums">{p ? `${p.done.toLocaleString('en-IN')} / ${p.total.toLocaleString('en-IN')}` : ''}</span>
+        <span className="text-ui tabular-nums">{p ? `${p.done.toLocaleString('en-IN')} / ${p.total.toLocaleString('en-IN')}` : ''}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-white ring-1 ring-sky-100">
+      <div className="h-2 overflow-hidden rounded-full bg-card ring-1 ring-sky-100">
         <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs text-sky-900/80">You can leave this page; you will get a notification when it finishes.</span>
@@ -80,12 +80,12 @@ const TOTAL_TONE = (k: string): Tone => (k === 'MATCHED' ? 'emerald' : k === 'CO
 
 function Tile({ label, value, tone, children }: { label: string; value: React.ReactNode; tone: Tone; children?: React.ReactNode }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200/80 bg-white px-3.5 py-3">
-      <div className="flex items-center gap-1.5 text-[11.5px] font-medium text-slate-600">
+    <div className="min-w-0 rounded-xl border border-border bg-card px-3.5 py-3">
+      <div className="flex items-center gap-1.5 text-2xs font-medium text-fg-2">
         <span className={cn('size-2 rounded-full', TONE[tone].bar)} aria-hidden="true" />
         {label}
       </div>
-      <div className="mt-1 text-xl font-semibold tracking-tight text-slate-900 tabular-nums">{value}</div>
+      <div className="mt-1 text-xl font-semibold tracking-tight text-foreground tabular-nums">{value}</div>
       {children}
     </div>
   );
@@ -149,7 +149,7 @@ export function PipelineActions({ batchId, stage, report, totals, profileId, job
           />
         ) : null}
         {msg ? (
-          <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          <p role="status" className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm text-fg-2">
             {msg}
           </p>
         ) : null}
@@ -159,10 +159,10 @@ export function PipelineActions({ batchId, stage, report, totals, profileId, job
           </Callout>
         ) : null}
         {report ? (
-          <div className="grid gap-4 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
+          <div className="grid gap-4 rounded-xl border border-border bg-surface-muted p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-sm font-semibold text-slate-900">Preview report</p>
-              <p className="text-xs text-slate-500">Generated {formatDateTime(report.generatedAt)}. Customer names are masked in this report.</p>
+              <p className="text-sm font-semibold text-foreground">Preview report</p>
+              <p className="text-xs text-muted-foreground">Generated {formatDateTime(report.generatedAt)}. Customer names are masked in this report.</p>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               {Object.entries(report.totals).map(([k, v]) => (
@@ -192,9 +192,9 @@ export function PipelineActions({ batchId, stage, report, totals, profileId, job
                 </div>
                 {Object.entries(report.newValues).map(([f, vals]) => (
                   <div key={f} className="flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="font-mono font-semibold text-slate-700">{f}</span>
+                    <span className="font-mono font-semibold text-fg-2">{f}</span>
                     {vals.map((v) => (
-                      <span key={v} className="rounded-md bg-white px-1.5 py-0.5 text-slate-800 ring-1 ring-amber-200">
+                      <span key={v} className="rounded-md bg-card px-1.5 py-0.5 text-foreground ring-1 ring-amber-200">
                         {v}
                       </span>
                     ))}
@@ -204,12 +204,12 @@ export function PipelineActions({ batchId, stage, report, totals, profileId, job
             ) : null}
             {Object.keys(report.blankStatusCounts).length ? (
               <div className="grid gap-1.5">
-                <p className="text-xs font-semibold text-slate-700">Blank / not reported:</p>
+                <p className="text-xs font-semibold text-fg-2">Blank / not reported:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.entries(report.blankStatusCounts).map(([f, n]) => (
-                    <span key={f} className="inline-flex items-center gap-1 rounded-md bg-white px-1.5 py-0.5 text-[11px] text-slate-600 ring-1 ring-slate-200">
+                    <span key={f} className="inline-flex items-center gap-1 rounded-md bg-card px-1.5 py-0.5 text-2xs text-fg-2 ring-1 ring-border">
                       <span className="font-mono">{f}</span>
-                      <span className="font-semibold text-slate-900 tabular-nums">{n}</span>
+                      <span className="font-semibold text-foreground tabular-nums">{n}</span>
                     </span>
                   ))}
                 </div>
@@ -217,10 +217,10 @@ export function PipelineActions({ batchId, stage, report, totals, profileId, job
             ) : null}
             {report.duplicateReferences.length ? (
               <div className="grid gap-1.5">
-                <p className="text-xs font-semibold text-slate-700">Duplicate references:</p>
+                <p className="text-xs font-semibold text-fg-2">Duplicate references:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {report.duplicateReferences.map((d) => (
-                    <span key={d.reference} className="rounded-md bg-white px-1.5 py-0.5 font-mono text-[11px] text-slate-700 ring-1 ring-slate-200">
+                    <span key={d.reference} className="rounded-md bg-card px-1.5 py-0.5 font-mono text-2xs text-fg-2 ring-1 ring-border">
                       {d.reference} ×{d.rows}
                     </span>
                   ))}
@@ -230,14 +230,14 @@ export function PipelineActions({ batchId, stage, report, totals, profileId, job
             {(['conflicts', 'unmatched'] as const).map((k) =>
               report.samples[k]?.length ? (
                 <div key={k} className="grid gap-1.5">
-                  <p className="text-xs font-semibold text-slate-700 capitalize">{k} (sample)</p>
+                  <p className="text-xs font-semibold text-fg-2 capitalize">{k} (sample)</p>
                   <ul className="grid gap-1.5">
                     {report.samples[k].map((s) => (
-                      <li key={s.row} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-slate-200">
-                        <span className="font-semibold text-slate-900 tabular-nums">row {s.row}</span>
-                        <span className="text-slate-600">{s.customer}</span>
-                        <span className="font-mono break-all text-slate-700">{s.references.map((r) => `${r.kind}=${r.value}`).join(', ')}</span>
-                        <span className="text-slate-500">{s.explanation}</span>
+                      <li key={s.row} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 rounded-lg bg-card px-3 py-2 text-xs ring-1 ring-border">
+                        <span className="font-semibold text-foreground tabular-nums">row {s.row}</span>
+                        <span className="text-fg-2">{s.customer}</span>
+                        <span className="font-mono break-all text-fg-2">{s.references.map((r) => `${r.kind}=${r.value}`).join(', ')}</span>
+                        <span className="text-muted-foreground">{s.explanation}</span>
                       </li>
                     ))}
                   </ul>

@@ -1,15 +1,14 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
-import { ArrowLeft, BadgeCheck, BookCheck, Columns3, FileSpreadsheet, Info, KeyRound, Layers, Lock, Save } from 'lucide-react';
-import Link from 'next/link';
+import { BadgeCheck, BookCheck, Columns3, FileSpreadsheet, Info, KeyRound, Layers, Lock, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BankMark, Callout, EmptyState, Field, humanize, PageHeader, SectionCard, selectClass, StatCard, StatGrid } from '@/components/ui/kit';
+import { BankMark, Callout, DetailHeader, EmptyState, Field, humanize, IconTile, SectionCard, selectClass, StatCard, StatGrid } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
@@ -65,18 +64,18 @@ export function MisProfileEditor({ initial }: { initial: MisProfile }) {
   const mappedCount = allFields.filter((f) => (fieldMap[f] ?? '').trim()).length;
   const known = Object.entries(p.knownValues ?? {});
   const knownCount = known.reduce((n, [, v]) => n + v.length, 0);
-  const area = 'min-h-20 w-full rounded-lg border border-slate-200 bg-white p-2.5 font-mono text-xs text-slate-900 disabled:bg-slate-50 disabled:text-slate-500';
+  const area = 'min-h-20 w-full rounded-lg border border-border bg-card p-2.5 font-mono text-xs text-foreground disabled:bg-surface-muted disabled:text-muted-foreground';
   return (
     <div className="grid gap-6">
-      <PageHeader
-        icon={FileSpreadsheet}
-        eyebrow="Bank MIS"
+      <DetailHeader
+        back={{ href: "/admin/mis", label: 'MIS imports' }}
+        visual={<IconTile icon={FileSpreadsheet} tone="indigo" size="lg" className="hidden sm:inline-flex" />}
         title={
           <>
             {p.bank.displayName} — {p.name}
           </>
         }
-        description="MIS import profile: how this bank's workbook headers map to KBS fields, which references identify a lead, and how blanks and dates are read."
+        subtitle="MIS import profile: how this bank's workbook headers map to KBS fields, which references identify a lead, and how blanks and dates are read."
         meta={
           <>
             <BankMark code={p.bank.code} size="sm" />
@@ -87,14 +86,6 @@ export function MisProfileEditor({ initial }: { initial: MisProfile }) {
             <span>· {p.timezone}</span>
           </>
         }
-        actions={
-          <Button variant="outline" asChild>
-            <Link href="/admin/mis">
-              <ArrowLeft />
-              MIS imports
-            </Link>
-          </Button>
-        }
       >
         <StatGrid>
           <StatCard label="Mapped fields" value={`${mappedCount} / ${allFields.length}`} hint="Internal fields with a bank header" icon={Columns3} tone="indigo" />
@@ -102,7 +93,7 @@ export function MisProfileEditor({ initial }: { initial: MisProfile }) {
           <StatCard label="Known values" value={knownCount} hint={`Across ${known.length} field${known.length === 1 ? '' : 's'}`} icon={BookCheck} tone="violet" />
           <StatCard label="Snapshot mode" value={humanize(p.snapshotMode)} hint={p.blankOverwrites ? 'Blank cells overwrite earlier values' : 'Blank = "Not reported"'} icon={Layers} tone="sky" />
         </StatGrid>
-      </PageHeader>
+      </DetailHeader>
       {msg ? (
         <Callout tone="neutral" icon={Info} role="status">
           {msg}
@@ -121,19 +112,19 @@ export function MisProfileEditor({ initial }: { initial: MisProfile }) {
           description="Internal field → header exactly as the bank writes it (misspellings included). Unmapped columns are still kept in raw."
           flush
         >
-          <div className="grid border-t border-slate-100 bg-slate-50/70 px-5 py-2 text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:grid-cols-[13rem_minmax(0,1fr)] sm:gap-3 sm:px-6">
+          <div className="grid border-t border-border-subtle bg-surface-muted px-5 py-2 text-2xs font-semibold tracking-wide text-muted-foreground uppercase sm:grid-cols-[13rem_minmax(0,1fr)] sm:gap-3 sm:px-6">
             <span>Internal field</span>
             <span className="hidden sm:block">Bank header</span>
           </div>
-          <ul className="divide-y divide-slate-100 border-t border-slate-100">
+          <ul className="divide-y divide-border-subtle border-t border-border-subtle">
             {allFields.map((f) => {
               const on = Boolean((fieldMap[f] ?? '').trim());
               return (
                 <li key={f} className="grid items-center gap-1.5 px-5 py-2.5 sm:grid-cols-[13rem_minmax(0,1fr)] sm:gap-3 sm:px-6">
-                  <label htmlFor={`fm-${f}`} className="flex min-w-0 items-center gap-2 text-xs font-medium text-slate-700">
-                    <span className={cn('size-1.5 shrink-0 rounded-full', on ? 'bg-teal-500' : 'bg-slate-300')} aria-hidden="true" />
+                  <label htmlFor={`fm-${f}`} className="flex min-w-0 items-center gap-2 text-xs font-medium text-fg-2">
+                    <span className={cn('size-1.5 shrink-0 rounded-full', on ? 'bg-teal-500' : 'bg-border-strong')} aria-hidden="true" />
                     <span className="min-w-0 font-mono break-all">{f}</span>
-                    {p.internalFields.date.includes(f) ? <span className="shrink-0 rounded bg-sky-50 px-1 py-px text-[10px] font-semibold text-sky-700 ring-1 ring-sky-100"> (date)</span> : ''}
+                    {p.internalFields.date.includes(f) ? <span className="shrink-0 rounded bg-sky-50 px-1 py-px text-2xs font-semibold text-sky-700 ring-1 ring-sky-100"> (date)</span> : ''}
                   </label>
                   <Input id={`fm-${f}`} disabled={readOnly} className="h-8 text-xs" placeholder="not mapped" value={fieldMap[f] ?? ''} onChange={(e) => setFieldMap({ ...fieldMap, [f]: e.target.value })} />
                 </li>
@@ -167,14 +158,14 @@ export function MisProfileEditor({ initial }: { initial: MisProfile }) {
                   <Input id="ptz" disabled={readOnly} value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} />
                 </Field>
               </div>
-              <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+              <label className="flex items-start gap-2.5 rounded-lg border border-border bg-surface-muted px-3 py-2.5 text-sm text-fg-2">
                 <input type="checkbox" className="mt-0.5 size-4 accent-teal-700" disabled={readOnly} checked={form.blankOverwrites} onChange={(e) => setForm({ ...form, blankOverwrites: e.target.checked })} />
                 Blank cells overwrite earlier values (default off: blank = &quot;Not reported&quot;)
               </label>
               <Field label="Date formats (one per line)" htmlFor="pdates">
                 <textarea id="pdates" disabled={readOnly} className={area} value={form.dateFormats} onChange={(e) => setForm({ ...form, dateFormats: e.target.value })} />
               </Field>
-              <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+              <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-4">
                 <Button disabled={readOnly} onClick={save}>
                   <Save />
                   {p.status === 'APPROVED' ? 'Save as new version' : 'Save'}
@@ -209,10 +200,10 @@ export function MisProfileEditor({ initial }: { initial: MisProfile }) {
               <div className="grid gap-3">
                 {known.map(([f, vals]) => (
                   <div key={f} className="grid gap-1.5">
-                    <p className="font-mono text-xs font-semibold text-slate-700">{f}</p>
+                    <p className="font-mono text-xs font-semibold text-fg-2">{f}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {vals.map((v) => (
-                        <span key={v} className="rounded-md bg-slate-50 px-1.5 py-0.5 text-xs text-slate-800 ring-1 ring-slate-200">
+                        <span key={v} className="rounded-md bg-surface-muted px-1.5 py-0.5 text-xs text-foreground ring-1 ring-border">
                           {v}
                         </span>
                       ))}

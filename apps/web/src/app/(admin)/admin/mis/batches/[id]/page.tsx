@@ -1,10 +1,9 @@
 import { formatDateTime } from '@kbs/shared';
-import { ArrowLeft, Ban, Check, Copy, FileSpreadsheet, Fingerprint, Info, Link2Off, Rows3, ScanLine, TriangleAlert, X } from 'lucide-react';
+import { Ban, Check, Copy, FileSpreadsheet, Fingerprint, Info, Link2Off, Rows3, ScanLine, TriangleAlert, X } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar, BankMark, Callout, humanize, PageHeader, SectionCard, StatCard, StatGrid } from '@/components/ui/kit';
+import { Avatar, BankMark, Callout, DetailHeader, humanize, IconTile, SectionCard, StatCard, StatGrid } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -72,28 +71,28 @@ function Stepper({ stage }: { stage: string }) {
             className={cn(
               'relative flex min-w-0 items-start gap-3 sm:flex-col sm:gap-2',
               'after:absolute after:rounded-full last:after:hidden max-sm:after:top-9 max-sm:after:-bottom-3 max-sm:after:left-[15px] max-sm:after:w-0.5 sm:after:top-[15px] sm:after:-right-1.5 sm:after:left-10 sm:after:h-0.5',
-              st === 'done' ? 'after:bg-teal-500' : 'after:bg-slate-200',
+              st === 'done' ? 'after:bg-teal-500' : 'after:bg-surface-strong',
             )}
           >
             <span
               className={cn(
                 'relative z-10 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums [&>svg]:size-4',
                 st === 'done' && 'bg-teal-600 text-white shadow-sm',
-                st === 'next' && 'bg-white text-teal-700 ring-2 ring-teal-600',
+                st === 'next' && 'bg-card text-teal-700 ring-2 ring-teal-600',
                 st === 'running' && 'bg-sky-50 text-sky-700 ring-2 ring-sky-500',
                 st === 'failed' && 'bg-rose-600 text-white shadow-sm',
-                st === 'rejected' && 'bg-slate-700 text-white shadow-sm',
-                (st === 'todo' || st === 'stopped') && 'bg-slate-100 text-slate-400 ring-1 ring-slate-200',
+                st === 'rejected' && 'bg-fg-2 text-white shadow-sm',
+                (st === 'todo' || st === 'stopped') && 'bg-muted text-fg-3 ring-1 ring-border',
               )}
             >
               {st === 'done' ? <Check aria-hidden="true" /> : st === 'failed' ? <X aria-hidden="true" /> : st === 'rejected' ? <Ban aria-hidden="true" /> : i + 1}
             </span>
             <div className="min-w-0">
-              <p className={cn('text-[13px] leading-5 font-semibold', st === 'todo' || st === 'stopped' ? 'text-slate-500' : 'text-slate-900')}>{label}</p>
+              <p className={cn('text-ui leading-5 font-semibold', st === 'todo' || st === 'stopped' ? 'text-muted-foreground' : 'text-foreground')}>{label}</p>
               <p
                 className={cn(
-                  'text-[11px] leading-4',
-                  st === 'next' ? 'font-semibold text-teal-700' : st === 'running' ? 'font-semibold text-sky-700' : st === 'failed' ? 'font-semibold text-rose-700' : st === 'rejected' ? 'font-semibold text-slate-700' : 'text-slate-500',
+                  'text-2xs leading-4',
+                  st === 'next' ? 'font-semibold text-teal-700' : st === 'running' ? 'font-semibold text-sky-700' : st === 'failed' ? 'font-semibold text-rose-700' : st === 'rejected' ? 'font-semibold text-fg-2' : 'text-muted-foreground',
                 )}
               >
                 {st === 'done' || st === 'todo' || st === 'stopped' ? s.hint : STEP_TEXT[st]}
@@ -114,11 +113,11 @@ export default async function MisBatchPage({ params }: { params: Promise<{ id: s
   const totals = (b.totals ?? {}) as { rows?: number; unique?: number; duplicateRows?: number; invalid?: number; missingHeaders?: string[]; unmappedColumns?: string[] };
   return (
     <div className="grid gap-6">
-      <PageHeader
-        icon={FileSpreadsheet}
-        eyebrow="Bank MIS"
+      <DetailHeader
+        back={{ href: '/admin/mis', label: 'MIS imports' }}
+        visual={<IconTile icon={FileSpreadsheet} tone="indigo" size="lg" className="hidden sm:inline-flex" />}
         title={`MIS batch ${b.publicRef}`}
-        description={`${b.bank.displayName} · ${b.profile.name} v${b.profile.version}`}
+        subtitle={`${b.bank.displayName} · ${b.profile.name} v${b.profile.version}`}
         meta={
           <>
             <Badge variant={STAGE_TONE[b.stage] ?? 'unknown'}>{humanize(b.stage)}</Badge>
@@ -126,59 +125,51 @@ export default async function MisBatchPage({ params }: { params: Promise<{ id: s
             {b.appliedAt ? <span>· Applied {formatDateTime(b.appliedAt)}</span> : null}
           </>
         }
-        actions={
-          <Button variant="outline" asChild>
-            <Link href="/admin/mis">
-              <ArrowLeft />
-              MIS imports
-            </Link>
-          </Button>
-        }
       >
-        <section aria-label="Batch summary" className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)]">
+        <section aria-label="Batch summary" className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
           <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)] lg:items-center">
             <div className="flex min-w-0 items-center gap-3">
               <BankMark code={b.bank.code} />
               <div className="min-w-0">
-                <p className="truncate text-[15px] font-semibold text-slate-900">{b.bank.displayName}</p>
-                <p className="text-[12.5px] text-slate-500">
-                  <Link href={`/admin/mis/profiles/${b.profile.id}`} className="font-medium text-teal-700 hover:text-teal-800">
+                <p className="truncate text-[15px] font-semibold text-foreground">{b.bank.displayName}</p>
+                <p className="text-xs text-muted-foreground">
+                  <Link href={`/admin/mis/profiles/${b.profile.id}`} className="font-medium text-primary hover:underline">
                     {b.profile.name} v{b.profile.version}
                   </Link>
                 </p>
-                <p className="text-[11px] text-slate-500">{humanize(b.profile.snapshotMode)} mode</p>
+                <p className="text-2xs text-muted-foreground">{humanize(b.profile.snapshotMode)} mode</p>
               </div>
             </div>
             <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
               <div className="min-w-0">
-                <dt className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">File</dt>
-                <dd className="mt-1 flex min-w-0 items-center gap-1.5 text-slate-900">
+                <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">File</dt>
+                <dd className="mt-1 flex min-w-0 items-center gap-1.5 text-foreground">
                   <FileSpreadsheet className="size-4 shrink-0 text-emerald-600" aria-hidden="true" />
                   <span className="min-w-0 break-words">{b.file.originalName}</span>
                 </dd>
-                <dd className="text-[11px] text-slate-500 tabular-nums">{size(b.file.sizeBytes)}</dd>
+                <dd className="text-2xs text-muted-foreground tabular-nums">{size(b.file.sizeBytes)}</dd>
               </div>
               <div className="min-w-0">
-                <dt className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">Sheet</dt>
-                <dd className="mt-1 break-words text-slate-900">“{b.sheetName}”</dd>
+                <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Sheet</dt>
+                <dd className="mt-1 break-words text-foreground">“{b.sheetName}”</dd>
               </div>
               <div className="min-w-0">
-                <dt className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">Uploaded by</dt>
+                <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Uploaded by</dt>
                 <dd className="mt-1 flex min-w-0 items-center gap-2">
                   <Avatar name={b.uploader.fullName} size="sm" />
                   <span className="min-w-0">
-                    <span className="block truncate text-slate-900">{b.uploader.fullName}</span>
-                    <span className="block text-[11px] text-slate-500">{humanize(b.uploader.role)}</span>
+                    <span className="block truncate text-foreground">{b.uploader.fullName}</span>
+                    <span className="block text-2xs text-muted-foreground">{humanize(b.uploader.role)}</span>
                   </span>
                 </dd>
               </div>
             </dl>
           </div>
-          <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-5 sm:px-6">
+          <div className="border-t border-border-subtle bg-surface-muted px-5 py-5 sm:px-6">
             <Stepper stage={b.stage} />
           </div>
         </section>
-      </PageHeader>
+      </DetailHeader>
       {b.rejectReason ? (
         <Callout tone="danger" icon={Ban} role="alert">
           Rejected: {b.rejectReason}
