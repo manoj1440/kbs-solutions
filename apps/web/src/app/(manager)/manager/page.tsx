@@ -2,7 +2,7 @@ import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { MiniStat } from '@/components/ui/kit';
+import { MiniStat, StatStrip } from '@/components/ui/kit';
 import { TrainingTeamTable } from '@/components/training-team-table';
 import { apiFetch } from '@/lib/api';
 import type { TrainingTeamRow } from '@/lib/training-types';
@@ -26,15 +26,15 @@ export default async function ManagerTeam() {
   const expired = team.data.filter((r) => r.status === 'EXPIRED_DEACTIVATED').length;
   const activeAdvisors = advisors.filter((u) => u.status === 'ACTIVE').length;
   return (
-    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
+    <div className="flex flex-col gap-3">
       <h1 className="sr-only">My team</h1>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+        <StatStrip cols={4} className="min-w-0 flex-1">
           <MiniStat label="Telecallers" value={telecallers.length} hint="Reporting to you" tone="violet" />
           <MiniStat label="Training passed" value={passed} hint={`of ${team.data.length} enrolled`} tone="emerald" />
           <MiniStat label="Deadline passed" value={expired} hint="72h window ended" tone={expired ? 'rose' : 'slate'} />
           <MiniStat label="Advisors" value={advisors.length} hint={`${activeAdvisors} active`} tone="sky" href="/manager/advisors" />
-        </div>
+        </StatStrip>
         <Button asChild size="sm" className="h-9">
           <Link href="/manager/telecallers/new">
             <UserPlus />
@@ -42,16 +42,17 @@ export default async function ManagerTeam() {
           </Link>
         </Button>
       </div>
-      <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:overflow-visible">
-        <section aria-label="Telecallers" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-          <div className="border-b border-slate-100 px-4 py-2.5 text-xs text-slate-500">Telecallers · training status, deadline and best score per module</div>
+      {/* F-814 U2: full width each — side by side, both tables fell under the 700px card-mode threshold on desktop */}
+      <div className="grid gap-3">
+        <section aria-label="Telecallers" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <div className="border-b border-border-subtle px-4 py-2.5 text-xs text-muted-foreground">Telecallers · training status, deadline and best score per module</div>
           <div className="min-h-0 flex-1">
             <TrainingTeamTable rows={team.data} linkBase="/manager/telecallers" />
           </div>
         </section>
-        <section aria-label="Advisors" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-          <div className="border-b border-slate-100 px-4 py-2.5 text-xs text-slate-500">Advisors · who applied one of your Agent Codes</div>
-          <div className="min-h-0 flex-1">
+        <section aria-label="Advisors" className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <div className="border-b border-border-subtle px-4 py-2.5 text-xs text-muted-foreground">Advisors · who applied one of your Agent Codes</div>
+          <div className="max-h-[32rem] min-h-0 flex-1 overflow-y-auto">
             <TeamAdvisorsTable rows={advisors} />
           </div>
         </section>

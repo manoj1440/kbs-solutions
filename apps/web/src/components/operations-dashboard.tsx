@@ -1,3 +1,4 @@
+import type * as React from 'react';
 import { formatDateTime, formatInr } from '@kbs/shared';
 import {
   ArrowRight,
@@ -78,25 +79,25 @@ const SHARE_LABEL: Record<string, string> = { APPLICATION_LINK: 'Application lin
 /** KPI tile: value first; the metric's own source and date basis always shown underneath (never dropped). */
 function Tile({ label, m, money, tone = 'teal' }: { label: string; m: Metric; money?: boolean; tone?: Tone }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-      <div className="flex items-center gap-1.5 text-[12.5px] leading-snug font-medium text-slate-600">
+    <div className="flex min-w-0 flex-col rounded-xl border border-border bg-card p-4 shadow-card">
+      <div className="flex items-center gap-1.5 text-xs leading-snug font-medium text-fg-2">
         <span className={cn('size-1.5 shrink-0 rounded-full', TONE[tone].bar)} aria-hidden="true" />
         {label}
       </div>
       <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-        <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{m.value}</span>
+        <span className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">{m.value}</span>
         {money && m.amountInr !== undefined ? <span className={cn('text-sm font-semibold tabular-nums', TONE[tone].text)}>{formatInr(m.amountInr)}</span> : null}
       </div>
       {m.denominator ? (
         <div className="mt-2">
           <Meter value={m.value} max={m.denominator.value} tone={tone} className="h-1.5" label={`${label} of ${m.denominator.label}`} />
-          <p className="mt-1 text-[11px] text-slate-500 tabular-nums">
+          <p className="mt-1 text-2xs text-muted-foreground tabular-nums">
             of {m.denominator.value} {m.denominator.label}
           </p>
         </div>
       ) : null}
       <div className="min-h-3 flex-1" />
-      <p className="border-t border-slate-100 pt-2 text-[10.5px] leading-snug text-slate-400">
+      <p className="border-t border-border-subtle pt-2 text-2xs leading-snug text-fg-3">
         {SOURCE_LABEL[m.source] ?? m.source} · {m.dateBasis}
       </p>
     </div>
@@ -106,7 +107,7 @@ function Tile({ label, m, money, tone = 'teal' }: { label: string; m: Metric; mo
 function TileGroup({ icon, tone, title, children }: { icon: LucideIcon; tone: Tone; title: string; children: React.ReactNode }) {
   return (
     <div className="grid gap-2.5">
-      <h3 className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+      <h3 className="flex items-center gap-2 text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
         <IconTile icon={icon} tone={tone} size="sm" className="size-6 rounded-lg [&>svg]:size-3.5" />
         {title}
       </h3>
@@ -120,10 +121,10 @@ function SectionHeading({ id, icon, tone, title, description }: { id: string; ic
     <div className="flex items-start gap-3">
       <IconTile icon={icon} tone={tone} />
       <div className="min-w-0">
-        <h2 id={id} className="text-lg font-semibold tracking-tight text-slate-900">
+        <h2 id={id} className="text-lg font-semibold tracking-tight text-foreground">
           {title}
         </h2>
-        <p className="text-[12.5px] leading-relaxed text-slate-500">{description}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
       </div>
     </div>
   );
@@ -141,11 +142,11 @@ function Bars({ rows, max, tone, empty, emptyIcon }: { rows: { key: string; labe
         const muted = MUTED.has(r.label);
         return (
           <li key={r.key} className="grid gap-1">
-            <div className="flex items-baseline justify-between gap-3 text-[13px]">
-              <span className={cn('min-w-0 truncate', muted ? 'text-slate-500 italic' : 'text-slate-800')} title={r.label}>
+            <div className="flex items-baseline justify-between gap-3 text-ui">
+              <span className={cn('min-w-0 truncate', muted ? 'text-muted-foreground italic' : 'text-foreground')} title={r.label}>
                 {r.label}
               </span>
-              <span className="font-semibold text-slate-900 tabular-nums">{r.count}</span>
+              <span className="font-semibold text-foreground tabular-nums">{r.count}</span>
             </div>
             <Meter value={r.count} max={top} tone={muted ? 'slate' : tone} className="h-1.5" label={r.label} />
           </li>
@@ -183,11 +184,11 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
   const more = Boolean(sp.managerId || sp.pincode || sp.state || sp.misRecency);
   const moreCount = ['managerId', 'pincode', 'state', 'misRecency'].filter((k) => sp[k]).length;
   return (
-    <Form className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgb(15_23_42/4%)]" action={basePath}>
+    <Form className="rounded-2xl border border-border bg-card p-4 shadow-card" action={basePath}>
       {Object.entries(hidden ?? {}).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
-      <div className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
+      <div className="grid grid-cols-2 items-end gap-3 sm:grid-cols-3 2xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
         <Field label="From" htmlFor="ops-from">
           <input id="ops-from" className={selectClass} type="date" name="from" defaultValue={sp.from ?? ''} />
         </Field>
@@ -234,11 +235,11 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
           </Button>
         </div>
       </div>
-      <details className="group mt-3 border-t border-slate-100 pt-3" open={more}>
-        <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md text-[12.5px] font-medium text-slate-600 hover:text-slate-900 [&::-webkit-details-marker]:hidden">
+      <details className="group mt-3 border-t border-border-subtle pt-3" open={more}>
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md text-xs font-medium text-fg-2 hover:text-foreground [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="size-3.5" aria-hidden="true" />
           More filters
-          {moreCount ? <span className="rounded-full bg-teal-50 px-1.5 text-[10.5px] font-semibold text-teal-700 tabular-nums">{moreCount}</span> : null}
+          {moreCount ? <span className="rounded-full bg-teal-50 px-1.5 text-2xs font-semibold text-teal-700 tabular-nums">{moreCount}</span> : null}
           <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
         </summary>
         <div className="mt-3 grid grid-cols-2 items-end gap-3 lg:grid-cols-4">
@@ -342,13 +343,13 @@ export function OpsSections({ d }: { d: OpsDashboard }) {
           <Tile label="On hold" m={a.payouts.onHold} money tone="rose" />
           <Tile label="Paid (events)" m={a.payouts.paid} money tone="emerald" />
           <div className="col-span-2 flex min-w-0 flex-col rounded-xl border border-transparent bg-[linear-gradient(135deg,#0f766e_0%,#115e59_55%,#134e4a_100%)] p-4 text-white shadow-[0_12px_30px_-14px_rgb(15_118_110/70%)]">
-            <div className="flex items-center justify-between gap-2 text-[12.5px] font-medium text-teal-50">
+            <div className="flex items-center justify-between gap-2 text-xs font-medium text-teal-50">
               Confirmed transfers
               <BadgeIndianRupee className="size-4" aria-hidden="true" />
             </div>
             <div className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums">{formatInr(a.payouts.confirmedTransfersInr.amountInr ?? 0)}</div>
             <div className="min-h-3 flex-1" />
-            <p className="border-t border-white/15 pt-2 text-[10.5px] leading-snug text-teal-50/90">Accounts payment · {a.payouts.confirmedTransfersInr.dateBasis}</p>
+            <p className="border-t border-white/15 pt-2 text-2xs leading-snug text-teal-50/90">Accounts payment · {a.payouts.confirmedTransfersInr.dateBasis}</p>
           </div>
         </TileGroup>
       </section>
@@ -365,37 +366,42 @@ export async function OperationsDashboard({
   sp,
   title,
   endpoint,
+  heading,
+  aside,
 }: {
   basePath: string;
   sp: Record<string, string | undefined>;
   title: string;
   endpoint: string;
+  /** F-814: visible page heading (must contain the page's h1); default is an sr-only h1 with `title` */
+  heading?: React.ReactNode;
+  /** F-814: right rail (agenda); the page then scrolls as a document */
+  aside?: React.ReactNode;
 }) {
   const d = (await apiFetch<OpsDashboard>(`${endpoint}?${opsQuery(sp)}`)).data;
-  return (
-    <div className="flex flex-col gap-3 overflow-y-auto lg:h-[calc(100dvh-6rem)]">
-      <h1 className="sr-only">{title}</h1>
-      <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+  const body = (
+    <>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-card">
         <Badge variant="secondary">{d.scope}</Badge>
-        <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <CalendarRange className="size-3.5" aria-hidden="true" />
           {d.meta.from || d.meta.to ? `${d.meta.from ?? '…'} → ${d.meta.to ?? '…'}` : 'all time'}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 tabular-nums">
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
           <Clock className="size-3.5" aria-hidden="true" />
           as of {formatDateTime(d.meta.asOf)}
         </span>
       </div>
       <OpsFilters basePath={basePath} sp={sp} />
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="MIS freshness per bank">
-        <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+        <span className="mr-1 inline-flex items-center gap-1.5 text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
           <Database className="size-3.5" aria-hidden="true" />
           MIS freshness
         </span>
         {d.meta.misFreshness.map((f) => (
-          <span key={f.bank.code} className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-xl border border-slate-200/80 bg-white py-1 pr-2 pl-1 shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+          <span key={f.bank.code} className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-xl border border-border bg-card py-1 pr-2 pl-1 shadow-card">
             <BankMark code={f.bank.code} size="sm" />
-            <span className="truncate text-[12.5px] font-medium text-slate-800">{f.bank.displayName}</span>
+            <span className="truncate text-xs font-medium text-foreground">{f.bank.displayName}</span>
             <Badge variant={f.lastAppliedAt ? 'info' : 'unknown'}>{f.lastAppliedAt ? `MIS applied ${formatDateTime(f.lastAppliedAt)}` : 'no MIS applied'}</Badge>
           </span>
         ))}
@@ -415,6 +421,25 @@ export async function OperationsDashboard({
         </Callout>
       ) : null}
       <OpsSections d={d} />
+    </>
+  );
+  if (!aside) {
+    return (
+      <div className="flex flex-col gap-3 overflow-y-auto lg:h-[calc(100dvh-6rem)]">
+        {heading ?? <h1 className="sr-only">{title}</h1>}
+        {body}
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-5">
+      {heading ?? <h1 className="sr-only">{title}</h1>}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-3">{body}</div>
+        <aside aria-label="Today" className="flex min-w-0 flex-col gap-4">
+          {aside}
+        </aside>
+      </div>
     </div>
   );
 }
