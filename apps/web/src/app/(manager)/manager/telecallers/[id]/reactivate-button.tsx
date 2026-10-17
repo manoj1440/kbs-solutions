@@ -39,7 +39,7 @@ export function ReactivateButton({ telecallerId, windowHours }: { telecallerId: 
       </Button>
     );
   return (
-    <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+    <div className="grid gap-3 rounded-xl border border-border bg-surface-muted p-4">
       {windowHours === null ? (
         <Callout tone="warning" icon={TriangleAlert}>
           The new training window is not configured (training.reactivationWindowHours). The Telecaller will be reactivated but stays gated until the Admin sets it.
@@ -50,7 +50,7 @@ export function ReactivateButton({ telecallerId, windowHours }: { telecallerId: 
         </Callout>
       )}
       <Field label="Reason (recorded)" htmlFor="reason">
-        <Input id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. was on leave during the window" className="bg-white" />
+        <Input id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. was on leave during the window" className="bg-card" />
       </Field>
       {error ? (
         <Callout role="alert" tone="danger" icon={TriangleAlert}>

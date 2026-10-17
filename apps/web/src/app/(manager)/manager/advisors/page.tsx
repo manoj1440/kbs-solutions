@@ -3,7 +3,7 @@ import Form from 'next/form';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { MiniStat, selectClass } from '@/components/ui/kit';
+import { MiniStat, selectClass, StatStrip } from '@/components/ui/kit';
 import { type AdvisorTeamResponse } from '@/lib/advisor-team';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -44,15 +44,15 @@ export default async function ManagerAdvisorsPage({
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Advisors</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+      <StatStrip cols={4}>
         <MiniStat label="Reporting to you" value={data.rows.length} hint={`${active} active`} tone="violet" />
         <MiniStat label="Leads created" value={created} hint={range} tone="sky" />
         <MiniStat label="Matched in bank MIS" value={matched} hint={`of ${created} · ${awaitingMis} awaiting`} tone="indigo" />
         <MiniStat label="Awaiting my approval" value={awaitingMe} hint="Payout requests" tone={awaitingMe ? 'amber' : 'slate'} href={awaitingMe ? '/manager/payouts/requests?awaitingMe=true' : undefined} />
-      </div>
-      <section aria-label="Advisor results" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+      </StatStrip>
+      <section aria-label="Advisor results" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <Form
-          className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3"
+          className="flex flex-wrap items-center gap-2 border-b border-border-subtle p-3"
           action="/manager/advisors"
         >
           <input aria-label="Leads from" className={cn(selectClass, 'h-9 w-36')} type="date" name="from" defaultValue={sp.from ?? ''} />
@@ -76,7 +76,7 @@ export default async function ManagerAdvisorsPage({
         <div className="min-h-0 flex-1">
           <AdvisorsTable rows={data.rows} qs={qs.toString()} />
         </div>
-        <div className="flex shrink-0 items-center border-t border-slate-100 px-4 py-2 text-xs text-slate-500 tabular-nums">
+        <div className="flex shrink-0 items-center border-t border-border-subtle px-4 py-2 text-xs text-muted-foreground tabular-nums">
           {data.rows.length} Advisor{data.rows.length === 1 ? '' : 's'}
         </div>
       </section>

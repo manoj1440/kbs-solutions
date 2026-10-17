@@ -136,7 +136,7 @@ export function StatCard({
       {source || href ? (
         <div
           className={cn(
-            'mt-4 flex items-center justify-between gap-2 border-t pt-3 text-2xs font-semibold tracking-wider uppercase',
+            'mt-4 flex items-center justify-between gap-2 border-t pt-3 text-2xs font-medium',
             emphasis ? 'border-white/15 text-teal-50/90' : 'border-border-subtle text-fg-3',
           )}
         >

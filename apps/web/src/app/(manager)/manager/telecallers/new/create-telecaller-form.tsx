@@ -51,7 +51,7 @@ export function CreateTelecallerForm() {
     return (
       <SectionCard icon={CircleCheck} tone="emerald" title={`${created.fullName} was created.`} description="The Telecaller now reports to you.">
         <div className="grid gap-4">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+          <div className="flex items-center gap-3 rounded-xl border border-border-subtle bg-surface-muted p-4">
             <Avatar name={created.fullName} />
             <KeyValueGrid
               className="flex-1"
@@ -102,7 +102,7 @@ export function CreateTelecallerForm() {
             {error}
           </Callout>
         ) : null}
-        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+        <div className="flex flex-wrap gap-2 border-t border-border-subtle pt-4">
           <Button type="submit" disabled={busy || !canSubmit}>
             <UserPlus />
             {busy ? 'Creating…' : 'Create Telecaller'}

@@ -3,7 +3,7 @@ import { CalendarClock, ClipboardList, FileSpreadsheet, UserRound } from 'lucide
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
-import { Avatar, EmptyState, IconTile, MiniStat } from '@/components/ui/kit';
+import { Avatar, EmptyState, IconTile, MiniStat, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
 export const metadata = { title: 'Pending actions · KBS Solutions' };
@@ -16,28 +16,28 @@ export default async function ManagerPendingActionsPage() {
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Pending actions</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3">
+      <StatStrip cols={3}>
         <MiniStat label="Pending actions" value={r.data.length} hint="Across your team" tone={r.data.length ? 'amber' : 'slate'} />
         <MiniStat label="Follow-up tasks" value={tasks} hint="Created in KBS" tone="sky" />
         <MiniStat label="From bank MIS" value={bank} hint="Admin-configured MIS rules" tone="indigo" />
-      </div>
-      <section aria-label="Pending actions" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
+      </StatStrip>
+      <section aria-label="Pending actions" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="min-h-0 flex-1 overflow-y-auto">
           {r.data.length === 0 ? (
             <EmptyState icon={ClipboardList} className="m-3" title="No pending actions." description="Follow-up tasks and matching MIS rules will appear here." />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border-subtle">
               {r.data.map((a) => (
                 <li key={a.id} className="grid gap-3 px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start">
                   <IconTile icon={a.source.type === 'KBS_TASK' ? CalendarClock : FileSpreadsheet} tone={a.source.type === 'KBS_TASK' ? 'sky' : 'indigo'} size="sm" className="hidden sm:inline-flex" />
                   <div className="grid min-w-0 gap-1.5">
-                    <p className="text-sm font-semibold break-words text-slate-900">{a.whatToDo}</p>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-slate-500">
+                    <p className="text-sm font-semibold break-words text-foreground">{a.whatToDo}</p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                       <Link href={`/manager/leads/${a.leadId}`} className="font-mono font-medium text-teal-700 hover:text-teal-900">
                         {a.leadRef}
                       </Link>
                       <span aria-hidden="true">·</span>
-                      <span className="text-slate-700">{a.customer}</span>
+                      <span className="text-fg-2">{a.customer}</span>
                       <span aria-hidden="true">·</span>
                       <span>
                         {a.issuer} · {a.card}
@@ -55,7 +55,7 @@ export default async function ManagerPendingActionsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 sm:grid sm:justify-items-end sm:gap-1.5 sm:text-right">
-                    <span className="inline-flex items-center gap-2 text-[12.5px] text-slate-700">
+                    <span className="inline-flex items-center gap-2 text-xs text-fg-2">
                       {a.owner.name ? (
                         <>
                           <Avatar name={a.owner.name} size="sm" className="size-6 text-[9px]" />
@@ -63,12 +63,12 @@ export default async function ManagerPendingActionsPage() {
                         </>
                       ) : (
                         <>
-                          <UserRound className="size-4 text-slate-400" aria-hidden="true" />
-                          <span className="text-slate-500">{a.owner.role === 'BANK' ? 'Bank (informational)' : '—'}</span>
+                          <UserRound className="size-4 text-fg-3" aria-hidden="true" />
+                          <span className="text-muted-foreground">{a.owner.role === 'BANK' ? 'Bank (informational)' : '—'}</span>
                         </>
                       )}
                     </span>
-                    <span className="text-xs text-slate-500 tabular-nums">{formatDateTime(a.date)}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{formatDateTime(a.date)}</span>
                   </div>
                 </li>
               ))}

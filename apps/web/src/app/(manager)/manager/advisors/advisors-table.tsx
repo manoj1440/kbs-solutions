@@ -32,7 +32,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
               <Link className="font-medium" href={detail(r.user.id)}>
                 {r.user.fullName || '(onboarding)'}
               </Link>
-              <div className="font-mono text-[11px] text-slate-500">
+              <div className="font-mono text-2xs text-muted-foreground">
                 {r.user.publicRef} · {r.reporting ? `${REPORTING_LABEL[r.reporting.source] ?? r.reporting.source} ${r.reporting.agentCode ?? ''} · since ${formatDate(r.reporting.since)}` : 'No active reporting line'}
               </div>
               <div className="mt-0.5">
@@ -50,7 +50,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
         const r = row.original;
         return (
           <>
-            <div className="text-slate-900">
+            <div className="text-foreground">
               <span className="text-base font-semibold tabular-nums">{r.leads.created.value}</span> created
             </div>
             <Meter
@@ -60,7 +60,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
               className="my-1.5 h-1.5 w-full min-w-28 @min-[701px]:w-32"
               label={`${r.leads.misMatched.value} of ${r.leads.created.value} matched in MIS`}
             />
-            <div className="text-xs text-slate-500 tabular-nums">
+            <div className="text-xs text-muted-foreground tabular-nums">
               {r.leads.misMatched.value} of {r.leads.created.value} matched in MIS · {r.leads.awaitingMis.value} awaiting MIS
             </div>
           </>
@@ -77,16 +77,16 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
               <span
                 className={
                   b.value === 'Awaiting MIS' || b.value === 'Not reported'
-                    ? 'text-slate-500 italic'
-                    : 'min-w-0 font-mono break-words text-slate-700'
+                    ? 'text-muted-foreground italic'
+                    : 'min-w-0 font-mono break-words text-fg-2'
                 }
               >
                 {b.value}
               </span>
-              <span className="font-medium text-slate-900 tabular-nums">{b.count}</span>
+              <span className="font-medium text-foreground tabular-nums">{b.count}</span>
             </li>
           ))}
-          {row.original.activation.buckets.length === 0 ? <li className="text-slate-400">No leads</li> : null}
+          {row.original.activation.buckets.length === 0 ? <li className="text-fg-3">No leads</li> : null}
         </ul>
       ),
     }),
@@ -104,9 +104,9 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
             ] as const
           ).map(([label, m]) => (
             <div key={label} className="contents">
-              <dt className="text-slate-500">{label}</dt>
-              <dd className="text-slate-700">{m.value}</dd>
-              <dd className="font-medium text-slate-900">{inr(m.amountInr)}</dd>
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="text-fg-2">{m.value}</dd>
+              <dd className="font-medium text-foreground">{inr(m.amountInr)}</dd>
             </div>
           ))}
         </dl>
@@ -120,7 +120,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
             <Link href="/manager/payouts/requests?awaitingMe=true">{getValue()} awaiting Manager</Link>
           </Button>
         ) : (
-          <span className="text-xs text-slate-400">None pending</span>
+          <span className="text-xs text-fg-3">None pending</span>
         ),
     }),
   ]);

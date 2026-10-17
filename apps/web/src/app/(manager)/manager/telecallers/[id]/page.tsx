@@ -1,5 +1,7 @@
 import { formatDateTime } from '@kbs/shared';
-import { Check, Clock, GraduationCap, History, Home, Lock, PlayCircle, RotateCcw, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Check, Clock, GraduationCap, History, Home, Lock, PlayCircle, RotateCcw, TriangleAlert } from 'lucide-react';
+
+import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Avatar, Callout, humanize, KeyValueGrid, Meter, PageHeader, SectionCard } from '@/components/ui/kit';
@@ -26,7 +28,11 @@ export default async function TelecallerTrainingPage({
   const expired = d.status === 'EXPIRED_DEACTIVATED';
   return (
     <div className="grid gap-6">
-      <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)] sm:p-6">
+      <Link href="/manager" className="-mb-2 inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-3.5" aria-hidden="true" />
+        Team
+      </Link>
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgb(139_92_246/10%),transparent_65%)]"
@@ -40,17 +46,17 @@ export default async function TelecallerTrainingPage({
               title={d.telecaller.fullName}
               meta={
                 <>
-                  <span className="font-mono text-slate-600">{d.telecaller.employeeCode}</span>
+                  <span className="font-mono text-fg-2">{d.telecaller.employeeCode}</span>
                   <Badge variant={statusTone(d.status)}>{STATUS_LABEL[d.status] ?? d.status}</Badge>
                 </>
               }
             />
           </div>
-          <div className="grid gap-5 rounded-xl border border-slate-100 bg-slate-50/70 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:items-center">
+          <div className="grid gap-5 rounded-xl border border-border-subtle bg-surface-muted p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:items-center">
             <div className="grid gap-2">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">Modules passed</span>
-                <span className="text-lg font-semibold text-slate-900 tabular-nums">
+                <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Modules passed</span>
+                <span className="text-lg font-semibold text-foreground tabular-nums">
                   {passedCount}/{d.modules.length}
                 </span>
               </div>
@@ -109,15 +115,15 @@ export default async function TelecallerTrainingPage({
             <SectionCard icon={History} tone="emerald" title="Reactivations">
               <ol className="grid gap-3">
                 {d.reactivations.map((r) => (
-                  <li key={r.id} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm">
+                  <li key={r.id} className="flex items-start gap-3 rounded-xl border border-border-subtle bg-surface-muted p-3 text-sm">
                     <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 ring-inset">
                       <RotateCcw className="size-4" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
-                      <div className="text-slate-800">
+                      <div className="text-foreground">
                         <span className="tabular-nums">{formatDateTime(r.at)}</span> by {r.byManager.fullName} — resumed at Module {r.resumedAtModuleSequence}
                       </div>
-                      <div className="mt-0.5 text-xs break-words text-slate-500">
+                      <div className="mt-0.5 text-xs break-words text-muted-foreground">
                         Original deadline {r.originalDeadlineAt ? formatDateTime(r.originalDeadlineAt) : '—'} · new deadline {r.newDeadlineAt ? formatDateTime(r.newDeadlineAt) : 'not configured'} · reason: {r.reason}
                       </div>
                     </div>
@@ -143,29 +149,29 @@ export default async function TelecallerTrainingPage({
             const done = m.status === 'PASSED';
             const locked = m.status === 'LOCKED';
             return (
-              <li key={m.sequence} className={cn('grid min-w-0 content-start gap-3 rounded-xl border p-4', done ? 'border-emerald-100 bg-emerald-50/40' : locked ? 'border-slate-200/80 bg-slate-50/60' : 'border-sky-100 bg-white')}>
+              <li key={m.sequence} className={cn('grid min-w-0 content-start gap-3 rounded-xl border p-4', done ? 'border-emerald-100 bg-emerald-50/40' : locked ? 'border-border bg-surface-muted' : 'border-sky-100 bg-card')}>
                 <div className="flex items-start gap-3">
                   <span
                     aria-hidden="true"
                     className={cn(
                       'inline-flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset',
-                      done ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : locked ? 'bg-slate-100 text-slate-400 ring-slate-200' : 'bg-sky-50 text-sky-700 ring-sky-200',
+                      done ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : locked ? 'bg-muted text-fg-3 ring-border' : 'bg-sky-50 text-sky-700 ring-sky-200',
                     )}
                   >
                     {done ? <Check className="size-4" /> : locked ? <Lock className="size-4" /> : m.sequence}
                   </span>
                   <div className="grid min-w-0 flex-1 gap-1">
-                    <span className="text-sm font-semibold break-words text-slate-900">
+                    <span className="text-sm font-semibold break-words text-foreground">
                       {m.sequence}. {m.title}
                     </span>
                     <Badge variant={done ? 'success' : locked ? 'unknown' : 'info'}>{humanize(m.status)}</Badge>
                   </div>
                 </div>
                 <div className="grid gap-1.5">
-                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span>
                       Best score{' '}
-                      <span className="font-semibold text-slate-800 tabular-nums">
+                      <span className="font-semibold text-foreground tabular-nums">
                         {m.bestScorePct ?? '—'}
                         {m.bestScorePct !== null ? '%' : ''}
                       </span>
@@ -179,20 +185,20 @@ export default async function TelecallerTrainingPage({
                       tone={done ? 'emerald' : m.bestScorePct !== null ? 'amber' : 'slate'}
                       label={`${m.title}: best score ${m.bestScorePct ?? 'none'}, pass mark ${m.passThresholdPct}%`}
                     />
-                    <span aria-hidden="true" className="absolute -top-0.5 h-3 w-0.5 -translate-x-1/2 rounded-full bg-slate-500" style={{ left: `${m.passThresholdPct}%` }} />
+                    <span aria-hidden="true" className="absolute -top-0.5 h-3 w-0.5 -translate-x-1/2 rounded-full bg-muted-foreground" style={{ left: `${m.passThresholdPct}%` }} />
                   </div>
                 </div>
-                <dl className="grid gap-1.5 border-t border-slate-200/70 pt-3 text-xs">
+                <dl className="grid gap-1.5 border-t border-border pt-3 text-xs">
                   <div className="flex min-w-0 items-baseline justify-between gap-3">
-                    <dt className="shrink-0 text-slate-500">Attempts</dt>
-                    <dd className="text-right text-slate-800 tabular-nums">
+                    <dt className="shrink-0 text-muted-foreground">Attempts</dt>
+                    <dd className="text-right text-foreground tabular-nums">
                       {m.attemptCount}
-                      {m.attempts.length ? <span className="text-slate-500"> ({m.attempts.map((a) => (a.scorePct === null ? 'open' : `${a.scorePct}%`)).join(', ')})</span> : null}
+                      {m.attempts.length ? <span className="text-muted-foreground"> ({m.attempts.map((a) => (a.scorePct === null ? 'open' : `${a.scorePct}%`)).join(', ')})</span> : null}
                     </dd>
                   </div>
                   <div className="flex min-w-0 items-baseline justify-between gap-3">
-                    <dt className="shrink-0 text-slate-500">Video</dt>
-                    <dd className="inline-flex items-center gap-1 text-slate-800">
+                    <dt className="shrink-0 text-muted-foreground">Video</dt>
+                    <dd className="inline-flex items-center gap-1 text-foreground">
                       {m.videoCompletedAt ? (
                         <>
                           <PlayCircle className="size-3.5 text-emerald-600" aria-hidden="true" />
@@ -204,8 +210,8 @@ export default async function TelecallerTrainingPage({
                     </dd>
                   </div>
                   <div className="flex min-w-0 items-baseline justify-between gap-3">
-                    <dt className="shrink-0 text-slate-500">Passed at</dt>
-                    <dd className="text-right text-slate-800 tabular-nums">{m.passedAt ? formatDateTime(m.passedAt) : '—'}</dd>
+                    <dt className="shrink-0 text-muted-foreground">Passed at</dt>
+                    <dd className="text-right text-foreground tabular-nums">{m.passedAt ? formatDateTime(m.passedAt) : '—'}</dd>
                   </div>
                 </dl>
               </li>

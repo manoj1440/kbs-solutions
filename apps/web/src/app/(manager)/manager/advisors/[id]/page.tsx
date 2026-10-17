@@ -108,13 +108,13 @@ function Dist({ title, d, icon }: { title: string; d: Distribution; icon: Lucide
                   <span
                     className={
                       muted
-                        ? 'text-slate-500 italic'
-                        : 'min-w-0 font-mono text-[13px] break-words text-slate-800'
+                        ? 'text-muted-foreground italic'
+                        : 'min-w-0 font-mono text-ui break-words text-foreground'
                     }
                   >
                     {b.value}
                   </span>
-                  <span className="font-semibold text-slate-900 tabular-nums">{b.count}</span>
+                  <span className="font-semibold text-foreground tabular-nums">{b.count}</span>
                 </div>
                 <Meter
                   value={b.count}
@@ -165,13 +165,13 @@ export default async function ManagerAdvisorPage({
     <div className="grid min-w-0 gap-6">
       <Link
         href="/manager/advisors"
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Advisors
       </Link>
 
-      <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)] sm:p-6">
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgb(139_92_246/10%),transparent_65%)]"
@@ -192,12 +192,12 @@ export default async function ManagerAdvisorPage({
                   <StatusDot tone={row.user.status === 'ACTIVE' ? 'emerald' : 'slate'}>
                     {humanize(row.user.status)}
                   </StatusDot>
-                  <span className="font-mono text-slate-500">{row.user.publicRef}</span>
+                  <span className="font-mono text-muted-foreground">{row.user.publicRef}</span>
                 </>
               }
             />
           </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+          <div className="rounded-xl border border-border-subtle bg-surface-muted p-4">
             <KeyValueGrid
               cols={4}
               className="grid-cols-2"
@@ -258,14 +258,14 @@ export default async function ManagerAdvisorPage({
           title="Bank reasons"
           description={`${row.bankReasons.leadsWithReason.value} of ${row.bankReasons.leadsWithReason.denominator?.value ?? 0} MIS-matched leads carry a bank remark or decline field (verbatim).`}
         >
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-border-subtle text-sm">
             {row.bankReasons.top.map((r) => (
               <li
                 key={r.value}
                 className="flex items-baseline justify-between gap-3 py-2 first:pt-0 last:pb-0"
               >
-                <span className="min-w-0 break-words text-slate-800">{r.value}</span>
-                <span className="font-semibold text-slate-900 tabular-nums">{r.count}</span>
+                <span className="min-w-0 break-words text-foreground">{r.value}</span>
+                <span className="font-semibold text-foreground tabular-nums">{r.count}</span>
               </li>
             ))}
           </ul>
