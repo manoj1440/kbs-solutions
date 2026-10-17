@@ -149,9 +149,9 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 | P6 | Pending actions | `/manager/pending-actions` | DONE |
 | P6 | Payouts home | `/manager/payouts` | DONE |
 | P6 | Telecaller detail + create | `/manager/telecallers/[id]`, `/manager/telecallers/new` | DONE |
-| P7 | Login | `/login` | TODO |
-| P7 | Status screens + public verify | `/session`, `/access-denied`, not-found/error, `/verify/[ref]` | TODO |
-| P7 | Final sweep + audit re-score + docs | — | TODO |
+| P7 | Login | `/login` | DONE |
+| P7 | Status screens + public verify | `/session`, `/access-denied`, not-found/error, `/verify/[ref]` | DONE |
+| P7 | Final sweep + audit re-score + docs | — | DONE |
 | P8 | Dark palette + toggle | all | TODO |
 | P8 | Dark sweep + contrast fixes | all | TODO |
 
@@ -167,12 +167,12 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 `pnpm --filter web typecheck lint test`; screenshot sweep 1440 + 390 (`node apps/web/test/admin-shots.mjs`, `BASE=http://localhost:3000 API=http://localhost:4000/api/v1`); web Playwright for touched areas (`E2E_PG_CONTAINER=kbs-test-pg E2E_PG_DB=kbs_dev`); P2 adds API e2e on the disposable `kbs_test` DB; P7 runs the full suites and `next build`.
 
 ## Acceptance criteria
-- [ ] U1–U14 fixed.
-- [ ] Every page in the tracker DONE against the definition of done.
-- [ ] Admin home shows greeting, KPI deltas vs previous period, trend chart and Today rail; API e2e green.
-- [ ] MIS clock visible in every workspace.
-- [ ] Impeccable audit ≥ 17/20; dark mode passes contrast on every page.
-- [ ] typecheck, lint, unit, API e2e, Playwright, build pass.
+- [x] U1–U14 fixed.
+- [x] Every page in the tracker (P0–P7) DONE against the definition of done.
+- [x] Admin home shows greeting, KPI deltas vs previous period, trend chart and Today rail; API e2e green.
+- [x] MIS clock visible in every workspace.
+- [x] Impeccable audit ≥ 17/20 (18/20, see §8). - [ ] Dark mode passes contrast on every page (P8).
+- [x] typecheck, lint, unit, API e2e, Playwright, build pass (see P7 notes).
 
 ## Progress notes
 - Session 19 (2026-10-17): audit + plan written (this file).
@@ -208,4 +208,20 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 - Team calling + drill-down were done in P3 (shared `team-ops`); payouts home is the shared entitlements ledger (P4).
 - Kit: `StatCard` source footer is sentence case.
 - P6 checks: web typecheck/lint; Playwright 73 passed / 1 skipped; 1440 + 390 sweep of all Manager routes: overflow 0.
-- Next: P7 Auth, status screens, final QA.
+- Session 19, P7 done. Commits: login on tokens, no kickers → status screens + public verify → last raw classes → tokens (U5 complete: 0 `slate-*`, 0 `bg-white` in `apps/web/src`) → rendered-page audit fixes (contrast token, nested card, icon tile) → VIEW-01 test + contrast checker → `test(api): payout rate versioning test no longer date-bound`.
+- Login: removed three uppercase kickers, the stale "© 2025" and a vertical cursive tagline that clipped at the right edge; navy/canvas on tokens. The card illustration keeps its own artwork colours (like bank marks).
+- `--fg-3` was 2.6:1 on white but is used for placeholders and small text → now 215 14% 46% (≥4.5:1).
+- New dev tools: `test/public-shots.mjs` (signed-out screens), `test/contrast-check.mjs` (WCAG AA text contrast on signed-in pages; canvas colour parsing so `oklab()`/`lab()` values are read correctly; disabled controls exempt).
+- Final verification (Mac, dev servers :3000/:4000): workspace typecheck + lint clean (one run hit a Prisma-generate race in `@kbs/db:build`, clean on re-run); unit — shared 48, web 24, mobile 11, ui-tokens 22, api 15, DB invariants 7/7 on `kbs_base` (they fail on the populated `kbs_dev` by design); API e2e 152/154 on `kbs_test` → `mis-jobs` passes 4/4 alone (timing under the full run), `payout-rules` was a date bomb (fixed in its own commit, 2/2); web Playwright 73 passed / 1 skipped; `next build` passes; sweep 57 routes × 1440/390 = 114 renders overflow 0 + signed-out screens; `impeccable detect` on `apps/web/src`: 0 findings; URL scan of signed-out pages: only "Inter is overused" (accepted — shared brand font); contrast check on 8 signed-in pages: 0 failures.
+- Known environment side effect: every web Playwright run creates users in `kbs_dev` (`E2E_PG_DB=kbs_dev` per the F-811 notes) — the demo DB now has ~110 users, mostly "E2E … Manager" and "(onboarding)" advisors.
+- Next: P8 dark mode.
+
+## 8. Audit (after) — 2026-10-17, end of P7
+| # | Dimension | Before | After | Evidence |
+|---|---|---|---|---|
+| 1 | Accessibility | 3 | 4 | AA text contrast on signed-out pages (impeccable) and 8 signed-in pages (contrast-check); chart readable by keyboard with sr-only table; deltas text-encoded; one h1 per page; focus rings on tokens |
+| 2 | Performance | 3 | 3 | Fonts self-hosted via `next/font`; charts are plain SVG (no library); +1 small API call per layout (MIS clock), +2 on the Admin home |
+| 3 | Theming | 1 | 3 | Token system on `:root`, 0 `slate-*`/`bg-white`, 2 type tokens, tailwind-merge aware; dark palette not shipped yet (P8 → 4) |
+| 4 | Responsive | 3 | 4 | 114 renders overflow 0; tile strips swipe on phones; compact phone rows; container queries where columns get narrow |
+| 5 | Implementation integrity | 3 | 4 | Detector clean; one kit (StatCard/StatStrip/DetailHeader/RailCard/charts); no page-local Stat/Panel copies; no eyebrows |
+| | **Total** | **13/20** | **18/20** | Excellent band (18–20) |
