@@ -32,7 +32,7 @@ const columns = c.columns([
           <Link className="font-medium" href={`/admin/users/${row.original.id}`}>
             {row.original.fullName || '(onboarding)'}
           </Link>
-          <div className="font-mono text-[11px] text-slate-500">{row.original.publicRef}</div>
+          <div className="font-mono text-2xs text-muted-foreground">{row.original.publicRef}</div>
         </div>
       </div>
     ),
@@ -47,11 +47,11 @@ const columns = c.columns([
   }),
   c.accessor('mobileMasked', {
     header: 'Mobile',
-    meta: { className: 'font-mono text-xs text-slate-600' },
+    meta: { className: 'font-mono text-xs text-fg-2' },
   }),
   c.accessor('employeeCode', {
     header: 'Code',
-    meta: { className: 'font-mono text-xs text-slate-600' },
+    meta: { className: 'font-mono text-xs text-fg-2' },
     cell: ({ getValue }) => getValue() ?? <Dash />,
   }),
   c.accessor((r) => r.reportingParent?.fullName ?? '', {
@@ -59,7 +59,7 @@ const columns = c.columns([
     header: 'Reports to',
     cell: ({ row }) =>
       row.original.reportingParent ? (
-        <span className="inline-flex items-center gap-2 text-slate-700">
+        <span className="inline-flex items-center gap-2 text-fg-2">
           <Avatar name={row.original.reportingParent.fullName} size="sm" className="size-6 text-[9px]" />
           {row.original.reportingParent.fullName}
         </span>
@@ -70,8 +70,8 @@ const columns = c.columns([
   c.accessor('lastLoginAt', {
     header: 'Last login',
     sortFn: 'datetime',
-    meta: { className: 'text-xs text-slate-600 tabular-nums' },
-    cell: ({ getValue }) => (getValue() ? formatDateTime(getValue()) : <span className="text-slate-400">never</span>),
+    meta: { className: 'text-xs text-fg-2 tabular-nums' },
+    cell: ({ getValue }) => (getValue() ? formatDateTime(getValue()) : <span className="text-fg-3">never</span>),
   }),
 ]);
 

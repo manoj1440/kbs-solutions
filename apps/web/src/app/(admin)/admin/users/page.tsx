@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { DataTablePagination, DataTablePanel } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import { humanize, MiniStat, selectClass } from '@/components/ui/kit';
+import { humanize, MiniStat, selectClass, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -38,12 +38,12 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Users &amp; teams</h1>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+      <StatStrip cols={4}>
         <MiniStat label="Users" value={total.toLocaleString('en-IN')} hint={filtered ? 'Matching the filters' : 'Every role, every status'} tone="sky" />
         <MiniStat label="Active" value={count('ACTIVE')} hint={total > users.data.length ? 'On this page' : 'All users'} tone="emerald" />
         <MiniStat label="Pending onboarding" value={count('PENDING_ONBOARDING')} hint={total > users.data.length ? 'On this page' : 'All users'} tone={count('PENDING_ONBOARDING') ? 'amber' : 'slate'} />
         <MiniStat label="Deactivated / blocked" value={count('DEACTIVATED') + count('BLOCKED')} hint={total > users.data.length ? 'On this page' : 'All users'} tone={count('BLOCKED') ? 'rose' : 'slate'} />
-      </div>
+      </StatStrip>
 
       <DataTablePanel
         label="Users"

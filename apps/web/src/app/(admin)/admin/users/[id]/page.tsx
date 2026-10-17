@@ -86,13 +86,13 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     <div className="grid gap-6">
       <Link
         href="/admin/users"
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Users & teams
       </Link>
 
-      <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)] sm:p-6">
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgb(139_92_246/10%),transparent_65%)]"
@@ -102,7 +102,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <Avatar
               name={u.fullName || u.publicRef}
               size="lg"
-              className="ring-4 ring-white shadow-sm"
+              className="ring-4 ring-card shadow-sm"
             />
             <PageHeader
               eyebrow="People · Users & teams"
@@ -112,12 +112,12 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                 <>
                   <span className={roleChipClass(u.role)}>{humanize(u.role)}</span>
                   <Badge variant={statusVariant(u.status)}>{humanize(u.status)}</Badge>
-                  <span className="font-mono text-slate-500">{u.publicRef}</span>
+                  <span className="font-mono text-muted-foreground">{u.publicRef}</span>
                 </>
               }
             />
           </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+          <div className="rounded-xl border border-border-subtle bg-surface-muted p-4">
             <KeyValueGrid
               cols={3}
               items={[
@@ -177,7 +177,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                     {last ? null : (
                       <span
                         aria-hidden="true"
-                        className="absolute top-9 bottom-1 left-4 w-px -translate-x-1/2 bg-slate-200"
+                        className="absolute top-9 bottom-1 left-4 w-px -translate-x-1/2 bg-surface-strong"
                       />
                     )}
                     <IconTile
@@ -191,12 +191,12 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                         <span className={cn('text-sm font-semibold', TONE[look.tone].text)}>
                           {EVENT_LABEL[e.eventType] ?? e.eventType}
                         </span>
-                        <span className="text-xs text-slate-500 tabular-nums">
+                        <span className="text-xs text-muted-foreground tabular-nums">
                           {formatDateTime(e.at)}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm break-words text-slate-800">{e.reason}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-sm break-words text-foreground">{e.reason}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {e.actor ? `${e.actor.fullName} (${humanize(e.actor.role)})` : 'system'}
                       </p>
                     </div>
@@ -218,7 +218,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           >
             <div className="grid gap-3">
               {isAdmin ? (
-                <p className="text-sm text-slate-500">The Admin account cannot be deactivated.</p>
+                <p className="text-sm text-muted-foreground">The Admin account cannot be deactivated.</p>
               ) : u.status === 'ACTIVE' ? (
                 <LifecycleAction
                   userId={u.id}
@@ -261,10 +261,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             flush={u.sessions.length > 0}
           >
             {u.sessions.length ? (
-              <ul className="divide-y divide-slate-100 border-t border-slate-100">
+              <ul className="divide-y divide-border-subtle border-t border-border-subtle">
                 {u.sessions.map((s) => (
                   <li key={s.id} className="flex items-start gap-3 px-5 py-3 sm:px-6">
-                    <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                    <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                       {/android|ios|mobile/i.test(s.platform) ? (
                         <Smartphone className="size-4" aria-hidden="true" />
                       ) : (
@@ -274,15 +274,15 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                     <dl className="grid min-w-0 flex-1 gap-0.5 text-xs">
                       <div>
                         <dt className="sr-only">Platform</dt>
-                        <dd className="text-sm font-medium text-slate-800">{s.platform}</dd>
+                        <dd className="text-sm font-medium text-foreground">{s.platform}</dd>
                       </div>
-                      <div className="flex flex-wrap gap-x-1.5 text-slate-500">
+                      <div className="flex flex-wrap gap-x-1.5 text-muted-foreground">
                         <dt>Signed in</dt>
-                        <dd className="text-slate-700 tabular-nums">{formatDateTime(s.createdAt)}</dd>
+                        <dd className="text-fg-2 tabular-nums">{formatDateTime(s.createdAt)}</dd>
                       </div>
-                      <div className="flex flex-wrap gap-x-1.5 text-slate-500">
+                      <div className="flex flex-wrap gap-x-1.5 text-muted-foreground">
                         <dt>Last seen</dt>
-                        <dd className="text-slate-700 tabular-nums">
+                        <dd className="text-fg-2 tabular-nums">
                           {s.lastSeenAt ? formatDateTime(s.lastSeenAt) : '—'}
                         </dd>
                       </div>

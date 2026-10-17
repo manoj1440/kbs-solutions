@@ -50,7 +50,7 @@ export function CreateUserDialog() {
       <dialog
         ref={ref}
         aria-label="Create user"
-        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl bg-white p-0 shadow-2xl backdrop:bg-slate-900/40"
+        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl bg-card p-0 shadow-2xl backdrop:bg-navy/50"
       >
         <form
           className="grid gap-4 p-5 sm:p-6"
@@ -62,8 +62,8 @@ export function CreateUserDialog() {
           <div className="flex items-start gap-3">
             <IconTile icon={UserPlus} tone="violet" size="sm" />
             <div className="min-w-0">
-              <h2 className="text-[15px] leading-6 font-semibold text-slate-900">Create user</h2>
-              <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+              <h2 className="text-[15px] leading-6 font-semibold text-foreground">Create user</h2>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                 Managers create Telecallers from their team screen; Advisors register themselves.
                 There is only one Admin.
               </p>
@@ -112,7 +112,7 @@ export function CreateUserDialog() {
               {err}
             </Callout>
           ) : null}
-          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <div className="flex justify-end gap-2 border-t border-border-subtle pt-4">
             <Button type="button" variant="ghost" onClick={() => ref.current?.close()}>
               Cancel
             </Button>
@@ -166,7 +166,7 @@ export function LifecycleAction({
           {label}
         </Button>
         {disabledReason ? (
-          <span className="text-[11.5px] leading-relaxed text-slate-500">{disabledReason}</span>
+          <span className="text-2xs leading-relaxed text-muted-foreground">{disabledReason}</span>
         ) : null}
         {msg ? (
           <span className={`text-xs ${msg.ok ? 'text-success' : 'text-destructive'}`}>
@@ -176,8 +176,8 @@ export function LifecycleAction({
       </div>
     );
   return (
-    <div className="grid min-w-0 gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-      <p className="text-[12px] font-semibold text-slate-700">{label}</p>
+    <div className="grid min-w-0 gap-2 rounded-xl border border-border bg-surface-muted p-3">
+      <p className="text-xs font-semibold text-fg-2">{label}</p>
       {withMobile ? (
         <Input
           aria-label="New mobile"
