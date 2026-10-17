@@ -7,7 +7,6 @@ import {
   CalendarRange,
   ChevronDown,
   Clock,
-  Database,
   Filter,
   Landmark,
   MessageSquareText,
@@ -25,8 +24,9 @@ import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BankMark, Callout, EmptyState, Field, IconTile, Meter, SectionCard, selectClass, TONE, type Tone } from '@/components/ui/kit';
+import { Callout, EmptyState, Field, IconTile, Meter, SectionCard, selectClass, TONE, type Tone } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
+import { AWAITING_BANK, bankText } from '@/lib/bank-text';
 import { cn } from '@/lib/utils';
 
 interface Metric {
@@ -72,7 +72,7 @@ interface Bank {
   displayName: string;
 }
 
-const SOURCE_LABEL: Record<string, string> = { KBS_CALLING: 'KBS calling', TELEPHONY_PROVIDER: 'Telephony provider', KBS_SHARING: 'KBS share log', KBS_LEADS: 'KBS leads', BANK_MIS: 'Bank MIS', KBS_PAYOUT_LEDGER: 'Payout ledger', ACCOUNTS_PAYMENT: 'Accounts payment' };
+const SOURCE_LABEL: Record<string, string> = { KBS_CALLING: 'KBS calling', TELEPHONY_PROVIDER: 'Telephony provider', KBS_SHARING: 'KBS share log', KBS_LEADS: 'KBS leads', BANK_MIS: 'Bank', KBS_PAYOUT_LEDGER: 'Payout ledger', ACCOUNTS_PAYMENT: 'Accounts payment' };
 const OUTCOME_LABEL: Record<string, string> = { NO_ANSWER_OR_FAILED: 'No answer / failed', CONNECTED_INTERESTED: 'Connected – interested', CONNECTED_LINK_OR_PDF_SHARED: 'Connected – link/PDF shared', FOLLOW_UP: 'Follow-up', DECLINED: 'Declined', COMPLETED_NO_FURTHER: 'Completed' };
 const SHARE_LABEL: Record<string, string> = { APPLICATION_LINK: 'Application links', BENEFIT_PDF: 'Benefit PDFs', OFFICE_ID: 'Official IDs' };
 
@@ -130,7 +130,7 @@ function SectionHeading({ id, icon, tone, title, description }: { id: string; ic
   );
 }
 
-const MUTED = new Set(['Awaiting MIS', 'Not reported']);
+const MUTED = new Set([AWAITING_BANK, 'Not reported']);
 
 /** Horizontal bars with counts; labels are shown exactly as given (bank values verbatim). */
 function Bars({ rows, max, tone, empty, emptyIcon }: { rows: { key: string; label: string; count: number }[]; max?: number; tone: Tone; empty: string; emptyIcon: LucideIcon }) {
@@ -158,8 +158,8 @@ function Bars({ rows, max, tone, empty, emptyIcon }: { rows: { key: string; labe
 
 function DistCard({ title, d }: { title: string; d: Dist }) {
   return (
-    <SectionCard icon={Landmark} tone="indigo" title={title} description={`Latest accepted MIS value, verbatim · ${d.denominator.value} ${d.denominator.label} · ${d.dateBasis}`}>
-      <Bars rows={d.buckets.map((b) => ({ key: b.value, label: b.value, count: b.count }))} max={d.denominator.value} tone="indigo" empty="No leads in this population." emptyIcon={Landmark} />
+    <SectionCard icon={Landmark} tone="indigo" title={title} description={`As reported by the bank · ${d.denominator.value} ${d.denominator.label} · ${d.dateBasis}`}>
+      <Bars rows={d.buckets.map((b) => ({ key: b.value, label: bankText(b.value), count: b.count }))} max={d.denominator.value} tone="indigo" empty="No leads in this population." emptyIcon={Landmark} />
     </SectionCard>
   );
 }
@@ -261,13 +261,13 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
           <Field label="State" htmlFor="ops-state">
             <input id="ops-state" className={selectClass} name="state" defaultValue={sp.state ?? ''} placeholder="e.g. Rajasthan" />
           </Field>
-          <Field label="MIS recency" htmlFor="ops-recency" className="col-span-2 sm:col-span-1">
+          <Field label="Last bank update" htmlFor="ops-recency" className="col-span-2 sm:col-span-1">
             <select id="ops-recency" className={selectClass} name="misRecency" defaultValue={sp.misRecency ?? ''}>
               <option value="">Any</option>
-              <option value="within7">Matched in last 7 days</option>
-              <option value="within30">Matched in last 30 days</option>
-              <option value="older30">Last match older than 30 days</option>
-              <option value="never">Never matched</option>
+              <option value="within7">In last 7 days</option>
+              <option value="within30">In last 30 days</option>
+              <option value="older30">Older than 30 days</option>
+              <option value="never">No bank update yet</option>
             </select>
           </Field>
         </div>
@@ -316,11 +316,11 @@ export function OpsSections({ d }: { d: OpsDashboard }) {
         </div>
       </section>
       <section className="grid gap-4" aria-labelledby="adv-h">
-        <SectionHeading id="adv-h" icon={Landmark} tone="indigo" title="Advisor leads & bank results" description="KBS leads and the latest accepted bank MIS values, shown exactly as the bank reported them." />
+        <SectionHeading id="adv-h" icon={Landmark} tone="indigo" title="Advisor leads & bank results" description="KBS leads and their bank status, exactly as the bank reported it." />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <Tile label="Leads created" m={a.leads.created} tone="violet" />
-          <Tile label="Matched in bank MIS" m={a.leads.misMatched} tone="indigo" />
-          <Tile label="Awaiting MIS" m={a.leads.awaitingMis} tone="slate" />
+          <Tile label="With a bank status" m={a.leads.misMatched} tone="indigo" />
+          <Tile label="Awaiting bank update" m={a.leads.awaitingMis} tone="slate" />
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
           <DistCard title="Current stage" d={a.stage} />
@@ -331,7 +331,7 @@ export function OpsSections({ d }: { d: OpsDashboard }) {
           icon={MessageSquareWarning}
           tone="amber"
           title="Actionable bank reasons"
-          description={`${a.bankReasons.leadsWithReason.value} of ${a.bankReasons.leadsWithReason.denominator?.value ?? 0} MIS-matched leads carry a bank remark or decline field (verbatim).`}
+          description={`${a.bankReasons.leadsWithReason.value} of ${a.bankReasons.leadsWithReason.denominator?.value ?? 0} leads with a bank status carry a bank remark or decline reason.`}
         >
           <Bars rows={a.bankReasons.top.map((r) => ({ key: r.value, label: r.value, count: r.count }))} tone="amber" empty="No bank reasons reported." emptyIcon={MessageSquareWarning} />
         </SectionCard>
@@ -359,7 +359,7 @@ export function OpsSections({ d }: { d: OpsDashboard }) {
 
 /**
  * F-702 (and F-703 executive) operations dashboard. Calls, shares, leads, bank values and payouts are separate
- * metrics, each labelled with its source and date basis; bank values are the latest accepted MIS, never live status.
+ * metrics, each labelled with its source and date basis; bank values are as the bank last reported them.
  */
 export async function OperationsDashboard({
   basePath,
@@ -393,19 +393,6 @@ export async function OperationsDashboard({
         </span>
       </div>
       <OpsFilters basePath={basePath} sp={sp} />
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="MIS freshness per bank">
-        <span className="mr-1 inline-flex items-center gap-1.5 text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
-          <Database className="size-3.5" aria-hidden="true" />
-          MIS freshness
-        </span>
-        {d.meta.misFreshness.map((f) => (
-          <span key={f.bank.code} className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-xl border border-border bg-card py-1 pr-2 pl-1 shadow-card">
-            <BankMark code={f.bank.code} size="sm" />
-            <span className="truncate text-xs font-medium text-foreground">{f.bank.displayName}</span>
-            <Badge variant={f.lastAppliedAt ? 'info' : 'unknown'}>{f.lastAppliedAt ? `MIS applied ${formatDateTime(f.lastAppliedAt)}` : 'no MIS applied'}</Badge>
-          </span>
-        ))}
-      </div>
       {d.alerts?.length ? (
         <Callout tone="warning" icon={TriangleAlert} title="Needs attention" role="alert">
           <ul className="mt-1 grid gap-1">

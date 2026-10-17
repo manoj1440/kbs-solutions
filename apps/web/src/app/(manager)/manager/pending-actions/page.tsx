@@ -8,7 +8,7 @@ import { apiFetch } from '@/lib/api';
 
 export const metadata = { title: 'Pending actions · KBS Solutions' };
 
-/** F-409 → F-811 (Manager): concrete pending actions across the team — owner / what / source / date. Nothing is invented from blank MIS cells. */
+/** F-409 → F-811 (Manager): concrete pending actions across the team — owner / what / source / date. Nothing is invented from blank bank values. */
 export default async function ManagerPendingActionsPage() {
   const r = await apiFetch<PendingAction[]>('/pending-actions');
   const tasks = r.data.filter((a) => a.source.type === 'KBS_TASK').length;
@@ -19,12 +19,12 @@ export default async function ManagerPendingActionsPage() {
       <StatStrip cols={3}>
         <MiniStat label="Pending actions" value={r.data.length} hint="Across your team" tone={r.data.length ? 'amber' : 'slate'} />
         <MiniStat label="Follow-up tasks" value={tasks} hint="Created in KBS" tone="sky" />
-        <MiniStat label="From bank MIS" value={bank} hint="Admin-configured MIS rules" tone="indigo" />
+        <MiniStat label="From bank status" value={bank} hint="Set up by Admin" tone="indigo" />
       </StatStrip>
       <section aria-label="Pending actions" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="min-h-0 flex-1 overflow-y-auto">
           {r.data.length === 0 ? (
-            <EmptyState icon={ClipboardList} className="m-3" title="No pending actions." description="Follow-up tasks and matching MIS rules will appear here." />
+            <EmptyState icon={ClipboardList} className="m-3" title="No pending actions." description="Follow-up tasks and bank-status actions will appear here." />
           ) : (
             <ul className="divide-y divide-border-subtle">
               {r.data.map((a) => (
@@ -48,7 +48,7 @@ export default async function ManagerPendingActionsPage() {
                         <Badge variant="info">Follow-up task</Badge>
                       ) : (
                         <Badge variant="secondary" className="max-w-full whitespace-normal">
-                          Bank MIS · {a.source.field}
+                          Bank · {a.source.field}
                           {a.source.batchRef ? ` · ${a.source.batchRef}` : ''}
                         </Badge>
                       )}

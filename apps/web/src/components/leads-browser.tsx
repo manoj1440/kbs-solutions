@@ -38,13 +38,13 @@ export type LeadsSearch = Partial<
 const SORT_LABEL: Record<(typeof LEAD_SORTS)[number], string> = {
   createdAt_desc: 'Newest lead first',
   createdAt_asc: 'Oldest lead first',
-  lastMatchedAt_desc: 'Latest MIS match first',
-  lastMatchedAt_asc: 'Stalest MIS match first',
+  lastMatchedAt_desc: 'Latest bank update first',
+  lastMatchedAt_asc: 'Oldest bank update first',
   customer_asc: 'Customer A→Z',
 };
 const FRESH_LABEL: Record<(typeof MIS_FRESHNESS)[number], string> = {
-  never: 'Never matched',
-  recent: 'Matched in last 7 days',
+  never: 'No bank update yet',
+  recent: 'Updated in last 7 days',
   older7d: 'Older than 7 days',
   older30d: 'Older than 30 days',
 };
@@ -90,12 +90,12 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">{title}</h1>
       <StatStrip cols={6}>
-        <MiniStat label="Leads" value={summary.total.toLocaleString('en-IN')} hint={filtered ? `${total} match the filters` : `${summary.matched} matched to bank MIS`} tone="sky" />
+        <MiniStat label="Leads" value={summary.total.toLocaleString('en-IN')} hint={filtered ? `${total} match the filters` : `${summary.matched} with a bank status`} tone="sky" />
         <MiniStat label="Approved" value={summary.approved} hint="Bank decision = approved" tone="emerald" />
         <MiniStat label="Declined" value={summary.declined} hint="Bank decision = declined/rejected" tone="rose" />
         <MiniStat label="In process" value={summary.inProcess} hint="Decision reported, not final" tone="amber" />
         <MiniStat label="Cards active" value={summary.cardsActive} hint={`${summary.cardsInactive} reported inactive`} tone="teal" />
-        <MiniStat label="Awaiting MIS" value={summary.awaitingMis} hint={`No accepted MIS row · ${summary.decisionBlank} matched w/o decision`} tone="slate" />
+        <MiniStat label="Awaiting bank update" value={summary.awaitingMis} hint={`${summary.decisionBlank} more with no decision yet`} tone="slate" />
       </StatStrip>
 
       <LeadsLayoutProvider>
@@ -151,7 +151,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
               <Field label="Created to" htmlFor="to">
                 <input id="to" name="to" type="date" defaultValue={sp.to ?? ''} className={cn(selectClass, 'h-9')} />
               </Field>
-              <Field label="MIS freshness" htmlFor="misFreshness">
+              <Field label="Last bank update" htmlFor="misFreshness">
                 <select id="misFreshness" name="misFreshness" defaultValue={sp.misFreshness ?? ''} className={cn(selectClass, 'h-9')}>
                   <option value="">Any</option>
                   {MIS_FRESHNESS.map((f) => (
@@ -178,7 +178,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
                 <Field key={name} label={label} htmlFor={name}>
                   <select id={name} name={name} defaultValue={sp[name] ?? ''} className={cn(selectClass, 'h-9')}>
                     <option value="">Any</option>
-                    <option value={FILTER_AWAITING}>Awaiting MIS Update</option>
+                    <option value={FILTER_AWAITING}>Awaiting bank update</option>
                     <option value={FILTER_NOT_REPORTED}>Not reported</option>
                     {values.map((v) => (
                       <option key={v} value={v}>

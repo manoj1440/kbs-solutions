@@ -51,7 +51,7 @@ export function LeadOps({ leadId, followUps, remarks }: { leadId: string; follow
     }
   };
   return (
-    <SectionCard icon={ClipboardList} tone="sky" title="Follow-up tasks & operational remarks" description="KBS activity only. Bank remarks come from the MIS and cannot be edited here." bodyClassName="grid gap-6">
+    <SectionCard icon={ClipboardList} tone="sky" title="Follow-up tasks & operational remarks" description="KBS activity only. Bank remarks come from the bank and cannot be edited here." bodyClassName="grid gap-6">
       <div className="grid content-start gap-3">
         <p className="flex items-center gap-2 text-sm font-medium text-foreground">
           <ListTodo className="size-4 text-amber-600" aria-hidden="true" />

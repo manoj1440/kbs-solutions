@@ -1,6 +1,6 @@
 'use client';
 
-import type { MeResponse, MisFreshness } from '@kbs/shared';
+import type { MeResponse } from '@kbs/shared';
 import {
   AlertTriangle,
   Archive,
@@ -47,7 +47,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
 import { LogoutButton } from '@/components/logout-button';
-import { MisClock } from '@/components/mis-clock';
 import { SessionKeepAlive } from '@/components/session-keep-alive';
 import { Button } from '@/components/ui/button';
 import { Avatar, humanize } from '@/components/ui/kit';
@@ -67,7 +66,10 @@ const ADMIN_GROUPS: NavGroup[] = [
   },
   {
     label: 'Sales',
-    items: [{ href: '/admin/leads', label: 'Leads & applications', icon: ListChecks }],
+    items: [
+      { href: '/admin/leads', label: 'Leads & applications', icon: ListChecks },
+      { href: '/admin/mis', label: 'Bank MIS upload', icon: FileSpreadsheet },
+    ],
   },
   {
     label: 'Calling',
@@ -90,12 +92,6 @@ const ADMIN_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/catalogue', label: 'Card catalogue', icon: CreditCard },
       { href: '/admin/pincode-profiles', label: 'Bank coverage', icon: MapPin },
-    ],
-  },
-  {
-    label: 'Bank MIS',
-    items: [
-      { href: '/admin/mis', label: 'MIS imports', icon: FileSpreadsheet },
     ],
   },
   {
@@ -198,13 +194,10 @@ function matchLength(href: string, pathname: string, params: URLSearchParams, ro
 export function WorkspaceShell({
   session,
   area,
-  misFreshness = null,
   children,
 }: {
   session: MeResponse;
   area: WorkspaceArea;
-  /** F-814 MIS clock data, fetched by the layout (null = unavailable) */
-  misFreshness?: MisFreshness | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -321,7 +314,6 @@ export function WorkspaceShell({
 
   const footer = (
     <>
-      <MisClock freshness={misFreshness} href={area === 'admin' ? '/admin/mis' : undefined} />
       <Link
         href={`${accountBase}/account`}
         onClick={() => mobileNav.current?.close()}
@@ -542,7 +534,7 @@ export function WorkspaceShell({
           ))}
           {matches.length === 0 ? (
             <p className="p-8 text-center text-sm text-muted-foreground">
-              No workspace matches. Try “MIS” or “payout”.
+              No workspace matches. Try “leads” or “payout”.
             </p>
           ) : null}
         </div>

@@ -137,7 +137,7 @@ export async function AdvisorPerformance({ sp }: { sp: Record<string, string | u
       stats={[
         { label: 'Advisors', value: d.rows.length, hint: 'In this view', tone: 'violet' },
         { label: 'Leads created', value: total(d.rows, (r) => r.leads.created.value), hint, tone: 'teal' },
-        { label: 'MIS matched', value: total(d.rows, (r) => r.leads.misMatched.value), hint, tone: 'indigo' },
+        { label: 'With bank status', value: total(d.rows, (r) => r.leads.misMatched.value), hint, tone: 'indigo' },
         { label: 'Paid payout events', value: total(d.rows, (r) => r.payouts.paid.value), hint: `${formatInr(total(d.rows, (r) => r.payouts.paid.amountInr ?? 0))} · ${hint.toLowerCase()}`, tone: 'emerald' },
       ]}
     >
@@ -157,8 +157,8 @@ export async function BankCardMix({ sp }: { sp: Record<string, string | undefine
       meta={d.meta}
       stats={[
         { label: 'Leads', value: total(d.rows, (r) => r.leads), hint, tone: 'teal' },
-        { label: 'MIS matched', value: total(d.rows, (r) => r.misMatched), hint, tone: 'indigo' },
-        { label: 'Awaiting MIS', value: total(d.rows, (r) => r.awaitingMis), hint, tone: 'slate' },
+        { label: 'With bank status', value: total(d.rows, (r) => r.misMatched), hint, tone: 'indigo' },
+        { label: 'Awaiting bank update', value: total(d.rows, (r) => r.awaitingMis), hint, tone: 'slate' },
         { label: 'Payout eligible', value: total(d.rows, (r) => r.payoutEligible.count), hint: `${formatInr(total(d.rows, (r) => r.payoutEligible.amountInr))} · ${hint.toLowerCase()}`, tone: 'emerald' },
       ]}
     >

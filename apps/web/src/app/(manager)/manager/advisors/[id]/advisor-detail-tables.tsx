@@ -54,7 +54,7 @@ export function AdvisorLeadsTable({ rows }: { rows: LeadStatusRow[] }) {
     }),
     l.display({
       id: 'bankStatus',
-      header: 'Bank status (MIS)',
+      header: 'Bank status',
       cell: ({ row }) => (
         <>
           <div className="flex flex-wrap gap-1">
@@ -133,7 +133,7 @@ export function AdvisorEntitlementsTable({ rows }: { rows: EntitlementDto[] }) {
       ),
     }),
     e.accessor('triggerFieldValue', {
-      header: 'MIS evidence',
+      header: 'Bank evidence',
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>

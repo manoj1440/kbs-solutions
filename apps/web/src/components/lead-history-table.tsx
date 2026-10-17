@@ -45,7 +45,7 @@ const columns = c.columns([
   }),
 ]);
 
-/** F-408 MIS change rows for one batch — exact old → new bank value (verbatim). */
+/** F-408 bank status changes for one upload — exact old → new bank value (verbatim). */
 export function LeadHistoryTable({ batchId, changes }: { batchId: string; changes: Change[] }) {
   return <DataTable columns={columns} data={changes} getRowId={(x) => `${batchId}-${x.field}`} />;
 }

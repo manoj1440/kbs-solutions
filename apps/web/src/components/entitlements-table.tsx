@@ -125,7 +125,7 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
       getRowId={(r) => r.id}
       pagedOnServer
       empty={
-        <EmptyState icon={ListChecks} className="m-3" title="No entitlements." description="Entitlements appear once bank MIS evidence matches an approved payout rule." />
+        <EmptyState icon={ListChecks} className="m-3" title="No entitlements." description="Entitlements appear once the bank reports a value an approved payout rule asks for." />
       }
     />
   );

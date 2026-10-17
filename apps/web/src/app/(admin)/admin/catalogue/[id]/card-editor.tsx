@@ -195,7 +195,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
         <SectionCard icon={FilePen} tone="teal" title="Basics, benefits & fees" description="REQ-07 §7.1 fields. One benefit per line; charges as “label: value”." className="self-start">
           <div className="grid gap-4">
             {field('name', 'Card name')}
-            {field('productCode', 'Bank product code (for MIS crosswalk)')}
+            {field('productCode', 'Bank product code (as the bank writes it)')}
             {field('description', 'Description', true)}
             {field('benefits', 'Rewards / benefits (one per line)', true)}
             <div className="grid gap-4 sm:grid-cols-2">

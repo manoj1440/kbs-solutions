@@ -48,7 +48,7 @@ const GROUP: Record<string, { label: string; icon: LucideIcon; tone: Tone }> = {
   hierarchy: { label: 'Hierarchy', icon: Network, tone: 'violet' },
   idcard: { label: 'ID card', icon: IdCard, tone: 'indigo' },
   leads: { label: 'Leads', icon: ListChecks, tone: 'teal' },
-  mis: { label: 'MIS', icon: FileSpreadsheet, tone: 'indigo' },
+  mis: { label: 'Bank MIS upload', icon: FileSpreadsheet, tone: 'indigo' },
   network: { label: 'Network', icon: Wifi, tone: 'sky' },
   onboarding: { label: 'Onboarding', icon: ClipboardCheck, tone: 'emerald' },
   payouts: { label: 'Payouts', icon: Wallet, tone: 'emerald' },

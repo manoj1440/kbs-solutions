@@ -180,11 +180,11 @@ const managerColumns = m.columns([
       }),
   m.accessor((r) => r.leads.created.value, {
     id: 'leads',
-    header: 'Leads / MIS matched',
+    header: 'Leads / with bank status',
         cell: ({ row }) => (
       <>
         {row.original.leads.created.value} / {row.original.leads.misMatched.value}
-        {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16" label="MIS matched share of leads" /> : null}
+        {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16" label="Share of leads with a bank status" /> : null}
       </>
     ),
   }),
@@ -230,7 +230,7 @@ const advisorColumns = a.columns([
         cell: ({ row }) => (
       <>
         {row.original.leads.created.value} / {row.original.leads.misMatched.value}
-        {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16" label="MIS matched share of leads" /> : null}
+        {row.original.leads.created.value ? <Meter value={row.original.leads.misMatched.value} max={row.original.leads.created.value} tone="indigo" className="mt-1 h-1 w-16" label="Share of leads with a bank status" /> : null}
       </>
     ),
   }),
@@ -283,16 +283,16 @@ const mixColumns = b.columns([
     header: 'Leads',
       }),
   b.accessor('misMatched', {
-    header: 'MIS matched',
+    header: 'With bank status',
         cell: ({ row }) => (
       <>
         {row.original.misMatched}
-        {row.original.leads ? <Meter value={row.original.misMatched} max={row.original.leads} tone="indigo" className="mt-1 h-1 w-16" label="MIS matched share of leads" /> : null}
+        {row.original.leads ? <Meter value={row.original.misMatched} max={row.original.leads} tone="indigo" className="mt-1 h-1 w-16" label="Share of leads with a bank status" /> : null}
       </>
     ),
   }),
   b.accessor('awaitingMis', {
-    header: 'Awaiting MIS',
+    header: 'Awaiting bank update',
       }),
   b.accessor((r) => r.payoutEligible.count, {
     id: 'eligible',

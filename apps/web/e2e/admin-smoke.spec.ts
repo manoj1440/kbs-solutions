@@ -79,7 +79,7 @@ test.describe('Admin workspace smoke', () => {
     expect(new Set(hrefs).size).toBe(hrefs.length);
     expect(hrefs).not.toContain('/admin/dashboards');
     expect(hrefs).not.toContain('/admin/account');
-    for (const group of ['Overview', 'Sales', 'Calling', 'People', 'Products', 'Bank MIS', 'Payouts', 'Reports', 'Settings'])
+    for (const group of ['Overview', 'Sales', 'Calling', 'People', 'Products', 'Payouts', 'Reports', 'Settings'])
       await expect(nav.getByText(group, { exact: true })).toBeVisible();
   });
 

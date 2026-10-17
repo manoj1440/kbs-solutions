@@ -1,4 +1,4 @@
-import { type AdminTodayResponse, type AdminTrendResponse, type CallingRecordsSummary, formatDateTime, formatInr, type LeadStatusRow } from '@kbs/shared';
+import { type AdminTodayResponse, type AdminTrendResponse, type CallingRecordsSummary, formatInr, type LeadStatusRow } from '@kbs/shared';
 import {
   ArrowRight,
   BadgeCheck,
@@ -8,7 +8,6 @@ import {
   ClipboardCheck,
   CreditCard,
   FilePlus2,
-  FileWarning,
   ListChecks,
   PhoneCall,
   TrendingUp,
@@ -78,7 +77,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { hour: 
 /**
  * F-811 → F-814 Business overview (Admin home): greeting, period KPIs with change vs the previous period, trend,
  * calling funnel, all-time context, newest leads, and a Today rail of what waits on the Admin. Bank figures are
- * the latest accepted MIS values as reported (INV-01..03); every section names its source.
+ * the bank status as the bank reported it (INV-01..03).
  */
 export default async function AdminHome({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
@@ -127,7 +126,6 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     { n: people.ADVISOR.total, label: people.ADVISOR.total === 1 ? 'advisor' : 'advisors', role: 'ADVISOR' },
     { n: people.ACCOUNTS.total, label: people.ACCOUNTS.total === 1 ? 'accounts user' : 'accounts users', role: 'ACCOUNTS' },
   ];
-  const misToResolve = today ? today.misExceptions.unmatched + today.misExceptions.conflicts : 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -195,7 +193,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                 label="Leads created"
                 value={business.leads.created.value}
                 delta={prev ? <DeltaBadge current={business.leads.created.value} previous={prev.leads} className="bg-white/15 text-white" /> : null}
-                hint={`${business.leads.misMatched.value} matched in bank MIS · ${business.leads.awaitingMis.value} awaiting`}
+                hint={`${business.leads.misMatched.value} with a bank status · ${business.leads.awaitingMis.value} awaiting`}
                 icon={FilePlus2}
                 href="/admin/leads"
               />
@@ -211,7 +209,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                 label="Cards activated"
                 value={business.activated}
                 delta={prev ? <DeltaBadge current={business.activated} previous={prev.activated} /> : null}
-                hint="Bank MIS · activation"
+                hint="Reported active by the bank"
                 icon={CreditCard}
                 tone="teal"
               />
@@ -226,7 +224,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               />
             </StatGrid>
             <p className="mt-2 text-xs text-muted-foreground">
-              Leads created {rangeLabel} → their latest bank MIS result · payout by eligible date{prev ? ' · change vs the same length of time before' : ''}.
+              Leads created {rangeLabel} → their bank result · payout by eligible date{prev ? ' · change vs the same length of time before' : ''}.
             </p>
           </section>
 
@@ -234,7 +232,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
             title="Trend"
             icon={TrendingUp}
             tone="teal"
-            description={`${trendIsPeriod ? rangeLabel : `Last 14 days (${day(from)} – ${day(to)})`} · leads by created date, bank results from the latest MIS`}
+            description={`${trendIsPeriod ? rangeLabel : `Last 14 days (${day(from)} – ${day(to)})`} · leads by created date`}
           >
             {trend ? (
               <TrendChart
@@ -297,14 +295,6 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           <h2 className="text-sm font-semibold text-foreground">Today</h2>
           {today ? (
             <>
-              {misToResolve ? (
-                <Callout tone="danger" icon={FileWarning} title={`${misToResolve} bank MIS row${misToResolve === 1 ? '' : 's'} to resolve`}>
-                  {today.misExceptions.unmatched} unmatched · {today.misExceptions.conflicts} in conflict.{' '}
-                  <Link href="/admin/mis/integrity" className="font-semibold underline underline-offset-2">
-                    Resolve
-                  </Link>
-                </Callout>
-              ) : null}
               <RailCard
                 title="Follow-ups due"
                 icon={CalendarClock}
@@ -359,9 +349,6 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         }
       >
         <RecentLeadsTable rows={recentLeads} />
-        <p className="border-t border-border-subtle px-5 py-2 text-2xs text-muted-foreground sm:px-6">
-          Source: KBS records + latest accepted bank MIS + payout ledger · {rangeLabel} · as of {formatDateTime(home.asOf)}. {home.note}
-        </p>
       </SectionCard>
     </div>
   );

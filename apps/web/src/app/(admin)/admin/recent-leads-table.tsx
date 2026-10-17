@@ -56,7 +56,7 @@ const columns = c.columns([
     cell: ({ row }) => (
       <>
         <div className="text-xs text-fg-2">{formatDateTime(row.original.leadCreatedAt)}</div>
-        <div className="mt-0.5 text-2xs text-muted-foreground">{row.original.lastMatchedAt ? `MIS ${formatDateTime(row.original.lastMatchedAt)}` : 'Awaiting MIS'}</div>
+        <div className="mt-0.5 text-2xs text-muted-foreground">{row.original.lastMatchedAt ? `Bank ${formatDateTime(row.original.lastMatchedAt)}` : 'Awaiting bank update'}</div>
       </>
     ),
   }),

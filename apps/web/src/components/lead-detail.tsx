@@ -35,8 +35,8 @@ export interface LeadDetailDto extends Omit<LeadStatusRow, 'bankReference'> {
 
 /**
  * F-408 — lead detail (REQ-11 §11.9): (A) customer + KBS activity, (B) bank references + latest raw snapshot,
- * (C) grouped bank remarks and Bank/KYC information, MIS change history grouped by batch (REQ-14 §14.6), (D) payout.
- * No timeline. F-814: DetailHeader + bank-status hero; bank fields left, people/KBS activity right, then MIS history
+ * (C) grouped bank remarks and Bank/KYC information, bank status history grouped by upload (REQ-14 §14.6), (D) payout.
+ * No timeline. F-814: DetailHeader + bank-status hero; bank fields left, people/KBS activity right, then bank status history
  * and payout full width; fields the bank left blank collapse behind a count (one click away, never dropped).
  */
 export async function LeadDetail({ id, backHref }: { id: string; backHref: string }) {
@@ -77,7 +77,7 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
               <IconTile icon={Landmark} tone="indigo" size="sm" />
               <div className="min-w-0">
                 <h2 id="bank-status-title" className="text-[15px] leading-6 font-semibold tracking-tight text-foreground">
-                  Bank status (from MIS only)
+                  Bank status
                 </h2>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Three independent bank-reported fields. Nothing here is inferred from KBS activity.</p>
               </div>
@@ -102,14 +102,14 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="grid min-w-0 content-start gap-6">
-          <SectionCard icon={Landmark} tone="indigo" title="Bank references & latest snapshot" description="Exact values from the newest accepted MIS row for this lead." bodyClassName="grid gap-4 text-sm">
+          <SectionCard icon={Landmark} tone="indigo" title="Bank references & latest snapshot" description="Exact values from the latest bank update for this lead." bodyClassName="grid gap-4 text-sm">
             <div className="rounded-xl border border-border bg-surface-muted p-3.5">
               <p className="text-2xs font-medium text-muted-foreground">Reference</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 {l.bankReference.value ? (
                   <>
                     <code className="text-ui font-semibold text-foreground">{l.bankReference.value}</code> <span className="text-xs text-muted-foreground">({l.bankReference.kind})</span>{' '}
-                    <Badge variant={l.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'success' : 'warning'}>{l.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'Verified by MIS match' : 'Unverified'}</Badge>
+                    <Badge variant={l.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'success' : 'warning'}>{l.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'Verified by the bank' : 'Unverified'}</Badge>
                   </>
                 ) : (
                   <span className="text-muted-foreground">{l.bankReference.label}</span>
@@ -126,7 +126,7 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
                 blankWord="blank"
               />
             ) : (
-              <EmptyState icon={FileClock} title="No MIS row has matched this lead yet." />
+              <EmptyState icon={FileClock} title="No bank update for this lead yet." />
             )}
           </SectionCard>
 
@@ -194,12 +194,12 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
       <SectionCard
         icon={FileClock}
         tone="sky"
-        title="MIS update history"
-        description="Grouped by imported batch: exact old → new bank value, reported bank event date, KBS import time and uploader role. Identical repeats show as confirmed unchanged."
+        title="Bank status history"
+        description="Each bank update: old → new value as the bank wrote it, the bank's event date and when it was uploaded."
         bodyClassName="grid gap-5"
       >
         {h.data.length === 0 ? (
-          <EmptyState icon={FileClock} title="No MIS batch has matched this lead yet." />
+          <EmptyState icon={FileClock} title="No bank update for this lead yet." />
         ) : (
           h.data.map((g) => {
             const changed = g.changes.filter((c) => c.changeKind === 'SET' || c.changeKind === 'CHANGED' || c.changeKind === 'ABSENT_FROM_BATCH');
@@ -229,7 +229,7 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
         )}
       </SectionCard>
 
-      <SectionCard icon={Wallet} tone="teal" title="Payout" description="Entitlements exist only when the bank MIS evidences an approved rule’s exact trigger value. Activation alone implies nothing.">
+      <SectionCard icon={Wallet} tone="teal" title="Payout" description="A payout is earned once the bank reports the value an approved payout rule asks for.">
         {ents.data.length === 0 ? (
           <EmptyState icon={Wallet} title="No payout entitlement for this lead." />
         ) : (

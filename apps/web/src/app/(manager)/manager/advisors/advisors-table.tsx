@@ -8,13 +8,14 @@ import { columnHelper, DataTable } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
 import { Avatar, EmptyState, humanize, Meter, StatusDot } from '@/components/ui/kit';
 import { type AdvisorTeamResponse, inr, REPORTING_LABEL } from '@/lib/advisor-team';
+import { bankText } from '@/lib/bank-text';
 
 type Row = AdvisorTeamResponse['rows'][number];
 
 const c = columnHelper<Row>();
 
 /**
- * F-315 → F-813: Manager's Advisors — leads, real MIS results and payout position (REQ-15 §15.1).
+ * F-315 → F-813: Manager's Advisors — leads, real bank results and payout position (REQ-15 §15.1).
  * Evidence per person — no ranking or score (REQ-15 §15.3).
  */
 export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
@@ -58,10 +59,10 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
               max={r.leads.created.value}
               tone="indigo"
               className="my-1.5 h-1.5 w-full min-w-28 @min-[701px]:w-32"
-              label={`${r.leads.misMatched.value} of ${r.leads.created.value} matched in MIS`}
+              label={`${r.leads.misMatched.value} of ${r.leads.created.value} with a bank status`}
             />
             <div className="text-xs text-muted-foreground tabular-nums">
-              {r.leads.misMatched.value} of {r.leads.created.value} matched in MIS · {r.leads.awaitingMis.value} awaiting MIS
+              {r.leads.misMatched.value} of {r.leads.created.value} with a bank status · {r.leads.awaitingMis.value} awaiting
             </div>
           </>
         );
@@ -69,7 +70,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
     }),
     c.display({
       id: 'activation',
-      header: 'Bank activation (MIS)',
+      header: 'Bank activation',
       cell: ({ row }) => (
         <ul className="grid gap-1 text-xs">
           {row.original.activation.buckets.slice(0, 4).map((b) => (
@@ -81,7 +82,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
                     : 'min-w-0 font-mono break-words text-fg-2'
                 }
               >
-                {b.value}
+                {bankText(b.value)}
               </span>
               <span className="font-medium text-foreground tabular-nums">{b.count}</span>
             </li>

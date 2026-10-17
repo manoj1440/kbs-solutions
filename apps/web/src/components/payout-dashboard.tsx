@@ -36,7 +36,7 @@ interface Bank {
   displayName: string;
 }
 const BASIS_LABEL: Record<string, string> = {
-  eligibleAt: 'Eligible date (MIS evidence)',
+  eligibleAt: 'Eligible date (bank update)',
   submittedAt: 'Request submitted date',
   paidAt: 'Paid date',
 };
@@ -46,7 +46,7 @@ const KIND_LABEL: Record<string, string> = {
   MISSING_PROOF: 'Proof missing',
   CORRECTION_PENDING: 'Correction awaiting Admin',
   STALE_REQUEST: 'Stale approval',
-  MIS_CORRECTION_AFTER_PAYMENT: 'MIS changed after payment',
+  MIS_CORRECTION_AFTER_PAYMENT: 'Bank changed status after payment',
   UNDER_REVIEW_IN_REQUEST: 'Under review in request',
 };
 
@@ -65,14 +65,14 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
   ]);
   const t = d.totals;
   const tiles: { label: string; tot: Tot; hint: string; color: Tone; inEligible?: boolean }[] = [
-    { label: 'Eligible card events', tot: t.eligible, hint: 'MIS-evidenced under approved rules', color: 'indigo' },
+    { label: 'Eligible card events', tot: t.eligible, hint: 'Bank-reported, under approved rules', color: 'indigo' },
     { label: 'Available to claim', tot: t.available, hint: 'not reserved or paid', color: 'teal', inEligible: true },
     { label: 'Requested', tot: t.requested, hint: 'awaiting approvals', color: 'sky', inEligible: true },
     { label: 'Approved, unpaid', tot: t.approvedUnpaid, hint: 'Accounts payment pending', color: 'violet', inEligible: true },
     { label: 'On hold', tot: t.onHold, hint: 'held for Admin review', color: t.onHold.count ? 'amber' : 'slate', inEligible: true },
     { label: 'Paid (events)', tot: t.paid, hint: 'paid for this event', color: 'emerald', inEligible: true },
     { label: 'Pending hold period', tot: t.pendingHold, hint: 'hold days not elapsed', color: 'slate', inEligible: true },
-    { label: 'Under review', tot: t.underReview, hint: 'MIS no longer reports the trigger', color: t.underReview.count ? 'amber' : 'slate' },
+    { label: 'Under review', tot: t.underReview, hint: 'Bank no longer reports the trigger', color: t.underReview.count ? 'amber' : 'slate' },
   ];
   const aging: [string, number][] = [
     ['0–7 d', d.approvals.aging.d0_7],

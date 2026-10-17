@@ -90,7 +90,7 @@ export function NewRule({ banks }: { banks: { id: string; code: string; displayN
                 </Badge>
               </button>
             ))}
-            {seen && seen.length === 0 ? <span className="text-muted-foreground text-xs">No values seen in MIS yet for this field — type one below exactly as the bank writes it.</span> : null}
+            {seen && seen.length === 0 ? <span className="text-muted-foreground text-xs">The bank has not reported a value for this field yet — type one below exactly as the bank writes it.</span> : null}
           </div>
           <div className="flex max-w-xl gap-2">
             <Input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Add a value verbatim" />

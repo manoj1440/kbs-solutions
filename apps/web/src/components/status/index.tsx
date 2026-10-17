@@ -1,7 +1,8 @@
 import type { Provenance, StatusField, StatusKind, StatusTone } from '@kbs/shared';
-import { formatDateTime, payoutStateLabel, payoutStateTone, PROVENANCE_LABEL, statusTone } from '@kbs/shared';
+import { formatDateTime, payoutStateLabel, payoutStateTone, statusTone } from '@kbs/shared';
 
 import { Badge } from '@/components/ui/badge';
+import { bankText, PROVENANCE_WEB } from '@/lib/bank-text';
 import { cn } from '@/lib/utils';
 
 /**
@@ -24,7 +25,7 @@ function StatusBadge({ kind, field, label }: { kind: StatusKind; field: StatusFi
     <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
       {label ? <span className="shrink-0 text-2xs font-medium text-muted-foreground">{label}:</span> : null}
       <span title={field.raw ?? undefined} className={cn('min-w-0 max-w-full truncate text-xs font-semibold', TONE_TEXT[statusTone(kind, field)])}>
-        {field.display}
+        {bankText(field.display)}
       </span>
     </span>
   );
@@ -44,7 +45,7 @@ export function ProvenanceChip({ provenance, asOf, batchRef }: { provenance: Pro
   return (
     <span className={cn('inline-flex max-w-full flex-wrap items-center gap-x-1 rounded-full px-2 py-0.5 text-2xs font-semibold ring-1 ring-inset', PROVENANCE_CLASS[provenance])}>
       <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
-      {PROVENANCE_LABEL[provenance]}
+      {PROVENANCE_WEB[provenance]}
       {asOf ? <span className="opacity-80">· as of {formatDateTime(asOf)}</span> : null}
       {batchRef ? <span className="opacity-80">· {batchRef}</span> : null}
     </span>
@@ -52,7 +53,7 @@ export function ProvenanceChip({ provenance, asOf, batchRef }: { provenance: Pro
 }
 
 export function FreshnessLabel({ lastMatchedAt }: { lastMatchedAt: string | null }) {
-  return <span className="text-muted-foreground text-xs">{lastMatchedAt ? `Last matched MIS: ${formatDateTime(lastMatchedAt)}` : 'Never matched to a bank MIS row'}</span>;
+  return <span className="text-muted-foreground text-xs">{lastMatchedAt ? `Last bank update: ${formatDateTime(lastMatchedAt)}` : 'No bank update yet'}</span>;
 }
 
 export function PayoutStateBadge({ state }: { state: string }) {

@@ -45,6 +45,7 @@ import {
   SOURCE_LABEL,
 } from '@/lib/advisor-team';
 import { ApiError, apiFetch } from '@/lib/api';
+import { bankText } from '@/lib/bank-text';
 
 import { type AdvisorRequestRow, AdvisorLeadsTable, AdvisorRequestsTable, AdvisorEntitlementsTable } from './advisor-detail-tables';
 
@@ -93,7 +94,7 @@ function Dist({ title, d, icon }: { title: string; d: Distribution; icon: Lucide
       title={title}
       description={
         <>
-          Bank MIS values verbatim · <span className="tabular-nums">{d.denominator.value}</span>{' '}
+          As reported by the bank · <span className="tabular-nums">{d.denominator.value}</span>{' '}
           {d.denominator.label}
         </>
       }
@@ -112,7 +113,7 @@ function Dist({ title, d, icon }: { title: string; d: Distribution; icon: Lucide
                         : 'min-w-0 font-mono text-ui break-words text-foreground'
                     }
                   >
-                    {b.value}
+                    {bankText(b.value)}
                   </span>
                   <span className="font-semibold text-foreground tabular-nums">{b.count}</span>
                 </div>
@@ -225,7 +226,7 @@ export default async function ManagerAdvisorPage({
       <StatGrid>
         <Tile label="Leads created" m={row.leads.created} icon={ListChecks} tone="teal" emphasis />
         <Tile
-          label="Matched in bank MIS"
+          label="With a bank status"
           m={row.leads.misMatched}
           icon={FileCheck2}
           tone="indigo"
@@ -238,7 +239,7 @@ export default async function ManagerAdvisorPage({
         <Tile label="On hold" m={p.onHold} money icon={PauseCircle} tone="slate" />
       </StatGrid>
       <Callout tone={row.awaitingManagerApproval ? 'warning' : 'neutral'} icon={Info}>
-        {data.meta.note} Leads are dated by KBS lead creation; payout events by the MIS evidence
+        {data.meta.note} Leads are dated by KBS lead creation; payout events by the bank update
         that made them eligible.{' '}
         {row.awaitingManagerApproval
           ? `${row.awaitingManagerApproval} request(s) are waiting for a Manager decision.`
@@ -256,7 +257,7 @@ export default async function ManagerAdvisorPage({
           icon={MessageSquareWarning}
           tone="amber"
           title="Bank reasons"
-          description={`${row.bankReasons.leadsWithReason.value} of ${row.bankReasons.leadsWithReason.denominator?.value ?? 0} MIS-matched leads carry a bank remark or decline field (verbatim).`}
+          description={`${row.bankReasons.leadsWithReason.value} of ${row.bankReasons.leadsWithReason.denominator?.value ?? 0} leads with a bank status carry a bank remark or decline reason.`}
         >
           <ul className="divide-y divide-border-subtle text-sm">
             {row.bankReasons.top.map((r) => (
@@ -301,7 +302,7 @@ export default async function ManagerAdvisorPage({
           icon={BadgeCheck}
           tone="emerald"
           title="Eligible card events"
-          description="Payout entitlements created from applied bank MIS under the approved rule. Paid events cannot be claimed again."
+          description="Payouts earned from bank-reported values under the approved rule. Paid events cannot be claimed again."
           flush={ents.data.length > 0}
         >
           <AdvisorEntitlementsTable rows={ents.data} />

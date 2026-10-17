@@ -27,7 +27,7 @@ const KIND_LABEL: Record<string, string> = {
   MISSING_PROOF: 'Proof missing',
   CORRECTION_PENDING: 'Correction awaiting Admin',
   STALE_REQUEST: 'Stale approval',
-  MIS_CORRECTION_AFTER_PAYMENT: 'MIS changed after payment',
+  MIS_CORRECTION_AFTER_PAYMENT: 'Bank changed status after payment',
   UNDER_REVIEW_IN_REQUEST: 'Under review in request',
 };
 

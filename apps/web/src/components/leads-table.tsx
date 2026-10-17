@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, BankMark, EmptyState, KeyValueGrid } from '@/components/ui/kit';
+import { AWAITING_BANK } from '@/lib/bank-text';
 
 const c = columnHelper<LeadStatusRow>();
 
@@ -83,7 +84,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
             {row.original.card.crosswalked && row.original.card.crosswalked.id !== row.original.card.id
               ? ` · ${row.original.card.crosswalked.productCode} → ${row.original.card.crosswalked.name}`
               : ''}
-            {!fullTable && row.original.lastMatchedAt ? ` · MIS ${formatDateTime(row.original.lastMatchedAt)}` : !fullTable ? ' · never matched' : ''}
+            {!fullTable && row.original.lastMatchedAt ? ` · bank ${formatDateTime(row.original.lastMatchedAt)}` : !fullTable ? ' · no bank update yet' : ''}
           </div>
         </div>
       ),
@@ -97,7 +98,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
       cell: ({ row }) =>
         row.original.bankApplicationNo ??
         (row.original.bankReference?.kind === 'APPLICATION_NO' ? (
-          <span title="Entered by advisor; not yet verified by MIS">
+          <span title="Entered by advisor; not yet confirmed by the bank">
             {row.original.bankReference.value} <Badge variant="warning">unverified</Badge>
           </span>
         ) : (
@@ -134,7 +135,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           </span>
         ) : (
           <span className="text-muted-foreground">
-            {row.original.matched ? 'Not reported' : 'Awaiting MIS Update'}
+            {row.original.matched ? 'Not reported' : AWAITING_BANK}
           </span>
         ),
     }),
@@ -168,7 +169,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
     }),
     c.accessor((r) => r.lastMatchedAt ?? '', {
       id: 'lastMatchedAt',
-      header: 'Last Matched MIS Update',
+      header: 'Last bank update',
       cell: ({ row }) => <FreshnessLabel lastMatchedAt={row.original.lastMatchedAt} />,
     }),
     c.display({
@@ -235,7 +236,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
 }
 
 function RawPanel({ row }: { row: LeadStatusRow }) {
-  const awaiting = row.matched ? 'Not reported' : 'Awaiting MIS Update';
+  const awaiting = row.matched ? 'Not reported' : AWAITING_BANK;
   const blank = <em className="text-fg-3">blank</em>;
   return (
     <div className="grid gap-4 rounded-xl border border-border bg-card p-4 text-xs">
@@ -247,7 +248,7 @@ function RawPanel({ row }: { row: LeadStatusRow }) {
         />
         {!row.matched ? (
           <span className="text-muted-foreground">
-            No accepted MIS row has matched this lead yet; nothing below is inferred.
+            No bank update for this lead yet.
           </span>
         ) : null}
       </div>
@@ -272,7 +273,7 @@ function RawPanel({ row }: { row: LeadStatusRow }) {
           [
             'Bank reference (KBS linkage)',
             row.bankReference
-              ? `${row.bankReference.kind} ${row.bankReference.value} · ${row.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'verified by MIS match' : 'unverified'}`
+              ? `${row.bankReference.kind} ${row.bankReference.value} · ${row.bankReference.status === 'VERIFIED_BY_MIS_MATCH' ? 'verified by the bank' : 'unverified'}`
               : 'not yet available',
           ],
           ['Authorised actions', row.actions.map((a) => a.toLowerCase().replace(/_/g, ' ')).join(' · ')],

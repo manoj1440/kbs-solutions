@@ -53,7 +53,7 @@ export interface PaymentEntry {
 
 const i = columnHelper<RequestItem>();
 
-/** F-604 itemised card events: MIS evidence, rule/rate version, prior requests and warnings. */
+/** F-604 itemised card events: bank evidence, rule/rate version, prior requests and warnings. */
 export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; leadBase?: string }) {
   const columns = i.columns([
     i.accessor((r) => r.lead.publicRef, {
@@ -89,7 +89,7 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
     }),
     i.display({
       id: 'evidence',
-      header: 'MIS evidence',
+      header: 'Bank evidence',
       meta: { cellClassName: 'text-xs whitespace-normal' },
       cell: ({ row }) => (
         <>

@@ -13,7 +13,7 @@ import { AdvisorsTable } from './advisors-table';
 export const metadata = { title: 'Advisors · KBS Solutions' };
 
 /**
- * F-315 → F-811: the Manager's Advisors with their leads, real MIS results and payout position (REQ-15 §15.1).
+ * F-315 → F-811: the Manager's Advisors with their leads, real bank results and payout position (REQ-15 §15.1).
  * Evidence per person — no ranking or score (REQ-15 §15.3). Same endpoint as the mobile Advisors tab.
  */
 export default async function ManagerAdvisorsPage({
@@ -47,7 +47,7 @@ export default async function ManagerAdvisorsPage({
       <StatStrip cols={4}>
         <MiniStat label="Reporting to you" value={data.rows.length} hint={`${active} active`} tone="violet" />
         <MiniStat label="Leads created" value={created} hint={range} tone="sky" />
-        <MiniStat label="Matched in bank MIS" value={matched} hint={`of ${created} · ${awaitingMis} awaiting`} tone="indigo" />
+        <MiniStat label="With a bank status" value={matched} hint={`of ${created} · ${awaitingMis} awaiting`} tone="indigo" />
         <MiniStat label="Awaiting my approval" value={awaitingMe} hint="Payout requests" tone={awaitingMe ? 'amber' : 'slate'} href={awaitingMe ? '/manager/payouts/requests?awaitingMe=true' : undefined} />
       </StatStrip>
       <section aria-label="Advisor results" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">

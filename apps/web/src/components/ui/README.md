@@ -59,7 +59,7 @@ Live examples with fixture data: `/dev/components`.
 
 Checks (dev, need web :3000 + api :4000): `node test/admin-shots.mjs <dir> 1440|390` (signed-in sweep, prints overflow), `node test/public-shots.mjs <dir>` (signed-out screens), `node test/contrast-check.mjs` (WCAG AA text contrast), `npx impeccable detect src` (anti-patterns).
 
-Shell: `components/mis-clock.tsx` (F-814) shows per-bank Bank MIS freshness from `GET /mis/freshness` in the sidebar and phone drawer; layouts fetch it and pass `misFreshness` to `WorkspaceShell`.
+Shell: no MIS clock since F-816 (bank status is a business rule, not a headline); `GET /mis/freshness` stays for the mobile Manager home. Web says bank status in plain words via `lib/bank-text.ts` (`bankText`, `AWAITING_BANK`).
 
 ## Definition of done for a page (F-814)
 Tokens only · kit components only (no page-local `Stat`/`Panel`) · empty/loading/error/disabled states · 1440 and 390 screenshots with overflow 0 and no clipping · `npx impeccable detect <files>` clean (impeccable.style, free) · e2e selectors unchanged (or spec updated in the same commit).

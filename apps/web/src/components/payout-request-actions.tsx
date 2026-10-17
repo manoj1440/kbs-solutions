@@ -45,7 +45,7 @@ export function RequestActions({ request }: { request: PayoutRequestDto }) {
   return (
     <SectionCard icon={Gavel} tone="teal" title={`Your decision${request.me.role ? ` as ${request.me.role.toLowerCase()}` : ''}`} description="Every decision is recorded with actor, role, time and reason. A rejection releases the card events for a new request." bodyClassName="grid gap-2">
         <Label htmlFor="pr-reason">Reason (required to reject or cancel)</Label>
-        <Input id="pr-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. verified evidence against HDFC MIS batch" />
+        <Input id="pr-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. checked against the HDFC bank status" />
         <div className="mt-1 flex flex-wrap gap-2">
           {request.me.canApprove ? (
             <>

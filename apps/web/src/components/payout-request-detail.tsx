@@ -68,7 +68,7 @@ export interface PayoutRequestDto {
 }
 export type { PaymentEntry } from '@/components/payout-request-tables';
 
-/** F-604 approval detail: itemised cards with MIS evidence, rule/rate version, prior requests and warnings; two approval rows. */
+/** F-604 approval detail: itemised cards with bank evidence, rule/rate version, prior requests and warnings; two approval rows. */
 export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: string; backHref: string; leadBase?: string }) {
   const r = (await apiFetch<PayoutRequestDto>(`/payouts/requests/${id}`)).data;
   const pending = r.state === 'PENDING_APPROVALS';
@@ -120,7 +120,7 @@ export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: stri
       </div>
       {r.state === 'PENDING_APPROVALS' || r.me.canCancel ? <PaymentActions request={r} /> : null}
       <PaymentTrace r={r} />
-      <SectionCard icon={CreditCard} tone="indigo" title="Itemised card events" description="Evidence from the bank MIS, the rule/rate version in force at eligibility, and any earlier requests for the same lead." flush>
+      <SectionCard icon={CreditCard} tone="indigo" title="Itemised card events" description="What the bank reported, the rule/rate version in force at eligibility, and any earlier requests for the same lead." flush>
         <RequestItemsTable rows={r.items} leadBase={leadBase} />
       </SectionCard>
     </div>
