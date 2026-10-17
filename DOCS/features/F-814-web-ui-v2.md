@@ -1,6 +1,6 @@
 # F-814 — Web UI v2: refined navy + teal, page by page
 
-- Group: Web UX · Status: **PLANNED** · Depends on: F-806 (kit), F-811 (compact lists), F-812 (admin home), F-813 (DataTable)
+- Group: Web UX · Status: **IN_PROGRESS** · Depends on: F-806 (kit), F-811 (compact lists), F-812 (admin home), F-813 (DataTable)
 - PRD refs: REQ-20 §20.1–20.5 (shadcn, restrained motion, upload freshness, text not colour-only, a11y), REQ-16 (Admin analytics), REQ-15 (Manager drill-down), REQ-18 (Accounts), REQ-25 (screen inventory)
 - Origin: user request (2026-10-17): "do a solid analysis on the repo, then improve it page by page" with two reference dashboards (a light blue admin console, a dark glassy fitness dashboard). Plan first, track progress after each commit.
 

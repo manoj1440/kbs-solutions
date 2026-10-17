@@ -97,7 +97,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-811-compact-list-pattern-everywhere.md](./F-811-compact-list-pattern-everywhere.md) | F-811 Compact list/table pattern on every Admin + Manager page | Web UX | DONE | F-806, F-808, F-809, F-810 |
 | [F-812-admin-home-business-numbers.md](./F-812-admin-home-business-numbers.md) | F-812 Admin home: business numbers only (`/dashboards/admin/home`) | Web UX | DONE | F-808, F-809, F-810, F-811 |
 | [F-813-common-data-table.md](./F-813-common-data-table.md) | F-813 Common DataTable (TanStack v9) for all web tables | Web UX | DONE | F-806, F-811 |
-| [F-814-web-ui-v2.md](./F-814-web-ui-v2.md) | F-814 Web UI v2: refined navy + teal, page by page (+ admin trends, dark mode) | Web UX | PLANNED | F-806, F-811, F-812, F-813 |
+| [F-814-web-ui-v2.md](./F-814-web-ui-v2.md) | F-814 Web UI v2: refined navy + teal, page by page (+ admin trends, dark mode) | Web UX | IN_PROGRESS | F-806, F-811, F-812, F-813 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | DONE | F-801, F-802 |
 | [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | DONE | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |
