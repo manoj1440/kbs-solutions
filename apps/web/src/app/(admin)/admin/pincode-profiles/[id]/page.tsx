@@ -1,9 +1,6 @@
-import { apiFetch } from '@/lib/api';
+import { redirect } from 'next/navigation';
 
-import { ProfileEditor, type ProfileDetail } from './profile-editor';
-
-export default async function PincodeProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const p = await apiFetch<ProfileDetail>(`/pincode-profiles/${id}`);
-  return <ProfileEditor initial={p.data} />;
+/** F-816: every bank uses the standard coverage format, so there is no profile to edit — old links land on Bank coverage. */
+export default function PincodeProfileRedirect() {
+  redirect('/admin/pincode-profiles');
 }

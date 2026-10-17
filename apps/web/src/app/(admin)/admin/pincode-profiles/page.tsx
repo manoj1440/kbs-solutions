@@ -2,35 +2,25 @@ import { DataTablePanel } from '@/components/data-table';
 import { MiniStat, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
-import { PincodeProfilesTable, type PincodeProfileRow } from './profiles-table';
+import { CoverageTable, type CoverageRow } from './profiles-table';
+import { UploadCoverageButton } from './upload-coverage';
 
 export const metadata = { title: 'Bank coverage · KBS Solutions' };
 
-/** F-404 → F-811 Admin: bank pincode profiles — tiles + internal-scroll table. */
-export default async function PincodeProfilesPage() {
-  const p = await apiFetch<PincodeProfileRow[]>('/pincode-profiles');
-  const approved = p.data.filter((r) => r.status === 'APPROVED');
-  const drafts = p.data.filter((r) => r.status === 'DRAFT').length;
-  const banksApproved = new Set(approved.map((r) => r.bank.code)).size;
-  const batches = p.data.reduce((n, r) => n + r._count.batches, 0);
+/** F-404 → F-816 Admin: which pincodes each bank sources — one upload per bank in the standard format, live at once. */
+export default async function BankCoveragePage() {
+  const rows = (await apiFetch<CoverageRow[]>('/pincode-coverage')).data;
+  const covered = rows.filter((r) => r.live);
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
-      <h1 className="sr-only">Bank pincode profiles</h1>
-      <StatStrip cols={4}>
-        <MiniStat label="Profile versions" value={p.data.length} hint={`${new Set(p.data.map((r) => r.bank.code)).size} banks`} tone="sky" />
-        <MiniStat label="Approved" value={approved.length} hint={`${banksApproved} bank${banksApproved === 1 ? '' : 's'} sourceable`} tone="emerald" />
-        <MiniStat label="Drafts" value={drafts} hint="Not sourceable until approved" tone={drafts ? 'amber' : 'slate'} />
-        <MiniStat label="Batches imported" value={batches} hint="Across all versions" tone="violet" />
+      <h1 className="sr-only">Bank coverage</h1>
+      <StatStrip cols={3}>
+        <MiniStat label="Banks" value={rows.length} hint="Active banks" tone="sky" />
+        <MiniStat label="With a coverage list" value={covered.length} hint={`${rows.length - covered.length} not uploaded yet`} tone="emerald" />
+        <MiniStat label="Pincodes sourced" value={covered.reduce((n, r) => n + (r.live?.sourceable ?? 0), 0).toLocaleString('en-IN')} hint="Across all banks" tone="violet" />
       </StatStrip>
-      <DataTablePanel
-        label="Profiles"
-        footer={
-          <div className="flex shrink-0 items-center border-t border-border-subtle px-4 py-2 text-xs text-muted-foreground tabular-nums">
-            {p.data.length} profile version{p.data.length === 1 ? '' : 's'}
-          </div>
-        }
-      >
-        <PincodeProfilesTable rows={p.data} />
+      <DataTablePanel label="Bank coverage" toolbar={<div className="flex w-full justify-end"><UploadCoverageButton banks={rows.map((r) => ({ id: r.bank.id, label: r.bank.displayName }))} /></div>}>
+        <CoverageTable rows={rows} />
       </DataTablePanel>
     </div>
   );
