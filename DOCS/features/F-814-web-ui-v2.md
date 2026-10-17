@@ -69,7 +69,7 @@ Method: all 57 routes rendered against the demo seed at 1440 and 390 (`apps/web/
 ## 4. Principles (guard-rails)
 1. Bank values verbatim; Stage / Decision / Activation remain three labelled badges with provenance (INV-01…03, INV-08). No aggregate may hide a conflicting MIS row (REQ-20.4).
 2. Presentation changes keep routes, form `name`/`id`, button labels, `h1`, dialog labels and `data-label` values that e2e uses. Any rename is listed in the commit and the spec updated in the same commit.
-3. API changes only in P2 (read-only dashboard endpoints), with e2e tests; nothing writes bank data.
+3. API changes only in P1 (`GET /mis/freshness`, read-only, for the MIS clock) and P2 (read-only dashboard endpoints), with e2e tests; nothing writes bank data.
 4. No new runtime dependencies (fonts come from `next/font`, already part of Next).
 5. Every touched page leaves on tokens only: no `slate-*`, `bg-white`, hex, `text-[Npx]` or arbitrary `shadow-[…]` in that page's files.
 
@@ -84,7 +84,7 @@ Method: all 57 routes rendered against the demo seed at 1440 and 390 (`apps/web/
 
 ### P1 — Shell
 - Sidebar: soft filled active pill (ref 2), quieter group labels, eyebrow under logo removed (U9), **MIS clock** block + user card in the footer, theme-toggle slot (enabled in P8).
-- Top bar: breadcrumb, search, notifications, refresh, account — tokens + spacing; MIS "as of" chip on MIS-derived pages (U11).
+- Top bar: breadcrumb, search, notifications, refresh, account — tokens + spacing. (The planned top-bar MIS chip was dropped: the sidebar and the phone drawer both carry the MIS clock, and MIS pages keep their own as-of footers — U11 is covered without repeating it.)
 - Mobile nav drawer restyled; focus and reduced-motion checks.
 
 ### P2 — Admin home (API + web)
@@ -117,8 +117,8 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 |---|---|---|---|
 | P0 | Fonts + tokens + kit charts + guide | — | DONE |
 | P0 | Detector fixes (side stripes, bounce), column toggle placement | — | DONE |
-| P1 | Sidebar + MIS clock + user card | all workspaces | TODO |
-| P1 | Top bar + mobile drawer | all workspaces | TODO |
+| P1 | Sidebar + MIS clock + user card | all workspaces | DONE |
+| P1 | Top bar + mobile drawer | all workspaces | DONE |
 | P2 | Dashboard API: previous period, trend, today (+ e2e) | `/dashboards/admin/*` | TODO |
 | P2 | Business overview | `/admin` | TODO |
 | P3 | Leads browser | `/admin/leads` (+ shared Manager browser) | TODO |
@@ -180,4 +180,7 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 - P0 checks: web typecheck + lint clean, web unit 24/24, Playwright 73 passed / 1 skipped (desktop + phone, against `next dev`), screenshot spot checks (leads, payouts, catalogue, notifications) overflow 0, leads toggle 6 → 13 → 6 columns.
 - Found: `apps/web/test/admin-layout-smoke.mjs` clicks a "Full table view" button that no longer exists (stale since F-813) — not part of `pnpm test:e2e`; fix when P3 touches leads.
 - Fixed on the way: `admin-smoke` F-808 test used `getByLabel('Current status')`, which also matched the F-813 "Sort by Current status" header button (failing since `6c2bf0d`); now `exact: true`.
-- Next: P1 shell (sidebar soft pill is already in; MIS clock, user card, top bar, drawer).
+- Session 19, P1 done. Commits: `feat(api): GET /mis/freshness` (per active bank: last APPLIED import or null; Admin/Manager/Accounts, Telecaller 403; e2e in `mis-apply.e2e-spec.ts`) → `feat(web): shell v2` (`components/mis-clock.tsx` in sidebar + drawer, navy tokens, brand subtitle without eyebrow, top bar/menus/search on tokens, refresh hidden on phones, drawer = scrolling nav + pinned clock and user card).
+- MIS clock rules: per bank, never one global status (REQ-16 §16.3); age neutral ("2 h ago", date after 7 days, exact time on hover), "Never imported" explicit; tooltip says bank values are the latest accepted MIS only. SSR uses the API's `asOf` as "now" so hydration matches; ticks every minute.
+- P1 checks: api typecheck/lint, `mis-apply` e2e 6/6; web typecheck/lint; Playwright 73 passed / 1 skipped; screenshots Admin/Manager/Accounts at 1440 + phone drawer at 390 (overflow 0).
+- Next: P2 Admin home (API: previous period, trend, today; web: greeting, KPI deltas, trend chart, Today rail).

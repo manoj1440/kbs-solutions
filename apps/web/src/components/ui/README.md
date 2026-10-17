@@ -55,6 +55,8 @@ Fonts: Inter (`font-sans`) and JetBrains Mono (`font-mono`) via `next/font` in `
 
 Live examples with fixture data: `/dev/components`.
 
+Shell: `components/mis-clock.tsx` (F-814) shows per-bank Bank MIS freshness from `GET /mis/freshness` in the sidebar and phone drawer; layouts fetch it and pass `misFreshness` to `WorkspaceShell`.
+
 ## Definition of done for a page (F-814)
 Tokens only · kit components only (no page-local `Stat`/`Panel`) · empty/loading/error/disabled states · 1440 and 390 screenshots with overflow 0 and no clipping · `npx impeccable detect <files>` clean (impeccable.style, free) · e2e selectors unchanged (or spec updated in the same commit).
 
