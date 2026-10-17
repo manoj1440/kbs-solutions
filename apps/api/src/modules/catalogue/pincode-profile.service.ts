@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 
-import { type CreatePincodeBatchBody, normalizePincode, type SourceabilityRule, type UpdatePincodeProfileBody } from '@kbs/shared';
+import { type CreatePincodeBatchBody, normalizePincode, type SourceabilityRule, STANDARD_PINCODE_FORMAT, type UpdatePincodeProfileBody, type UploadCoverageBody } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
-import { type ParsedSheet, parseTabular } from '../../common/import/tabular';
+import { findHeader, type ParsedSheet, parseTabular } from '../../common/import/tabular';
 import { Paginated } from '../../common/interceptors/response-envelope.interceptor';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
@@ -196,6 +196,58 @@ export class PincodeProfileService {
     if (!b) throw AppError.notFound('Batch');
     const [sourceable, requires, notSourceable] = b.status === 'IMPORTED' ? await Promise.all((['SOURCEABLE', 'REQUIRES_BANK_MAPPING', 'NOT_SOURCEABLE'] as const).map((s) => this.prisma.client.bankPincodeRow.count({ where: { batchId: id, sourceability: s } }))) : [0, 0, 0];
     return { ...b, error: b.error ? JSON.parse(b.error) : null, counts: b.status === 'IMPORTED' ? { sourceable, requiresBankMapping: requires, notSourceable } : null };
+  }
+
+  /**
+   * F-816: upload → live. The file is in the standard coverage layout (a Pincode column), so there is no profile to edit
+   * or header check to review. A file without a Pincode column is refused before anything changes, so the bank keeps its
+   * current coverage; otherwise this bank's standard profile becomes the APPROVED one and the batch is imported at once.
+   */
+  async uploadCoverage(actor: Actor, body: UploadCoverageBody) {
+    const bank = await this.prisma.client.bank.findUnique({ where: { id: body.bankId }, select: { id: true } });
+    if (!bank) throw AppError.notFound('Bank');
+    const { file, checksum, sheet } = await this.load(body.fileId);
+    const f = STANDARD_PINCODE_FORMAT;
+    const column = findHeader(sheet.headers, f.pincodeHeaders);
+    if (!column) throw new AppError('VALIDATION_FAILED', `This file has no Pincode column. The coverage list needs one column named "${f.pincodeColumn}" with the pincodes the bank sources.`, { headers: sheet.headers });
+    let profile = await this.prisma.client.bankPincodeProfile.findFirst({ where: { bankId: bank.id, status: 'APPROVED' }, orderBy: { version: 'desc' } });
+    if (profile?.name !== f.name) {
+      const max = await this.prisma.client.bankPincodeProfile.aggregate({ where: { bankId: bank.id }, _max: { version: true } });
+      const [, created] = await this.prisma.client.$transaction([
+        this.prisma.client.bankPincodeProfile.updateMany({ where: { bankId: bank.id, status: 'APPROVED' }, data: { status: 'RETIRED' } }),
+        this.prisma.client.bankPincodeProfile.create({ data: { bankId: bank.id, version: (max._max.version ?? 0) + 1, name: f.name, sheetName: null, headerMapping: { headers: [f.pincodeColumn] }, pincodeColumn: f.pincodeColumn, semantics: f.semantics, status: 'APPROVED', approvedByUserId: actor.userId, approvedAt: new Date() } }),
+      ]);
+      profile = created;
+    }
+    const existing = await this.prisma.client.bankPincodeBatch.findUnique({ where: { profileId_checksum: { profileId: profile.id, checksum } } });
+    if (existing) return { ...(await this.batch(existing.id)), duplicateOf: existing.id };
+    const evals = this.evaluateRows({ ...profile, pincodeColumn: column }, sheet);
+    const batch = await this.prisma.client.$transaction(async (tx) => {
+      const b = await tx.bankPincodeBatch.create({ data: { profileId: profile.id, fileId: file.id, checksum, uploaderUserId: actor.userId, rowCount: evals.length, status: 'IMPORTED' } });
+      for (let i = 0; i < evals.length; i += 500) {
+        await tx.bankPincodeRow.createMany({ data: evals.slice(i, i + 500).map((e) => ({ batchId: b.id, bankId: bank.id, sourceRowNumber: e.sourceRowNumber, pincode: e.pincode ?? '', wasPadded: e.wasPadded, raw: e.raw, sourceability: e.sourceability })) });
+      }
+      return b;
+    }, { timeout: Math.max(30_000, evals.length * 5) });
+    RequestContextStore.audit({ entityId: batch.id, after: { bankId: bank.id, profileId: profile.id, fileId: file.id, rows: evals.length, column } });
+    return this.batch(batch.id);
+  }
+
+  /** F-816 Bank coverage page: per active bank, the batch the apps read now (latest IMPORTED under the APPROVED profile). */
+  async coverage() {
+    const banks = await this.prisma.client.bank.findMany({ where: { active: true }, orderBy: { displayName: 'asc' }, select: { id: true, code: true, displayName: true } });
+    const live = new Map((await this.liveBatches()).map((l) => [l.bankId, l.batchId]));
+    return Promise.all(
+      banks.map(async (bank) => {
+        const batchId = live.get(bank.id);
+        if (!batchId) return { bank, live: null };
+        const [b, sourceable] = await Promise.all([
+          this.prisma.client.bankPincodeBatch.findUniqueOrThrow({ where: { id: batchId }, select: { id: true, uploadedAt: true, rowCount: true, file: { select: { originalName: true } }, uploader: { select: { fullName: true } } } }),
+          this.prisma.client.bankPincodeRow.count({ where: { batchId, sourceability: 'SOURCEABLE' } }),
+        ]);
+        return { bank, live: { batchId: b.id, uploadedAt: b.uploadedAt, rows: b.rowCount, sourceable, fileName: b.file.originalName, uploadedBy: b.uploader.fullName } };
+      }),
+    );
   }
 
   /** Raw-row explorer (audited by the controller as a sensitive read). */

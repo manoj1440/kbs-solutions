@@ -185,4 +185,29 @@ describe('F-403 catalogue / F-404 bank pincode profiles', () => {
     expect(created.body.data.preview.headerCheck).toMatchObject({ ok: false, missing: ['CUST_PINCODE', 'CUST_STATE'], unknown: ['PINCODE', 'STATE'], pincodePresent: false });
     await api().post(`/api/v1/pincode-batches/${created.body.data.id}/confirm`).set(auth(adminToken)).set('idempotency-key', idem()).expect(409);
   });
+
+  it('F-816: coverage upload in the standard format goes live at once; a file without a Pincode column changes nothing', async () => {
+    const sheet = async (headers: string[], rows: Array<Array<string | number>>) => {
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Any name');
+      ws.addRow(headers);
+      rows.forEach((r) => ws.addRow(r));
+      const up = await api().post('/api/v1/files/bank_pincode').set(auth(adminToken)).attach('file', Buffer.from(await wb.xlsx.writeBuffer()), { filename: 'coverage.xlsx', contentType: XLSX }).expect(201);
+      return up.body.data.id as string;
+    };
+    const yes = await prisma.bank.findUniqueOrThrow({ where: { code: 'YES' } });
+    const send = (fileId: string) => api().post('/api/v1/pincode-coverage').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: yes.id, fileId });
+    const before = await api().get('/api/v1/pincode-coverage').set(auth(adminToken)).expect(200);
+    const yesBefore = before.body.data.find((r: { bank: { code: string } }) => r.bank.code === 'YES').live;
+    const bad = await send(await sheet(['City', 'State'], [['Pune', 'MH']])).expect(400);
+    expect(bad.body.error.message).toContain('no Pincode column');
+    expect((await api().get('/api/v1/pincode-coverage').set(auth(adminToken)).expect(200)).body.data.find((r: { bank: { code: string } }) => r.bank.code === 'YES').live).toEqual(yesBefore);
+    const ok = await send(await sheet(['PINCODE', 'City'], [['411001', 'Pune'], [560001, 'Bengaluru']])).expect(201);
+    expect(ok.body.data).toMatchObject({ status: 'IMPORTED', rowCount: 2, counts: { sourceable: 2 } });
+    const s = (await api().get('/api/v1/sourceability/411001').set(auth(adminToken)).expect(200)).body.data as Array<{ bankId: string; sourceability: string }>;
+    expect(s).toContainEqual(expect.objectContaining({ bankId: yes.id, sourceability: 'SOURCEABLE' }));
+    const after = (await api().get('/api/v1/pincode-coverage').set(auth(adminToken)).expect(200)).body.data.find((r: { bank: { code: string } }) => r.bank.code === 'YES');
+    expect(after.live).toMatchObject({ rows: 2, sourceable: 2, fileName: 'coverage.xlsx' });
+    expect(await prisma.bankPincodeProfile.findMany({ where: { bankId: yes.id, status: 'APPROVED' }, select: { name: true } })).toEqual([{ name: 'Standard coverage format' }]);
+  });
 });

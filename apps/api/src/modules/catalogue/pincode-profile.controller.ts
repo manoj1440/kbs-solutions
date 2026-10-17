@@ -1,4 +1,4 @@
-import { CreatePincodeBatchBody, PaginationQuery, UpdatePincodeProfileBody } from '@kbs/shared';
+import { CreatePincodeBatchBody, PaginationQuery, UpdatePincodeProfileBody, UploadCoverageBody } from '@kbs/shared';
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
 
@@ -18,6 +18,22 @@ export class PincodeProfileController {
   @RequirePermission('PINCODE_PROFILE_MANAGE', 'CATALOGUE_READ')
   list() {
     return this.svc.list();
+  }
+
+  /** F-816: per-bank coverage now in force (Bank coverage page). */
+  @Get('pincode-coverage')
+  @RequirePermission('PINCODE_PROFILE_MANAGE')
+  coverage() {
+    return this.svc.coverage();
+  }
+
+  /** F-816: bank + file in the standard coverage format → live at once. */
+  @Post('pincode-coverage')
+  @RequirePermission('PINCODE_PROFILE_MANAGE')
+  @Idempotent()
+  @Audited({ action: 'pincodeCoverage.upload', entityType: 'BankPincodeBatch', entityIdFrom: 'id' })
+  uploadCoverage(@CurrentActor() actor: Actor, @Body() raw: unknown) {
+    return this.svc.uploadCoverage(actor, UploadCoverageBody.parse(raw));
   }
 
   @Get('pincode-profiles/:id')

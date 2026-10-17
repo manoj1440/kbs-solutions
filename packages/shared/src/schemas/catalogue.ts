@@ -63,6 +63,19 @@ export type UpdatePincodeProfileBody = z.infer<typeof UpdatePincodeProfileBody>;
 export const CreatePincodeBatchBody = z.object({ fileId: z.string().uuid(), sheetName: z.string().max(100).optional() });
 export type CreatePincodeBatchBody = z.infer<typeof CreatePincodeBatchBody>;
 
+/**
+ * F-816: every bank's coverage list comes in one layout — a sheet with a Pincode column; each pincode listed is one the
+ * bank sources. Other columns are kept raw. No per-bank profile to set up.
+ */
+export const STANDARD_PINCODE_FORMAT = {
+  name: 'Standard coverage format',
+  pincodeColumn: 'Pincode',
+  pincodeHeaders: ['Pincode', 'PINCODE', 'Pin Code', 'PIN', 'Pin'],
+  semantics: { rule: 'PRESENT_PINCODE_IS_SOURCEABLE' as const },
+};
+export const UploadCoverageBody = z.object({ bankId: z.string().uuid(), fileId: z.string().uuid() });
+export type UploadCoverageBody = z.infer<typeof UploadCoverageBody>;
+
 // ── F-308 publications & availability ──
 export const CreatePublicationBody = z
   .object({
