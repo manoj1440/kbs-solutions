@@ -46,8 +46,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Data &amp; permissions audit</h1>
-      <section aria-label="Audit log" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+      <section aria-label="Audit log" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle p-3">
           <PillNav
             label="Audit views"
             active={resetHref}
@@ -56,7 +56,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               { href: '/admin/audit?tab=sensitive', label: 'Sensitive access', icon: Eye },
             ]}
           />
-          <span className="text-xs text-slate-500 tabular-nums">{total.toLocaleString('en-IN')} entr{total === 1 ? 'y' : 'ies'} · IST</span>
+          <span className="text-xs text-muted-foreground tabular-nums">{total.toLocaleString('en-IN')} entr{total === 1 ? 'y' : 'ies'} · IST</span>
           <span className="flex-1" />
           {tab === 'actions' ? (
             exportEnabled ? (
@@ -67,14 +67,14 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                 </a>
               </Button>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Lock className="size-3.5 shrink-0" aria-hidden="true" />
                 Export disabled (audit.exportEnabled)
               </span>
             )
           ) : null}
         </div>
-        <Form className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3" action="/admin/audit">
+        <Form className="flex flex-wrap items-center gap-2 border-b border-border-subtle p-3" action="/admin/audit">
           {tab === 'sensitive' ? <input type="hidden" name="tab" value="sensitive" /> : null}
           {tab === 'actions' ? (
             <>

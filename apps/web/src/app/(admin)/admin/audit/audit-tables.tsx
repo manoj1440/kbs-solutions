@@ -44,18 +44,18 @@ function Diff({ before, after }: { before: unknown; after: unknown }) {
   const b = obj(before);
   const a = obj(after);
   const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])].sort().filter((k) => JSON.stringify(b[k]) !== JSON.stringify(a[k]));
-  if (!keys.length) return <p className="text-xs text-slate-500">No field-level change recorded.</p>;
+  if (!keys.length) return <p className="text-xs text-muted-foreground">No field-level change recorded.</p>;
   return (
     <dl className="grid gap-2">
       {keys.map((k) => (
-        <div key={k} className="grid gap-1.5 rounded-lg border border-slate-200/80 bg-white p-2">
-          <dt className="font-mono text-[11px] font-semibold text-slate-600">{k}</dt>
+        <div key={k} className="grid gap-1.5 rounded-lg border border-border bg-card p-2">
+          <dt className="font-mono text-2xs font-semibold text-fg-2">{k}</dt>
           <dd className="grid items-start gap-1.5 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
             <div className="min-w-0 rounded-md bg-rose-50 px-2 py-1 ring-1 ring-rose-100 ring-inset">
               <div className="text-[9.5px] font-semibold tracking-wider text-rose-500 uppercase">Before</div>
               <div className="font-mono break-all text-rose-800">{b[k] === undefined ? '—' : JSON.stringify(b[k])}</div>
             </div>
-            <ArrowRight className="hidden size-3.5 self-center text-slate-400 sm:block" aria-hidden="true" />
+            <ArrowRight className="hidden size-3.5 self-center text-fg-3 sm:block" aria-hidden="true" />
             <div className="min-w-0 rounded-md bg-emerald-50 px-2 py-1 ring-1 ring-emerald-100 ring-inset">
               <div className="text-[9.5px] font-semibold tracking-wider text-emerald-600 uppercase">After</div>
               <div className="font-mono break-all text-emerald-900">{a[k] === undefined ? '—' : JSON.stringify(a[k])}</div>
@@ -74,13 +74,13 @@ function ActorCell({ actor, role }: { actor: Actor | null; role: string | null |
       {actor ? (
         <Avatar name={actor.fullName} size="sm" />
       ) : (
-        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500" aria-hidden="true">
+        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground" aria-hidden="true">
           <Bot className="size-3.5" />
         </span>
       )}
       <div className="min-w-0 text-xs">
-        <div className="font-medium text-slate-800">{actor ? actor.fullName : 'system'}</div>
-        {role ? <div className="text-slate-500">{humanize(role)}</div> : null}
+        <div className="font-medium text-foreground">{actor ? actor.fullName : 'system'}</div>
+        {role ? <div className="text-muted-foreground">{humanize(role)}</div> : null}
       </div>
     </div>
   );
@@ -100,13 +100,13 @@ export function AuditActionsTable({ rows, sp }: { rows: AuditRow[]; sp: Record<s
     a.accessor('at', {
       header: 'When',
       sortFn: 'datetime',
-      meta: { cellClassName: 'text-xs whitespace-nowrap text-slate-600 tabular-nums' },
+      meta: { cellClassName: 'text-xs whitespace-nowrap text-fg-2 tabular-nums' },
       cell: ({ getValue }) => formatDateTime(getValue()),
     }),
     a.accessor('action', {
       header: 'Action',
       cell: ({ getValue }) => (
-        <Link className="inline-block rounded-md bg-indigo-50 px-1.5 py-0.5 font-mono text-[11.5px] break-all ring-1 ring-indigo-100 ring-inset" href={actionHref(getValue())}>
+        <Link className="inline-block rounded-md bg-indigo-50 px-1.5 py-0.5 font-mono text-2xs break-all ring-1 ring-indigo-100 ring-inset" href={actionHref(getValue())}>
           {getValue()}
         </Link>
       ),
@@ -122,8 +122,8 @@ export function AuditActionsTable({ rows, sp }: { rows: AuditRow[]; sp: Record<s
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
-          <span className="font-medium text-slate-700">{row.original.entityType ?? '—'}</span>
-          <div className="font-mono text-[11px] break-all text-slate-500">{row.original.entityId ?? ''}</div>
+          <span className="font-medium text-fg-2">{row.original.entityType ?? '—'}</span>
+          <div className="font-mono text-2xs break-all text-muted-foreground">{row.original.entityId ?? ''}</div>
         </>
       ),
     }),
@@ -135,19 +135,19 @@ export function AuditActionsTable({ rows, sp }: { rows: AuditRow[]; sp: Record<s
         const r = row.original;
         return (
           <>
-            {r.reason ? <div className="text-slate-700">{r.reason}</div> : null}
+            {r.reason ? <div className="text-fg-2">{r.reason}</div> : null}
             {r.before !== null || r.after !== null ? (
               <details className="group mt-1">
                 <summary className="inline-flex cursor-pointer list-none items-center gap-1 font-medium text-teal-700 hover:text-teal-900 [&::-webkit-details-marker]:hidden">
                   <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" aria-hidden="true" />
                   Before / after
                 </summary>
-                <div className="mt-1.5 rounded-lg border border-slate-200/80 bg-slate-50 p-2">
+                <div className="mt-1.5 rounded-lg border border-border bg-surface-muted p-2">
                   <Diff before={r.before} after={r.after} />
                 </div>
               </details>
             ) : null}
-            {!r.reason && r.before === null && r.after === null ? <span className="text-slate-400">—</span> : null}
+            {!r.reason && r.before === null && r.after === null ? <span className="text-fg-3">—</span> : null}
           </>
         );
       },
@@ -171,7 +171,7 @@ export function SensitiveAccessTable({ rows }: { rows: SensitiveRow[] }) {
     s.accessor('at', {
       header: 'When',
       sortFn: 'datetime',
-      meta: { cellClassName: 'text-xs whitespace-nowrap text-slate-600 tabular-nums' },
+      meta: { cellClassName: 'text-xs whitespace-nowrap text-fg-2 tabular-nums' },
       cell: ({ getValue }) => formatDateTime(getValue()),
     }),
     s.accessor((r) => r.actor?.fullName ?? '—', {
@@ -188,15 +188,15 @@ export function SensitiveAccessTable({ rows }: { rows: SensitiveRow[] }) {
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
-          <span className="font-medium text-slate-700">{row.original.entityType}</span>
-          <div className="font-mono text-[11px] break-all text-slate-500">{row.original.entityId}</div>
+          <span className="font-medium text-fg-2">{row.original.entityType}</span>
+          <div className="font-mono text-2xs break-all text-muted-foreground">{row.original.entityId}</div>
         </>
       ),
     }),
     s.accessor((r) => r.purpose ?? '', {
       id: 'purpose',
       header: 'Purpose',
-      meta: { cellClassName: 'text-xs text-slate-600' },
+      meta: { cellClassName: 'text-xs text-fg-2' },
       cell: ({ row }) => (row.original.purpose ?? '—').replace(/_/g, ' ').toLowerCase(),
     }),
   ]);

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { MiniStat, selectClass } from '@/components/ui/kit';
 import { type AdvisorTeamResponse } from '@/lib/advisor-team';
 import { apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 import { AdvisorsTable } from './advisors-table';
 
@@ -54,9 +55,9 @@ export default async function ManagerAdvisorsPage({
           className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3"
           action="/manager/advisors"
         >
-          <input aria-label="Leads from" className={`${selectClass} h-9 w-36`} type="date" name="from" defaultValue={sp.from ?? ''} />
-          <input aria-label="Leads to" className={`${selectClass} h-9 w-36`} type="date" name="to" defaultValue={sp.to ?? ''} />
-          <select aria-label="Bank" id="bankId" className={`${selectClass} h-9 min-w-36`} name="bankId" defaultValue={sp.bankId ?? ''}>
+          <input aria-label="Leads from" className={cn(selectClass, 'h-9 w-36')} type="date" name="from" defaultValue={sp.from ?? ''} />
+          <input aria-label="Leads to" className={cn(selectClass, 'h-9 w-36')} type="date" name="to" defaultValue={sp.to ?? ''} />
+          <select aria-label="Bank" id="bankId" className={cn(selectClass, 'h-9 min-w-36')} name="bankId" defaultValue={sp.bankId ?? ''}>
             <option value="">All banks</option>
             {banks.map((b) => (
               <option key={b.id} value={b.id}>

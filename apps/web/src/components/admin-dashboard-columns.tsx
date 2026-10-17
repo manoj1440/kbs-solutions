@@ -59,9 +59,9 @@ const pct = (m: M) => (m.denominator && m.denominator.value ? ` (${Math.round((m
 function Money({ count, amount }: { count: number; amount: number }) {
   return (
     <span className="whitespace-nowrap">
-      <span className="font-medium text-slate-900">{count}</span>
-      <span className="text-slate-400"> · </span>
-      <span className="text-slate-600">{formatInr(amount)}</span>
+      <span className="font-medium text-foreground">{count}</span>
+      <span className="text-fg-3"> · </span>
+      <span className="text-fg-2">{formatInr(amount)}</span>
     </span>
   );
 }
@@ -69,13 +69,13 @@ function Money({ count, amount }: { count: number; amount: number }) {
 /** Top bank values with counts — verbatim text, neutral chips (never recoloured). */
 function TopValues({ x }: { x: Dist }) {
   const top = x.buckets.slice(0, 3);
-  if (!top.length) return <span className="text-slate-400">—</span>;
+  if (!top.length) return <span className="text-fg-3">—</span>;
   return (
     <div className="flex flex-wrap gap-1">
       {top.map((b) => (
-        <span key={b.value} className="inline-flex max-w-full items-baseline gap-1 rounded-md bg-slate-50 px-1.5 py-0.5 text-[11.5px] text-slate-700 ring-1 ring-slate-200 ring-inset">
+        <span key={b.value} className="inline-flex max-w-full items-baseline gap-1 rounded-md bg-surface-muted px-1.5 py-0.5 text-2xs text-fg-2 ring-1 ring-border ring-inset">
           <span className="min-w-0 break-words">{b.value}</span>
-          <span className="font-semibold text-slate-900 tabular-nums">{b.count}</span>
+          <span className="font-semibold text-foreground tabular-nums">{b.count}</span>
         </span>
       ))}
     </div>
@@ -104,8 +104,8 @@ const telecallerColumns = t.columns([
     header: 'Connected',
         cell: ({ row }) => (
       <>
-        <span className="font-medium text-slate-900">{row.original.calls.connected.value}</span>
-        <span className="text-xs text-slate-500">{pct(row.original.calls.connected)}</span>
+        <span className="font-medium text-foreground">{row.original.calls.connected.value}</span>
+        <span className="text-xs text-muted-foreground">{pct(row.original.calls.connected)}</span>
         {row.original.calls.connected.denominator?.value ? <Meter value={row.original.calls.connected.value} max={row.original.calls.connected.denominator.value} tone="emerald" className="mt-1 h-1 w-16" label="Connected share of attempts" /> : null}
       </>
     ),
@@ -124,7 +124,7 @@ const telecallerColumns = t.columns([
         cell: ({ row }) => (
       <>
         {row.original.calls.recordingsAvailable.value}
-        <span className="text-xs text-slate-500">{pct(row.original.calls.recordingsAvailable)}</span>
+        <span className="text-xs text-muted-foreground">{pct(row.original.calls.recordingsAvailable)}</span>
       </>
     ),
   }),
@@ -162,7 +162,7 @@ const managerColumns = m.columns([
   m.accessor((r) => r.telecallers, {
     id: 'team',
     header: 'Team',
-    meta: { cellClassName: 'text-slate-600' },
+    meta: { cellClassName: 'text-fg-2' },
     cell: ({ row }) => (
       <>
         <span className="tabular-nums">{row.original.telecallers}</span> Telecallers · <span className="tabular-nums">{row.original.advisors}</span> Advisors

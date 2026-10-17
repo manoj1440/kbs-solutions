@@ -15,8 +15,9 @@ import {
 } from '@/components/admin-dashboard-columns';
 import { AdminDashboardNav } from '@/components/admin-dashboard-nav';
 import { Button } from '@/components/ui/button';
-import { MiniStat, selectClass, type Tone } from '@/components/ui/kit';
+import { MiniStat, selectClass, StatStrip, type Tone } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface Meta {
   from: string | null;
@@ -51,23 +52,23 @@ function Frame({
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">{title}</h1>
       {stats?.length ? (
-        <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
+        <StatStrip cols={4}>
           {stats.map((x) => (
             <MiniStat key={x.label} label={x.label} value={x.value} hint={x.hint} tone={x.tone ?? 'slate'} />
           ))}
-        </div>
+        </StatStrip>
       ) : null}
-      <section aria-label={title} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgb(15_23_42/4%)]">
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+      <section aria-label={title} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle p-3">
           <AdminDashboardNav active={path} />
-          <span className="text-xs text-slate-500 tabular-nums">
+          <span className="text-xs text-muted-foreground tabular-nums">
             <CalendarRange className="mr-1 inline size-3.5 -translate-y-px" aria-hidden="true" />
             {meta.from || meta.to ? `${meta.from ?? '…'} → ${meta.to ?? '…'}` : 'All time'} · as of {formatDateTime(meta.asOf)}
           </span>
         </div>
-        <Form className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-100 p-3" action={path}>
-          <input aria-label="From date" className={`${selectClass} h-9 w-36`} type="date" name="from" defaultValue={sp.from ?? ''} />
-          <input aria-label="To date" className={`${selectClass} h-9 w-36`} type="date" name="to" defaultValue={sp.to ?? ''} />
+        <Form className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle p-3" action={path}>
+          <input aria-label="From date" className={cn(selectClass, 'h-9 w-36')} type="date" name="from" defaultValue={sp.from ?? ''} />
+          <input aria-label="To date" className={cn(selectClass, 'h-9 w-36')} type="date" name="to" defaultValue={sp.to ?? ''} />
           <Button type="submit" size="sm" className="h-9">
             <Filter />
             Apply
