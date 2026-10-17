@@ -33,7 +33,7 @@ export default async function TelecallerTrainingPage({
         />
         <div className="relative grid gap-6">
           <div className="flex min-w-0 items-start gap-4">
-            <Avatar name={d.telecaller.fullName} size="lg" className="shadow-sm ring-4 ring-white" />
+            <Avatar name={d.telecaller.fullName} size="lg" className="shadow-sm ring-4 ring-card" />
             <PageHeader
               eyebrow="Team · Telecaller training"
               tone="violet"

@@ -181,7 +181,7 @@ export default async function ManagerAdvisorPage({
             <Avatar
               name={row.user.fullName || row.user.publicRef}
               size="lg"
-              className="shadow-sm ring-4 ring-white"
+              className="shadow-sm ring-4 ring-card"
             />
             <PageHeader
               eyebrow="Team · Advisor"

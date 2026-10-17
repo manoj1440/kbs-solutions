@@ -40,7 +40,7 @@ export async function AccountPage() {
         <SectionCard icon={UserRound} tone="violet" title="Profile" description="Changes to name or mobile go through the Admin (mobile changes are audited).">
           <div className="grid gap-5">
             <div className="flex min-w-0 items-center gap-4 rounded-xl bg-[linear-gradient(135deg,rgb(245_243_255)_0%,rgb(240_253_250)_100%)] p-4 ring-1 ring-slate-100 ring-inset">
-              <Avatar name={u.fullName || u.publicRef} size="lg" className="shadow-sm ring-4 ring-white" />
+              <Avatar name={u.fullName || u.publicRef} size="lg" className="shadow-sm ring-4 ring-card" />
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-slate-900">{u.fullName || '—'}</p>
                 <p className="font-mono text-xs text-slate-500">{u.publicRef}</p>

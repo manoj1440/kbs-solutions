@@ -18,16 +18,16 @@ export default async function OnboardingReviewPage({ params }: { params: Promise
   const at = ONBOARDING_STEPS.indexOf(d.step);
   return (
     <div className="grid gap-6">
-      <Link href="/admin/onboarding" className="inline-flex w-fit items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href="/admin/onboarding" className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden="true" />
         Advisor approvals
       </Link>
 
-      <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)] sm:p-6">
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
         <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgb(139_92_246/10%),transparent_65%)]" />
         <div className="relative grid gap-6">
           <div className="flex min-w-0 items-start gap-4">
-            <Avatar name={d.personal.fullName || userId} size="lg" className="shadow-sm ring-4 ring-white" />
+            <Avatar name={d.personal.fullName || userId} size="lg" className="shadow-sm ring-4 ring-card" />
             <PageHeader
               eyebrow="People · Advisor approvals"
               tone="violet"
@@ -35,7 +35,7 @@ export default async function OnboardingReviewPage({ params }: { params: Promise
               meta={
                 <>
                   <Badge variant={d.step === 'AWAITING_REVIEW' ? 'info' : d.step === 'COMPLETE' ? 'success' : 'warning'}>{humanize(d.step)}</Badge>
-                  {d.submittedAt ? <span className="text-sm text-slate-500">submitted {formatDateTime(d.submittedAt)}</span> : null}
+                  {d.submittedAt ? <span className="text-sm text-muted-foreground">submitted {formatDateTime(d.submittedAt)}</span> : null}
                 </>
               }
             />
@@ -47,8 +47,8 @@ export default async function OnboardingReviewPage({ params }: { params: Promise
                 const current = i === at && d.step !== 'COMPLETE';
                 return (
                   <li key={s} aria-current={current ? 'step' : undefined} className="flex min-w-[5.5rem] flex-1 flex-col gap-1.5">
-                    <span className={cn('h-1.5 rounded-full', done ? 'bg-teal-600' : current ? 'bg-violet-500' : 'bg-slate-200')} />
-                    <span className={cn('flex items-center gap-1 text-[11px] leading-tight font-medium', done ? 'text-teal-800' : current ? 'text-violet-700' : 'text-slate-400')}>
+                    <span className={cn('h-1.5 rounded-full', done ? 'bg-teal-600' : current ? 'bg-violet-500' : 'bg-surface-strong')} />
+                    <span className={cn('flex items-center gap-1 text-2xs leading-tight font-medium', done ? 'text-teal-800' : current ? 'text-violet-700' : 'text-fg-3')}>
                       {done ? <Check className="size-3 shrink-0" aria-hidden="true" /> : null}
                       {humanize(s)}
                     </span>
@@ -73,9 +73,9 @@ export default async function OnboardingReviewPage({ params }: { params: Promise
                   ['Verified', d.identity.verifiedAt ? formatDateTime(d.identity.verifiedAt) : '—'],
                 ]}
               />
-              {d.identity.summary ? <pre className="overflow-x-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-700 ring-1 ring-slate-200 ring-inset">{JSON.stringify(d.identity.summary, null, 2)}</pre> : null}
+              {d.identity.summary ? <pre className="overflow-x-auto rounded-lg bg-surface-muted p-3 text-xs text-fg-2 ring-1 ring-border ring-inset">{JSON.stringify(d.identity.summary, null, 2)}</pre> : null}
               {d.consent ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Consent recorded {formatDateTime(d.consent.at)} · privacy notice {d.consent.privacyNoticeVersion}
                 </p>
               ) : null}
@@ -104,7 +104,7 @@ export default async function OnboardingReviewPage({ params }: { params: Promise
                   ],
                 ]}
               />
-              <div className="border-t border-slate-100 pt-4">
+              <div className="border-t border-border-subtle pt-4">
                 <ReviewActions part="evidence" userId={userId} chequeFileId={d.cheque?.fileId ?? null} chequeName={d.cheque?.originalName ?? null} canDecide={canDecide} />
               </div>
             </div>
