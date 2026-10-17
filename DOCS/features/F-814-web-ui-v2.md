@@ -60,7 +60,7 @@ Method: all 57 routes rendered against the demo seed at 1440 and 390 (`apps/web/
 ## 3. Design direction — "calm ledger console"
 - **Palette:** navy shell `#0B1A2E` family, teal primary (one primary everywhere — token package aligned to teal), neutral cool greys as tokens, semantic tones only where they carry meaning (approved/declined/attention/exception). No rainbow tiles: one tone per meaning.
 - **Type:** Inter (UI) + JetBrains Mono (refs, IDs, config keys) loaded with `next/font/google` (self-hosted at build, no runtime third-party request, no new dependency). Scale 12/13/14/16/20/24/30, tabular numerals for all figures, tracking tightened on 24+.
-- **Shape & depth:** controls 8 px, cards/panels 12 px, pills full; two shadow tokens (`--shadow-card`, `--shadow-pop`) with offset + soft blur; hairline borders from one `--border` token.
+- **Shape & depth:** controls 8 px, tiles 12 px, cards/panels 16 px (as today), pills full; two shadow tokens (`--shadow-card`, `--shadow-pop`) with offset + soft blur; hairline borders from one `--border` token.
 - **Density:** 44 px table rows, 36 px controls, 16/24 px panel padding.
 - **Motion:** one authored moment per page (content fade/slide 180 ms ease-out); hover lift on interactive cards only; all off under `prefers-reduced-motion`.
 - **Signature move — the MIS clock:** bank values are only as true as the last accepted MIS import, so the shell always shows it: sidebar footer block "Bank MIS · as of 2 h ago" with per-bank last accepted import on hover/popover; MIS-derived KPI tiles carry the same "as of". Age is shown neutrally (no invented staleness threshold).
@@ -77,8 +77,8 @@ Method: all 57 routes rendered against the demo seed at 1440 and 390 (`apps/web/
 
 ### P0 — Foundation (kit + tokens)
 - Load Inter + JetBrains Mono via `next/font/google`, wire to `--font-sans`/`--font-mono` (U1).
-- Tokens in `globals.css` `@theme`: surfaces (`canvas`, `surface`, `surface-muted`), text (`fg`, `fg-muted`, `fg-subtle`), `border`, `navy-*`, tones, `shadow-card`/`shadow-pop`, radius scale; token package primary aligned to teal.
-- Kit: `TrendChart`, `MiniBars`, `DeltaBadge`, `KpiTile` (hero + quiet variants, replaces home-local `Stat` and the tinted/outlined split), `DetailHeader` (U14), `RailCard`; kit and data-table internals moved to tokens.
+- Tokens in `globals.css` (`:root` + `@theme inline`): `canvas`, `surface-muted/strong/selected`, `fg-2`, `fg-3`, `border-subtle/strong`, `navy`/`navy-2`/`navy-3`, `shadow-card`/`shadow-pop`. Teal primary set on `:root` for all web pages. **Correction:** the `@kbs/ui-tokens` package is left unchanged — mobile reads it (F-805).
+- Kit: `TrendChart`, `MiniBars`, `DeltaBadge`, `Sparkline`, `DetailHeader` (U14), `RailCard`; `StatCard` gains `delta`/`chart` slots instead of a separate `KpiTile` (its `emphasis` variant is the hero tile); kit and data-table internals moved to tokens.
 - Fix U8 (side stripes → dot/indent, bounce → ease-out), U6 (column toggle joins the filter row).
 - Guide: update `components/ui/README.md` (tokens, new components, per-page definition of done).
 
@@ -115,8 +115,8 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 
 | Phase | Page / unit | Route(s) | Status |
 |---|---|---|---|
-| P0 | Fonts + tokens + kit charts + guide | — | TODO |
-| P0 | Detector fixes (side stripes, bounce), column toggle placement | — | TODO |
+| P0 | Fonts + tokens + kit charts + guide | — | DONE |
+| P0 | Detector fixes (side stripes, bounce), column toggle placement | — | DONE |
 | P1 | Sidebar + MIS clock + user card | all workspaces | TODO |
 | P1 | Top bar + mobile drawer | all workspaces | TODO |
 | P2 | Dashboard API: previous period, trend, today (+ e2e) | `/dashboards/admin/*` | TODO |
@@ -175,4 +175,9 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 - [ ] typecheck, lint, unit, API e2e, Playwright, build pass.
 
 ## Progress notes
-- Session 19 (2026-10-17): audit + plan written (this file). No code changed yet.
+- Session 19 (2026-10-17): audit + plan written (this file).
+- Session 19, P0 done. Commits: `docs(F-814): start` → `fix(web): load Inter + JetBrains Mono via next/font` (U1; verified `document.fonts` has Inter loaded) → `refactor(web): semantic tokens …` (U5 groundwork: `:root` tokens, globals.css hex → tokens, kit/ui primitives/DataTable on tokens, `test/tokenize.mjs` codemod for later phases) → `feat(web): kit data visuals …` (TrendChart/DeltaBadge/Sparkline/MiniBars/DetailHeader/RailCard, shown in `/dev/components`) → `fix(web): detector findings and leads column toggle placement` (U6, U8; detector now clean on `apps/web/src`). Guide updated: `apps/web/src/components/ui/README.md`.
+- P0 checks: web typecheck + lint clean, web unit 24/24, Playwright 73 passed / 1 skipped (desktop + phone, against `next dev`), screenshot spot checks (leads, payouts, catalogue, notifications) overflow 0, leads toggle 6 → 13 → 6 columns.
+- Found: `apps/web/test/admin-layout-smoke.mjs` clicks a "Full table view" button that no longer exists (stale since F-813) — not part of `pnpm test:e2e`; fix when P3 touches leads.
+- Fixed on the way: `admin-smoke` F-808 test used `getByLabel('Current status')`, which also matched the F-813 "Sort by Current status" header button (failing since `6c2bf0d`); now `exact: true`.
+- Next: P1 shell (sidebar soft pill is already in; MIS clock, user card, top bar, drawer).

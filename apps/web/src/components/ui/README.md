@@ -1,6 +1,6 @@
-# Web design system (F-806)
+# Web design system (F-806, refreshed by F-814)
 
-Premium operations console: calm grey canvas, white elevated surfaces, teal primary, navy sidebar, soft tinted badges, tabular numbers. Reference implementation: `src/app/(admin)/admin/mis/page.tsx`.
+Premium operations console: calm grey canvas, white elevated surfaces, teal primary, navy sidebar, soft tinted badges, tabular numbers. Reference implementation: `src/app/(admin)/admin/mis/page.tsx`. F-814 plan and page tracker: `DOCS/features/F-814-web-ui-v2.md`.
 
 ## Rules
 1. **Presentation only.** Never change API calls, payloads, routes, permissions, validation, form field names/ids, button labels used by tests, or compliance copy. Keep every piece of information a page shows today.
@@ -9,8 +9,21 @@ Premium operations console: calm grey canvas, white elevated surfaces, teal prim
 4. **One `h1` per page**, rendered by `PageHeader`.
 5. Links inside tables are styled automatically (teal, no underline) — do not add `underline`.
 6. Use `EmptyState` instead of "No … yet." table rows; `Callout` instead of ad-hoc coloured boxes.
-7. No new dependencies; icons from `lucide-react`; charts are CSS (`Meter`) or inline SVG. Exceptions: the shadcn `checkbox` primitive and TanStack Table v9 behind the common `DataTable` (ADR-014).
+7. No new dependencies; icons from `lucide-react`; charts are the kit's SVG components (`TrendChart`, `Sparkline`, `MiniBars`, `Meter`). Exceptions: the shadcn `checkbox` primitive and TanStack Table v9 behind the common `DataTable` (ADR-014).
 8. Numbers: `tabular-nums`, right-aligned in tables.
+9. **Tokens only (F-814).** No `slate-*`, `bg-white`, hex, `text-[Npx]` or `shadow-[…]` in files you touch. Run `node test/tokenize.mjs <files>` first, then fix what it lists as "left".
+
+## Tokens (F-814, `app/globals.css` `:root`)
+| Utility | Use |
+|---|---|
+| `bg-canvas` / `bg-card` / `bg-surface-muted` / `bg-muted` / `bg-surface-strong` / `bg-surface-selected` | page ground → cards → table headers/hover → chips → tracks → selected rows |
+| `text-foreground` / `text-fg-2` / `text-muted-foreground` / `text-fg-3` | primary → secondary → hints → decorative only (fails 4.5:1 on white — never body text) |
+| `border-border` / `border-border-subtle` / `border-border-strong` | default → inner dividers → hover/emphasis |
+| `bg-navy` / `bg-navy-2` / `bg-navy-3` | shell only |
+| `shadow-card` / `shadow-pop` | resting cards → lifted/hover, popovers, tooltips |
+| `text-primary`, `ring-ring` | teal primary, focus |
+
+Fonts: Inter (`font-sans`) and JetBrains Mono (`font-mono`) via `next/font` in `app/layout.tsx`. The `@kbs/ui-tokens` package is shared with mobile — web overrides live in `globals.css`, never change the package for web.
 
 ## Components (`@/components/ui/kit`)
 | Component | Use |
@@ -28,6 +41,22 @@ Premium operations console: calm grey canvas, white elevated surfaces, teal prim
 | `StatusDot` | KBS state as dot + text (user status, health). |
 | `Field` + `selectClass` | Form/filter label + control; native `<select>` gets the chevron globally. |
 | `IconTile`, `TONE`, `humanize` | Building blocks. |
+| `DetailHeader` (F-814) | Detail pages: `back`, `visual`, `title` (the h1), `subtitle`, `meta`, `actions`, children = summary strip. No eyebrow. |
+| `RailCard` (F-814) | Right-rail / agenda list: `title`, `count`, linked `items`, `empty`, `footer`. |
+| `StatCard` `delta` / `chart` (F-814) | Pass `<DeltaBadge current previous />` and `<Sparkline values label />`. |
+
+## Data visuals (F-814)
+| Component | File | Use |
+|---|---|---|
+| `TrendChart` | `ui/trend-chart.tsx` (client) | Area/line over time: `labels`, `series[{key,label,tone,values}]`, `format` (`number`/`inr`), `title`. Legend toggles, hover + ←/→ reading, peak marker, sr-only table. |
+| `DeltaBadge` | `ui/charts.tsx` | Change vs previous period as text (▲ 12% / ▼ / no change / new). `goodWhen="down"` for counts where lower is better. |
+| `Sparkline` | `ui/charts.tsx` | Recent history of one number, only with real data and a `label`. |
+| `MiniBars` | `ui/charts.tsx` | Ranked bars with value + hint as text (funnels, mixes). |
+
+Live examples with fixture data: `/dev/components`.
+
+## Definition of done for a page (F-814)
+Tokens only · kit components only (no page-local `Stat`/`Panel`) · empty/loading/error/disabled states · 1440 and 390 screenshots with overflow 0 and no clipping · `npx impeccable detect <files>` clean (impeccable.style, free) · e2e selectors unchanged (or spec updated in the same commit).
 
 Tones: `teal` (primary/money), `indigo` (bank data), `sky` (info/activity), `violet` (people), `amber` (attention), `rose` (errors/exceptions), `emerald` (success/paid), `slate` (neutral).
 
