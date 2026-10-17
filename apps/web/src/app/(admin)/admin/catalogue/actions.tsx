@@ -24,7 +24,7 @@ export function BankActions({ id, active }: { id: string; active: boolean }) {
         router.refresh();
       }}
     >
-      <span className={cn('size-1.5 rounded-full', active ? 'bg-emerald-500' : 'bg-slate-400')} aria-hidden="true" />
+      <span className={cn('size-1.5 rounded-full', active ? 'bg-emerald-500' : 'bg-fg-3')} aria-hidden="true" />
       {active ? 'active' : 'inactive'}
     </Button>
   );
@@ -41,7 +41,7 @@ export function NewCardForm({ banks }: { banks: { id: string; label: string }[] 
     <SectionCard icon={Plus} tone="teal" title="New card / new bank" description="Cards start as DRAFT; fill details on the card page, then publish.">
       <div className="grid gap-5">
         <div className="grid gap-3">
-          <p className="flex items-center gap-2 text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+          <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             <CreditCard className="size-3.5" aria-hidden="true" />
             Draft card
           </p>
@@ -73,8 +73,8 @@ export function NewCardForm({ banks }: { banks: { id: string; label: string }[] 
             Create draft card
           </Button>
         </div>
-        <div className="grid gap-3 border-t border-slate-100 pt-5">
-          <p className="flex items-center gap-2 text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+        <div className="grid gap-3 border-t border-border-subtle pt-5">
+          <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             <Building2 className="size-3.5" aria-hidden="true" />
             Bank
           </p>

@@ -1,7 +1,8 @@
 'use client';
 
 import { ApiClientError, amountInput, digitsOnly, formatDateTime, formatInr } from '@kbs/shared';
-import { Archive, FilePen, FileText, ImageIcon, Info, Link2, Link2Off, MapPin, Plus, Rocket, Save, ShieldAlert } from 'lucide-react';
+import { Archive, ArrowLeft, FilePen, FileText, ImageIcon, Info, Link2, Link2Off, MapPin, Plus, Rocket, Save, ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -15,7 +16,7 @@ import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
 const areaClass =
-  'min-h-24 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-[inset_0_1px_1px_rgb(15_23_42/3%)] outline-none hover:border-slate-300 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60';
+  'min-h-24 w-full rounded-lg border border-border bg-card p-3 text-sm shadow-pop outline-none hover:border-border-strong focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-60';
 
 export interface CardDetail {
   id: string;
@@ -132,8 +133,12 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
   const openPubs = pubs.filter((x) => !x.effectiveTo).length;
   return (
     <div className="grid gap-6">
-      <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgb(15_23_42/4%),0_4px_16px_-8px_rgb(15_23_42/8%)] sm:p-6">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgb(20_184_166/10%),transparent_65%)]" />
+      <Link href="/admin/catalogue" className="-mb-2 inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-3.5" aria-hidden="true" />
+        Card catalogue
+      </Link>
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,hsl(var(--primary)/8%),transparent_65%)]" />
         <div className="relative grid items-center gap-6 md:grid-cols-[minmax(0,19rem)_1fr]">
           <CreditCardArt bankCode={c.bank.code} bankName={c.bank.displayName} cardName={c.name} muted={c.status !== 'PUBLISHED'} className="max-w-[19rem]" />
           <div className="grid min-w-0 gap-5">
@@ -145,7 +150,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                   <Badge variant={c.status === 'PUBLISHED' ? 'success' : c.status === 'DRAFT' ? 'info' : 'unknown'}>
                     {humanize(c.status)} v{c.version}
                   </Badge>
-                  <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
+                  <span className="inline-flex items-center gap-1.5 text-sm text-fg-2">
                     <BankMark code={c.bank.code} size="sm" />
                     {c.bank.displayName}
                   </span>
@@ -163,7 +168,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
               ]}
             />
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">Effective channels</span>
+              <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Effective channels</span>
               {c.effectiveChannels.length ? (
                 c.effectiveChannels.map((ch) => (
                   <Badge key={ch} variant="success">
@@ -201,7 +206,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
             {field('eligibilityHighlights', 'Eligibility highlights', true)}
             {field('disclosures', 'Disclosures', true)}
             <fieldset className="grid gap-2">
-              <legend className="mb-1.5 text-[12px] font-medium text-slate-600">Categories</legend>
+              <legend className="mb-1.5 text-xs font-medium text-fg-2">Categories</legend>
               <div className="flex flex-wrap gap-2">
                 {categories.map((cat) => {
                   const on = form.categoryKeys.includes(cat.key);
@@ -209,8 +214,8 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                     <label
                       key={cat.key}
                       className={cn(
-                        'inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[13px] transition-colors has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60',
-                        on ? 'border-teal-200 bg-teal-50 text-teal-800' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300',
+                        'inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-ui transition-colors has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60',
+                        on ? 'border-teal-200 bg-teal-50 text-teal-800' : 'border-border bg-card text-fg-2 hover:border-border-strong',
                       )}
                     >
                       <input type="checkbox" className="accent-teal-700" disabled={readOnly} checked={on} onChange={(e) => setForm({ ...form, categoryKeys: e.target.checked ? [...form.categoryKeys, cat.key] : form.categoryKeys.filter((k) => k !== cat.key) })} />
@@ -220,7 +225,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                 })}
               </div>
             </fieldset>
-            <div className="border-t border-slate-100 pt-4">
+            <div className="border-t border-border-subtle pt-4">
               <Button disabled={readOnly} onClick={save}>
                 <Save />
                 Save details
@@ -231,11 +236,11 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
         <div className="grid content-start gap-6">
           <SectionCard icon={ImageIcon} tone="sky" title="Assets" description="Card image and benefit PDF (files module).">
             <ul className="grid gap-2 text-sm">
-              <li className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 px-3 py-2.5">
+              <li className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5">
                 <span className="flex min-w-0 items-center gap-2.5">
-                  <ImageIcon className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+                  <ImageIcon className="size-4 shrink-0 text-fg-3" aria-hidden="true" />
                   <span className="min-w-0 break-all">
-                    <span className="text-slate-500">Image: </span>
+                    <span className="text-muted-foreground">Image: </span>
                     {c.image?.originalName ?? '—'}
                   </span>
                 </span>
@@ -249,11 +254,11 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                   }}
                 />
               </li>
-              <li className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 px-3 py-2.5">
+              <li className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5">
                 <span className="flex min-w-0 items-center gap-2.5">
-                  <FileText className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+                  <FileText className="size-4 shrink-0 text-fg-3" aria-hidden="true" />
                   <span className="min-w-0 break-all">
-                    <span className="text-slate-500">Benefit PDF: </span>
+                    <span className="text-muted-foreground">Benefit PDF: </span>
                     {c.benefitPdf?.originalName ?? '—'}
                   </span>
                 </span>
@@ -280,7 +285,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                   {c.links.map((l) => {
                     const live = l.live;
                     return (
-                      <li key={l.id} className={cn('grid gap-1.5 rounded-xl border px-3 py-2.5', live ? 'border-emerald-200/70 bg-emerald-50/30' : 'border-slate-200/80 bg-slate-50/50')}>
+                      <li key={l.id} className={cn('grid gap-1.5 rounded-xl border px-3 py-2.5', live ? 'border-emerald-200/70 bg-emerald-50/30' : 'border-border bg-surface-muted')}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <Badge variant={live ? 'success' : 'unknown'}>
                             {humanize(l.channel)} v{l.version}
@@ -304,8 +309,8 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                             </Button>
                           ) : null}
                         </div>
-                        <span className="font-mono break-all text-slate-800">{l.url}</span>
-                        <span className="text-slate-500 tabular-nums">
+                        <span className="font-mono break-all text-foreground">{l.url}</span>
+                        <span className="text-muted-foreground tabular-nums">
                           {formatDateTime(l.effectiveFrom)} → {l.effectiveTo ? formatDateTime(l.effectiveTo) : 'open'}
                         </span>
                       </li>
@@ -314,7 +319,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                 </ul>
               )}
               {!readOnly ? (
-                <div className="grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-[9rem_1fr_auto]">
+                <div className="grid gap-2 border-t border-border-subtle pt-3 sm:grid-cols-[9rem_1fr_auto]">
                   <select aria-label="channel" className={selectClass} value={link.channel} onChange={(e) => setLink({ ...link, channel: e.target.value })}>
                     <option value="BOTH">Both</option>
                     <option value="TELECALLER">Telecaller</option>
@@ -348,10 +353,10 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
               ) : (
                 <ul className="grid gap-2 text-xs">
                   {pubs.map((x) => (
-                    <li key={x.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-slate-200/80 px-3 py-2">
+                    <li key={x.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-border px-3 py-2">
                       <Badge variant={x.effectiveTo && new Date(x.effectiveTo) <= new Date(x.effectiveFrom) ? 'unknown' : x.effectiveTo ? 'warning' : 'success'}>{humanize(x.channel)}</Badge>
-                      <span className="font-medium text-slate-800">{x.pincode ? `pincode ${x.pincode}` : x.state ? `state ${x.state}` : 'global'}</span>
-                      <span className="text-slate-500 tabular-nums">
+                      <span className="font-medium text-foreground">{x.pincode ? `pincode ${x.pincode}` : x.state ? `state ${x.state}` : 'global'}</span>
+                      <span className="text-muted-foreground tabular-nums">
                         {formatDateTime(x.effectiveFrom)} → {x.effectiveTo ? formatDateTime(x.effectiveTo) : 'open'}
                       </span>
                       {!x.effectiveTo ? (
@@ -378,7 +383,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                 </ul>
               )}
               {!readOnly ? (
-                <div className="grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-[8rem_8rem_1fr_auto]">
+                <div className="grid gap-2 border-t border-border-subtle pt-3 sm:grid-cols-[8rem_8rem_1fr_auto]">
                   <select aria-label="publication channel" className={selectClass} value={pub.channel} onChange={(e) => setPub({ ...pub, channel: e.target.value })}>
                     <option value="BOTH">Both</option>
                     <option value="TELECALLER">Telecaller</option>
@@ -423,7 +428,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                   </div>
                 </Callout>
               ) : null}
-              {c.forbiddenPhraseOverride ? <p className="text-xs text-slate-500">Published with override: {c.forbiddenPhraseOverride}</p> : null}
+              {c.forbiddenPhraseOverride ? <p className="text-xs text-muted-foreground">Published with override: {c.forbiddenPhraseOverride}</p> : null}
               <div className="flex flex-wrap gap-2">
                 <Button disabled={readOnly || (forbidden.length > 0 && override.trim().length < 3)} onClick={publish}>
                   <Rocket />
@@ -448,7 +453,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                   </Button>
                 ) : null}
               </div>
-              <p className="text-xs text-slate-500">Effective channels right now: {c.effectiveChannels.join(', ') || 'none'}.</p>
+              <p className="text-xs text-muted-foreground">Effective channels right now: {c.effectiveChannels.join(', ') || 'none'}.</p>
             </div>
           </SectionCard>
         </div>
