@@ -6,12 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "kbs",
-    "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F2EEE8"
-    },
+    "userInterfaceStyle": "light",
     "android": {
       "package": "com.kbs.dsa",
       "adaptiveIcon": {
@@ -35,6 +30,15 @@
         "expo-notifications",
         {
           "color": "#F05A28"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#F2EEE8"
         }
       ]
     ],
