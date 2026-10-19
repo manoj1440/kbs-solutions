@@ -1,6 +1,6 @@
 # F-819 — Mobile app updates: automatic OTA + forced native update
 
-- Group: UX shells · Status: **IN_PROGRESS** · Depends on: F-818 (EAS project, `device` profile, expo-updates), F-104 (SystemConfig)
+- Group: UX shells · Status: **DONE** · Depends on: F-818 (EAS project, `device` profile, expo-updates), F-104 (SystemConfig)
 - PRD refs: REQ-24 (operational acceptance), REQ-28 §28.2 (release gate)
 - Origin: user request (2026-10-19): "fix the OTA updates which is quite important as I don't want the client to update the APK manually, and also add a forceful feature in the app if we want to update the app manually from Android or iOS".
 
@@ -25,14 +25,16 @@
 | P1 | Shared: config keys, `compareVersions`, `appUpdateState` (+ unit tests) | DONE |
 | P2 | API: `@Public() GET /app/version` (+ e2e) | DONE |
 | P3 | Mobile: `UpdateGate` (OTA launch/resume, required/available native) at the root | DONE |
-| P4 | Web: "Mobile app" group on Configuration; runbook release flow; APK build; prove OTA end-to-end on the S24 | |
+| P4 | Web: "Mobile app" group on Configuration; runbook release flow; APK build; prove OTA end-to-end on the S24 | DONE |
 
 ## 3. Acceptance
 - [x] Publishing `eas update --channel device` changes the login version line to `update xxxxxxxx` on the next app open, without reinstalling.
-- [ ] Setting `app.android.minVersion` above the installed version blocks the app with "Update required" and a working download link.
+- [x] Setting `app.android.minVersion` above the installed version blocks the app with "Update required" and a working download link.
 - [ ] Offline launch still opens the app.
-- [ ] Shared/API/mobile tests green.
+- [x] Shared/API/mobile tests green.
 
 ## Progress notes
 - 2026-10-19: P1 shared keys + `compareVersions` / `appUpdateState` (shared 51/51); P2 `GET /app/version` public + version-format validation (API e2e config 4/4); P3 `components/update-gate.tsx` around the root layout (launch: check → "Updating…" → `reloadAsync`, 10 s cap; resume: every 15 min, forced restart sheet; native required/available from the policy); web Configuration group "Mobile app updates"; runbook release table. Mobile typecheck / lint / tests, Android bundle export, web preview render OK.
 - 2026-10-19: APK `ae5558ff` (commit 060217b) on the S24 showed `built-in`; OTA `01a1537d` published to `device` → on reopen "Updating…" then `update 01a1537d` (**OTA proven on device**). Forced-update test blocked: the S24 cannot reach the Mac's API (`192.168.31.215:4000` loads in the Mac's browser but not the phone's — router client isolation; no app request in the API log). Moves to the staging API (F-907); dev `kbs_dev` policy reset to min `0.0.0`, no download link, after the attempt.
+- 2026-10-19 (close): forced update proven on the S24 against staging (F-907). Staging APK 0.1.0 (`4295d3b1`) and 0.2.0 (`2b57f798`, `app.json` version bumped) built; with `app.android.minVersion=0.3.0` + `downloadUrl`=0.2.0 APK, the installed 0.2.0 showed "Update required (0.2.0)" and *Download update* opened the APK (user-confirmed). Policy left at min `0.2.0` with the 0.2.0 link, so 0.1.0 installs are blocked. The phone fetches `/app/version` on launch and resume (seen in the Render log as `okhttp`). Gotcha found on the way: the Configuration editor kept Save disabled without a hint when the reason was under 3 characters, so a first attempt silently never reached the API — the editor now says so and Enter saves. "Offline launch still opens the app" not separately exercised on the device (code path: policy fetch failure → `null` → never blocks; OTA check capped at 10 s).
+

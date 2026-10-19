@@ -31,9 +31,9 @@ Supabase (DB + storage; free plan placed it in Seoul ap-northeast-2, ~70 ms from
 ## 4. Acceptance
 - [x] CI green on `main` (all three jobs).
 - [x] A push to `main` deploys API + web automatically; `/health.commit` equals the pushed SHA (run 39274225999, `6e906eb`).
-- [ ] Web login on the Vercel URL with the Admin mobile + master code.
+- [x] Web login on the Vercel URL with the Admin mobile + master code (user-confirmed).
 - [ ] A mobile-only change reaches the S24 as an OTA update without a new APK.
-- [ ] F-819: `app.android.minVersion` above the installed version blocks the staging app.
+- [x] F-819: `app.android.minVersion` above the installed version blocks the staging app (min 0.3.0 vs installed 0.2.0).
 
 ## Progress notes
 - 2026-10-19: P1–P3. Local rehearsal: API built and run with `NODE_ENV=staging` (Swagger 404, `/health.commit` from `RENDER_GIT_COMMIT`, master code `000000` refused at boot), web production build with `NEXT_PUBLIC_API_URL=/api/v1` → health through the rewrite and a full browser login to `/admin` (cookies on the web origin, server-rendered home). Checks: api unit 18/18 (new `env.spec.ts`), api + web typecheck/lint, workflow YAML parses.
@@ -56,4 +56,4 @@ Supabase (DB + storage; free plan placed it in Seoul ap-northeast-2, ~70 ms from
   **Still to do:** GitHub secrets the user must create (`RENDER_DEPLOY_HOOK_URL` from the API service *Settings → Deploy Hook*, `VERCEL_TOKEN`, `EXPO_TOKEN`); web login; `preview` APK via `mobile-build.yml`; F-819 forced-update test; S3 keys.
 - 2026-10-19 (P4 cont.): user added `RENDER_DEPLOY_HOOK_URL`, `VERCEL_TOKEN`, `EXPO_TOKEN`; first full deploy run 39271976253 green (API wait-for-commit, Vercel prebuilt, EAS OTA to `preview`). Web returned 404 for `/api/v1/*`: Turbo strict env mode dropped `API_URL` in `turbo run build`, so `next.config` built no rewrite (the local rehearsal used plain `next build`). Fixed by declaring `API_URL`/`NEXT_PUBLIC_API_URL` as build `env` in `turbo.json`; push `6e906eb` → run 39274225999 green, `https://kbs-solutions-eta.vercel.app/api/v1/health` 200 through the proxy, `/login` renders. Also fixed a 1-in-64 flaky unit test (`crypto.service.spec` tamper case replaced a base64 char with the same char). Staging APK (preview profile): https://expo.dev/artifacts/eas/udr4ltWS4rmqWqjdDGfSzD5W7iUJiPMUP0-0VnXbc3U.apk (build `4295d3b1`).
   **Remaining:** user web login with the Admin mobile + master code; install the staging APK; F-819 forced-update test (Admin → Configuration → Mobile app updates); Supabase S3 access key → Render `S3_ACCESS_KEY`/`S3_SECRET_KEY` (uploads fail until then); copy Render's generated `DATA_ENCRYPTION_KEY` to a password manager; optionally unlink the Vercel project's git link to `manojjangid1440/kbs-solutions`.
-
+- 2026-10-19: web login confirmed; F-819 forced update proven on staging; staging policy now min `0.2.0` + 0.2.0 APK link (0.2.0 APK: https://expo.dev/artifacts/eas/q028YCyeSEqU4T7FfSL7lbe1Yw6m2ZAQfEPMqhBCNDQ.apk). Open: "mobile-only change reaches the S24 as OTA" on the `preview` channel (OTA path itself proven on `device` in F-819), Supabase S3 keys, backup of the generated `DATA_ENCRYPTION_KEY`, optional Vercel git unlink.
