@@ -4,7 +4,7 @@ Everything below is free and needs no credit card. One-time setup is ~45 minutes
 
 | Piece | Provider (free plan) | Notes / limits |
 |---|---|---|
-| Postgres + file storage | **Supabase** Free, region **Mumbai (ap-south-1)** | 500 MB DB, 1 GB storage (S3-compatible). Paused after 7 days with *no* traffic — the keep-warm ping prevents it. |
+| Postgres + file storage | **Supabase** Free, org *KBS Solutions*, project `kbs-staging` (ref `wmbmlvaivnfokisweiul`), region **Seoul (ap-northeast-2)** — the free plan only offers "Asia-Pacific"; a specific region (Mumbai) needs Pro | 500 MB DB, 1 GB storage (S3-compatible). Paused after 7 days with *no* traffic — the keep-warm ping prevents it. |
 | API + Redis | **Render** Free web service + Free Key Value, region Singapore (`render.yaml`) | 512 MB RAM, sleeps after 15 min idle (keep-warm ping), 750 h/month = one service 24/7. Key Value 25 MB, in memory only (jobs re-register on boot; outbox is in Postgres). |
 | Web admin | **Vercel** Hobby (`apps/web/vercel.json`, region sin1) | Hobby is for **non-commercial** use — for KBS's real business use move to Vercel Pro, or deploy the same app on Netlify/Cloudflare free (commercial use allowed). |
 | Mobile | **Expo EAS** Free | 15 Android builds/month, OTA updates to 1,000 monthly users. APKs are downloaded from the EAS link (Play Store costs $25 once; iOS needs an Apple Developer account, $99/year — neither is free). |
@@ -16,9 +16,9 @@ Why not MongoDB / Neon: the data model is PostgreSQL-specific (Prisma `postgresq
 There is no SMS provider yet (`OTP_PROVIDER=console` only, REQ-19 provider choice OPEN). `NODE_ENV=production` refuses to send OTPs at all, so the deployment runs `NODE_ENV=staging`: secure cookies, no error details, no Swagger — and login with the **secret master code** `OTP_DEV_MASTER_CODE` (guessable codes like `000000` are refused at boot). Share it only with testers; do not load real customer data until an SMS provider is chosen and the environment is switched to `production`.
 
 ## 1. Supabase (database + storage)
-1. supabase.com → New project, name `kbs-staging`, region **South Asia (Mumbai)**, a strong DB password (save it in your password manager).
+1. supabase.com → New project, name `kbs-staging`, region Asia-Pacific, **Data API off** (the API connects directly; the REST endpoint would expose tables), a generated DB password (save it in your password manager). *Done 2026-10-19.*
 2. *Connect* → copy the **Session pooler** URI exactly as shown (port **5432**, host `…pooler.supabase.com`, user `postgres.<ref>`). Replace `[YOUR-PASSWORD]`. This is `DATABASE_URL` for both Render and GitHub (IPv4, works from GitHub runners).
-3. *Storage* → New bucket `kbs-private`, **private**. *Storage → Settings → S3 Connection*: enable, note the **endpoint** (`https://<ref>.supabase.co/storage/v1/s3`), then *New access key* → access key id + secret.
+3. *Storage* → New bucket `kbs-private`, **private** (done). S3 protocol is on: endpoint `https://wmbmlvaivnfokisweiul.storage.supabase.co/storage/v1/s3`, region `ap-northeast-2` (already in `render.yaml`). *Storage → Settings → S3 Connection*: enable, note the **endpoint** (`https://<ref>.supabase.co/storage/v1/s3`), then *New access key* → access key id + secret.
 
 ## 2. Render (API + Redis)
 1. render.com → sign in with GitHub → *New → Blueprint* → pick `manoj1440/kbs-solutions` → it reads `render.yaml` (service `kbs-solutions-api` + `kbs-solutions-redis`).

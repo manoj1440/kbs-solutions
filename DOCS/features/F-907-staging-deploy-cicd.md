@@ -18,7 +18,7 @@
 | Vercel Hobby = non-commercial; Play Store / Apple accounts cost money. | Flagged in runbook 05; APKs from the EAS link. |
 
 ## 2. Decisions (recommended defaults, applied)
-Supabase (DB + storage, ap-south-1) · Render (API + Key Value, Singapore, `render.yaml`, deploy hook only) · Vercel Hobby (web, sin1, git deploys off) · EAS free (`preview` profile = staging API, channel `preview`) · GitHub Actions: CI → **Deploy staging** job (migrate → Render, wait for `/health.commit` = SHA → Vercel prebuilt → EAS OTA when mobile paths changed), manual seed input, manual APK build workflow, keep-warm schedule. Staging uses the Supabase owner role (runbook 03 stays the production procedure).
+Supabase (DB + storage; free plan placed it in Seoul ap-northeast-2, ~70 ms from Render Singapore) · Render (API + Key Value, Singapore, `render.yaml`, deploy hook only) · Vercel Hobby (web, sin1, git deploys off) · EAS free (`preview` profile = staging API, channel `preview`) · GitHub Actions: CI → **Deploy staging** job (migrate → Render, wait for `/health.commit` = SHA → Vercel prebuilt → EAS OTA when mobile paths changed), manual seed input, manual APK build workflow, keep-warm schedule. Staging uses the Supabase owner role (runbook 03 stays the production procedure).
 
 ## 3. Phases
 | Phase | Scope | Status |

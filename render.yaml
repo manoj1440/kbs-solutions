@@ -24,7 +24,7 @@ services:
       - { key: TRUST_PROXY_HOPS, value: "1" }
       - { key: WEB_ORIGIN, sync: false } # https://<vercel project>.vercel.app
       - { key: API_PUBLIC_URL, sync: false } # https://kbs-solutions-api.onrender.com (as shown by Render)
-      - { key: DATABASE_URL, sync: false } # Supabase session pooler URI (port 5432)
+      - { key: DATABASE_URL, sync: false } # postgresql://postgres.wmbmlvaivnfokisweiul:<password>@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres
       - key: REDIS_URL
         fromService: { type: keyvalue, name: kbs-solutions-redis, property: connectionString }
       - { key: JWT_ACCESS_SECRET, generateValue: true }
@@ -36,8 +36,8 @@ services:
       - { key: PUSH_PROVIDER, value: expo }
       - { key: SCAN_PROVIDER, value: noop }
       - { key: STORAGE_PROVIDER, value: s3 }
-      - { key: S3_ENDPOINT, sync: false } # https://<project-ref>.supabase.co/storage/v1/s3
-      - { key: S3_REGION, value: ap-south-1 }
+      - { key: S3_ENDPOINT, value: https://wmbmlvaivnfokisweiul.storage.supabase.co/storage/v1/s3 }
+      - { key: S3_REGION, value: ap-northeast-2 } # Supabase project region (free plan picks it)
       - { key: S3_BUCKET, value: kbs-private }
       - { key: S3_ACCESS_KEY, sync: false }
       - { key: S3_SECRET_KEY, sync: false }
