@@ -27,6 +27,14 @@
         "APP_VARIANT": "preview"
       }
     },
+    "device": {
+      "extends": "preview",
+      "channel": "device",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.31.215:4000/api/v1",
+        "APP_VARIANT": "device"
+      }
+    },
     "production": {
       "channel": "production",
       "android": {

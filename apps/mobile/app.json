@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "KBS Solutions",
-    "slug": "kbs-solutions",
+    "slug": "kbs",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -36,16 +36,25 @@
       [
         "expo-notifications",
         {
-          "color": "#16329E"
+          "color": "#F05A28"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {},
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d52957fe-d8b8-497b-ac7c-52ca691f43be"
+      }
+    },
     "runtimeVersion": {
       "policy": "appVersion"
+    },
+    "owner": "manojskidoss-team",
+    "updates": {
+      "url": "https://u.expo.dev/d52957fe-d8b8-497b-ac7c-52ca691f43be"
     }
   }
 }

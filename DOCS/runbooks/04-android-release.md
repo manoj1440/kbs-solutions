@@ -15,7 +15,12 @@ cd apps/mobile
 eas build --platform android --profile preview           # internal APK for UAT (QR / link install)
 eas build --platform android --profile preview --local   # same, on this machine (Android SDK + JDK 17 required)
 eas build --platform android --profile production        # AAB for Play Console
+eas build --platform android --profile device            # F-818: internal APK against a developer Mac on the LAN
 ```
+
+`eas` is not installed globally on the Mac — use `npx eas-cli@latest …`. Project: `d52957fe-d8b8-497b-ac7c-52ca691f43be` (owner `manojskidoss-team`, slug `kbs`).
+
+**`device` profile (F-818):** extends `preview`, points `EXPO_PUBLIC_API_URL` at the developer Mac (`http://192.168.31.215:4000/api/v1` — update when the Mac's Wi-Fi IP changes: `ipconfig getifaddr en0`) and sets `APP_VARIANT=device`. `app.config.js` turns on `usesCleartextTraffic` for that variant only, so preview/production stay https-only. To use it: run the API with `pnpm dev` (it listens on all interfaces, port 4000), keep the phone on the same Wi-Fi, allow incoming connections if macOS asks. Never ship this APK.
 
 ## Release checklist (REQ-28 §28.2 — all must pass)
 1. `pnpm release:check -- --profile=production` with `API_URL`, `ADMIN_TOKEN` (Admin access token for the target environment) and `API_ENV_FILE` (the deployed API env) → exit 0. It checks the build profile, production API settings (NODE_ENV, OTP provider, no dev master code, ClamAV scanning, S3, real secrets, non-owner `kbs_app` DB role, default request budget) and **every launch gate** (payout designated approver, training thresholds/reactivation window, compliance confirmations incl. calling-list consent, recording disclosure and WhatsApp policy, retention values, declarations).
