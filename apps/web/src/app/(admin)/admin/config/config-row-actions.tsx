@@ -139,6 +139,9 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
             aria-label="Reason for change"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !busy && reason.trim().length >= 3) void save();
+            }}
             placeholder="Reason (required)"
             className="bg-card"
           />
@@ -158,6 +161,12 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
               Cancel
             </Button>
           </div>
+          {/* F-907: Save stays disabled until a reason is given — say so instead of failing silently */}
+          {reason.trim().length < 3 ? (
+            <span className="text-muted-foreground text-xs">
+              Type a reason (3+ characters) to enable Save.
+            </span>
+          ) : null}
           {err ? <span className="text-destructive text-xs">{err}</span> : null}
         </div>
       ) : (
