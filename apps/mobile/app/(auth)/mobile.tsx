@@ -4,7 +4,9 @@ import {
   mobileInput,
   type OtpRequestResponse,
 } from '@kbs/shared';
+import Constants from 'expo-constants';
 import { Link, router, useLocalSearchParams } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { useState } from 'react';
 import { Pressable, Text as RNText, type TextInput, View } from 'react-native';
 
@@ -110,6 +112,11 @@ export default function MobileScreen() {
           </Link>
         )}
       </View>
+      {/* F-818: which code is running — the APK's own bundle or an over-the-air update */}
+      <Muted className="text-center text-[11px]">
+        v{Constants.expoConfig?.version ?? '?'} ·{' '}
+        {Updates.isEmbeddedLaunch ? 'built-in' : `update ${(Updates.updateId ?? '').slice(0, 8)}`}
+      </Muted>
     </AuthShell>
   );
 }
