@@ -51,6 +51,7 @@
     "@expo/metro-runtime": "~57.0.16",
     "@kbs/config": "workspace:*",
     "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.12",
     "eslint": "^9.36.0",
     "eslint-config-expo": "~57.0.2",
     "react-dom": "19.2.3",
