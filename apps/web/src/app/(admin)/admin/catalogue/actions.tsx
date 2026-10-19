@@ -24,7 +24,7 @@ export function BankActions({ id, active }: { id: string; active: boolean }) {
         router.refresh();
       }}
     >
-      <span className={cn('size-1.5 rounded-full', active ? 'bg-emerald-500' : 'bg-fg-3')} aria-hidden="true" />
+      <span className={cn('size-1.5 rounded-full', active ? 'bg-teal-500' : 'bg-fg-3')} aria-hidden="true" />
       {active ? 'active' : 'inactive'}
     </Button>
   );

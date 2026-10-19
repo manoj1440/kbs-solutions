@@ -63,7 +63,7 @@ export function LeadOps({ leadId, followUps, remarks }: { leadId: string; follow
           <ol className="grid">
             {followUps.map((t) => (
               <li key={t.id} className="relative grid gap-1.5 pb-4 pl-6 last:pb-0 before:absolute before:top-2 before:bottom-0 before:left-[5px] before:w-px before:bg-border last:before:hidden">
-                <span className={`absolute top-1.5 left-0 size-[11px] rounded-full border-2 border-card ring-1 ${t.doneAt ? 'bg-emerald-500 ring-emerald-200' : 'bg-amber-500 ring-amber-200'}`} aria-hidden="true" />
+                <span className={`absolute top-1.5 left-0 size-[11px] rounded-full border-2 border-card ring-1 ${t.doneAt ? 'bg-teal-500 ring-teal-200' : 'bg-amber-500 ring-amber-200'}`} aria-hidden="true" />
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <Badge variant={t.doneAt ? 'secondary' : 'warning'}>Follow-up task</Badge>
                   <span className={t.doneAt ? 'text-muted-foreground line-through decoration-slate-300' : 'text-foreground'}>{t.text}</span>

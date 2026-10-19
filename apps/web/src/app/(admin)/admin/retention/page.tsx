@@ -74,7 +74,7 @@ export default async function RetentionPage() {
             <RetentionPlanTable rows={plan.categories} />
           </div>
           <div className="flex shrink-0 gap-2 border-t border-border-subtle px-4 py-2 text-xs text-fg-2">
-            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-teal-600" aria-hidden="true" />
             <p>Never removed: {plan.neverRemoved.join(' · ')}.</p>
           </div>
         </section>

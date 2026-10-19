@@ -175,7 +175,7 @@ export function ConfigRowActions({ entry }: { entry: ConfigEntry }) {
       <dialog
         ref={drawer}
         aria-label={`History of ${entry.key}`}
-        className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-card p-0 shadow-2xl backdrop:bg-neutral-950/40"
+        className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-card p-0 shadow-2xl backdrop:bg-stone-950/40"
         onClick={(e) => e.target === drawer.current && drawer.current?.close()}
       >
         <div className="grid gap-4 p-5">

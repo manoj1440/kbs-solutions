@@ -32,7 +32,7 @@ export function UploadListButton() {
       <dialog
         ref={dialog}
         aria-labelledby="upload-list-title"
-        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl backdrop:bg-neutral-950/40 backdrop:backdrop-blur-[2px]"
+        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl backdrop:bg-stone-950/40 backdrop:backdrop-blur-[2px]"
       >
         <div className="grid gap-4">
           <div className="flex items-start gap-3">

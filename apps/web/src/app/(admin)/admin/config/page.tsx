@@ -129,10 +129,10 @@ function ConfigValue({ entry }: { entry: ConfigEntry }) {
   if (typeof v === 'boolean')
     return (
       <code
-        className={`${pill} inline-flex items-center gap-1.5 ${v ? 'bg-emerald-50 text-emerald-800 ring-emerald-200' : ''}`}
+        className={`${pill} inline-flex items-center gap-1.5 ${v ? 'bg-teal-50 text-teal-800 ring-teal-200' : ''}`}
       >
         <span
-          className={`size-1.5 rounded-full ${v ? 'bg-emerald-500' : 'bg-fg-3'}`}
+          className={`size-1.5 rounded-full ${v ? 'bg-teal-500' : 'bg-fg-3'}`}
           aria-hidden="true"
         />
         {json}

@@ -1,6 +1,6 @@
 # Web design system (F-806, refreshed by F-814)
 
-F-817 reference look: flat grey canvas, white 22px cards with no visible border, near-black primary, one orange accent (`brand`, used sparingly: hero tile, charts, progress, logo, unread dot), pill buttons/inputs/selects, soft tinted badges, tabular numbers. Shell: floating top bar (logo · section pills · icons · user) + slim rail with the section's pages. Reference implementation: `src/app/(admin)/admin/mis/page.tsx`. F-814 plan and page tracker: `DOCS/features/F-814-web-ui-v2.md`.
+F-817 reference look on a creamy palette: cream canvas, warm-white 22px cards with no visible border, near-black primary, orange hero accent (`brand`: hero tile, charts, progress, logo, unread dot), teal secondary / positive accent, warm greys (`stone-*`), pill buttons/inputs/selects, soft tinted badges, tabular numbers. Shell: one collapsible left sidebar with every page (icons only ↔ labels, `kbs_nav` cookie) + floating top bar (section › page, icons, user). Reference implementation: `src/app/(admin)/admin/mis/page.tsx`. F-814 plan and page tracker: `DOCS/features/F-814-web-ui-v2.md`.
 
 ## Rules
 1. **Presentation only.** Never change API calls, payloads, routes, permissions, validation, form field names/ids, button labels used by tests, or compliance copy. Keep every piece of information a page shows today.

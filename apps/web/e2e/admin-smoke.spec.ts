@@ -58,9 +58,9 @@ test.describe('Admin workspace smoke', () => {
   test('F-807: executive dashboard URL lands on the Business overview', async () => {
     await page.goto('/admin/dashboards');
     await expect(page).toHaveURL(/\/admin$/);
-    // F-814: the home's h1 is the greeting; F-817: the rail names the page (desktop) — phones use the drawer
+    // F-814: the home's h1 is the greeting; the top bar names the section › page (from md up)
     await expect(page.getByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening)/ })).toBeVisible();
-    if ((page.viewportSize()?.width ?? 0) >= 768) await expect(page.getByRole('navigation', { name: 'Admin navigation' }).getByText('Business overview')).toBeVisible();
+    if ((page.viewportSize()?.width ?? 0) >= 768) await expect(page.getByRole('banner').getByText('Business overview')).toBeVisible();
     await expect(page.getByRole('complementary', { name: 'Today' })).toBeVisible();
     await expect(page.getByText('Recent leads')).toBeVisible();
     await expect(page.getByText('Calling performance')).toBeVisible();
@@ -71,24 +71,26 @@ test.describe('Admin workspace smoke', () => {
     await expect(page.locator('summary[aria-label="Period"]')).toContainText('Last 30 days');
   });
 
-  test('F-807/F-817: every page is listed once, grouped by responsibility; sections in the top bar, pages in the rail', async () => {
-    test.skip((page.viewportSize()?.width ?? 0) < 1280, 'desktop top bar');
+  test('F-807/F-817: the left sidebar lists every page once; icons only, labels and sections when expanded', async () => {
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'desktop sidebar');
     await page.goto('/admin');
-    const sections = page.getByRole('navigation', { name: 'Admin sections' });
+    const nav = page.getByRole('navigation', { name: 'Admin navigation' });
+    const hrefs = await nav.getByRole('link').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
+    expect(hrefs.length).toBeGreaterThan(20);
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(hrefs).not.toContain('/admin/dashboards');
+    expect(hrefs).not.toContain('/admin/account');
+    // collapsed: icon links still carry their page name
+    await expect(nav.getByRole('link', { name: 'Calling records' })).toBeVisible();
+    await page.getByRole('button', { name: 'Expand navigation' }).click();
     for (const group of ['Overview', 'Sales', 'Calling', 'People', 'Products', 'Payouts', 'Reports', 'Settings'])
-      await expect(sections.getByRole('link', { name: group, exact: true })).toBeVisible();
-    // the drawer lists every page of every section exactly once
-    const all = await page.locator('nav[aria-label="Mobile admin navigation"] a').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
-    expect(all.length).toBeGreaterThan(20);
-    expect(new Set(all).size).toBe(all.length);
-    expect(all).not.toContain('/admin/dashboards');
-    expect(all).not.toContain('/admin/account');
-    // a section opens its first page and the rail shows that section's pages
-    await sections.getByRole('link', { name: 'Calling', exact: true }).click();
-    await expect(page).toHaveURL(/\/admin\/calling-list$/);
-    const rail = page.getByRole('navigation', { name: 'Admin navigation' });
-    await expect(rail.getByRole('link', { name: 'Calling records' })).toHaveAttribute('aria-current', 'page');
-    await expect(rail.getByRole('link', { name: 'Caller performance' })).toBeVisible();
+      await expect(nav.getByText(group, { exact: true })).toBeVisible();
+    await expect(nav.getByText('Caller performance', { exact: true })).toBeVisible();
+    // the choice is remembered across navigations, then put back
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Collapse navigation' })).toBeVisible();
+    await page.getByRole('button', { name: 'Collapse navigation' }).click();
+    await expect(page.getByRole('button', { name: 'Expand navigation' })).toBeVisible();
   });
 
   test('F-808: calling records filters by status, upload opens a dialog, old allocation URL lands on caller performance', async () => {

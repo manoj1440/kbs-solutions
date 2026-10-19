@@ -225,7 +225,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                   <Link key={t.role} href={`/admin/users?role=${t.role}`} prefetch={false} className="min-w-0 rounded-xl bg-card p-2.5 transition-colors hover:bg-card/70 focus-visible:outline-2 focus-visible:outline-ring">
                     <span className="block truncate text-2xs font-medium text-fg-2 capitalize">{t.label}</span>
                     <span className="mt-1 block text-lg leading-6 font-semibold text-foreground tabular-nums">{t.n}</span>
-                    <span className={cn('mt-1 block truncate text-2xs font-medium', active ? 'text-emerald-700' : 'text-muted-foreground')}>{active ? `${active} active` : 'None active'}</span>
+                    <span className={cn('mt-1 block truncate text-2xs font-medium', active ? 'text-teal-700' : 'text-muted-foreground')}>{active ? `${active} active` : 'None active'}</span>
                   </Link>
                 );
               })}

@@ -50,7 +50,7 @@ export function RatesTable({ rows, currentId }: { rows: Rate[]; currentId: strin
       columns={columns}
       data={rows}
       getRowId={(r) => r.id}
-      getRowProps={(r) => ({ 'data-current': currentId === r.id || undefined, className: currentId === r.id ? 'bg-neutral-100/40' : undefined })}
+      getRowProps={(r) => ({ 'data-current': currentId === r.id || undefined, className: currentId === r.id ? 'bg-stone-100/40' : undefined })}
       empty={<EmptyState icon={IndianRupee} title="No rate yet — the rule cannot price an entitlement until a rate is approved." />}
     />
   );

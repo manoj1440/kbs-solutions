@@ -27,7 +27,7 @@ export interface PayoutRequestRow {
 }
 
 const STEP: Record<'approved' | 'rejected' | 'pending' | 'none', { icon: LucideIcon; cls: string; text: string }> = {
-  approved: { icon: Check, cls: 'bg-emerald-500 text-white', text: 'approved' },
+  approved: { icon: Check, cls: 'bg-teal-500 text-white', text: 'approved' },
   rejected: { icon: X, cls: 'bg-rose-500 text-white', text: 'rejected' },
   pending: {
     icon: Clock,
@@ -50,7 +50,7 @@ function ApprovalSteps({ row }: { row: PayoutRequestRow }) {
         const s = STEP[status];
         return (
           <li key={role} className="flex items-center gap-1.5">
-            {i > 0 ? <span className={cn('h-px w-3 sm:w-4', steps[0].status === 'approved' ? 'bg-emerald-300' : 'bg-surface-strong')} aria-hidden="true" /> : null}
+            {i > 0 ? <span className={cn('h-px w-3 sm:w-4', steps[0].status === 'approved' ? 'bg-teal-300' : 'bg-surface-strong')} aria-hidden="true" /> : null}
             <span className={cn('inline-flex size-5 shrink-0 items-center justify-center rounded-full', s.cls)} aria-hidden="true">
               <s.icon className="size-3" strokeWidth={3} />
             </span>

@@ -129,7 +129,7 @@ export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: stri
 
 type StepState = 'done' | 'rejected' | 'current' | 'upcoming';
 const STEP_CLS: Record<StepState, string> = {
-  done: 'bg-emerald-500 text-white ring-emerald-500',
+  done: 'bg-teal-500 text-white ring-teal-500',
   rejected: 'bg-rose-500 text-white ring-rose-500',
   current: 'bg-card text-amber-600 ring-amber-400',
   upcoming: 'bg-card text-fg-3 ring-border',
@@ -178,7 +178,7 @@ function Journey({ r }: { r: PayoutRequestDto }) {
         const Icon = STEP_ICON[s.state];
         return (
           <li key={s.title} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:gap-2 sm:text-center">
-            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-3.5 right-1/2 hidden h-0.5 w-full -translate-x-3.5 sm:block', steps[i - 1].state === 'done' ? 'bg-emerald-300' : 'bg-surface-strong')} /> : null}
+            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-3.5 right-1/2 hidden h-0.5 w-full -translate-x-3.5 sm:block', steps[i - 1].state === 'done' ? 'bg-teal-300' : 'bg-surface-strong')} /> : null}
             <span className={cn('relative z-10 inline-flex size-7 shrink-0 items-center justify-center rounded-full ring-2', STEP_CLS[s.state])} aria-hidden="true">
               <Icon className="size-3.5" strokeWidth={3} />
             </span>

@@ -12,19 +12,20 @@ import { cn } from '@/lib/utils';
 export type Tone = 'teal' | 'indigo' | 'sky' | 'violet' | 'amber' | 'rose' | 'emerald' | 'slate';
 
 /**
- * F-817: the reference look is monochrome with one orange accent. Decorative tones share the neutral icon chip; only
- * their bar/dot colour differs (teal = the orange brand, indigo = black). emerald / amber / rose keep their meaning.
+ * F-817: the reference look on a creamy palette. Decorative tones share the neutral icon chip; only their bar/dot colour
+ * differs — teal = teal (secondary accent), violet = orange brand, indigo = near-black, sky/slate = warm greys.
+ * emerald (drawn teal, positive) / amber / rose keep their meaning.
  */
 const NEUTRAL_TILE = 'bg-surface-muted text-foreground ring-transparent';
 export const TONE: Record<Tone, { tile: string; text: string; bar: string; soft: string }> = {
-  teal: { tile: NEUTRAL_TILE, text: 'text-brand-strong', bar: 'bg-brand', soft: 'bg-brand-soft' },
-  indigo: { tile: NEUTRAL_TILE, text: 'text-foreground', bar: 'bg-neutral-900', soft: 'bg-surface-muted' },
-  sky: { tile: NEUTRAL_TILE, text: 'text-fg-2', bar: 'bg-neutral-500', soft: 'bg-surface-muted' },
-  violet: { tile: NEUTRAL_TILE, text: 'text-fg-2', bar: 'bg-neutral-400', soft: 'bg-surface-muted' },
+  teal: { tile: NEUTRAL_TILE, text: 'text-teal-700', bar: 'bg-teal-600', soft: 'bg-teal-50' },
+  indigo: { tile: NEUTRAL_TILE, text: 'text-foreground', bar: 'bg-stone-900', soft: 'bg-surface-muted' },
+  sky: { tile: NEUTRAL_TILE, text: 'text-fg-2', bar: 'bg-stone-500', soft: 'bg-surface-muted' },
+  violet: { tile: NEUTRAL_TILE, text: 'text-brand-strong', bar: 'bg-brand', soft: 'bg-brand-soft' },
   amber: { tile: 'bg-amber-50 text-amber-700 ring-transparent', text: 'text-amber-700', bar: 'bg-amber-500', soft: 'bg-amber-50' },
   rose: { tile: 'bg-rose-50 text-rose-700 ring-transparent', text: 'text-rose-700', bar: 'bg-rose-500', soft: 'bg-rose-50' },
-  emerald: { tile: 'bg-emerald-50 text-emerald-700 ring-transparent', text: 'text-emerald-700', bar: 'bg-emerald-500', soft: 'bg-emerald-50' },
-  slate: { tile: NEUTRAL_TILE, text: 'text-fg-2', bar: 'bg-neutral-300', soft: 'bg-surface-muted' },
+  emerald: { tile: 'bg-teal-50 text-teal-700 ring-transparent', text: 'text-teal-700', bar: 'bg-teal-500', soft: 'bg-teal-50' },
+  slate: { tile: NEUTRAL_TILE, text: 'text-fg-2', bar: 'bg-stone-300', soft: 'bg-surface-muted' },
 };
 
 /** KBS enum constant → sentence case (`PENDING_ONBOARDING` → "Pending onboarding"). Never use on bank MIS values. */
@@ -325,13 +326,13 @@ export function PillNav({
 }
 
 const AVATAR_TONES = [
-  'bg-neutral-200 text-neutral-950',
-  'bg-neutral-200 text-neutral-950',
+  'bg-stone-200 text-stone-950',
+  'bg-stone-200 text-stone-950',
   'bg-amber-100 text-amber-800',
   'bg-rose-100 text-rose-800',
   'bg-sky-100 text-sky-800',
-  'bg-neutral-200 text-neutral-950',
-  'bg-emerald-100 text-emerald-800',
+  'bg-stone-200 text-stone-950',
+  'bg-teal-100 text-teal-800',
 ];
 function hash(s: string) {
   let h = 0;
@@ -428,7 +429,7 @@ const CALLOUT = {
   info: 'border-sky-200 bg-sky-50 text-sky-900 [&_svg]:text-sky-600',
   warning: 'border-amber-200 bg-amber-50 text-amber-950 [&_svg]:text-amber-600',
   danger: 'border-rose-200 bg-rose-50 text-rose-900 [&_svg]:text-rose-600',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-900 [&_svg]:text-emerald-600',
+  success: 'border-teal-200 bg-teal-50 text-teal-900 [&_svg]:text-teal-600',
   neutral: 'border-transparent bg-surface-muted text-fg-2 [&_svg]:text-muted-foreground',
 };
 export function Callout({

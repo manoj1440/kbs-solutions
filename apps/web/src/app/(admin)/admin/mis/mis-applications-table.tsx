@@ -42,7 +42,7 @@ const columns = c.columns([
     header: 'Application',
     cell: ({ row }) => (
       <>
-        <Link href={`/admin/leads/${row.original.leadId}`} className="font-mono text-xs font-medium text-neutral-900 hover:underline">
+        <Link href={`/admin/leads/${row.original.leadId}`} className="font-mono text-xs font-medium text-stone-900 hover:underline">
           {row.original.applicationNo ?? row.original.applicationReferenceNumber ?? row.original.leadRef}
         </Link>
         {row.original.applicationReferenceNumber && row.original.applicationNo ? (
@@ -101,7 +101,7 @@ const columns = c.columns([
     cell: ({ row }) => (
       <>
         <div className="text-xs text-fg-2">{formatDateTime(row.original.reportedAt)}</div>
-        <Link href={`/admin/mis/batches/${row.original.batchId}`} className="mt-0.5 block font-mono text-2xs text-muted-foreground hover:text-neutral-900 hover:underline">
+        <Link href={`/admin/mis/batches/${row.original.batchId}`} className="mt-0.5 block font-mono text-2xs text-muted-foreground hover:text-stone-900 hover:underline">
           {row.original.batchRef}
         </Link>
       </>

@@ -55,7 +55,7 @@ export function DeltaBadge({
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs leading-none font-semibold tabular-nums',
         mood === 'good'
-          ? 'bg-emerald-50 text-emerald-700'
+          ? 'bg-teal-50 text-teal-700'
           : mood === 'bad'
             ? 'bg-rose-50 text-rose-700'
             : 'bg-muted text-fg-2',
@@ -70,13 +70,13 @@ export function DeltaBadge({
 }
 
 const STROKE: Record<Tone, string> = {
-  teal: 'stroke-neutral-900',
-  indigo: 'stroke-neutral-800',
+  teal: 'stroke-stone-900',
+  indigo: 'stroke-stone-800',
   sky: 'stroke-sky-500',
-  violet: 'stroke-neutral-800',
+  violet: 'stroke-stone-800',
   amber: 'stroke-amber-500',
   rose: 'stroke-rose-500',
-  emerald: 'stroke-emerald-500',
+  emerald: 'stroke-teal-500',
   slate: 'stroke-fg-3',
 };
 export const SERIES_STROKE = STROKE;

@@ -215,10 +215,10 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                       key={cat.key}
                       className={cn(
                         'inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-ui transition-colors has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60',
-                        on ? 'border-neutral-300 bg-neutral-100 text-neutral-950' : 'border-border bg-card text-fg-2 hover:border-border-strong',
+                        on ? 'border-stone-300 bg-stone-100 text-stone-950' : 'border-border bg-card text-fg-2 hover:border-border-strong',
                       )}
                     >
-                      <input type="checkbox" className="accent-neutral-900" disabled={readOnly} checked={on} onChange={(e) => setForm({ ...form, categoryKeys: e.target.checked ? [...form.categoryKeys, cat.key] : form.categoryKeys.filter((k) => k !== cat.key) })} />
+                      <input type="checkbox" className="accent-stone-900" disabled={readOnly} checked={on} onChange={(e) => setForm({ ...form, categoryKeys: e.target.checked ? [...form.categoryKeys, cat.key] : form.categoryKeys.filter((k) => k !== cat.key) })} />
                       {cat.label}
                     </label>
                   );
@@ -285,7 +285,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                   {c.links.map((l) => {
                     const live = l.live;
                     return (
-                      <li key={l.id} className={cn('grid gap-1.5 rounded-xl border px-3 py-2.5', live ? 'border-emerald-200/70 bg-emerald-50/30' : 'border-border bg-surface-muted')}>
+                      <li key={l.id} className={cn('grid gap-1.5 rounded-xl border px-3 py-2.5', live ? 'border-teal-200/70 bg-teal-50/30' : 'border-border bg-surface-muted')}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <Badge variant={live ? 'success' : 'unknown'}>
                             {humanize(l.channel)} v{l.version}

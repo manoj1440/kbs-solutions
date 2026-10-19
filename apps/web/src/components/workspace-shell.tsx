@@ -11,6 +11,7 @@ import {
   BookOpenCheck,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   CircleHelp,
   ClipboardCheck,
   ClipboardList,
@@ -24,6 +25,8 @@ import {
   LogOut,
   MapPin,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Phone,
   PhoneCall,
   PieChart,
@@ -190,17 +193,20 @@ function matchLength(href: string, pathname: string, params: URLSearchParams, ro
 }
 
 /**
- * F-801 / F-806 / F-817 workspace shell for every web area (Admin, Manager, Accounts): floating top bar (logo, section
- * pill-nav, search / notifications / refresh, account menu), a slim rail with the pages of the current section, the
- * drawer below `xl`, and keyboard page search.
+ * F-801 / F-806 / F-817 workspace shell for every web area (Admin, Manager, Accounts): one left sidebar with every
+ * section and page (icons only, or icons + labels when expanded), a floating top bar (section › page, search /
+ * notifications / refresh, account menu), the drawer below `md`, and keyboard page search.
  */
 export function WorkspaceShell({
   session,
   area,
+  navExpanded = false,
   children,
 }: {
   session: MeResponse;
   area: WorkspaceArea;
+  /** F-817: sidebar shows labels (from the `kbs_nav` cookie, read by the layout so the first paint matches) */
+  navExpanded?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -262,8 +268,20 @@ export function WorkspaceShell({
     router.push(href);
   }
 
-  // F-817: the section (top pill nav) that owns the current page; its pages fill the rail
-  const section = [...GROUPS, you].find((g) => g.items.some((i) => i.href === active.href)) ?? GROUPS[0];
+  // F-817: every section lives in the left sidebar — icons only, or icons + labels when expanded (remembered per viewer)
+  const [expanded, setExpanded] = useState(navExpanded);
+  const [tip, setTip] = useState<{ label: string; top: number; left: number } | null>(null);
+  function toggleNav() {
+    const next = !expanded;
+    setExpanded(next);
+    setTip(null);
+    document.cookie = `kbs_nav=${next ? '1' : '0'}; path=/; max-age=31536000; samesite=lax`;
+  }
+  function showTip(e: React.SyntheticEvent<HTMLElement>, label: string) {
+    if (expanded) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ label, top: r.top + r.height / 2, left: r.right + 12 });
+  }
 
   async function signOut() {
     await clientApi.post('/auth/logout').catch(() => undefined);
@@ -271,7 +289,7 @@ export function WorkspaceShell({
     router.refresh();
   }
 
-  /** Drawer (below `xl`): every section with its pages, labelled. */
+  /** Drawer (below `md`): every section with its pages, labelled. */
   function drawerNavigation() {
     return GROUPS.map((group) => (
       <div key={group.label} className="mb-5">
@@ -303,142 +321,184 @@ export function WorkspaceShell({
 
   const pill = 'rounded-full bg-card shadow-card';
   const iconButton = 'inline-flex size-10 items-center justify-center rounded-full text-fg-2 transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60';
+  const navItem = (on: boolean) =>
+    cn(
+      'flex items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+      expanded ? 'h-10 w-full gap-3 px-3' : 'mx-auto size-11 justify-center',
+      on ? 'bg-foreground text-background' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
+    );
 
-  const brand = (
-    <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className={cn(pill, 'flex h-11 shrink-0 items-center gap-2 pr-4 pl-1.5 focus-visible:outline-2 focus-visible:outline-ring')}>
-      <span className="brand-gradient flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" aria-hidden="true">
-        K
-      </span>
-      <span className="text-[15px] font-semibold tracking-tight text-foreground">
-        KBS<span className="hidden font-normal text-fg-3 sm:inline"> Solutions</span>
-      </span>
-    </Link>
+  const logo = (
+    <span className="brand-gradient flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" aria-hidden="true">
+      K
+    </span>
   );
 
   return (
-    <div className="admin-workspace admin-canvas min-h-screen text-foreground">
+    <div className="admin-workspace admin-canvas flex min-h-screen text-foreground">
       <a href="#admin-content" className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-card p-3 text-sm focus:not-sr-only">
         Skip to content
       </a>
-      <header className="sticky top-0 z-30 bg-canvas/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-4 sm:h-[76px] sm:gap-3 sm:px-6">
-          <button type="button" aria-label="Open navigation" className={cn(pill, 'inline-flex size-11 shrink-0 items-center justify-center text-fg-2 hover:text-foreground xl:hidden')} onClick={() => mobileNav.current?.showModal()}>
-            <Menu className="size-5" />
-          </button>
-          {brand}
-          <nav aria-label={`${humanize(area)} sections`} className="mx-auto hidden xl:block">
-            <div className={cn(pill, 'flex h-11 items-center gap-0.5 p-1')}>
-              {GROUPS.map((g) => {
-                const on = g === section;
-                return (
-                  <Link
-                    key={g.label}
-                    href={g.items[0].href}
-                    prefetch={false}
-                    aria-current={on ? 'true' : undefined}
-                    className={cn(
-                      'inline-flex h-9 items-center rounded-full px-4 text-ui font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-ring',
-                      on ? 'bg-foreground text-background' : 'text-fg-2 hover:text-foreground',
-                    )}
-                  >
-                    {g.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-          <div className="ml-auto flex shrink-0 items-center gap-2 xl:ml-0">
-            <div className={cn(pill, 'flex h-11 items-center gap-0.5 px-1')}>
-              <button type="button" className={iconButton} aria-label="Search workspace" title="Search (⌘K)" onClick={() => search.current?.showModal()}>
-                <Search className="size-[18px]" />
-              </button>
-              <NotificationBell area={own} />
-              <button type="button" className={cn(iconButton, 'hidden sm:inline-flex')} aria-label="Refresh business data" title="Refresh data" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}>
-                <RefreshCw className={cn('size-[18px]', refreshing && 'animate-spin')} />
-              </button>
-            </div>
-            <details className="relative">
-              <summary className={cn(pill, 'flex h-11 cursor-pointer list-none items-center gap-2 p-1 focus-visible:outline-2 focus-visible:outline-ring sm:pr-3 [&::-webkit-details-marker]:hidden')} aria-label="Account menu">
-                <Avatar name={name} className="bg-foreground text-background" />
-                <span className="hidden text-left sm:block">
-                  <span className="block max-w-36 truncate text-ui leading-4 font-semibold">{name}</span>
-                  <span className="block text-2xs leading-4 text-muted-foreground">{roleLabel}</span>
+      <aside className={cn('sticky top-0 z-30 hidden h-dvh shrink-0 py-4 pl-4 transition-[width] duration-200 md:block', expanded ? 'w-[272px]' : 'w-[92px]')}>
+        <div className="flex h-full flex-col rounded-[28px] bg-card shadow-card">
+          <div className={cn('flex shrink-0 gap-2 p-3', expanded ? 'items-center justify-between' : 'flex-col items-center')}>
+            <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className="flex min-w-0 items-center gap-2.5 rounded-full focus-visible:outline-2 focus-visible:outline-ring">
+              {logo}
+              {expanded ? (
+                <span className="min-w-0">
+                  <span className="block truncate text-[15px] leading-5 font-semibold tracking-tight">
+                    KBS<span className="font-normal text-fg-3"> Solutions</span>
+                  </span>
+                  <span className="block truncate text-2xs text-muted-foreground">{subtitle}</span>
                 </span>
-                <ChevronDown className="hidden size-4 text-fg-3 sm:block" aria-hidden="true" />
-              </summary>
-              <div className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl bg-card shadow-pop">
-                <div className="flex items-center gap-3 bg-surface-muted px-4 py-3">
-                  <Avatar name={name} className="bg-foreground text-background" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{name}</p>
-                    <p className="text-xs text-muted-foreground">{session.user.mobileMasked}</p>
-                  </div>
-                </div>
-                <div className="grid p-1.5">
-                  <Link href={`${accountBase}/account`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
-                    <UserRound className="size-4 text-fg-3" /> Account & support
-                  </Link>
-                  <Link href={`${accountBase}/notifications`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
-                    <Bell className="size-4 text-fg-3" /> All notifications
-                  </Link>
-                </div>
-                <div className="border-t border-border-subtle p-3">
-                  <LogoutButton />
-                </div>
-              </div>
-            </details>
-          </div>
-        </div>
-      </header>
-      <div className="mx-auto flex max-w-[1600px] gap-5 px-4 sm:px-6">
-        <aside aria-label={section.label} className="sticky top-[76px] hidden h-[calc(100dvh-92px)] w-[88px] shrink-0 flex-col justify-between gap-3 md:flex">
-          <nav aria-label={`${humanize(area)} navigation`} className="min-h-0 overflow-y-auto rounded-[28px] bg-card p-1.5 shadow-card">
-            <div className="grid gap-1">
-              {section.items.map(({ href, label, icon: Icon }) => {
-                const on = active.href === href;
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    prefetch={false}
-                    aria-current={on ? 'page' : undefined}
-                    title={label}
-                    className="group flex flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-center focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <span className={cn('flex size-10 items-center justify-center rounded-full transition-colors', on ? 'bg-foreground text-background' : 'text-fg-2 group-hover:bg-surface-muted group-hover:text-foreground')}>
-                      <Icon className="size-[18px]" aria-hidden="true" />
-                    </span>
-                    <span className={cn('line-clamp-2 text-2xs leading-3 font-medium', on ? 'text-foreground' : 'text-muted-foreground')}>{label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-          <div className="grid gap-1 rounded-[28px] bg-card p-1.5 shadow-card">
-            <Link href={`${accountBase}/account`} prefetch={false} title="Account & support" aria-label="Account & support" className="flex justify-center rounded-full py-0.5 focus-visible:outline-2 focus-visible:outline-ring">
-              <span className={cn(iconButton, 'size-10')}>
-                <CircleHelp className="size-[18px]" aria-hidden="true" />
-              </span>
+              ) : null}
             </Link>
-            <button type="button" title="Sign out" aria-label="Sign out" className="flex justify-center rounded-full py-0.5 focus-visible:outline-2 focus-visible:outline-ring" onClick={() => void signOut()}>
-              <span className={cn(iconButton, 'size-10')}>
-                <LogOut className="size-[18px]" aria-hidden="true" />
-              </span>
+            <button type="button" onClick={toggleNav} aria-expanded={expanded} aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'} title={expanded ? 'Collapse' : 'Expand'} className={cn(iconButton, 'size-9 shrink-0 bg-surface-muted')}>
+              {expanded ? <PanelLeftClose className="size-[18px]" /> : <PanelLeftOpen className="size-[18px]" />}
             </button>
           </div>
-        </aside>
+          <nav aria-label={`${humanize(area)} navigation`} className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-3" onScroll={() => setTip(null)}>
+            {GROUPS.map((group, gi) => (
+              <div key={group.label} className={cn(gi > 0 && (expanded ? 'mt-4' : 'mt-2 border-t border-border-subtle pt-2'))}>
+                {expanded ? <p className="px-3 pb-1.5 text-xs font-medium text-muted-foreground">{group.label}</p> : <p className="sr-only">{group.label}</p>}
+                <div className="grid gap-1">
+                  {group.items.map(({ href, label, icon: Icon }) => {
+                    const on = active.href === href;
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        prefetch={false}
+                        aria-current={on ? 'page' : undefined}
+                        aria-label={expanded ? undefined : label}
+                        onMouseEnter={(e) => showTip(e, label)}
+                        onMouseLeave={() => setTip(null)}
+                        onFocus={(e) => showTip(e, label)}
+                        onBlur={() => setTip(null)}
+                        className={navItem(on)}
+                      >
+                        <Icon className="size-[18px] shrink-0" aria-hidden="true" />
+                        {expanded ? <span className="truncate text-ui font-medium">{label}</span> : null}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+          <div className="grid shrink-0 gap-1 border-t border-border-subtle p-2.5">
+            <Link
+              href={`${accountBase}/account`}
+              prefetch={false}
+              aria-label={expanded ? undefined : 'Account & support'}
+              onMouseEnter={(e) => showTip(e, 'Account & support')}
+              onMouseLeave={() => setTip(null)}
+              onFocus={(e) => showTip(e, 'Account & support')}
+              onBlur={() => setTip(null)}
+              className={navItem(active.href === `${accountBase}/account`)}
+            >
+              <CircleHelp className="size-[18px] shrink-0" aria-hidden="true" />
+              {expanded ? <span className="truncate text-ui font-medium">Account & support</span> : null}
+            </Link>
+            <button
+              type="button"
+              aria-label={expanded ? undefined : 'Sign out'}
+              onMouseEnter={(e) => showTip(e, 'Sign out')}
+              onMouseLeave={() => setTip(null)}
+              onFocus={(e) => showTip(e, 'Sign out')}
+              onBlur={() => setTip(null)}
+              onClick={() => void signOut()}
+              className={navItem(false)}
+            >
+              <LogOut className="size-[18px] shrink-0" aria-hidden="true" />
+              {expanded ? <span className="truncate text-ui font-medium">Sign out</span> : null}
+            </button>
+          </div>
+        </div>
+      </aside>
+      {tip ? (
+        <div role="tooltip" className="pointer-events-none fixed z-50 -translate-y-1/2 rounded-full bg-foreground px-3 py-1.5 text-xs font-medium whitespace-nowrap text-background shadow-pop" style={{ top: tip.top, left: tip.left }}>
+          {tip.label}
+        </div>
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <header className="sticky top-0 z-20 bg-canvas/90 backdrop-blur-md">
+          <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-4 sm:h-[76px] sm:gap-3 sm:px-6">
+            <button type="button" aria-label="Open navigation" className={cn(pill, 'inline-flex size-11 shrink-0 items-center justify-center text-fg-2 hover:text-foreground md:hidden')} onClick={() => mobileNav.current?.showModal()}>
+              <Menu className="size-5" />
+            </button>
+            <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className={cn(pill, 'flex h-11 shrink-0 items-center gap-2 pr-4 pl-1 md:hidden')}>
+              {logo}
+              <span className="text-[15px] font-semibold tracking-tight">KBS</span>
+            </Link>
+            <div className={cn(pill, 'hidden h-11 min-w-0 items-center gap-2 px-4 md:flex')}>
+              <span className="text-ui text-muted-foreground">{active.group}</span>
+              <ChevronRight className="size-3.5 shrink-0 text-fg-3" aria-hidden="true" />
+              <span className="flex min-w-0 items-center gap-2 text-ui font-semibold text-foreground">
+                <active.icon className="size-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{active.label}</span>
+              </span>
+            </div>
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <div className={cn(pill, 'flex h-11 items-center gap-0.5 px-0.5')}>
+                <button type="button" className={iconButton} aria-label="Search workspace" title="Search (⌘K)" onClick={() => search.current?.showModal()}>
+                  <Search className="size-[18px]" />
+                </button>
+                <NotificationBell area={own} />
+                <button type="button" className={cn(iconButton, 'hidden sm:inline-flex')} aria-label="Refresh business data" title="Refresh data" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}>
+                  <RefreshCw className={cn('size-[18px]', refreshing && 'animate-spin')} />
+                </button>
+              </div>
+              <details className="relative">
+                <summary className={cn(pill, 'flex h-11 cursor-pointer list-none items-center gap-2 p-1 focus-visible:outline-2 focus-visible:outline-ring sm:pr-3 [&::-webkit-details-marker]:hidden')} aria-label="Account menu">
+                  <Avatar name={name} className="bg-foreground text-background" />
+                  <span className="hidden text-left sm:block">
+                    <span className="block max-w-36 truncate text-ui leading-4 font-semibold">{name}</span>
+                    <span className="block text-2xs leading-4 text-muted-foreground">{roleLabel}</span>
+                  </span>
+                  <ChevronDown className="hidden size-4 text-fg-3 sm:block" aria-hidden="true" />
+                </summary>
+                <div className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl bg-card shadow-pop">
+                  <div className="flex items-center gap-3 bg-surface-muted px-4 py-3">
+                    <Avatar name={name} className="bg-foreground text-background" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{name}</p>
+                      <p className="text-xs text-muted-foreground">{session.user.mobileMasked}</p>
+                    </div>
+                  </div>
+                  <div className="grid p-1.5">
+                    <Link href={`${accountBase}/account`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
+                      <UserRound className="size-4 text-fg-3" /> Account & support
+                    </Link>
+                    <Link href={`${accountBase}/notifications`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
+                      <Bell className="size-4 text-fg-3" /> All notifications
+                    </Link>
+                  </div>
+                  <div className="border-t border-border-subtle p-3">
+                    <LogoutButton />
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </header>
         <SessionKeepAlive accessExpiresInSec={session.account?.accessExpiresInSec ?? 900} />
-        <main id="admin-content" tabIndex={-1} className="admin-content min-w-0 flex-1 pt-1 pb-10 outline-none">
+        <main id="admin-content" tabIndex={-1} className="admin-content mx-auto w-full max-w-[1600px] min-w-0 px-4 pt-1 pb-10 outline-none sm:px-6">
           {children}
         </main>
       </div>
       <dialog
         ref={mobileNav}
         aria-label={`${humanize(area)} navigation menu`}
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] rounded-r-[28px] bg-card p-0 text-foreground shadow-pop backdrop:bg-neutral-950/40 backdrop:backdrop-blur-sm open:flex open:flex-col"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] rounded-r-[28px] bg-card p-0 text-foreground shadow-pop backdrop:bg-stone-950/40 backdrop:backdrop-blur-sm open:flex open:flex-col"
       >
         <div className="flex shrink-0 items-center justify-between px-4 py-4">
-          {brand}
+          <Link href={home} prefetch={false} className="flex items-center gap-2.5" onClick={() => mobileNav.current?.close()}>
+            {logo}
+            <span className="text-[15px] font-semibold tracking-tight">
+              KBS<span className="font-normal text-fg-3"> Solutions</span>
+            </span>
+          </Link>
           <button type="button" aria-label="Close navigation" className={iconButton} onClick={() => mobileNav.current?.close()}>
             <X className="size-5" />
           </button>
@@ -464,7 +524,7 @@ export function WorkspaceShell({
           setQuery('');
           setCursor(0);
         }}
-        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none overflow-hidden rounded-[28px] bg-card p-0 shadow-pop backdrop:bg-neutral-950/40 backdrop:backdrop-blur-sm"
+        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none overflow-hidden rounded-[28px] bg-card p-0 shadow-pop backdrop:bg-stone-950/40 backdrop:backdrop-blur-sm"
       >
         <h2 id="workspace-search-title" className="sr-only">
           Find your workspace

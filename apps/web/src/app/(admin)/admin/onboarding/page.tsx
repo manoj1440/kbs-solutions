@@ -63,7 +63,7 @@ export default async function OnboardingQueuePage() {
                   <div className="flex min-w-0 items-start gap-3">
                     <Avatar name={r.fullName || r.publicRef} />
                     <div className="min-w-0 flex-1">
-                      <Link className="font-semibold break-words text-foreground hover:text-neutral-900" href={`/admin/onboarding/${r.userId}`}>
+                      <Link className="font-semibold break-words text-foreground hover:text-stone-900" href={`/admin/onboarding/${r.userId}`}>
                         {r.fullName || '(no name)'}
                       </Link>
                       <div className="font-mono text-2xs text-muted-foreground">{r.publicRef}</div>

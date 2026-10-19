@@ -64,7 +64,7 @@ export function LoginShowcase() {
             {FEATURES.map(({ icon: Icon, label }) => (
               <div key={label} className="flex flex-col items-start gap-2.5">
                 <span className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
-                  <Icon className="size-5 text-neutral-400" />
+                  <Icon className="size-5 text-stone-400" />
                 </span>
                 <span className="text-[11px] leading-tight text-white/70">{label}</span>
               </div>
@@ -78,8 +78,8 @@ export function LoginShowcase() {
         {STATS.map(({ icon: Icon, value, label }, i) => (
           <div key={label} className="flex flex-1 items-center gap-3">
             {i > 0 ? <span className="mr-3 h-10 w-px bg-white/10" aria-hidden="true" /> : null}
-            <span className="flex size-10 items-center justify-center rounded-full bg-neutral-500/15">
-              <Icon className="size-5 text-neutral-400" />
+            <span className="flex size-10 items-center justify-center rounded-full bg-stone-500/15">
+              <Icon className="size-5 text-stone-400" />
             </span>
             <span>
               <span className="block text-lg leading-tight font-bold">{value}</span>

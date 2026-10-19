@@ -15,7 +15,7 @@ const columns = c.columns([
     header: 'Customer',
     cell: ({ row }) => (
       <>
-        <Link href={`/admin/leads/${row.original.id}`} className="text-xs font-medium text-neutral-900 hover:underline">
+        <Link href={`/admin/leads/${row.original.id}`} className="text-xs font-medium text-stone-900 hover:underline">
           {row.original.customer.name}
         </Link>
         <div className="mt-0.5 text-2xs text-muted-foreground">

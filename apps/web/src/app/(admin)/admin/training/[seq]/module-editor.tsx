@@ -146,7 +146,7 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
             <div key={i} className="grid gap-2.5 rounded-xl border border-border bg-card p-4 shadow-card">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-2 text-xs font-semibold text-fg-2">
-                  <span className="inline-flex size-6 items-center justify-center rounded-lg bg-neutral-100 text-2xs text-neutral-900 tabular-nums ring-1 ring-neutral-200">{i + 1}</span>
+                  <span className="inline-flex size-6 items-center justify-center rounded-lg bg-stone-100 text-2xs text-stone-900 tabular-nums ring-1 ring-stone-200">{i + 1}</span>
                   <Label>Question {i + 1}</Label>
                 </span>
                 <Button variant="ghost" size="sm" onClick={() => setQuestions((qs) => qs.filter((_, idx) => idx !== i))}>
@@ -157,9 +157,9 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
               <Input value={q.text} onChange={(e) => setQ(i, { text: e.target.value })} placeholder="Question text" />
               <div className="grid gap-2 pl-1">
                 {q.options.map((o, oi) => (
-                  <div key={o.key} className={cn('flex items-center gap-2 rounded-lg px-1.5 py-1', q.correctKey === o.key && 'bg-emerald-50/70 ring-1 ring-emerald-100')}>
-                    <input type="radio" className="accent-emerald-600" name={`correct-${i}`} checked={q.correctKey === o.key} onChange={() => setQ(i, { correctKey: o.key })} aria-label={`Mark option ${o.key} correct`} />
-                    <span className={cn('w-5 font-mono text-sm', q.correctKey === o.key ? 'font-semibold text-emerald-700' : 'text-muted-foreground')}>{o.key}</span>
+                  <div key={o.key} className={cn('flex items-center gap-2 rounded-lg px-1.5 py-1', q.correctKey === o.key && 'bg-teal-50/70 ring-1 ring-teal-100')}>
+                    <input type="radio" className="accent-teal-600" name={`correct-${i}`} checked={q.correctKey === o.key} onChange={() => setQ(i, { correctKey: o.key })} aria-label={`Mark option ${o.key} correct`} />
+                    <span className={cn('w-5 font-mono text-sm', q.correctKey === o.key ? 'font-semibold text-teal-700' : 'text-muted-foreground')}>{o.key}</span>
                     <Input value={o.text} onChange={(e) => setQ(i, { options: q.options.map((x, xi) => (xi === oi ? { ...x, text: e.target.value } : x)) })} />
                     {q.options.length > 2 ? (
                       <Button variant="ghost" size="sm" onClick={() => setQ(i, { options: q.options.filter((_, xi) => xi !== oi), correctKey: q.correctKey === o.key ? (q.options[0]?.key ?? 'A') : q.correctKey })}>

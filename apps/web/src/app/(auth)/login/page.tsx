@@ -28,7 +28,7 @@ export default async function LoginPage({
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -bottom-40 -left-32 size-96 rounded-full bg-neutral-400/20 blur-3xl"
+          className="pointer-events-none absolute -bottom-40 -left-32 size-96 rounded-full bg-stone-400/20 blur-3xl"
         />
         <div className="relative flex items-center gap-2.5 lg:hidden">
           <span className="flex size-9 items-center justify-center brand-gradient rounded-full text-white">
@@ -41,7 +41,7 @@ export default async function LoginPage({
         {reason ? (
           <p
             role={reason === 'deactivated' ? 'alert' : 'status'}
-            className={`relative flex w-full max-w-md items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${reason === 'deactivated' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-neutral-300 bg-neutral-100 text-neutral-950'}`}
+            className={`relative flex w-full max-w-md items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${reason === 'deactivated' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-stone-300 bg-stone-100 text-stone-950'}`}
           >
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             {LOGIN_NOTICES[reason]}

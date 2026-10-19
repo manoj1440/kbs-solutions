@@ -59,7 +59,7 @@ export default async function PayoutRulesPage() {
                       <BankMark code={r.bank.code} />
                       <div className="min-w-0">
                         <div className="text-2xs text-muted-foreground">{r.bank.displayName}</div>
-                        <Link className="line-clamp-2 block font-semibold break-words text-foreground after:absolute after:inset-0 after:rounded-xl hover:text-neutral-900" href={`/admin/payouts/rules/${r.id}`}>
+                        <Link className="line-clamp-2 block font-semibold break-words text-foreground after:absolute after:inset-0 after:rounded-xl hover:text-stone-900" href={`/admin/payouts/rules/${r.id}`}>
                           {r.name}
                         </Link>
                       </div>

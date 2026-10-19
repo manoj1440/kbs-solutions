@@ -50,7 +50,7 @@ export function CreateUserDialog() {
       <dialog
         ref={ref}
         aria-label="Create user"
-        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl bg-card p-0 shadow-2xl backdrop:bg-neutral-950/40"
+        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl bg-card p-0 shadow-2xl backdrop:bg-stone-950/40"
       >
         <form
           className="grid gap-4 p-5 sm:p-6"

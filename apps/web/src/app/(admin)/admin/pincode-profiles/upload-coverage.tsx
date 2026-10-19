@@ -44,12 +44,12 @@ export function UploadCoverageButton({ banks }: { banks: { id: string; label: st
       <dialog
         ref={ref}
         aria-label="Upload coverage"
-        className={cn('fixed top-1/2 left-1/2 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 shadow-2xl backdrop:bg-neutral-950/40', open ? '' : 'hidden')}
+        className={cn('fixed top-1/2 left-1/2 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 shadow-2xl backdrop:bg-stone-950/40', open ? '' : 'hidden')}
         onClose={() => setOpen(false)}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <span className="inline-flex size-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-900 ring-1 ring-neutral-200">
+            <span className="inline-flex size-9 items-center justify-center rounded-xl bg-stone-100 text-stone-900 ring-1 ring-stone-200">
               <FileUp className="size-4.5" aria-hidden="true" />
             </span>
             <p className="text-[15px] font-semibold text-foreground">Upload coverage</p>
@@ -71,7 +71,7 @@ export function UploadCoverageButton({ banks }: { banks: { id: string; label: st
               ))}
             </select>
           </div>
-          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-100/40 px-4 py-6 text-center">
+          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-stone-300 bg-stone-100/40 px-4 py-6 text-center">
             <p className="text-xs text-muted-foreground">Excel (.xlsx) or CSV with a Pincode column listing every pincode the bank sources. It replaces the bank’s current list.</p>
             <FileUploadButton
               purpose="bank_pincode"
@@ -95,7 +95,7 @@ export function UploadCoverageButton({ banks }: { banks: { id: string; label: st
             />
           </div>
           {msg ? (
-            <p role={msg.ok ? 'status' : 'alert'} className={cn('rounded-lg border px-3 py-2 text-sm', msg.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-950' : 'border-amber-200 bg-amber-50 text-amber-950')}>
+            <p role={msg.ok ? 'status' : 'alert'} className={cn('rounded-lg border px-3 py-2 text-sm', msg.ok ? 'border-teal-200 bg-teal-50 text-teal-950' : 'border-amber-200 bg-amber-50 text-amber-950')}>
               {msg.text}
             </p>
           ) : null}

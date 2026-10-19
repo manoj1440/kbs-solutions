@@ -239,7 +239,7 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
         <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md text-xs font-medium text-fg-2 hover:text-foreground [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="size-3.5" aria-hidden="true" />
           More filters
-          {moreCount ? <span className="rounded-full bg-neutral-100 px-1.5 text-2xs font-semibold text-neutral-900 tabular-nums">{moreCount}</span> : null}
+          {moreCount ? <span className="rounded-full bg-stone-100 px-1.5 text-2xs font-semibold text-stone-900 tabular-nums">{moreCount}</span> : null}
           <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
         </summary>
         <div className="mt-3 grid grid-cols-2 items-end gap-3 lg:grid-cols-4">
@@ -343,13 +343,13 @@ export function OpsSections({ d }: { d: OpsDashboard }) {
           <Tile label="On hold" m={a.payouts.onHold} money tone="rose" />
           <Tile label="Paid (events)" m={a.payouts.paid} money tone="emerald" />
           <div className="col-span-2 flex min-w-0 flex-col brand-gradient rounded-2xl border border-transparent p-4 text-white shadow-pop">
-            <div className="flex items-center justify-between gap-2 text-xs font-medium text-neutral-100">
+            <div className="flex items-center justify-between gap-2 text-xs font-medium text-stone-100">
               Confirmed transfers
               <BadgeIndianRupee className="size-4" aria-hidden="true" />
             </div>
             <div className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums">{formatInr(a.payouts.confirmedTransfersInr.amountInr ?? 0)}</div>
             <div className="min-h-3 flex-1" />
-            <p className="border-t border-white/15 pt-2 text-2xs leading-snug text-neutral-100/90">Accounts payment · {a.payouts.confirmedTransfersInr.dateBasis}</p>
+            <p className="border-t border-white/15 pt-2 text-2xs leading-snug text-stone-100/90">Accounts payment · {a.payouts.confirmedTransfersInr.dateBasis}</p>
           </div>
         </TileGroup>
       </section>

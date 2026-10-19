@@ -91,41 +91,46 @@
   animation: login-float 7s ease-in-out infinite;
 }
 
-/* F-817: reference look — neutral canvas, white cards, near-black primary, one orange accent. On :root so portaled
-   popovers get it too. The @kbs/ui-tokens package stays as is — mobile reads it. Values are HSL triplets. */
+/* F-817: reference look on a creamy, warm palette — cream canvas, warm-white cards, near-black primary, orange hero
+   accent (`brand`) and teal as the secondary / positive accent. On :root so portaled popovers get it too.
+   The @kbs/ui-tokens package stays as is — mobile reads it. Values are HSL triplets. */
 :root {
-  --background: 0 0% 93%;
-  --foreground: 0 0% 9%;
-  --card-foreground: 0 0% 9%;
-  --popover-foreground: 0 0% 9%;
-  --primary: 0 0% 9%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 95%;
-  --secondary-foreground: 0 0% 15%;
-  --muted: 0 0% 95%;
-  --muted-foreground: 0 0% 42%;
-  --accent: 0 0% 95%;
-  --accent-foreground: 0 0% 9%;
-  --ring: 0 0% 9%;
-  --border: 0 0% 91%;
-  --input: 0 0% 87%;
+  --background: 36 27% 93%;
+  --foreground: 24 10% 10%;
+  --card: 40 40% 99.5%;
+  --card-foreground: 24 10% 10%;
+  --popover: 40 40% 99.5%;
+  --popover-foreground: 24 10% 10%;
+  --primary: 24 10% 10%;
+  --primary-foreground: 40 40% 99%;
+  --secondary: 38 25% 94%;
+  --secondary-foreground: 24 10% 15%;
+  --muted: 38 25% 94%;
+  --muted-foreground: 25 6% 39%;
+  --accent: 38 25% 94%;
+  --accent-foreground: 24 10% 10%;
+  --success: 175 77% 26%; /* teal-700 */
+  --info: 175 60% 30%;
+  --ring: 24 10% 10%;
+  --border: 36 18% 89%;
+  --input: 34 14% 83%;
   --radius: 10px;
 
-  --canvas: 0 0% 93%;
-  --surface-muted: 0 0% 96%;
-  --surface-strong: 0 0% 90%;
-  --surface-selected: 14 90% 97%;
-  --fg-2: 0 0% 30%;
-  --fg-3: 0 0% 42%; /* ≥4.5:1 on white — used for placeholders and small text too */
-  --border-subtle: 0 0% 94%;
-  --border-strong: 0 0% 82%;
-  --navy: 0 0% 9%;
+  --canvas: 36 27% 93%; /* cream, #F2EEE8 */
+  --surface-muted: 38 30% 96%; /* inner tiles, #F7F4EF */
+  --surface-strong: 36 18% 88%;
+  --surface-selected: 14 90% 96%;
+  --fg-2: 25 6% 28%;
+  --fg-3: 25 6% 39%; /* ≥4.5:1 on the cards — used for placeholders and small text too */
+  --border-subtle: 38 24% 93%;
+  --border-strong: 34 12% 77%;
+  --navy: 24 10% 10%;
   --brand: 14 87% 55%; /* #F05A28 */
-  --brand-strong: 17 88% 40%; /* text/links on white, 5.2:1 */
-  --brand-soft: 14 90% 96%;
+  --brand-strong: 17 88% 40%; /* text/links on light, 5.2:1 */
+  --brand-soft: 20 90% 95%;
   --brand-foreground: 0 0% 100%;
-  --elev-card: 0 1px 2px hsl(0 0% 0% / 3%);
-  --elev-pop: 0 1px 2px hsl(0 0% 0% / 4%), 0 16px 32px -16px hsl(0 0% 0% / 18%);
+  --elev-card: 0 1px 2px hsl(24 30% 20% / 4%);
+  --elev-pop: 0 1px 2px hsl(24 30% 20% / 5%), 0 16px 32px -16px hsl(24 30% 20% / 20%);
 }
 
 .admin-content > *,

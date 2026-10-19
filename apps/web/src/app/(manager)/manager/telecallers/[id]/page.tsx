@@ -116,7 +116,7 @@ export default async function TelecallerTrainingPage({
               <ol className="grid gap-3">
                 {d.reactivations.map((r) => (
                   <li key={r.id} className="flex items-start gap-3 rounded-xl border border-border-subtle bg-surface-muted p-3 text-sm">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 ring-inset">
+                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700 ring-1 ring-teal-100 ring-inset">
                       <RotateCcw className="size-4" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
@@ -149,13 +149,13 @@ export default async function TelecallerTrainingPage({
             const done = m.status === 'PASSED';
             const locked = m.status === 'LOCKED';
             return (
-              <li key={m.sequence} className={cn('grid min-w-0 content-start gap-3 rounded-xl border p-4', done ? 'border-emerald-100 bg-emerald-50/40' : locked ? 'border-border bg-surface-muted' : 'border-sky-100 bg-card')}>
+              <li key={m.sequence} className={cn('grid min-w-0 content-start gap-3 rounded-xl border p-4', done ? 'border-teal-100 bg-teal-50/40' : locked ? 'border-border bg-surface-muted' : 'border-sky-100 bg-card')}>
                 <div className="flex items-start gap-3">
                   <span
                     aria-hidden="true"
                     className={cn(
                       'inline-flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset',
-                      done ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : locked ? 'bg-muted text-fg-3 ring-border' : 'bg-sky-50 text-sky-700 ring-sky-200',
+                      done ? 'bg-teal-50 text-teal-700 ring-teal-200' : locked ? 'bg-muted text-fg-3 ring-border' : 'bg-sky-50 text-sky-700 ring-sky-200',
                     )}
                   >
                     {done ? <Check className="size-4" /> : locked ? <Lock className="size-4" /> : m.sequence}
@@ -201,7 +201,7 @@ export default async function TelecallerTrainingPage({
                     <dd className="inline-flex items-center gap-1 text-foreground">
                       {m.videoCompletedAt ? (
                         <>
-                          <PlayCircle className="size-3.5 text-emerald-600" aria-hidden="true" />
+                          <PlayCircle className="size-3.5 text-teal-600" aria-hidden="true" />
                           completed
                         </>
                       ) : (

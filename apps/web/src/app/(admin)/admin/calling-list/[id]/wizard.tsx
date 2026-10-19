@@ -25,7 +25,7 @@ export function ImportSteps({ current, failed }: { current: number; failed?: boo
         const on = i === current;
         return (
           <li key={label} aria-current={on ? 'step' : undefined} className="relative flex min-w-0 flex-col items-center gap-1.5 text-center">
-            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-4 right-[calc(50%+1rem)] h-0.5 w-[calc(100%-1.5rem)] rounded-full', done || on ? 'bg-neutral-800' : 'bg-surface-strong')} /> : null}
+            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-4 right-[calc(50%+1rem)] h-0.5 w-[calc(100%-1.5rem)] rounded-full', done || on ? 'bg-stone-800' : 'bg-surface-strong')} /> : null}
             <span
               className={cn(
                 'relative z-10 inline-flex size-8 items-center justify-center rounded-full text-xs font-semibold ring-4 ring-card tabular-nums',
@@ -34,7 +34,7 @@ export function ImportSteps({ current, failed }: { current: number; failed?: boo
             >
               {done ? <Check className="size-4" aria-hidden="true" /> : i + 1}
             </span>
-            <span className={cn('text-2xs leading-tight font-medium sm:text-xs', done ? 'text-neutral-900' : on ? 'text-foreground' : 'text-muted-foreground')}>
+            <span className={cn('text-2xs leading-tight font-medium sm:text-xs', done ? 'text-stone-900' : on ? 'text-foreground' : 'text-muted-foreground')}>
               {label}
               <span className="sr-only">{done ? ' (done)' : on ? ' (current)' : ''}</span>
             </span>
@@ -264,14 +264,14 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
               ))}
               {Object.keys(v.byIssue).length === 0 ? (
                 <li className="flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" />
+                  <CheckCircle2 className="size-4 text-teal-600" aria-hidden="true" />
                   No issues found.
                 </li>
               ) : null}
             </ul>
-            <div className="grid gap-3 rounded-xl border border-neutral-300 bg-neutral-100/40 p-4">
+            <div className="grid gap-3 rounded-xl border border-stone-300 bg-stone-100/40 p-4">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <ShieldCheck className="size-4 text-neutral-900" aria-hidden="true" />Confirm import
+                <ShieldCheck className="size-4 text-stone-900" aria-hidden="true" />Confirm import
               </h3>
               {batch.complianceGlobalConfirmed ? (
                 <Callout tone="success" icon={ShieldCheck}>
@@ -283,7 +283,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
                     Compliance has not confirmed calling-list consent globally. Attest for this batch to allow allocation, or import now and allocate later (REQ-21 §21.2).
                   </Callout>
                   <label className="flex items-start gap-2 text-sm text-foreground">
-                    <input id="attest" type="checkbox" className="mt-0.5 size-4 shrink-0 accent-neutral-900" checked={attest} onChange={(e) => setAttest(e.target.checked)} />I confirm this list was obtained with customer consent / a permitted use basis.
+                    <input id="attest" type="checkbox" className="mt-0.5 size-4 shrink-0 accent-stone-900" checked={attest} onChange={(e) => setAttest(e.target.checked)} />I confirm this list was obtained with customer consent / a permitted use basis.
                   </label>
                   {attest ? (
                     <div className="grid gap-3 md:grid-cols-2">
