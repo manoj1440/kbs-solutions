@@ -4,8 +4,8 @@ import {
   CircleCheck,
   ClipboardCheck,
   CreditCard,
-  FileSpreadsheet,
   Files,
+  FileSpreadsheet,
   GraduationCap,
   IdCard,
   KeyRound,
@@ -19,6 +19,7 @@ import {
   Settings2,
   ShieldCheck,
   Shuffle,
+  Smartphone,
   Star,
   TriangleAlert,
   Wallet,
@@ -26,18 +27,14 @@ import {
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import {
-  Callout,
-  MiniStat,
-  type Tone,
-  StatStrip,
-} from '@/components/ui/kit';
+import { Callout, MiniStat, type Tone, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
 import { ConfigRowActions } from './config-row-actions';
 
 /** Section label, icon and tone per key prefix (presentation only; unknown prefixes fall back to the prefix itself). */
 const GROUP: Record<string, { label: string; icon: LucideIcon; tone: Tone }> = {
+  app: { label: 'Mobile app updates', icon: Smartphone, tone: 'teal' },
   allocation: { label: 'Allocation', icon: Shuffle, tone: 'violet' },
   audit: { label: 'Audit', icon: ScrollText, tone: 'slate' },
   auth: { label: 'Auth', icon: KeyRound, tone: 'teal' },
@@ -180,15 +177,39 @@ export default async function ConfigPage() {
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">Configuration</h1>
       <StatStrip cols={4}>
-        <MiniStat label="Launch gates" value={`${setCount} / ${gates.data.length}`} hint={open.length ? `${open.length} ★ unset` : 'All ★ keys set'} tone={open.length ? 'amber' : 'emerald'} />
-        <MiniStat label="Settings" value={cfg.data.length} hint={`${groups.size} sections`} tone="sky" />
-        <MiniStat label="Changed by an Admin" value={changed} hint="Reasoned + audited" tone="violet" />
-        <MiniStat label="Never changed" value={cfg.data.length - changed} hint="Seeded defaults" tone="slate" />
+        <MiniStat
+          label="Launch gates"
+          value={`${setCount} / ${gates.data.length}`}
+          hint={open.length ? `${open.length} ★ unset` : 'All ★ keys set'}
+          tone={open.length ? 'amber' : 'emerald'}
+        />
+        <MiniStat
+          label="Settings"
+          value={cfg.data.length}
+          hint={`${groups.size} sections`}
+          tone="sky"
+        />
+        <MiniStat
+          label="Changed by an Admin"
+          value={changed}
+          hint="Reasoned + audited"
+          tone="violet"
+        />
+        <MiniStat
+          label="Never changed"
+          value={cfg.data.length - changed}
+          hint="Seeded defaults"
+          tone="slate"
+        />
       </StatStrip>
 
       <section aria-label="Launch gates" className="shrink-0">
         {open.length ? (
-          <Callout tone="warning" icon={TriangleAlert} title={`Launch gates: ${setCount} of ${gates.data.length} set`}>
+          <Callout
+            tone="warning"
+            icon={TriangleAlert}
+            title={`Launch gates: ${setCount} of ${gates.data.length} set`}
+          >
             <p>These ★ keys need a value before production:</p>
             <ul className="mt-2 flex min-w-0 flex-wrap gap-1.5">
               {open.map((g) => (
@@ -206,7 +227,11 @@ export default async function ConfigPage() {
             </ul>
           </Callout>
         ) : (
-          <Callout tone="success" icon={CircleCheck} title={`Launch gates: ${setCount} of ${gates.data.length} set`}>
+          <Callout
+            tone="success"
+            icon={CircleCheck}
+            title={`Launch gates: ${setCount} of ${gates.data.length} set`}
+          >
             All ★ keys hold a value.
           </Callout>
         )}

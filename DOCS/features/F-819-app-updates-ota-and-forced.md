@@ -22,9 +22,9 @@
 ## 2. Phases
 | Phase | Scope | Status |
 |---|---|---|
-| P1 | Shared: config keys, `compareVersions`, `appUpdateState` (+ unit tests) | |
-| P2 | API: `@Public() GET /app/version` (+ e2e) | |
-| P3 | Mobile: `UpdateGate` (OTA launch/resume, required/available native) at the root | |
+| P1 | Shared: config keys, `compareVersions`, `appUpdateState` (+ unit tests) | DONE |
+| P2 | API: `@Public() GET /app/version` (+ e2e) | DONE |
+| P3 | Mobile: `UpdateGate` (OTA launch/resume, required/available native) at the root | DONE |
 | P4 | Web: "Mobile app" group on Configuration; runbook release flow; APK build; prove OTA end-to-end on the S24 | |
 
 ## 3. Acceptance
@@ -34,3 +34,4 @@
 - [ ] Shared/API/mobile tests green.
 
 ## Progress notes
+- 2026-10-19: P1 shared keys + `compareVersions` / `appUpdateState` (shared 51/51); P2 `GET /app/version` public + version-format validation (API e2e config 4/4); P3 `components/update-gate.tsx` around the root layout (launch: check → "Updating…" → `reloadAsync`, 10 s cap; resume: every 15 min, forced restart sheet; native required/available from the policy); web Configuration group "Mobile app updates"; runbook release table. Mobile typecheck / lint / tests, Android bundle export, web preview render OK.

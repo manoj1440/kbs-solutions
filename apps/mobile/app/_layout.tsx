@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DeviceWarningBanner } from '@/components/device-warning';
 import { OfflineBanner } from '@/components/offline-banner';
+import { UpdateGate } from '@/components/update-gate';
 import { ScreenProtection } from '@/components/secure-screen';
 import { SessionProvider } from '@/lib/session';
 import { colors } from '@/lib/theme';
@@ -29,23 +30,27 @@ export default function RootLayout() {
     Inter_700Bold,
     Inter_800ExtraBold,
   });
-  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: colors.navy }} />;
+  if (!fontsLoaded && !fontError)
+    return <View style={{ flex: 1, backgroundColor: colors.canvas }} />;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <SessionProvider>
-          <StatusBar style="dark" />
-          <ScreenProtection />
-          <OfflineBanner />
-          <DeviceWarningBanner />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.canvas },
-              animation: 'fade_from_bottom',
-            }}
-          />
-        </SessionProvider>
+        {/* F-819: OTA updates apply on open; an Admin-set minimum version blocks outdated installs */}
+        <UpdateGate>
+          <SessionProvider>
+            <StatusBar style="dark" />
+            <ScreenProtection />
+            <OfflineBanner />
+            <DeviceWarningBanner />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.canvas },
+                animation: 'fade_from_bottom',
+              }}
+            />
+          </SessionProvider>
+        </UpdateGate>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

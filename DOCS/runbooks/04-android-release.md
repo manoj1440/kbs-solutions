@@ -22,6 +22,14 @@ eas build --platform android --profile device            # F-818: internal APK a
 
 **`device` profile (F-818):** extends `preview`, points `EXPO_PUBLIC_API_URL` at the developer Mac (`http://192.168.31.215:4000/api/v1` — update when the Mac's Wi-Fi IP changes: `ipconfig getifaddr en0`) and sets `APP_VARIANT=device`. `app.config.js` turns on `usesCleartextTraffic` for that variant only, so preview/production stay https-only. To use it: run the API with `pnpm dev` (it listens on all interfaces, port 4000), keep the phone on the same Wi-Fi, allow incoming connections if macOS asks. Never ship this APK.
 
+## App updates (F-819)
+| Change | What to do | What users see |
+|---|---|---|
+| JS / screens / styles only | `eas update --channel <device\|preview\|production> …` (command below) | Next time they open the app: "Updating KBS Solutions…", then the new version. Already open: a "Restart now" prompt within 15 min of returning to the app. |
+| Native (new module, app.json plugin, SDK bump) | Bump `version` in `apps/mobile/app.json` (e.g. 0.1.0 → 0.2.0), build, then in **Admin → Configuration → Mobile app updates** set `app.android.downloadUrl` (and `app.ios.*` for iOS) | `latestVersion` = 0.2.0 → "New version available" prompt; `minVersion` = 0.2.0 → app blocked with "Update required" until they install it. |
+
+OTA updates only reach installs with the same `version` (`runtimeVersion.policy: appVersion`), so publish JS fixes for each version still in the field. The login screen's last line shows what is running (`v0.1.0 · built-in` or `· update xxxxxxxx`).
+
 **JS-only fixes without a new APK (EAS Update):** the `device` build listens on channel `device` (runtime `0.1.0`). `apps/mobile/.env` (git-ignored, `localhost`) would win over the shell, so turn dotenv off and pass the build's values:
 ```bash
 cd apps/mobile && EXPO_NO_DOTENV=1 APP_VARIANT=device EXPO_PUBLIC_API_URL=http://192.168.31.215:4000/api/v1 \
