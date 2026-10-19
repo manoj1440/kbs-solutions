@@ -198,7 +198,7 @@ export default function CardCatalogue() {
                   </View>
                   {item.benefits[0] ? (
                     <View className="flex-row items-center gap-1.5">
-                      <Icon name="sparkles-outline" size={13} color="#B7791F" />
+                      <Icon name="sparkles-outline" size={13} color="#C2410C" />
                       <Muted numberOfLines={1} className="flex-1 text-[12px]">
                         {item.benefits[0]}
                       </Muted>

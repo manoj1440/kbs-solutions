@@ -76,10 +76,10 @@ function activityIcon(title: string): {
 }
 
 const QUICK: { icon: IconName; label: string; href: string; tone: readonly string[] }[] = [
-  { icon: 'add-circle', label: 'New lead', href: '/(advisor)/cards', tone: ['#16329E', '#3D5AFE'] },
+  { icon: 'add-circle', label: 'New lead', href: '/(advisor)/cards', tone: ['#F47A45', '#E2461C'] },
   { icon: 'search', label: 'Find cards', href: '/(advisor)/cards', tone: ['#0E6B5E', '#22B59A'] },
-  { icon: 'alarm', label: 'Follow-ups', href: '/(advisor)/pending', tone: ['#8A4B0C', '#E39B1B'] },
-  { icon: 'wallet', label: 'Earnings', href: '/(advisor)/payouts', tone: ['#4B2A99', '#8B6CF6'] },
+  { icon: 'alarm', label: 'Follow-ups', href: '/(advisor)/pending', tone: ['#8A4B0C', '#E2461C'] },
+  { icon: 'wallet', label: 'Earnings', href: '/(advisor)/payouts', tone: ['#292524', '#57534E'] },
 ];
 
 /** S09 Home dashboard — real counts from /leads, earnings from /payouts/me/ledger, activity from /notifications. */
@@ -201,7 +201,7 @@ export default function AdvisorHome() {
               </RNText>
             </View>
             <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
-              <View className="h-1.5 w-1.5 rounded-full bg-[#4ADE80]" />
+              <View className="h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
               <RNText className="font-semibold text-[12px] text-white">
                 Paid {formatInr(paid, { decimals: 0 })}
               </RNText>

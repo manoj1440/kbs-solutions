@@ -295,11 +295,11 @@ export default function LeadScreen() {
                     <Icon
                       name={verified ? 'shield-checkmark' : 'alert-circle-outline'}
                       size={12}
-                      color={verified ? '#86EFAC' : colors.gold}
+                      color={verified ? '#99F6E4' : colors.gold}
                     />
                     <RNText
                       className="font-semibold text-[11px]"
-                      style={{ color: verified ? '#86EFAC' : colors.gold }}
+                      style={{ color: verified ? '#99F6E4' : colors.gold }}
                     >
                       {verified ? 'Verified by MIS match' : 'Unverified'}
                     </RNText>
@@ -337,7 +337,7 @@ export default function LeadScreen() {
               : 'No MIS row has matched this lead yet.'}
           </MetaLine>
           {l.remarksPreview ? (
-            <View className="rounded-xl bg-[#F4F6FB] px-3 py-2.5">
+            <View className="rounded-xl bg-[#F2EEE8] px-3 py-2.5">
               <Muted className="italic">“{l.remarksPreview}”</Muted>
             </View>
           ) : null}
@@ -425,7 +425,7 @@ export default function LeadScreen() {
                 }
               />
               {l.linkActivity.length ? (
-                <View className="gap-2 rounded-xl bg-[#F4F6FB] p-3">
+                <View className="gap-2 rounded-xl bg-[#F2EEE8] p-3">
                   {l.linkActivity.map((a) => (
                     <MetaLine key={a.id} icon="radio-button-on-outline">
                       {formatDateTime(a.at)} · {a.label} (v{a.linkVersion})
@@ -443,7 +443,7 @@ export default function LeadScreen() {
               title="Bank application reference"
             >
               {l.bankReference.value ? (
-                <View className="flex-row flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F4F6FB] px-3 py-2.5">
+                <View className="flex-row flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F2EEE8] px-3 py-2.5">
                   <CopyValue value={l.bankReference.value} />
                   <Badge
                     label={verified ? 'Verified by MIS match' : 'Unverified'}
@@ -572,7 +572,7 @@ export default function LeadScreen() {
                     {changed.map((c) => (
                       <View
                         key={`${g.batchId}-${c.field}`}
-                        className="gap-1 rounded-xl bg-[#F4F6FB] px-3 py-2.5"
+                        className="gap-1 rounded-xl bg-[#F2EEE8] px-3 py-2.5"
                       >
                         <View className="flex-row items-center justify-between gap-2">
                           <Text className="flex-1 font-semibold text-[13px]">
@@ -629,7 +629,7 @@ export default function LeadScreen() {
                       accessibilityRole="button"
                       accessibilityState={{ expanded: rawAll }}
                       onPress={() => setRawAll(!rawAll)}
-                      className="mt-2 h-11 flex-row items-center justify-center gap-1 rounded-xl bg-[#EEF2FF]"
+                      className="mt-2 h-11 flex-row items-center justify-center gap-1 rounded-xl bg-[#F5EEE7]"
                     >
                       <RNText className="font-semibold text-[13px] text-brand">
                         {rawAll ? 'Show fewer fields' : `Show all ${rawEntries.length} fields`}
@@ -687,7 +687,7 @@ export default function LeadScreen() {
               }
             >
               {l.followUps.map((t) => (
-                <View key={t.id} className="flex-row items-start gap-3 rounded-xl bg-[#F4F6FB] p-3">
+                <View key={t.id} className="flex-row items-start gap-3 rounded-xl bg-[#F2EEE8] p-3">
                   <Icon
                     name={t.doneAt ? 'checkmark-circle' : 'ellipse-outline'}
                     size={20}
@@ -703,7 +703,7 @@ export default function LeadScreen() {
                     </View>
                     <Text
                       className={
-                        t.doneAt ? 'text-[14px] text-[#5B6478] line-through' : 'text-[14px]'
+                        t.doneAt ? 'text-[14px] text-[#57534E] line-through' : 'text-[14px]'
                       }
                     >
                       {t.text}
@@ -760,7 +760,7 @@ export default function LeadScreen() {
               {l.remarks.map((r) => (
                 <View key={r.id} className="flex-row gap-3">
                   <Avatar name={r.author.fullName} size={32} />
-                  <View className="flex-1 rounded-2xl rounded-tl-md bg-[#F4F6FB] px-3 py-2.5">
+                  <View className="flex-1 rounded-2xl rounded-tl-md bg-[#F2EEE8] px-3 py-2.5">
                     <Text className="text-[14px]">{r.text}</Text>
                     <Muted className="mt-1 text-[12px]">
                       {r.author.fullName} · {formatDateTime(r.at)}

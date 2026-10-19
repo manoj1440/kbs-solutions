@@ -54,7 +54,7 @@ export function SourceTag({ source, light }: { source: string; light?: boolean }
       <RNText
         numberOfLines={1}
         className={
-          light ? 'font-medium text-[11px] text-white/60' : 'font-medium text-[11px] text-[#8A93A6]'
+          light ? 'font-medium text-[11px] text-white/60' : 'font-medium text-[11px] text-[#78716C]'
         }
       >
         {SOURCE_LABEL[source] ?? source}
@@ -95,11 +95,11 @@ export function MetricTile({
       >
         {m.value}
       </RNText>
-      <RNText numberOfLines={1} className="font-medium text-[12px] text-[#5B6478]">
+      <RNText numberOfLines={1} className="font-medium text-[12px] text-[#57534E]">
         {label}
       </RNText>
       {money || m.denominator ? (
-        <RNText numberOfLines={1} className="mt-0.5 font-semibold text-[11px] text-[#8A93A6]">
+        <RNText numberOfLines={1} className="mt-0.5 font-semibold text-[11px] text-[#78716C]">
           {money ? inr(m.amountInr ?? 0) : ''}
           {money && m.denominator ? ' · ' : ''}
           {m.denominator ? `of ${m.denominator.value}` : ''}
@@ -173,7 +173,7 @@ export function DistributionCard({
         <IconCircle icon={icon} tone="secondary" size={36} />
         <View className="flex-1">
           <RNText className="font-bold text-[15px] text-ink">{title}</RNText>
-          <RNText className="font-normal text-[12px] text-[#5B6478]">
+          <RNText className="font-normal text-[12px] text-[#57534E]">
             Bank MIS values verbatim · {d.denominator.value} leads
           </RNText>
         </View>
@@ -185,18 +185,18 @@ export function DistributionCard({
             <View className="flex-row items-center justify-between gap-2">
               <RNText
                 numberOfLines={2}
-                className={`flex-1 text-[13px] ${soft ? 'font-normal italic text-[#8A93A6]' : 'font-medium text-ink'}`}
+                className={`flex-1 text-[13px] ${soft ? 'font-normal italic text-[#78716C]' : 'font-medium text-ink'}`}
               >
                 {b.value}
               </RNText>
               <RNText className="font-bold text-[13px] text-ink">{b.count}</RNText>
             </View>
-            <View className="h-1.5 overflow-hidden rounded-full bg-[#EEF0F4]">
+            <View className="h-1.5 overflow-hidden rounded-full bg-[#EFEAE4]">
               <View
                 className="h-full rounded-full"
                 style={{
                   width: `${(b.count / max) * 100}%`,
-                  backgroundColor: soft ? '#C3C9D6' : '#5B6BB0',
+                  backgroundColor: soft ? '#CFC6BA' : '#8A7F75',
                 }}
               />
             </View>
@@ -204,7 +204,7 @@ export function DistributionCard({
         );
       })}
       {d.buckets.length === 0 ? (
-        <RNText className="font-normal text-[13px] text-[#5B6478]">No leads yet.</RNText>
+        <RNText className="font-normal text-[13px] text-[#57534E]">No leads yet.</RNText>
       ) : null}
     </Card>
   );
@@ -239,7 +239,7 @@ export function TimelineItem({
           title
         )}
         {meta ? (
-          <RNText className="font-normal text-[12px] leading-[17px] text-[#5B6478]">{meta}</RNText>
+          <RNText className="font-normal text-[12px] leading-[17px] text-[#57534E]">{meta}</RNText>
         ) : null}
         {children}
       </View>

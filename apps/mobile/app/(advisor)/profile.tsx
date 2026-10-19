@@ -80,7 +80,7 @@ export default function Profile() {
           </View>
           <View className="mt-4 flex-row flex-wrap gap-2">
             <View className="flex-row items-center gap-1.5 rounded-full bg-gold px-3 py-1">
-              <Icon name="briefcase" size={12} color="#0B1533" />
+              <Icon name="briefcase" size={12} color="#1C1917" />
               <RNText className="font-bold text-[12px] text-ink">{user?.role ?? ''}</RNText>
             </View>
             {p?.reporting.agentCode ? (
@@ -180,7 +180,7 @@ export default function Profile() {
             />
           </Card>
           {p.identity.verifiedAt ? (
-            <RNText className="ml-1 font-normal text-[12px] text-[#8A93A6]">
+            <RNText className="ml-1 font-normal text-[12px] text-[#78716C]">
               Identity: only the outcome and date are kept here.
             </RNText>
           ) : null}

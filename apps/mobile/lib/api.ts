@@ -1,5 +1,5 @@
 import { createApiClient } from '@kbs/shared';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from './secure-store';
 
 import { createRefresher, createTokenStore } from './auth-tokens';
 

@@ -68,7 +68,7 @@ export function QrFromSvg({ svg, size = 120 }: { svg: string | null | undefined;
             top: r.y * s,
             width: r.w * s + 0.35,
             height: s + 0.35,
-            backgroundColor: '#0B1533',
+            backgroundColor: '#1C1917',
           }}
         />
       ))}

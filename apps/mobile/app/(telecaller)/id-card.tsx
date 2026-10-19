@@ -126,7 +126,7 @@ export default function IdCardScreen() {
                     </View>
                   </View>
                   <View
-                    className={`flex-row items-center gap-1.5 rounded-full px-2.5 py-1 ${active ? 'bg-[#1F7A4D]' : 'bg-[#B42318]'}`}
+                    className={`flex-row items-center gap-1.5 rounded-full px-2.5 py-1 ${active ? 'bg-[#0F766E]' : 'bg-[#B42318]'}`}
                   >
                     <View className="h-1.5 w-1.5 rounded-full bg-white" />
                     <RNText className="font-bold text-[11px] text-white">

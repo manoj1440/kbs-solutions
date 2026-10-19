@@ -392,7 +392,7 @@ export default function OnboardingGate() {
                   </View>
                 </View>
               ) : (
-                <View className="items-center gap-2 rounded-2xl border-[1.5px] border-dashed border-[#CBD2E1] bg-canvas px-4 py-7">
+                <View className="items-center gap-2 rounded-2xl border-[1.5px] border-dashed border-[#D6CEC3] bg-canvas px-4 py-7">
                   <IconCircle icon="camera-outline" size={48} />
                   <Muted className="text-center">No cheque image yet</Muted>
                 </View>
@@ -501,7 +501,7 @@ export default function OnboardingGate() {
                 <KeyValue label="Reporting to" value={v.reportingParent?.fullName ?? 'KBS'} last />
               </View>
               <View>
-                <RNText className="mb-1 font-semibold text-[11px] uppercase tracking-[1.2px] text-[#8A93A6]">
+                <RNText className="mb-1 font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
                   Make changes
                 </RNText>
                 {['PERSONAL', 'BANK', 'CHEQUE', 'AGENT_CODE'].map((s, i, arr) => (

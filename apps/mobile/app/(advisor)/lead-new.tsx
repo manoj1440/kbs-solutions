@@ -458,7 +458,7 @@ export default function LeadNew() {
                       accessibilityLabel={`Edit ${TITLES[s].toLowerCase()}`}
                       hitSlop={8}
                       onPress={() => setEditing(s)}
-                      className="h-9 flex-row items-center gap-1 rounded-full bg-[#E8EDFF] px-3"
+                      className="h-9 flex-row items-center gap-1 rounded-full bg-[#EFE9E1] px-3"
                     >
                       <Icon name="create-outline" size={14} color={colors.brand} />
                       <RNText className="font-semibold text-[13px] text-brand">Edit</RNText>

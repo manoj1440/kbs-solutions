@@ -209,7 +209,7 @@ export default function ManagerAdvisorScreen() {
                     className={`flex-row items-start justify-between gap-3 py-1.5 ${i ? 'border-t border-line' : ''}`}
                   >
                     <Text className="flex-1 text-[13px] leading-[19px]">{r.value}</Text>
-                    <View className="min-w-[26px] items-center rounded-full bg-[#EEF0F4] px-2 py-0.5">
+                    <View className="min-w-[26px] items-center rounded-full bg-[#EFEAE4] px-2 py-0.5">
                       <RNText className="font-bold text-[12px] text-ink">{r.count}</RNText>
                     </View>
                   </View>

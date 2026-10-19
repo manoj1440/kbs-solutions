@@ -223,7 +223,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
             <Callout kind="danger">{`Cancelled: ${r.cancelReason ?? ''}`}</Callout>
           ) : null}
           {r.payment ? (
-            <View className="mt-1 rounded-xl bg-[#F4F6FB] px-3 py-2.5">
+            <View className="mt-1 rounded-xl bg-[#F2EEE8] px-3 py-2.5">
               <Muted className="text-[12px]">
                 Payment {r.payment.state.toLowerCase().replace(/_/g, ' ')} ·{' '}
                 {formatInr(r.payment.amountInr)} · ref {r.payment.transferReference} ·{' '}
@@ -231,9 +231,9 @@ export function PayoutRequestDetail({ id }: { id: string }) {
               </Muted>
             </View>
           ) : r.state === 'APPROVED' ? (
-            <View className="mt-1 flex-row items-center gap-2 rounded-xl bg-[#FFF4DB] px-3 py-2.5">
-              <Icon name="hourglass-outline" size={15} color="#7A4F00" />
-              <RNText className="flex-1 font-medium text-[13px] text-[#7A4F00]">
+            <View className="mt-1 flex-row items-center gap-2 rounded-xl bg-[#FDEEE6] px-3 py-2.5">
+              <Icon name="hourglass-outline" size={15} color="#9A3412" />
+              <RNText className="flex-1 font-medium text-[13px] text-[#9A3412]">
                 Both approved — awaiting Accounts payment.
               </RNText>
             </View>
@@ -242,7 +242,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
       </Appear>
       {r.receipt ? (
         <Appear index={3}>
-          <Card className="gap-3" style={{ borderColor: '#BFE3CF' }}>
+          <Card className="gap-3" style={{ borderColor: '#B8E6DF' }}>
             <View className="flex-row items-center gap-3">
               <IconCircle
                 icon={r.state === 'PAID' ? 'checkmark-done' : 'receipt-outline'}
@@ -357,7 +357,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
                 {formatInr(i.amountSnapshotInr)}
               </RNText>
             </View>
-            <View className="gap-1.5 rounded-xl bg-[#F4F6FB] p-3">
+            <View className="gap-1.5 rounded-xl bg-[#F2EEE8] p-3">
               <View className="flex-row items-start gap-1.5">
                 <Icon name="business-outline" size={13} color="#5B2BA8" style={{ marginTop: 2 }} />
                 <Muted className="flex-1 text-[12px]">

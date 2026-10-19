@@ -101,7 +101,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-815-mobile-home-agenda.md](./F-815-mobile-home-agenda.md) | F-815 Mobile: Today agenda + MIS freshness on role homes (keeps indigo + gold) | UX shells | DONE | F-805, F-814 |
 | [F-816-mis-as-business-rule.md](./F-816-mis-as-business-rule.md) | F-816 Web: MIS is a business rule, not the centre of the app (fixed upload formats) | Web UX | DONE | F-809, F-814, F-303 |
 | [F-817-web-reference-redesign.md](./F-817-web-reference-redesign.md) | F-817 Web: reference redesign (neutral canvas, black primary, orange accent, top pill nav + rail) | Web UX | DONE | F-814, F-813, F-816 |
-| [F-818-mobile-glass-web-palette.md](./F-818-mobile-glass-web-palette.md) | F-818 Mobile: glass UI + the web palette (cream, near-black, orange, teal) | UX shells | IN_PROGRESS | F-805, F-817 |
+| [F-818-mobile-glass-web-palette.md](./F-818-mobile-glass-web-palette.md) | F-818 Mobile: glass UI + the web palette (cream, near-black, orange, teal) | UX shells | DONE | F-805, F-817 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | DONE | F-801, F-802 |
 | [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | DONE | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |

@@ -42,7 +42,7 @@ function TimelineNode({ state, index }: { state: 'done' | 'current' | 'locked'; 
       <View
         className="h-10 w-10 items-center justify-center rounded-full"
         style={[
-          gradientStyle(['#16329E', '#3D5AFE'], 135),
+          gradientStyle(['#1C1917', '#F05A28'], 135),
           shadow.glow,
           { boxShadow: '0px 0px 0px 5px rgba(22, 50, 158, 0.14)' },
         ]}
@@ -52,7 +52,7 @@ function TimelineNode({ state, index }: { state: 'done' | 'current' | 'locked'; 
     );
   }
   return (
-    <View className="h-10 w-10 items-center justify-center rounded-full border-[1.5px] border-line bg-[#EEF0F4]">
+    <View className="h-10 w-10 items-center justify-center rounded-full border-[1.5px] border-line bg-[#EFEAE4]">
       <Icon name="lock-closed" size={16} color={colors.subtle} />
     </View>
   );
@@ -78,7 +78,7 @@ function ModuleRow({
         <TimelineNode state={state} index={i} />
         {!last ? (
           <View
-            className={`w-[2px] flex-1 ${passed ? 'bg-[#2FA36B]' : 'bg-line'}`}
+            className={`w-[2px] flex-1 ${passed ? 'bg-[#14B8A6]' : 'bg-line'}`}
             style={{ minHeight: 18 }}
           />
         ) : null}
@@ -90,7 +90,7 @@ function ModuleRow({
           style={state === 'current' ? [shadow.md, { borderColor: colors.brand }] : undefined}
         >
           <View className="flex-row items-center justify-between gap-2">
-            <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#8A93A6]">
+            <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
               Module {m.sequence}
             </RNText>
             <Badge
@@ -240,7 +240,7 @@ export default function TrainingLanding() {
               <>
                 <View className="flex-row items-end justify-between">
                   <View>
-                    <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#8A93A6]">
+                    <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
                       Overall progress
                     </RNText>
                     <RNText className="mt-1 font-bold text-[15px] text-ink">

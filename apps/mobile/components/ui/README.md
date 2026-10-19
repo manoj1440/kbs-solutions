@@ -1,6 +1,6 @@
 # Mobile design system (F-805)
 
-Premium fintech, light-first. Navy → indigo gradient heroes, white elevated surfaces on a soft `canvas` (#F4F6FB), gold for money moments, Inter type, Ionicons, subtle motion. Reference screen: `app/(advisor)/index.tsx`.
+F-818 (matches the web, F-817): light-first, cream `canvas` (#F2EEE8) with ambient orange / teal light, charcoal → orange gradient heroes, near-black primary pill buttons, orange (`gold`/`indigo` token names) for money moments and accents, teal for positive, frosted **glass** chrome (tab bar, sticky footers, sheets, KPI tiles), Inter type, Ionicons, subtle motion. Reference screen: `app/(advisor)/index.tsx`.
 
 ## Rules
 1. **Never use emoji as an icon.** Use `Icon` / `IconCircle` / `IconButton` (Ionicons names, outline for idle, filled for active/emphasis).
@@ -14,13 +14,14 @@ Premium fintech, light-first. Navy → indigo gradient heroes, white elevated su
 5. **Bank truth stays distinct (INV-01…03):** show Stage / Decision / Activation with `StatusTrio` or the three `StageBadge`/`DecisionBadge`/`ActivationBadge`; keep `ProvenanceChip`s; never merge them into one success/failure chip and never change the text the bank reported. Keep all compliance copy (e.g. "Indicative only — the bank decides every application").
 6. **Motion:** wrap top-level sections/list items in `Appear index={i}` (staggered fade-up, capped). Buttons/cards already have spring press feedback (`PressableScale`). Don't over-animate.
 7. **Touch targets ≥ 44pt**, labels always visible, `accessibilityLabel` on icon-only buttons.
-8. Use classes, not inline colours, where a token exists: `bg-canvas`, `bg-navy`, `text-ink`, `text-brand`, `bg-gold`, `border-line`. JS colours for icons: `colors` from `@/lib/theme`. Gradients: `gradientStyle(stops, angle)` / `gradients.*`; shadows: `shadow.sm|md|lg|glow|gold`.
-9. Weight classes (`font-medium|semibold|bold|extrabold`) switch the Inter face — don't use `fontWeight` in styles.
-10. Tailwind opacity steps are 5/10/15/20/25/…; use `bg-white/[0.07]` style for others.
+8. **Glass (F-818):** `Glass` (frosted surface, `strong` over content) and `Card variant="glass"` / `StatTile` for chrome and KPI tiles only — lists, forms and bank-status rows stay on solid `Card`s. Every `Screen` and tab layout is a `GlassScope` (ambient light inside a `BlurTargetView`); on Android a `Glass` blurs its nearest scope (SDK 31+, tinted fallback below), iOS/web blur natively. Never nest a `Glass` inside a `BlurTargetView`.
+9. Use classes, not inline colours, where a token exists: `bg-canvas`, `bg-navy`, `text-ink`, `text-brand`, `bg-gold`, `border-line`. JS colours for icons: `colors` from `@/lib/theme`. Gradients: `gradientStyle(stops, angle)` / `gradients.*`; shadows: `shadow.sm|md|lg|glow|gold`.
+10. Weight classes (`font-medium|semibold|bold|extrabold`) switch the Inter face — don't use `fontWeight` in styles.
+11. Tailwind opacity steps are 5/10/15/20/25/…; use `bg-white/[0.07]` style for others.
 
 ## Components (`@/components/ui`)
 Typography: `Text`, `Heading`, `Display`, `Muted`, `Overline`, `Label`, `ErrorText`.
-Surfaces: `Icon`, `Gradient`, `PressableScale`, `Appear`, `Card` (`variant` elevated|outline|tinted|flat, optional `onPress`), `Badge` (`variant` default|secondary|success|warning|destructive|info|unknown, `dot`, `icon`, `solid`, `size`), `Chip`, `Segmented`, `Avatar`, `IconCircle`, `ProgressBar`, `Divider`, `Skeleton`, `SkeletonList`, `KeyValue`, `Callout` (info|warning|danger|success|neutral), `SectionHeader`, `ListItem`, `EmptyState`, `ErrorState`, `StatTile`, `Stepper`, `ChoiceRow`.
+Surfaces: `Glass`, `GlassScope`, `Icon`, `Gradient`, `PressableScale`, `Appear`, `Card` (`variant` elevated|outline|tinted|flat, optional `onPress`), `Badge` (`variant` default|secondary|success|warning|destructive|info|unknown, `dot`, `icon`, `solid`, `size`), `Chip`, `Segmented`, `Avatar`, `IconCircle`, `ProgressBar`, `Divider`, `Skeleton`, `SkeletonList`, `KeyValue`, `Callout` (info|warning|danger|success|neutral), `SectionHeader`, `ListItem`, `EmptyState`, `ErrorState`, `StatTile`, `Stepper`, `ChoiceRow`.
 Actions: `Button` (`variant` default(gradient)|gold|secondary|outline|destructive|ghost|light, `size` sm|md|lg, `icon`, `iconRight`, `loading`), `IconButton` (`tone` plain|light|soft, `badge`).
 Inputs: `Input` (`label`, `icon`, `prefix`, `error`, `hint`, `right`, `multiline`).
 Layout: `Screen`, `AppBar` (`title`, `subtitle`, `right`, `light`, `large`, `back`), `HeroHeader`, `StickyFooter`, `BottomSheet` (`open`, `onClose`, `title`, `footer`).

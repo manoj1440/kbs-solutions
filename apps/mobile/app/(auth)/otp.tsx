@@ -187,7 +187,7 @@ export default function OtpScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={resend}
-            className="min-h-[44px] flex-row items-center gap-1.5 rounded-full bg-[#E8EDFF] px-4"
+            className="min-h-[44px] flex-row items-center gap-1.5 rounded-full bg-[#EFE9E1] px-4"
           >
             <Icon name="refresh" size={16} color={colors.brand} />
             <RNText className="font-bold text-[14px] text-brand">Resend OTP</RNText>

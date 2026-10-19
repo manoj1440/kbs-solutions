@@ -169,7 +169,7 @@ export function StateIcon({
   tone?: Tone | 'gold';
   size?: number;
 }) {
-  const t = tone === 'gold' ? { fg: '#7A4F00', bg: colors.goldSoft } : toneColors[tone];
+  const t = tone === 'gold' ? { fg: '#9A3412', bg: colors.goldSoft } : toneColors[tone];
   return (
     <View
       className="items-center justify-center rounded-full"

@@ -66,7 +66,7 @@ function CheckRow({ icon, label, sub }: { icon: IconName; label: string; sub: st
         <RNText className="font-bold text-[15px] text-white">{label}</RNText>
         <RNText className="mt-0.5 font-normal text-[13px] text-white/60">{sub}</RNText>
       </View>
-      <Icon name="checkmark-circle" size={20} color="#4ADE80" />
+      <Icon name="checkmark-circle" size={20} color="#2DD4BF" />
     </View>
   );
 }
@@ -209,21 +209,21 @@ function PhoneHero() {
           className="h-[200px] w-[118px] rounded-[26px] border-[5px] border-white/20 bg-white p-3"
           style={{ boxShadow: '0px 18px 40px rgba(0,0,0,0.35)' }}
         >
-          <View className="mb-2 h-1.5 w-10 self-center rounded-full bg-[#E6EAF2]" />
+          <View className="mb-2 h-1.5 w-10 self-center rounded-full bg-[#E7E1D8]" />
           <View className="mb-2 h-12 rounded-lg" style={gradientStyle(cardArt('kbs-navy'), 135)} />
-          <View className="mb-1.5 h-1.5 w-16 rounded bg-[#E6EAF2]" />
-          <View className="mb-3 h-1.5 w-12 rounded bg-[#E6EAF2]" />
+          <View className="mb-1.5 h-1.5 w-16 rounded bg-[#E7E1D8]" />
+          <View className="mb-3 h-1.5 w-12 rounded bg-[#E7E1D8]" />
           <View className="mb-1.5 flex-row items-center gap-1.5">
             <Icon name="checkmark-circle" size={11} color={colors.success} />
-            <View className="h-1.5 flex-1 rounded bg-[#E6EAF2]" />
+            <View className="h-1.5 flex-1 rounded bg-[#E7E1D8]" />
           </View>
           <View className="mb-3 flex-row items-center gap-1.5">
             <Icon name="checkmark-circle" size={11} color={colors.success} />
-            <View className="h-1.5 flex-1 rounded bg-[#E6EAF2]" />
+            <View className="h-1.5 flex-1 rounded bg-[#E7E1D8]" />
           </View>
           <View
             className="h-6 items-center justify-center rounded-md"
-            style={gradientStyle(['#16329E', '#3D5AFE'], 120)}
+            style={gradientStyle(['#1C1917', '#F05A28'], 120)}
           >
             <View className="h-1.5 w-10 rounded bg-white/70" />
           </View>
@@ -299,7 +299,7 @@ function EarnHero({ active }: { active: boolean }) {
       </View>
       <View className="h-px w-64 bg-white/20" />
       <View className="absolute left-8 top-6 flex-row items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
-        <Icon name="trending-up" size={14} color="#4ADE80" />
+        <Icon name="trending-up" size={14} color="#2DD4BF" />
         <RNText className="font-bold text-[12px] text-white">Growing every month</RNText>
       </View>
     </View>

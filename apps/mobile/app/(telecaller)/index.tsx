@@ -90,7 +90,7 @@ function RecordCard({ item, now, index }: { item: CallingQueueRow; now: number; 
             </Muted>
           </View>
           <View
-            className={`h-10 w-10 items-center justify-center rounded-full ${item.suppressed || item.hiddenAt ? 'bg-[#EEF0F4]' : 'bg-[#E6F4EC]'}`}
+            className={`h-10 w-10 items-center justify-center rounded-full ${item.suppressed || item.hiddenAt ? 'bg-[#EFEAE4]' : 'bg-[#E3F4F1]'}`}
           >
             <Icon
               name={item.suppressed ? 'call-outline' : 'call'}
@@ -122,7 +122,7 @@ function RecordCard({ item, now, index }: { item: CallingQueueRow; now: number; 
           />
         ) : null}
         {item.lastOutcome ? (
-          <View className="flex-row items-start gap-1.5 rounded-xl bg-[#F6F8FC] px-3 py-2">
+          <View className="flex-row items-start gap-1.5 rounded-xl bg-[#F7F4EF] px-3 py-2">
             <Icon
               name="chatbubble-ellipses-outline"
               size={13}
@@ -257,7 +257,7 @@ export default function TelecallerHome() {
                   </PressableScale>
                 ) : (
                   <View className="mb-2 flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
-                    <View className="h-1.5 w-1.5 rounded-full bg-[#4ADE80]" />
+                    <View className="h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
                     <RNText className="font-semibold text-[12px] text-white">
                       Nothing overdue
                     </RNText>

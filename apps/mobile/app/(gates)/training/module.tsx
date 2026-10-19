@@ -129,7 +129,7 @@ export default function ModuleScreen() {
               <Icon
                 name={videoDone ? 'checkmark-circle' : 'play-circle-outline'}
                 size={18}
-                color={videoDone ? '#4ADE80' : colors.gold}
+                color={videoDone ? '#2DD4BF' : colors.gold}
               />
               <RNText className="flex-1 font-medium text-[13px] text-white/85">
                 {videoDone ? 'Video completed.' : 'Watch the whole video to unlock the assessment.'}
@@ -155,7 +155,7 @@ export default function ModuleScreen() {
               <IconCircle icon="book-outline" size={34} />
               <RNText className="font-bold text-[16px] text-ink">Study material</RNText>
             </View>
-            <Text className="leading-[24px] text-[#374151]">{mod.materialText}</Text>
+            <Text className="leading-[24px] text-[#44403C]">{mod.materialText}</Text>
           </Card>
         </Appear>
       ) : null}

@@ -83,10 +83,10 @@ export function ShareButtons({
       {status ? (
         <View
           accessibilityLiveRegion="polite"
-          className="flex-row items-center gap-2 rounded-xl bg-[#F4F6FB] px-3 py-2.5"
+          className="flex-row items-center gap-2 rounded-xl bg-[#F2EEE8] px-3 py-2.5"
         >
           <Icon name="information-circle-outline" size={16} color={colors.muted} />
-          <RNText className="flex-1 font-medium text-[13px] text-[#374151]">{status}</RNText>
+          <RNText className="flex-1 font-medium text-[13px] text-[#44403C]">{status}</RNText>
         </View>
       ) : null}
       {warn ? <Callout kind="warning">{warn}</Callout> : null}

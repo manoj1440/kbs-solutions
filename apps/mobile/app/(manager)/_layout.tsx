@@ -1,5 +1,7 @@
 import { Redirect, Tabs } from 'expo-router';
 
+import { GlassScope } from '@/components/ui';
+
 import { TabBar, type TabSpec } from '@/components/tab-bar';
 import { routeFor, useSession } from '@/lib/session';
 
@@ -23,21 +25,24 @@ export default function ManagerLayout() {
   const target = routeFor(user, gates);
   if (target !== '/(manager)') return <Redirect href={target as never} />;
   return (
-    <Tabs
-      backBehavior="history"
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: '#F4F6FB' } }}
-      tabBar={(props) => <TabBar {...props} tabs={TABS} />}
-    >
-      <Tabs.Screen name="index" options={{ title: 'Team' }} />
-      <Tabs.Screen name="advisors" options={{ title: 'Advisors' }} />
-      <Tabs.Screen name="approvals" options={{ title: 'Approvals' }} />
-      <Tabs.Screen name="notifications" options={{ href: null }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-      <Tabs.Screen name="create-telecaller" options={{ href: null }} />
-      <Tabs.Screen name="telecaller" options={{ href: null }} />
-      <Tabs.Screen name="payout-request" options={{ href: null }} />
-      <Tabs.Screen name="advisor" options={{ href: null }} />
-      <Tabs.Screen name="lead" options={{ href: null }} />
-    </Tabs>
+    // F-818: the tab bar is glass — its blur target is this scope's ambient light
+    <GlassScope>
+      <Tabs
+        backBehavior="history"
+        screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: '#F2EEE8' } }}
+        tabBar={(props) => <TabBar {...props} tabs={TABS} />}
+      >
+        <Tabs.Screen name="index" options={{ title: 'Team' }} />
+        <Tabs.Screen name="advisors" options={{ title: 'Advisors' }} />
+        <Tabs.Screen name="approvals" options={{ title: 'Approvals' }} />
+        <Tabs.Screen name="notifications" options={{ href: null }} />
+        <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+        <Tabs.Screen name="create-telecaller" options={{ href: null }} />
+        <Tabs.Screen name="telecaller" options={{ href: null }} />
+        <Tabs.Screen name="payout-request" options={{ href: null }} />
+        <Tabs.Screen name="advisor" options={{ href: null }} />
+        <Tabs.Screen name="lead" options={{ href: null }} />
+      </Tabs>
+    </GlassScope>
   );
 }

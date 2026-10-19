@@ -188,7 +188,7 @@ export function CallDesk({
           </Callout>
         ) : null}
         {call ? (
-          <View className="flex-row items-center justify-between rounded-2xl bg-[#F6F8FC] px-4 py-3">
+          <View className="flex-row items-center justify-between rounded-2xl bg-[#F7F4EF] px-4 py-3">
             <View className="flex-1">
               <Muted className="text-[12px]">started {formatDateTime(call.initiatedAt)}</Muted>
               {call.durationSec !== null ? (
@@ -218,9 +218,9 @@ export function CallDesk({
             Calling is not available for this customer.
           </Callout>
         ) : live ? (
-          <View className="flex-row items-center gap-3 rounded-2xl bg-[#E6F4EC] px-4 py-3">
-            <View className="h-2.5 w-2.5 rounded-full bg-[#1F7A4D]" />
-            <RNText className="flex-1 font-medium text-[13px] text-[#1F6B45]">
+          <View className="flex-row items-center gap-3 rounded-2xl bg-[#E3F4F1] px-4 py-3">
+            <View className="h-2.5 w-2.5 rounded-full bg-[#0F766E]" />
+            <RNText className="flex-1 font-medium text-[13px] text-[#115E59]">
               Call in progress on your phone. Record the outcome once it ends.
             </RNText>
           </View>
@@ -251,9 +251,9 @@ export function CallDesk({
           </View>
         </View>
         {saved ? (
-          <View className="flex-row items-center gap-2 rounded-xl bg-[#E6F4EC] px-3 py-2.5">
+          <View className="flex-row items-center gap-2 rounded-xl bg-[#E3F4F1] px-3 py-2.5">
             <Icon name="checkmark-circle" size={16} color={colors.success} />
-            <RNText className="flex-1 font-medium text-[13px] text-[#1F6B45]">{saved}</RNText>
+            <RNText className="flex-1 font-medium text-[13px] text-[#115E59]">{saved}</RNText>
           </View>
         ) : null}
         <View accessibilityRole="radiogroup" className="gap-2">
@@ -308,7 +308,7 @@ export function CallDesk({
             value={dnc}
             onValueChange={setDnc}
             accessibilityLabel="do not contact"
-            trackColor={{ true: colors.danger, false: '#D5DAE6' }}
+            trackColor={{ true: colors.danger, false: '#DDD6CC' }}
           />
         </View>
         <Button

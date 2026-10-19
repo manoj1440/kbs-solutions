@@ -20,6 +20,7 @@ import {
   Text as RNText,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   TextInput,
   View,
   type PressableProps,
@@ -53,6 +54,8 @@ import {
   type Tone,
   toneColors,
 } from '@/lib/theme';
+
+import { Glass, GlassScope } from './glass';
 
 /**
  * F-805 design system — premium fintech primitives on NativeWind + shared tokens (ADR-003: in-house, no UI kit).
@@ -95,7 +98,7 @@ export function Display({ className, ...props }: TextProps & { className?: strin
 export function Muted({ className, ...props }: TextProps & { className?: string }) {
   return (
     <RNText
-      className={cx('font-normal text-[13px] leading-[19px] text-[#5B6478]', className)}
+      className={cx('font-normal text-[13px] leading-[19px] text-[#57534E]', className)}
       {...props}
     />
   );
@@ -104,7 +107,7 @@ export function Overline({ className, ...props }: TextProps & { className?: stri
   return (
     <RNText
       className={cx(
-        'font-semibold text-[11px] uppercase tracking-[1.2px] text-[#8A93A6]',
+        'font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]',
         className,
       )}
       {...props}
@@ -218,20 +221,22 @@ export function Appear({
   );
 }
 
+export { Glass, GlassScope } from './glass';
+
 /* ───────────────────────── Buttons ───────────────────────── */
 
-const buttonVariants = cva('flex-row items-center justify-center gap-2 rounded-2xl px-5', {
+const buttonVariants = cva('flex-row items-center justify-center gap-2 rounded-full px-5', {
   variants: {
     variant: {
       default: '',
       gold: '',
-      secondary: 'bg-[#E8EDFF]',
+      secondary: 'bg-[#EFE9E1]',
       outline: 'border-[1.5px] border-line bg-white',
       destructive: 'bg-[#B42318]',
       ghost: 'px-3',
       light: 'bg-white/15 border border-white/25',
     },
-    size: { sm: 'h-10 rounded-xl px-4', md: 'h-12', lg: 'h-14' },
+    size: { sm: 'h-10 px-4', md: 'h-12', lg: 'h-14' },
   },
   defaultVariants: { variant: 'default', size: 'md' },
 });
@@ -239,7 +244,7 @@ const buttonText = cva('font-semibold', {
   variants: {
     variant: {
       default: 'text-white',
-      gold: 'text-ink',
+      gold: 'text-white',
       secondary: 'text-brand',
       outline: 'text-ink',
       destructive: 'text-white',
@@ -252,7 +257,7 @@ const buttonText = cva('font-semibold', {
 });
 const BUTTON_FG: Record<string, string> = {
   default: '#fff',
-  gold: colors.ink,
+  gold: '#fff',
   secondary: colors.brand,
   outline: colors.ink,
   destructive: '#fff',
@@ -284,7 +289,7 @@ export function Button({
   const fg = BUTTON_FG[v] ?? '#fff';
   const fill: StyleProp<ViewStyle> =
     v === 'default'
-      ? [gradientStyle(['#16329E', '#2F4FE0', '#3D5AFE'], 120), disabled ? null : shadow.glow]
+      ? [{ backgroundColor: colors.brand }, disabled ? null : shadow.glow]
       : v === 'gold'
         ? [gradientStyle(gradients.gold, 120), disabled ? null : shadow.gold]
         : null;
@@ -333,8 +338,8 @@ export function IconButton({
     tone === 'light'
       ? 'bg-white/15 border border-white/20'
       : tone === 'soft'
-        ? 'bg-[#E8EDFF]'
-        : 'bg-white border border-line';
+        ? 'bg-[#EFE9E1]'
+        : 'bg-white/75 border border-white';
   const fg = color ?? (tone === 'light' ? '#fff' : tone === 'soft' ? colors.brand : colors.ink);
   return (
     <PressableScale
@@ -411,7 +416,7 @@ export const Input = forwardRef<
         ) : null}
         <TextInput
           ref={ref}
-          placeholderTextColor="#98A1B3"
+          placeholderTextColor="#8A8178"
           multiline={multiline}
           onFocus={(e) => {
             setFocused(true);
@@ -437,7 +442,7 @@ export const Input = forwardRef<
       {error ? (
         <RNText className="mt-1.5 font-medium text-[12px] text-[#B42318]">{error}</RNText>
       ) : hint ? (
-        <RNText className="mt-1.5 font-normal text-[12px] text-[#8A93A6]">{hint}</RNText>
+        <RNText className="mt-1.5 font-normal text-[12px] text-[#78716C]">{hint}</RNText>
       ) : null}
     </View>
   );
@@ -450,8 +455,10 @@ const cardVariants = cva('rounded-2xl', {
     variant: {
       elevated: 'border border-line bg-white p-4',
       outline: 'border-[1.5px] border-line bg-white p-4',
-      tinted: 'bg-[#EEF2FF] p-4',
+      tinted: 'bg-[#F5EEE7] p-4',
       flat: 'bg-white p-4',
+      /** F-818 frosted card — KPI tiles and chrome only, not lists/forms */
+      glass: 'p-4',
     },
   },
   defaultVariants: { variant: 'elevated' },
@@ -466,6 +473,30 @@ export function Card({
   ...props
 }: ViewProps & VariantProps<typeof cardVariants> & { className?: string; onPress?: () => void }) {
   const s: StyleProp<ViewStyle> = [variant === 'elevated' || !variant ? shadow.sm : null, style];
+  if (variant === 'glass') {
+    const body = (
+      <Glass
+        className={cx(cardVariants({ variant }), className)}
+        style={style}
+        accessibilityLabel={onPress ? undefined : accessibilityLabel}
+        {...(onPress ? {} : props)}
+      >
+        {children}
+      </Glass>
+    );
+    return onPress ? (
+      <PressableScale
+        onPress={onPress}
+        accessibilityLabel={accessibilityLabel}
+        className="rounded-2xl"
+        scaleTo={0.985}
+      >
+        {body}
+      </PressableScale>
+    ) : (
+      body
+    );
+  }
   if (onPress) {
     return (
       <PressableScale
@@ -557,17 +588,17 @@ export function Chip({
       )}
     >
       {icon ? <Ionicons name={icon} size={15} color={active ? '#fff' : colors.muted} /> : null}
-      <RNText className={cx('font-semibold text-[13px]', active ? 'text-white' : 'text-[#374151]')}>
+      <RNText className={cx('font-semibold text-[13px]', active ? 'text-white' : 'text-[#44403C]')}>
         {label}
       </RNText>
       {count !== undefined ? (
         <View
           className={cx(
             'min-w-[20px] items-center rounded-full px-1.5',
-            active ? 'bg-white/20' : 'bg-[#EEF0F4]',
+            active ? 'bg-white/20' : 'bg-[#EFEAE4]',
           )}
         >
-          <RNText className={cx('font-bold text-[11px]', active ? 'text-white' : 'text-[#374151]')}>
+          <RNText className={cx('font-bold text-[11px]', active ? 'text-white' : 'text-[#44403C]')}>
             {count}
           </RNText>
         </View>
@@ -591,7 +622,7 @@ export function Segmented<K extends string>({
   return (
     <View
       accessibilityRole="tablist"
-      className={cx('flex-row rounded-2xl p-1', dark ? 'bg-white/15' : 'bg-[#E9ECF4]')}
+      className={cx('flex-row rounded-full p-1', dark ? 'bg-white/15' : 'bg-[#ECE7E0]')}
     >
       {options.map((o) => {
         const active = o.key === value;
@@ -601,12 +632,12 @@ export function Segmented<K extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onChange(o.key)}
-            className="h-10 flex-1 items-center justify-center rounded-xl"
+            className="h-10 flex-1 items-center justify-center rounded-full"
           >
             {active ? (
               <Animated.View
                 entering={FadeIn.duration(180)}
-                className={cx('absolute inset-0 rounded-xl', dark ? 'bg-white' : 'bg-white')}
+                className="absolute inset-0 rounded-full bg-white"
                 style={shadow.sm}
               />
             ) : null}
@@ -614,7 +645,7 @@ export function Segmented<K extends string>({
               <RNText
                 className={cx(
                   'font-semibold text-[13px]',
-                  active ? 'text-ink' : dark ? 'text-white/80' : 'text-[#5B6478]',
+                  active ? 'text-ink' : dark ? 'text-white/80' : 'text-[#57534E]',
                 )}
               >
                 {o.label}
@@ -623,7 +654,7 @@ export function Segmented<K extends string>({
                 <View
                   className={cx(
                     'min-w-[18px] items-center rounded-full px-1.5',
-                    active ? 'bg-brand' : dark ? 'bg-white/20' : 'bg-[#D5DAE6]',
+                    active ? 'bg-brand' : dark ? 'bg-white/20' : 'bg-[#DDD6CC]',
                   )}
                 >
                   <RNText
@@ -693,7 +724,7 @@ export function IconCircle({
   size?: number;
   solid?: boolean;
 }) {
-  const t = tone === 'gold' ? { fg: '#7A4F00', bg: colors.goldSoft } : toneColors[tone];
+  const t = tone === 'gold' ? { fg: '#9A3412', bg: colors.goldSoft } : toneColors[tone];
   return (
     <View
       className="items-center justify-center rounded-2xl"
@@ -726,12 +757,12 @@ export function ProgressBar({
       ? gradients.gold
       : tone === 'success'
         ? gradients.success
-        : ['#16329E', '#3D5AFE'];
+        : ['#1C1917', '#F05A28'];
   return (
     <View
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: Math.round(pct * 100) }}
-      className={cx('w-full overflow-hidden rounded-full', light ? 'bg-white/20' : 'bg-[#E6EAF2]')}
+      className={cx('w-full overflow-hidden rounded-full', light ? 'bg-white/20' : 'bg-[#E7E1D8]')}
       style={{ height }}
     >
       <Animated.View className="h-full rounded-full" style={[gradientStyle(fill, 90), anim]} />
@@ -756,7 +787,7 @@ export function Skeleton({
   }, [o]);
   const anim = useAnimatedStyle(() => ({ opacity: o.get() }));
   return (
-    <Animated.View className={cx('rounded-xl bg-[#E4E8F1]', className)} style={[anim, style]} />
+    <Animated.View className={cx('rounded-xl bg-[#E5DFD6]', className)} style={[anim, style]} />
   );
 }
 
@@ -798,7 +829,7 @@ export function KeyValue({
         !last && 'border-b border-line',
       )}
     >
-      <RNText className="font-normal text-[13px] text-[#5B6478]">{label}</RNText>
+      <RNText className="font-normal text-[13px] text-[#57534E]">{label}</RNText>
       {typeof value === 'string' || typeof value === 'number' ? (
         <RNText
           selectable
@@ -844,7 +875,7 @@ export function Callout({
           </RNText>
         ) : null}
         {typeof children === 'string' ? (
-          <RNText className="font-normal text-[13px] leading-[19px] text-[#374151]">
+          <RNText className="font-normal text-[13px] leading-[19px] text-[#44403C]">
             {children}
           </RNText>
         ) : (
@@ -933,7 +964,7 @@ export function ListItem({
           {title}
         </RNText>
         {subtitle ? (
-          <RNText numberOfLines={2} className="mt-0.5 font-normal text-[13px] text-[#5B6478]">
+          <RNText numberOfLines={2} className="mt-0.5 font-normal text-[13px] text-[#57534E]">
             {subtitle}
           </RNText>
         ) : null}
@@ -969,18 +1000,18 @@ export function EmptyState({
     <Animated.View
       entering={FadeIn.duration(300)}
       className={cx(
-        'items-center rounded-3xl border border-dashed border-[#CBD2E1] bg-white px-6',
+        'items-center rounded-3xl border border-dashed border-[#D6CEC3] bg-white px-6',
         compact ? 'py-6' : 'py-10',
       )}
     >
-      <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-[#EEF2FF]">
-        <View className="h-11 w-11 items-center justify-center rounded-full bg-[#DDE4FF]">
+      <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-[#F5EEE7]">
+        <View className="h-11 w-11 items-center justify-center rounded-full bg-[#F3E2D8]">
           <Ionicons name={icon} size={22} color={colors.brand} />
         </View>
       </View>
       <RNText className="text-center font-bold text-[16px] text-ink">{title}</RNText>
       {body ? (
-        <RNText className="mt-1.5 text-center font-normal text-[13px] leading-[19px] text-[#5B6478]">
+        <RNText className="mt-1.5 text-center font-normal text-[13px] leading-[19px] text-[#57534E]">
           {body}
         </RNText>
       ) : null}
@@ -1002,7 +1033,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       <RNText className="mt-3 text-center font-bold text-[16px] text-ink">
         Something went wrong
       </RNText>
-      <RNText className="mt-1 text-center font-normal text-[13px] text-[#5B6478]">{message}</RNText>
+      <RNText className="mt-1 text-center font-normal text-[13px] text-[#57534E]">{message}</RNText>
       {onRetry ? (
         <Button
           title="Try again"
@@ -1047,18 +1078,18 @@ export function StatTile({
       >
         {value}
       </RNText>
-      <RNText numberOfLines={1} className="font-medium text-[12px] text-[#5B6478]">
+      <RNText numberOfLines={1} className="font-medium text-[12px] text-[#57534E]">
         {label}
       </RNText>
       {hint ? (
-        <RNText numberOfLines={1} className="mt-0.5 font-normal text-[11px] text-[#8A93A6]">
+        <RNText numberOfLines={1} className="mt-0.5 font-normal text-[11px] text-[#78716C]">
           {hint}
         </RNText>
       ) : null}
     </>
   );
   return (
-    <Card onPress={onPress} className={cx('flex-1 p-3.5', className)}>
+    <Card variant="glass" onPress={onPress} className={cx('flex-1 p-3.5', className)}>
       {inner}
     </Card>
   );
@@ -1101,7 +1132,7 @@ export function Screen({
     }, [statusBar]),
   );
   return (
-    <View className="flex-1 bg-canvas" style={{ paddingTop: inset === 'top' ? insets.top : 0 }}>
+    <GlassScope style={{ paddingTop: inset === 'top' ? insets.top : 0 }}>
       {header}
       {scroll ? (
         <ScrollView
@@ -1140,7 +1171,7 @@ export function Screen({
         </View>
       )}
       {footer}
-    </View>
+    </GlassScope>
   );
 }
 
@@ -1193,7 +1224,7 @@ export function AppBar({
                   numberOfLines={1}
                   className={cx(
                     'font-normal text-[12px]',
-                    light ? 'text-white/70' : 'text-[#5B6478]',
+                    light ? 'text-white/70' : 'text-[#57534E]',
                   )}
                 >
                   {subtitle}
@@ -1221,7 +1252,7 @@ export function AppBar({
             <RNText
               className={cx(
                 'mt-0.5 font-normal text-[14px]',
-                light ? 'text-white/70' : 'text-[#5B6478]',
+                light ? 'text-white/70' : 'text-[#57534E]',
               )}
             >
               {subtitle}
@@ -1233,7 +1264,7 @@ export function AppBar({
   );
 }
 
-/** Navy → indigo gradient header with soft orbs; draws under the status bar (use with `Screen inset="none" statusBar="light"`). */
+/** Charcoal → orange gradient header (F-818; was navy → indigo) with soft orbs; draws under the status bar (use with `Screen inset="none" statusBar="light"`). */
 export function HeroHeader({
   children,
   className,
@@ -1263,7 +1294,7 @@ export function HeroHeader({
       <View
         pointerEvents="none"
         className="absolute right-10 top-40 h-24 w-24 rounded-full"
-        style={{ backgroundColor: 'rgba(245, 185, 66, 0.10)' }}
+        style={{ backgroundColor: 'rgba(240, 90, 40, 0.16)' }}
       />
       <View className={cx('px-4', !/\bpb-/.test(className ?? '') && 'pb-6', className)}>
         {children}
@@ -1276,15 +1307,16 @@ export function HeroHeader({
 export function StickyFooter({ children, className }: PropsWithChildren<{ className?: string }>) {
   const insets = useSafeAreaInsets();
   return (
-    <View
-      className={cx('gap-2 border-t border-line bg-white px-4 pt-3', className)}
+    <Glass
+      strong
+      className={cx('gap-2 rounded-t-[28px] px-4 pt-3', className)}
       style={[
         { paddingBottom: Math.max(insets.bottom, 12) + 4 },
-        { boxShadow: '0px -6px 20px rgba(11, 21, 51, 0.06)' },
+        { boxShadow: '0px -6px 20px rgba(28, 25, 23, 0.06)' },
       ]}
     >
       {children}
-    </View>
+    </Glass>
   );
 }
 
@@ -1309,7 +1341,7 @@ export function BottomSheet({
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
-          className="absolute inset-0 bg-[#0B1533]/50"
+          className="absolute inset-0 bg-[#1C1917]/50"
         >
           <Pressable
             accessibilityRole="button"
@@ -1321,11 +1353,17 @@ export function BottomSheet({
         <Animated.View
           entering={SlideInDown.springify().damping(22).stiffness(220)}
           exiting={SlideOutDown.duration(200)}
-          className="max-h-[88%] rounded-t-[28px] bg-white"
+          className="max-h-[88%] overflow-hidden rounded-t-[28px]"
           style={{ paddingBottom: Math.max(insets.bottom, 12) }}
         >
+          <Glass
+            strong
+            intensity={70}
+            className="rounded-t-[28px]"
+            style={StyleSheet.absoluteFill}
+          />
           <View className="items-center pb-1 pt-3">
-            <View className="h-1.5 w-10 rounded-full bg-[#D5DAE6]" />
+            <View className="h-1.5 w-10 rounded-full bg-[#DDD6CC]" />
           </View>
           {title ? (
             <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
@@ -1356,11 +1394,11 @@ export function Stepper({ steps, current }: { steps: string[]; current: number }
     <View className="gap-2">
       <View className="flex-row items-center gap-1.5">
         {steps.map((s, i) => (
-          <View key={s} className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#E6EAF2]">
+          <View key={s} className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#E7E1D8]">
             {i <= current ? (
               <View
                 className="h-full w-full rounded-full"
-                style={gradientStyle(i < current ? gradients.success : ['#16329E', '#3D5AFE'], 90)}
+                style={gradientStyle(i < current ? gradients.success : ['#1C1917', '#F05A28'], 90)}
               />
             ) : null}
           </View>
@@ -1370,7 +1408,7 @@ export function Stepper({ steps, current }: { steps: string[]; current: number }
         <RNText className="font-semibold text-[12px] text-brand">
           Step {Math.min(current + 1, steps.length)} of {steps.length}
         </RNText>
-        <RNText className="font-semibold text-[12px] text-[#5B6478]">{steps[current] ?? ''}</RNText>
+        <RNText className="font-semibold text-[12px] text-[#57534E]">{steps[current] ?? ''}</RNText>
       </View>
     </View>
   );
@@ -1401,7 +1439,7 @@ export function ChoiceRow({
       scaleTo={0.985}
       className={cx(
         'min-h-[52px] flex-row items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3',
-        selected ? 'border-brand bg-[#EEF2FF]' : 'border-line bg-white',
+        selected ? 'border-brand bg-[#F5EEE7]' : 'border-line bg-white',
         disabled && 'opacity-50',
       )}
     >
@@ -1427,7 +1465,7 @@ export function ChoiceRow({
         >
           {label}
         </RNText>
-        {sub ? <RNText className="font-normal text-[12px] text-[#5B6478]">{sub}</RNText> : null}
+        {sub ? <RNText className="font-normal text-[12px] text-[#57534E]">{sub}</RNText> : null}
       </View>
     </PressableScale>
   );

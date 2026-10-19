@@ -83,7 +83,7 @@ function Fields({
           last={i === rows.length - 1}
           value={
             <RNText
-              className={`text-right text-[13px] ${f.raw === null ? 'font-normal italic text-[#8A93A6]' : 'font-semibold text-ink'}`}
+              className={`text-right text-[13px] ${f.raw === null ? 'font-normal italic text-[#78716C]' : 'font-semibold text-ink'}`}
             >
               {f.display}
             </RNText>
@@ -238,7 +238,7 @@ export default function ManagerLeadScreen() {
                     {changed.map((c) => (
                       <View
                         key={`${g.batchId}-${c.field}`}
-                        className="mt-2 gap-1 rounded-xl bg-[#F6F8FC] px-3 py-2"
+                        className="mt-2 gap-1 rounded-xl bg-[#F7F4EF] px-3 py-2"
                       >
                         <View className="flex-row flex-wrap items-center gap-2">
                           <RNText className="font-semibold text-[12px] text-ink">

@@ -134,7 +134,7 @@ export default function PendingActions() {
                       size="sm"
                     />
                   </View>
-                  <View className="rounded-xl bg-[#F4F6FB] px-3 py-2.5">
+                  <View className="rounded-xl bg-[#F2EEE8] px-3 py-2.5">
                     <RNText className="font-semibold text-[14px] leading-[20px] text-ink">
                       {item.whatToDo}
                     </RNText>

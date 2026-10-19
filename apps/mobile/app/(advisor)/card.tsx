@@ -152,7 +152,7 @@ export default function AdvisorCardDetail() {
       <View className="mt-4 gap-4 px-4">
         {card.description ? (
           <Appear index={1}>
-            <Text className="text-[15px] leading-[22px] text-[#374151]">{card.description}</Text>
+            <Text className="text-[15px] leading-[22px] text-[#44403C]">{card.description}</Text>
           </Appear>
         ) : null}
 
@@ -164,7 +164,7 @@ export default function AdvisorCardDetail() {
               <View className="gap-2.5">
                 {card.benefits.map((b, i) => (
                   <View key={i} className="flex-row items-start gap-2.5">
-                    <View className="mt-0.5 h-5 w-5 items-center justify-center rounded-full bg-[#E6F4EC]">
+                    <View className="mt-0.5 h-5 w-5 items-center justify-center rounded-full bg-[#E3F4F1]">
                       <Icon name="checkmark" size={13} color={colors.success} />
                     </View>
                     <Text className="flex-1 text-[14px] leading-[20px]">{b}</Text>

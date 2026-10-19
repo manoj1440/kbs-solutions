@@ -210,7 +210,7 @@ export default function Payouts() {
           </View>
           <View
             className="h-11 w-11 items-center justify-center rounded-full"
-            style={[gradientStyle(['#F9D37A', '#E39B1B'], 135), shadow.gold]}
+            style={[gradientStyle(['#F8A27A', '#E2461C'], 135), shadow.gold]}
           >
             <Icon name="wallet" size={22} color={colors.ink} />
           </View>
@@ -240,7 +240,7 @@ export default function Payouts() {
                 </RNText>
               </View>
               <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
-                <View className="h-1.5 w-1.5 rounded-full bg-[#4ADE80]" />
+                <View className="h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
                 <RNText className="font-semibold text-[12px] text-white">
                   Paid {formatInr(t.paid.amountInr)}
                 </RNText>
@@ -256,7 +256,7 @@ export default function Payouts() {
             <View className="flex-row flex-wrap">
               {tiles.map(([label, v, icon, tone]) => (
                 <View key={label} className="w-1/2 p-1">
-                  <View className="gap-2.5 rounded-2xl bg-[#F7F8FC] p-3">
+                  <View className="gap-2.5 rounded-2xl bg-[#F7F4EF] p-3">
                     <IconCircle icon={icon} tone={tone} size={30} />
                     {v ? (
                       <View>
@@ -269,7 +269,7 @@ export default function Payouts() {
                         </RNText>
                         <RNText
                           numberOfLines={1}
-                          className="font-semibold text-[12px] text-[#374151]"
+                          className="font-semibold text-[12px] text-[#44403C]"
                         >
                           {label}
                         </RNText>
@@ -464,7 +464,7 @@ export default function Payouts() {
           </>
         }
       >
-        <View className="rounded-2xl bg-[#F7F8FC] px-4 py-1">
+        <View className="rounded-2xl bg-[#F7F4EF] px-4 py-1">
           {chosen.map((c, i) => (
             <View
               key={c.entitlementId}

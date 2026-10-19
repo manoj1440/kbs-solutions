@@ -94,7 +94,7 @@ export default function CardDetailScreen() {
       </Appear>
 
       <Appear index={2}>
-        <Card className="gap-3 border-[#C9D3FF]">
+        <Card className="gap-3 border-[#EBCDBD]">
           <View className="flex-row items-center gap-3">
             <IconCircle icon="logo-whatsapp" tone="success" size={40} />
             <View className="flex-1">
@@ -141,7 +141,7 @@ export default function CardDetailScreen() {
 
       {card.description ? (
         <Appear index={3}>
-          <Text className="text-[14px] leading-[21px] text-[#374151]">{card.description}</Text>
+          <Text className="text-[14px] leading-[21px] text-[#44403C]">{card.description}</Text>
         </Appear>
       ) : null}
 
@@ -153,7 +153,7 @@ export default function CardDetailScreen() {
           ) : (
             card.benefits.map((b, i) => (
               <View key={i} className="flex-row items-start gap-2.5">
-                <View className="mt-0.5 h-5 w-5 items-center justify-center rounded-full bg-[#E6F4EC]">
+                <View className="mt-0.5 h-5 w-5 items-center justify-center rounded-full bg-[#E3F4F1]">
                   <Icon name="checkmark" size={13} color={colors.success} />
                 </View>
                 <Text className="flex-1 text-[14px] leading-[20px]">{b}</Text>
@@ -219,7 +219,7 @@ export default function CardDetailScreen() {
             </Muted>
           </View>
           {Object.entries(card.provenance.rawFlags).length ? (
-            <View className="rounded-xl bg-[#F6F8FC] px-3 py-1">
+            <View className="rounded-xl bg-[#F7F4EF] px-3 py-1">
               {Object.entries(card.provenance.rawFlags)
                 .slice(0, 6)
                 .map(([k, v], i, arr) => (

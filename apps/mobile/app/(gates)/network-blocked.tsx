@@ -35,7 +35,7 @@ export default function NetworkBlocked() {
       }
     >
       <Card className="gap-3 p-4">
-        <RNText className="text-center font-normal text-[15px] leading-[22px] text-[#374151]">
+        <RNText className="text-center font-normal text-[15px] leading-[22px] text-[#44403C]">
           {notConfigured
             ? 'The office network is not configured yet. Contact the Admin.'
             : 'Connect to the office Wi-Fi, or ask your Manager for a work-from-home exception.'}
@@ -44,13 +44,13 @@ export default function NetworkBlocked() {
           <View className="flex-row gap-2 border-t border-line pt-3">
             <View className="flex-1 flex-row items-center gap-2">
               <Icon name="business-outline" size={16} color={colors.brand} />
-              <RNText className="flex-1 font-medium text-[12px] text-[#5B6478]">
+              <RNText className="flex-1 font-medium text-[12px] text-[#57534E]">
                 Office Wi-Fi
               </RNText>
             </View>
             <View className="flex-1 flex-row items-center gap-2">
               <Icon name="home-outline" size={16} color={colors.brand} />
-              <RNText className="flex-1 font-medium text-[12px] text-[#5B6478]">
+              <RNText className="flex-1 font-medium text-[12px] text-[#57534E]">
                 WFH exception
               </RNText>
             </View>

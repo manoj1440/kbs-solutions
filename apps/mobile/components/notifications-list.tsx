@@ -116,7 +116,7 @@ export function NotificationsScreen({ area }: { area: Area }) {
           accessibilityLabel={`${n.readAt ? '' : 'Unread. '}${n.title}`}
           onPress={() => void open(n)}
           scaleTo={0.985}
-          className={`flex-row gap-3 rounded-2xl p-4 ${n.readAt ? 'border border-line bg-white' : 'border border-[#D9E0FF] bg-[#F3F6FF]'}`}
+          className={`flex-row gap-3 rounded-2xl p-4 ${n.readAt ? 'border border-line bg-white' : 'border border-[#F0DACD] bg-[#F7F2EC]'}`}
           style={n.readAt ? undefined : shadow.sm}
         >
           <IconCircle icon={v.icon} tone={v.tone} size={42} />
@@ -138,7 +138,7 @@ export function NotificationsScreen({ area }: { area: Area }) {
             <Muted numberOfLines={3}>{n.body}</Muted>
             <View className="mt-1 flex-row items-center gap-1">
               <Icon name="time-outline" size={12} color={colors.subtle} />
-              <RNText className="font-medium text-[12px] text-[#8A93A6]">
+              <RNText className="font-medium text-[12px] text-[#78716C]">
                 {formatDateTime(n.createdAt)}
               </RNText>
             </View>

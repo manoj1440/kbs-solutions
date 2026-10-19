@@ -31,7 +31,7 @@ function Mini({ label, value, last }: { label: string; value: number; last?: boo
   return (
     <View className={`flex-1 items-center py-1 ${last ? '' : 'border-r border-line'}`}>
       <RNText className="font-extrabold text-[18px] text-ink">{value}</RNText>
-      <RNText numberOfLines={1} className="font-medium text-[11px] text-[#5B6478]">
+      <RNText numberOfLines={1} className="font-medium text-[11px] text-[#57534E]">
         {label}
       </RNText>
     </View>
@@ -67,7 +67,7 @@ function AdvisorCard({ r, index }: { r: AdvisorTeamRow; index: number }) {
           />
           <Icon name="chevron-forward" size={16} color={colors.subtle} />
         </View>
-        <View className="flex-row rounded-2xl bg-[#F6F8FC] py-2">
+        <View className="flex-row rounded-2xl bg-[#F7F4EF] py-2">
           <Mini label="Leads" value={r.leads.created.value} />
           <Mini label="Matched in MIS" value={r.leads.misMatched.value} />
           <Mini label="Awaiting MIS" value={r.leads.awaitingMis.value} last />
@@ -145,14 +145,14 @@ export default function ManagerAdvisors() {
         }
         ListHeaderComponent={
           <View className="gap-3">
-            <View className="flex-row items-start gap-2 rounded-2xl bg-[#E8EDFF] px-3.5 py-3">
+            <View className="flex-row items-start gap-2 rounded-2xl bg-[#EFE9E1] px-3.5 py-3">
               <Icon
                 name="information-circle"
                 size={16}
                 color={colors.brand}
                 style={{ marginTop: 1 }}
               />
-              <Muted className="flex-1 text-[12px] leading-[18px] text-[#374151]">
+              <Muted className="flex-1 text-[12px] leading-[18px] text-[#44403C]">
                 {note ?? 'Leads, bank MIS results and payouts for Advisors reporting to you.'}
               </Muted>
             </View>

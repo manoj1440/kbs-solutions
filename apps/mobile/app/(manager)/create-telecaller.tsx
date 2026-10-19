@@ -133,9 +133,9 @@ export default function CreateTelecaller() {
       }
     >
       <Appear>
-        <View className="flex-row items-center gap-3 rounded-2xl bg-[#E8EDFF] p-4">
+        <View className="flex-row items-center gap-3 rounded-2xl bg-[#EFE9E1] p-4">
           <IconCircle icon="person-add" tone="default" size={44} solid />
-          <Muted className="flex-1 text-[13px] leading-[19px] text-[#374151]">
+          <Muted className="flex-1 text-[13px] leading-[19px] text-[#44403C]">
             Only a name and mobile number are needed. The Telecaller reports to you.
           </Muted>
         </View>

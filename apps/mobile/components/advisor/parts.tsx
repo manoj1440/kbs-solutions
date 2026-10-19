@@ -40,7 +40,7 @@ export function SectionCard({
             {title}
           </RNText>
           {subtitle ? (
-            <RNText className="font-normal text-[12px] leading-[17px] text-[#5B6478]">
+            <RNText className="font-normal text-[12px] leading-[17px] text-[#57534E]">
               {subtitle}
             </RNText>
           ) : null}
@@ -71,12 +71,12 @@ export function FieldRow({
         !last && 'border-b border-line',
       )}
     >
-      <RNText className="max-w-[48%] font-normal text-[13px] text-[#5B6478]">{label}</RNText>
+      <RNText className="max-w-[48%] font-normal text-[13px] text-[#57534E]">{label}</RNText>
       <RNText
         selectable
         className={cx(
           'flex-1 text-right text-[13px]',
-          unknown ? 'font-normal italic text-[#8A93A6]' : 'font-semibold text-ink',
+          unknown ? 'font-normal italic text-[#78716C]' : 'font-semibold text-ink',
         )}
       >
         {value}
@@ -106,8 +106,8 @@ export function Timeline({
           <View key={it.id} className="flex-row gap-3">
             <View className="items-center">
               <View
-                className="h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#E8EDFF]"
-                style={{ boxShadow: '0px 0px 0px 1px #E6EAF2' }}
+                className="h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#EFE9E1]"
+                style={{ boxShadow: '0px 0px 0px 1px #E7E1D8' }}
               >
                 <Ionicons name={it.icon ?? 'ellipse'} size={14} color={colors.brand} />
               </View>
@@ -118,12 +118,12 @@ export function Timeline({
                 {it.title}
               </RNText>
               {it.detail ? (
-                <RNText className="mt-0.5 font-normal text-[13px] leading-[18px] text-[#374151]">
+                <RNText className="mt-0.5 font-normal text-[13px] leading-[18px] text-[#44403C]">
                   {it.detail}
                 </RNText>
               ) : null}
               {it.meta ? (
-                <RNText className="mt-0.5 font-normal text-[12px] text-[#8A93A6]">{it.meta}</RNText>
+                <RNText className="mt-0.5 font-normal text-[12px] text-[#78716C]">{it.meta}</RNText>
               ) : null}
             </View>
           </View>
@@ -141,7 +141,7 @@ export function ChipGroup({
 }: PropsWithChildren<{ label: string; wrap?: boolean }>) {
   return (
     <View className="gap-2">
-      <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#8A93A6]">
+      <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
         {label}
       </RNText>
       {wrap ? (
@@ -205,7 +205,7 @@ export function CheckBox({ checked }: { checked: boolean }) {
     <View
       className={cx(
         'h-6 w-6 items-center justify-center rounded-[7px]',
-        checked ? 'bg-brand' : 'border-[1.5px] border-[#C5CCDB] bg-white',
+        checked ? 'bg-brand' : 'border-[1.5px] border-[#D1C8BC] bg-white',
       )}
     >
       {checked ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}
@@ -244,7 +244,7 @@ export function CopyValue({ value, light }: { value: string; light?: boolean }) 
           }}
           className={cx(
             'h-7 w-7 items-center justify-center rounded-full',
-            light ? 'bg-white/15' : 'bg-[#E8EDFF]',
+            light ? 'bg-white/15' : 'bg-[#EFE9E1]',
           )}
         >
           <Ionicons
@@ -267,7 +267,7 @@ export function MetaLine({
   return (
     <View className={cx('flex-row items-start gap-1.5', className)}>
       <Ionicons name={icon} size={13} color={colors.subtle} style={{ marginTop: 2 }} />
-      <RNText className="flex-1 font-normal text-[12px] leading-[17px] text-[#5B6478]">
+      <RNText className="flex-1 font-normal text-[12px] leading-[17px] text-[#57534E]">
         {children}
       </RNText>
     </View>

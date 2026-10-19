@@ -55,8 +55,8 @@ function RequestCard({ item, index, mine }: { item: Row; index: number; mine: bo
           </View>
           <PayoutStateBadge state={item.state} />
         </View>
-        <View className="rounded-2xl bg-[#FFF8E8] px-4 py-3">
-          <RNText className="font-semibold text-[11px] uppercase tracking-[1px] text-[#7A4F00]">
+        <View className="rounded-2xl bg-[#FEF4EE] px-4 py-3">
+          <RNText className="font-semibold text-[11px] uppercase tracking-[1px] text-[#9A3412]">
             Requested amount
           </RNText>
           <View className="mt-0.5 flex-row items-end justify-between gap-2">

@@ -23,7 +23,7 @@ export default function Index() {
         <RNText className="mt-1 font-medium text-[13px] text-white/60">
           Credit Card DSA Platform
         </RNText>
-        <ActivityIndicator color="#F5B942" style={{ marginTop: 40 }} />
+        <ActivityIndicator color="#F05A28" style={{ marginTop: 40 }} />
       </View>
     );
   }

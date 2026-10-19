@@ -86,7 +86,7 @@ export function CreditCardArt({
           width: 38 * s,
           height: 28 * s,
           borderRadius: 6 * s,
-          ...gradientStyle(['#F9D37A', '#E0A93A', '#F5CD6E'], 120),
+          ...gradientStyle(['#F8A27A', '#EB6A3A', '#F69467'], 120),
         }}
       >
         <View

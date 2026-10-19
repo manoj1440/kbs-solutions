@@ -157,7 +157,7 @@ function WfhCard({ telecallerId }: { telecallerId: string }) {
             variant="info"
             icon="home-outline"
           />
-          <View className="rounded-xl bg-[#F6F8FC] px-3 py-2.5">
+          <View className="rounded-xl bg-[#F7F4EF] px-3 py-2.5">
             <Muted className="text-[13px]">{open.reason}</Muted>
           </View>
           <Input
@@ -222,11 +222,11 @@ function WfhCard({ telecallerId }: { telecallerId: string }) {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
-    <View className="w-[31%] items-center rounded-2xl bg-[#F6F8FC] py-3">
+    <View className="w-[31%] items-center rounded-2xl bg-[#F7F4EF] py-3">
       <RNText className="font-extrabold text-[20px]" style={{ color: tone ?? colors.ink }}>
         {value}
       </RNText>
-      <RNText numberOfLines={1} className="font-medium text-[11px] text-[#5B6478]">
+      <RNText numberOfLines={1} className="font-medium text-[11px] text-[#57534E]">
         {label}
       </RNText>
     </View>
@@ -382,7 +382,7 @@ export default function TelecallerDetail() {
                     <View
                       className="h-9 w-9 items-center justify-center rounded-full"
                       style={{
-                        backgroundColor: m.status === 'PASSED' ? colors.successSoft : '#EEF0F4',
+                        backgroundColor: m.status === 'PASSED' ? colors.successSoft : '#EFEAE4',
                       }}
                     >
                       {m.status === 'PASSED' ? (

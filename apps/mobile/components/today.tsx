@@ -79,7 +79,7 @@ export function TodayCard({
               {!loaded ? (
                 <Skeleton className="h-5 w-7 rounded-full" />
               ) : s.count ? (
-                <View className="min-w-[26px] items-center rounded-full bg-[#E8EDFF] px-2 py-0.5">
+                <View className="min-w-[26px] items-center rounded-full bg-[#EFE9E1] px-2 py-0.5">
                   <RNText className="font-bold text-[12px] text-brand">{s.count}</RNText>
                 </View>
               ) : null}

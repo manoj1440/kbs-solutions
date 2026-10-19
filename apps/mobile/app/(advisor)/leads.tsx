@@ -233,9 +233,9 @@ export default function Leads() {
               }
               className="w-[260px] overflow-hidden rounded-3xl p-4"
               style={[
-                gradientStyle(['#FFF8E8', '#FFEFC7'], 135),
+                gradientStyle(['#FEF4EE', '#FCE3D6'], 135),
                 shadow.sm,
-                { borderWidth: 1, borderColor: '#F6DDA0' },
+                { borderWidth: 1, borderColor: '#F8C9B0' },
               ]}
             >
               <View
@@ -244,22 +244,22 @@ export default function Leads() {
               />
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1">
-                  <Icon name="create-outline" size={12} color="#7A4F00" />
-                  <RNText className="font-semibold text-[11px] text-[#7A4F00]">
+                  <Icon name="create-outline" size={12} color="#9A3412" />
+                  <RNText className="font-semibold text-[11px] text-[#9A3412]">
                     Draft · {d.step.toLowerCase()}
                   </RNText>
                 </View>
-                <Icon name="arrow-forward-circle" size={24} color="#B7791F" />
+                <Icon name="arrow-forward-circle" size={24} color="#C2410C" />
               </View>
               <RNText numberOfLines={1} className="mt-3 font-bold text-[16px] text-ink">
                 {d.customer ?? 'Customer not entered'}
               </RNText>
-              <RNText numberOfLines={1} className="font-medium text-[13px] text-[#5B4A24]">
+              <RNText numberOfLines={1} className="font-medium text-[13px] text-[#7C2D12]">
                 {d.card?.bank.displayName} {d.card?.name}
               </RNText>
               <View className="mt-3 flex-row items-center gap-1.5">
-                <Icon name="time-outline" size={12} color="#8A6D2F" />
-                <RNText className="font-medium text-[12px] text-[#8A6D2F]">
+                <Icon name="time-outline" size={12} color="#9A3412" />
+                <RNText className="font-medium text-[12px] text-[#9A3412]">
                   Resume · expires {formatDateTime(d.expiresAt)}
                 </RNText>
               </View>

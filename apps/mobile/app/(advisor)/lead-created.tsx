@@ -78,7 +78,7 @@ export default function LeadCreated() {
       <View className="items-center">
         <Animated.View
           entering={ZoomIn.springify().damping(12).stiffness(160)}
-          className="h-28 w-28 items-center justify-center rounded-full bg-[#E6F4EC]"
+          className="h-28 w-28 items-center justify-center rounded-full bg-[#E3F4F1]"
         >
           <View
             className="h-20 w-20 items-center justify-center rounded-full"
@@ -104,7 +104,7 @@ export default function LeadCreated() {
             className="mt-3 flex-row items-center gap-2 rounded-full border border-line bg-white px-4 py-2"
             style={shadow.sm}
           >
-            <RNText className="font-semibold text-[11px] uppercase tracking-[1px] text-[#8A93A6]">
+            <RNText className="font-semibold text-[11px] uppercase tracking-[1px] text-[#78716C]">
               KBS ref
             </RNText>
             <CopyValue value={publicRef} />
@@ -158,7 +158,7 @@ export default function LeadCreated() {
           </RNText>
           {NEXT.map((n) => (
             <View key={n.title} className="flex-row gap-3 py-2">
-              <View className="h-8 w-8 items-center justify-center rounded-full bg-[#E8EDFF]">
+              <View className="h-8 w-8 items-center justify-center rounded-full bg-[#EFE9E1]">
                 <Icon name={n.icon} size={16} color={colors.brand} />
               </View>
               <View className="flex-1">

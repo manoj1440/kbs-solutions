@@ -142,7 +142,7 @@ export default function AssessmentScreen() {
         <Appear index={1}>
           <Card className="items-center gap-3 p-5">
             <RNText
-              className={`font-extrabold text-[48px] leading-[54px] tracking-tight ${result.passed ? 'text-[#1F7A4D]' : 'text-[#B42318]'}`}
+              className={`font-extrabold text-[48px] leading-[54px] tracking-tight ${result.passed ? 'text-[#0F766E]' : 'text-[#B42318]'}`}
             >
               {result.scorePct}%
             </RNText>
@@ -232,11 +232,11 @@ export default function AssessmentScreen() {
         <Appear key={q.id} index={i}>
           <Card className="gap-3 p-4">
             <View className="flex-row items-center justify-between">
-              <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#8A93A6]">
+              <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
                 Question {i + 1} of {attempt.questions.length}
               </RNText>
               {answers[q.id] ? (
-                <RNText className="font-semibold text-[11px] text-[#1F7A4D]">Answered</RNText>
+                <RNText className="font-semibold text-[11px] text-[#0F766E]">Answered</RNText>
               ) : null}
             </View>
             <Text className="font-bold text-[16px] leading-[23px]">

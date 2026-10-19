@@ -207,7 +207,7 @@ export default function RecordScreen() {
                       joining {money(c.joiningFee)} · annual {money(c.annualFee)}
                     </Muted>
                     {c.benefits[0] ? (
-                      <Muted numberOfLines={1} className="text-[12px] text-[#1F6B45]">
+                      <Muted numberOfLines={1} className="text-[12px] text-[#115E59]">
                         • {c.benefits[0]}
                       </Muted>
                     ) : null}

@@ -15,7 +15,7 @@ export function DeviceWarningBanner() {
   return (
     <View
       accessibilityRole="alert"
-      className="flex-row items-center gap-2.5 border-b border-[#F3D9A4] bg-[#FFF3DC] pb-2 pl-4 pr-2"
+      className="flex-row items-center gap-2.5 border-b border-[#F5C6AE] bg-[#FFF3DC] pb-2 pl-4 pr-2"
       style={{ paddingTop: insets.top + 6 }}
     >
       <Icon name="warning" size={16} color={colors.warning} />

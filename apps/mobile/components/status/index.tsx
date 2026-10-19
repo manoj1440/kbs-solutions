@@ -28,7 +28,7 @@ function StatusBadge({
 }) {
   return (
     <View className="flex-row items-center gap-1.5">
-      <RNText className="font-medium text-[11px] text-[#8A93A6]">{label}</RNText>
+      <RNText className="font-medium text-[11px] text-[#78716C]">{label}</RNText>
       <Badge label={field.display} variant={statusTone(kind, field)} dot size="sm" />
     </View>
   );
@@ -69,7 +69,7 @@ export function StatusTrio({
             className="flex-1 gap-1 rounded-xl px-2.5 py-2"
             style={{ backgroundColor: t.bg }}
           >
-            <RNText className="font-semibold text-[10px] uppercase tracking-[0.8px] text-[#5B6478]">
+            <RNText className="font-semibold text-[10px] uppercase tracking-[0.8px] text-[#57534E]">
               {label}
             </RNText>
             <View className="flex-row items-start gap-1.5">
@@ -93,8 +93,8 @@ export function StatusTrio({
 
 const PROV: Record<Provenance, { bg: string; fg: string; icon: IconName }> = {
   BANK_MIS: { bg: '#F1ECFB', fg: '#5B2BA8', icon: 'business' },
-  KBS_OPERATIONAL: { bg: '#E4F3FA', fg: '#0B5E82', icon: 'pulse' },
-  KBS_PAYMENT: { bg: '#E6F4EC', fg: '#1F6B45', icon: 'cash' },
+  KBS_OPERATIONAL: { bg: '#E6F3F1', fg: '#0B5E82', icon: 'pulse' },
+  KBS_PAYMENT: { bg: '#E3F4F1', fg: '#115E59', icon: 'cash' },
 };
 
 export function ProvenanceChip({
