@@ -266,8 +266,8 @@ function Bar({ h, i, active }: { h: number; i: number; active: boolean }) {
   const anim = useAnimatedStyle(() => ({ height: `${h * v.get()}%` }));
   return (
     <Animated.View
-      className="w-11 rounded-t-xl"
       style={[
+        { width: 44, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
         gradientStyle(
           i === 3 ? gradients.gold : ['rgba(255,255,255,0.35)', 'rgba(255,255,255,0.12)'],
           180,
@@ -314,7 +314,9 @@ function Dot({ i, x, width }: { i: number; x: SharedValue<number>; width: number
     const t = interpolate(p, [i - 1, i, i + 1], [0, 1, 0], 'clamp');
     return { width: 8 + t * 20, opacity: 0.35 + t * 0.65 };
   });
-  return <Animated.View className="h-2 rounded-full bg-gold" style={anim} />;
+  return (
+    <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: colors.gold }, anim]} />
+  );
 }
 
 type Slide = { key: string; cta: string; render: (active: boolean) => ReactNode };

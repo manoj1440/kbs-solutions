@@ -78,7 +78,14 @@ export default function LeadCreated() {
       <View className="items-center">
         <Animated.View
           entering={ZoomIn.springify().damping(12).stiffness(160)}
-          className="h-28 w-28 items-center justify-center rounded-full bg-[#E3F4F1]"
+          style={{
+            height: 112,
+            width: 112,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 56,
+            backgroundColor: '#E3F4F1',
+          }}
         >
           <View
             className="h-20 w-20 items-center justify-center rounded-full"

@@ -42,7 +42,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,8 +63,6 @@ import { Glass, GlassScope } from './glass';
  * Every component keeps text labels visible (REQ-20 §20.2) and ≥44pt touch targets (REQ-20 §20.5).
  */
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-cssInterop(AnimatedPressable, { className: 'style' });
 cssInterop(Animated.View, { className: 'style' });
 
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
@@ -168,13 +165,17 @@ export function Gradient({
   );
 }
 
-/** Pressable with a spring scale — the app-wide press feedback. */
+/**
+ * The app-wide pressable. F-818: a plain `Pressable` (NativeWind styles it natively) with an opacity press state —
+ * on Android the Reanimated-wrapped version dropped its className styles (buttons drew with no background or height).
+ * `scaleTo` is accepted for older call sites and ignored.
+ */
 export function PressableScale({
   className,
   style,
   children,
-  scaleTo = 0.97,
   disabled,
+  scaleTo,
   ...props
 }: PressableProps & {
   className?: string;
@@ -182,24 +183,17 @@ export function PressableScale({
   style?: StyleProp<ViewStyle>;
   children?: ReactNode;
 }) {
-  const scale = useSharedValue(1);
-  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  void scaleTo;
   return (
-    <AnimatedPressable
+    <Pressable
       accessibilityRole="button"
       disabled={disabled}
-      onPressIn={() => {
-        scale.set(withSpring(scaleTo, { damping: 18, stiffness: 400 }));
-      }}
-      onPressOut={() => {
-        scale.set(withSpring(1, { damping: 14, stiffness: 300 }));
-      }}
-      className={className}
-      style={[anim, style]}
+      className={cx('active:opacity-80', className)}
+      style={style}
       {...props}
     >
       {children}
-    </AnimatedPressable>
+    </Pressable>
   );
 }
 
@@ -225,14 +219,14 @@ export function Appear({
   children,
 }: PropsWithChildren<{ index?: number; className?: string; style?: StyleProp<ViewStyle> }>) {
   return (
+    // F-818: classes go on a plain View — className on Reanimated views is not applied on Android
     <Animated.View
       entering={FadeInDown.delay(Math.min(index, 10) * 45)
         .duration(380)
         .easing(Easing.out(Easing.cubic))}
-      className={className}
       style={style}
     >
-      {children}
+      <View className={className}>{children}</View>
     </Animated.View>
   );
 }
@@ -651,10 +645,12 @@ export function Segmented<K extends string>({
             className="h-10 flex-1 items-center justify-center rounded-full"
           >
             {active ? (
-              <Animated.View
-                entering={FadeIn.duration(180)}
-                className="absolute inset-0 rounded-full bg-white"
-                style={shadow.sm}
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  { borderRadius: 999, backgroundColor: '#fff' },
+                  shadow.sm,
+                ]}
               />
             ) : null}
             <View className="flex-row items-center gap-1.5">
@@ -781,7 +777,9 @@ export function ProgressBar({
       className={cx('w-full overflow-hidden rounded-full', light ? 'bg-white/20' : 'bg-[#E7E1D8]')}
       style={{ height }}
     >
-      <Animated.View className="h-full rounded-full" style={[gradientStyle(fill, 90), anim]} />
+      <Animated.View
+        style={[{ height: '100%', borderRadius: 999 }, gradientStyle(fill, 90), anim]}
+      />
     </View>
   );
 }
@@ -803,7 +801,9 @@ export function Skeleton({
   }, [o]);
   const anim = useAnimatedStyle(() => ({ opacity: o.get() }));
   return (
-    <Animated.View className={cx('rounded-xl bg-[#E5DFD6]', className)} style={[anim, style]} />
+    <View className={cx('overflow-hidden rounded-xl bg-[#E5DFD6]', className)} style={style}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#EFE9E1' }, anim]} />
+    </View>
   );
 }
 
@@ -1013,27 +1013,34 @@ export function EmptyState({
   compact?: boolean;
 }) {
   return (
-    <Animated.View
-      entering={FadeIn.duration(300)}
-      className={cx(
-        'items-center rounded-3xl border border-dashed border-[#D6CEC3] bg-white px-6',
-        compact ? 'py-6' : 'py-10',
-      )}
-    >
-      <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-[#F5EEE7]">
-        <View className="h-11 w-11 items-center justify-center rounded-full bg-[#F3E2D8]">
-          <Ionicons name={icon} size={22} color={colors.brand} />
+    <Animated.View entering={FadeIn.duration(300)}>
+      <View
+        className={cx(
+          'items-center rounded-3xl border border-dashed border-[#D6CEC3] bg-white px-6',
+          compact ? 'py-6' : 'py-10',
+        )}
+      >
+        <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-[#F5EEE7]">
+          <View className="h-11 w-11 items-center justify-center rounded-full bg-[#F3E2D8]">
+            <Ionicons name={icon} size={22} color={colors.brand} />
+          </View>
         </View>
+        <RNText className="text-center font-bold text-[16px] text-ink">{title}</RNText>
+        {body ? (
+          <RNText className="mt-1.5 text-center font-normal text-[13px] leading-[19px] text-[#57534E]">
+            {body}
+          </RNText>
+        ) : null}
+        {action && onAction ? (
+          <Button
+            title={action}
+            size="sm"
+            variant="secondary"
+            className="mt-4"
+            onPress={onAction}
+          />
+        ) : null}
       </View>
-      <RNText className="text-center font-bold text-[16px] text-ink">{title}</RNText>
-      {body ? (
-        <RNText className="mt-1.5 text-center font-normal text-[13px] leading-[19px] text-[#57534E]">
-          {body}
-        </RNText>
-      ) : null}
-      {action && onAction ? (
-        <Button title={action} size="sm" variant="secondary" className="mt-4" onPress={onAction} />
-      ) : null}
     </Animated.View>
   );
 }
@@ -1361,7 +1368,7 @@ export function BottomSheet({
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
-          className="absolute inset-0 bg-[#1C1917]/50"
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(28, 25, 23, 0.5)' }]}
         >
           <Pressable
             accessibilityRole="button"
@@ -1373,8 +1380,13 @@ export function BottomSheet({
         <Animated.View
           entering={SlideInDown.springify().damping(22).stiffness(220)}
           exiting={SlideOutDown.duration(200)}
-          className="max-h-[88%] overflow-hidden rounded-t-[28px]"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+          style={{
+            maxHeight: '88%',
+            overflow: 'hidden',
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            paddingBottom: Math.max(insets.bottom, 12),
+          }}
         >
           <Glass
             strong

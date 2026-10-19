@@ -2,7 +2,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass, PressableScale, type IconName } from '@/components/ui';
@@ -56,9 +55,8 @@ export function TabBar({
       >
         <View className="h-8 w-14 items-center justify-center">
           {active ? (
-            <Animated.View
-              entering={FadeIn.duration(200)}
-              className="absolute inset-0 rounded-full bg-ink"
+            <View
+              style={[StyleSheet.absoluteFill, { borderRadius: 999, backgroundColor: colors.ink }]}
             />
           ) : null}
           <Ionicons

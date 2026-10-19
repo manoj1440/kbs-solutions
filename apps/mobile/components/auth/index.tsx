@@ -239,7 +239,11 @@ export function GateState({
         <Appear className="items-center">
           <StateIcon icon={icon} tone={tone} />
         </Appear>
-        <Appear index={1} className="mt-6 w-full items-center gap-3">
+        <Appear
+          index={1}
+          className="mt-6 w-full items-center gap-3"
+          style={{ alignSelf: 'stretch' }}
+        >
           {badge ? <View className="flex-row justify-center">{badge}</View> : null}
           <RNText
             accessibilityRole="header"
@@ -248,7 +252,7 @@ export function GateState({
             {title}
           </RNText>
         </Appear>
-        <Appear index={2} className="mt-3 w-full">
+        <Appear index={2} className="mt-3 w-full" style={{ alignSelf: 'stretch' }}>
           {children}
         </Appear>
       </ScrollView>

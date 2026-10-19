@@ -31,7 +31,11 @@ function Caret() {
     );
   }, [o]);
   const anim = useAnimatedStyle(() => ({ opacity: o.get() }));
-  return <Animated.View className="h-6 w-[2px] rounded-full bg-brand" style={anim} />;
+  return (
+    <Animated.View
+      style={[{ height: 24, width: 2, borderRadius: 1, backgroundColor: colors.brand }, anim]}
+    />
+  );
 }
 
 function OtpBox({ digit, active, error }: { digit?: string; active: boolean; error: boolean }) {
