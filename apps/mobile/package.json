@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
-    "build:apk": "eas build --platform android --profile preview --local"
+    "build:apk": "eas build --platform android --profile preview --local",
+    "eas-build-post-install": "pnpm --filter 'mobile^...' run build"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
