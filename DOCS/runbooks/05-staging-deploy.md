@@ -1,5 +1,7 @@
 # Staging deployment on free tiers + CI/CD (F-907)
 
+> What is deployed where, every env var and where each secret lives: **runbook 06** (`06-staging-environment.md`).
+
 Everything below is free and needs no credit card. One-time setup is ~45 minutes; after that **every push to `main` that passes CI deploys itself**.
 
 | Piece | Provider (free plan) | Notes / limits |
