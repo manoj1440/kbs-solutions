@@ -268,7 +268,72 @@ select:not([multiple]):not([size]) {
 
 /* F-817: flat neutral canvas (reference look) */
 .admin-canvas {
+  isolation: isolate;
   background: hsl(var(--canvas));
+}
+
+/* F-817 glass: warm orange / teal light behind the panels so the frosted surfaces have something to blur. Fixed, so
+   it reads as ambient light, not as content. */
+.admin-canvas::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(44rem 30rem at 98% -6%, hsl(var(--brand) / 32%), transparent 62%),
+    radial-gradient(40rem 32rem at -8% 106%, hsl(175 70% 38% / 26%), transparent 62%),
+    radial-gradient(30rem 22rem at 62% 58%, hsl(20 95% 70% / 16%), transparent 70%),
+    radial-gradient(34rem 26rem at 30% 22%, hsl(32 95% 86% / 40%), transparent 70%);
+  content: '';
+  pointer-events: none;
+}
+
+@layer components {
+/* Frosted panel: translucent warm white, blur, a light top edge. `glass-strong` for menus and dialogs over content. */
+.glass,
+.glass-strong {
+  border: 1px solid hsl(0 0% 100% / 65%);
+  background: hsl(var(--card) / 58%);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 70%),
+    var(--elev-card);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+
+.glass-strong {
+  background: hsl(var(--card) / 80%);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 75%),
+    var(--elev-pop);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+}
+
+/* inner tile on a glass panel */
+.glass-tile {
+  border: 1px solid hsl(0 0% 100% / 60%);
+  background: hsl(var(--surface-muted) / 88%);
+}
+
+/* No blur support, or the viewer asked for less transparency → solid surfaces (text contrast stays as designed). */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background: hsl(var(--card));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong {
+    background: hsl(var(--card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-tile {
+    background: hsl(var(--surface-muted));
+  }
+}
 }
 
 /* F-817: the orange "profit" hatch of the reference chart, reused for progress fills */

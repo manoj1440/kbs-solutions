@@ -186,10 +186,10 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)_minmax(0,1.15fr)]">
         {/* the reference "Total balance" card: the payout earned in the period, its change, two actions, the team as "wallets" */}
-        <section aria-label="Payout earned" className="flex min-w-0 flex-col gap-4 rounded-2xl bg-card p-5 shadow-card">
+        <section aria-label="Payout earned" className="glass flex min-w-0 flex-col gap-4 rounded-2xl p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-ui font-medium text-fg-2">Payout earned</h2>
-            <span className="rounded-full bg-surface-muted px-3 py-1 text-2xs font-medium text-fg-2">{rangeLabel}</span>
+            <span className="glass-tile rounded-full px-3 py-1 text-2xs font-medium text-fg-2">{rangeLabel}</span>
           </div>
           <div>
             <p className="truncate text-[34px] leading-10 font-semibold tracking-tight text-foreground tabular-nums">{formatInr(earned)}</p>
@@ -214,7 +214,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               </Link>
             </Button>
           </div>
-          <div className="mt-auto rounded-2xl bg-surface-muted p-3">
+          <div className="glass-tile mt-auto rounded-2xl p-3">
             <p className="px-1 pb-2.5 text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">Team</span> · {team.reduce((n, t) => n + t.n, 0)} people
             </p>
@@ -222,7 +222,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               {team.slice(0, 3).map((t) => {
                 const active = people[t.role as keyof typeof people].active;
                 return (
-                  <Link key={t.role} href={`/admin/users?role=${t.role}`} prefetch={false} className="min-w-0 rounded-xl bg-card p-2.5 transition-colors hover:bg-card/70 focus-visible:outline-2 focus-visible:outline-ring">
+                  <Link key={t.role} href={`/admin/users?role=${t.role}`} prefetch={false} className="min-w-0 rounded-xl bg-card/75 p-2.5 transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-ring">
                     <span className="block truncate text-2xs font-medium text-fg-2 capitalize">{t.label}</span>
                     <span className="mt-1 block text-lg leading-6 font-semibold text-foreground tabular-nums">{t.n}</span>
                     <span className={cn('mt-1 block truncate text-2xs font-medium', active ? 'text-teal-700' : 'text-muted-foreground')}>{active ? `${active} active` : 'None active'}</span>
@@ -233,13 +233,13 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           </div>
         </section>
 
-        <section aria-label="Business" className="grid min-w-0 grid-cols-2 gap-2.5 rounded-2xl bg-card p-2.5 shadow-card">
+        <section aria-label="Business" className="glass grid min-w-0 grid-cols-2 gap-2.5 rounded-2xl p-2.5">
           {kpis.map((k) => {
             const body = (
               <>
                 <span className="flex items-start justify-between gap-2">
                   <span className={cn('text-ui font-medium', k.hero ? 'text-white/90' : 'text-fg-2')}>{k.label}</span>
-                  <span className={cn('inline-flex size-7 shrink-0 items-center justify-center rounded-full', k.hero ? 'bg-white/20 text-white' : 'bg-card text-fg-2')}>
+                  <span className={cn('inline-flex size-7 shrink-0 items-center justify-center rounded-full', k.hero ? 'bg-white/20 text-white' : 'bg-card/80 text-fg-2')}>
                     <k.icon className="size-3.5" aria-hidden="true" />
                   </span>
                 </span>
@@ -252,7 +252,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                 </span>
               </>
             );
-            const cls = cn('min-w-0 rounded-2xl p-4', k.hero ? 'brand-gradient text-white shadow-pop' : 'bg-surface-muted text-foreground', k.href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring');
+            const cls = cn('min-w-0 rounded-2xl p-4', k.hero ? 'brand-gradient text-white shadow-pop' : 'glass-tile text-foreground', k.href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring');
             return k.href ? (
               <Link key={k.label} href={k.href} prefetch={false} className={cls}>
                 {body}
@@ -265,10 +265,10 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           })}
         </section>
 
-        <section aria-label="Trend" className="min-w-0 rounded-2xl bg-card p-5 shadow-card lg:col-span-2 xl:col-span-1">
+        <section aria-label="Trend" className="glass min-w-0 rounded-2xl p-5 lg:col-span-2 xl:col-span-1">
           <h2 className="text-base font-semibold tracking-tight text-foreground">Leads & approvals</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{trendIsPeriod ? rangeLabel : `Last 14 days (${day(from)} – ${day(to)})`} · by lead created date</p>
-          <div className="mt-4 rounded-2xl bg-surface-muted p-4">
+          <div className="glass-tile mt-4 rounded-2xl p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-semibold text-foreground">Leads by bank result</p>
               <p className="flex items-center gap-3 text-2xs text-fg-2">
@@ -302,14 +302,14 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]">
         <aside aria-label="Today" className="flex min-w-0 flex-col gap-4">
-          <section aria-label="Calling progress" className="rounded-2xl bg-card p-5 shadow-card">
+          <section aria-label="Calling progress" className="glass rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-base font-semibold tracking-tight text-foreground">Calling progress</h2>
               <Link href="/admin/calling-list" prefetch={false} className="text-xs font-semibold text-foreground hover:underline">
                 Records
               </Link>
             </div>
-            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-surface-muted" role="meter" aria-label="Calling records worked" aria-valuemin={0} aria-valuemax={pipeline.total} aria-valuenow={worked}>
+            <div className="glass-tile mt-4 h-2.5 overflow-hidden rounded-full" role="meter" aria-label="Calling records worked" aria-valuemin={0} aria-valuemax={pipeline.total} aria-valuenow={worked}>
               <div className="brand-hatch h-full rounded-full" style={{ width: `${pipeline.total ? Math.round((worked / pipeline.total) * 100) : 0}%` }} />
             </div>
             <p className="mt-2.5 flex items-baseline justify-between gap-2 text-xs text-muted-foreground">

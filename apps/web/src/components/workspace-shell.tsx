@@ -319,7 +319,7 @@ export function WorkspaceShell({
     ));
   }
 
-  const pill = 'rounded-full bg-card shadow-card';
+  const pill = 'glass rounded-full';
   const iconButton = 'inline-flex size-10 items-center justify-center rounded-full text-fg-2 transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60';
   const navItem = (on: boolean) =>
     cn(
@@ -340,7 +340,7 @@ export function WorkspaceShell({
         Skip to content
       </a>
       <aside className={cn('sticky top-0 z-30 hidden h-dvh shrink-0 py-4 pl-4 transition-[width] duration-200 md:block', expanded ? 'w-[272px]' : 'w-[92px]')}>
-        <div className="flex h-full flex-col rounded-[28px] bg-card shadow-card">
+        <div className="glass flex h-full flex-col rounded-[28px]">
           <div className={cn('flex shrink-0 gap-2 p-3', expanded ? 'items-center justify-between' : 'flex-col items-center')}>
             <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className="flex min-w-0 items-center gap-2.5 rounded-full focus-visible:outline-2 focus-visible:outline-ring">
               {logo}
@@ -422,7 +422,7 @@ export function WorkspaceShell({
         </div>
       ) : null}
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 bg-canvas/90 backdrop-blur-md">
+        <header className="sticky top-0 z-30">
           <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-4 sm:h-[76px] sm:gap-3 sm:px-6">
             <button type="button" aria-label="Open navigation" className={cn(pill, 'inline-flex size-11 shrink-0 items-center justify-center text-fg-2 hover:text-foreground md:hidden')} onClick={() => mobileNav.current?.showModal()}>
               <Menu className="size-5" />
@@ -458,8 +458,8 @@ export function WorkspaceShell({
                   </span>
                   <ChevronDown className="hidden size-4 text-fg-3 sm:block" aria-hidden="true" />
                 </summary>
-                <div className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl bg-card shadow-pop">
-                  <div className="flex items-center gap-3 bg-surface-muted px-4 py-3">
+                <div className="glass-strong absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl">
+                  <div className="glass-tile flex items-center gap-3 px-4 py-3">
                     <Avatar name={name} className="bg-foreground text-background" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold">{name}</p>
@@ -490,7 +490,7 @@ export function WorkspaceShell({
       <dialog
         ref={mobileNav}
         aria-label={`${humanize(area)} navigation menu`}
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] rounded-r-[28px] bg-card p-0 text-foreground shadow-pop backdrop:bg-stone-950/40 backdrop:backdrop-blur-sm open:flex open:flex-col"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] glass-strong rounded-r-[28px] p-0 text-foreground backdrop:bg-stone-950/40 backdrop:backdrop-blur-sm open:flex open:flex-col"
       >
         <div className="flex shrink-0 items-center justify-between px-4 py-4">
           <Link href={home} prefetch={false} className="flex items-center gap-2.5" onClick={() => mobileNav.current?.close()}>
@@ -524,7 +524,7 @@ export function WorkspaceShell({
           setQuery('');
           setCursor(0);
         }}
-        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none overflow-hidden rounded-[28px] bg-card p-0 shadow-pop backdrop:bg-stone-950/40 backdrop:backdrop-blur-sm"
+        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none glass-strong overflow-hidden rounded-[28px] p-0 backdrop:bg-stone-950/40 backdrop:backdrop-blur-sm"
       >
         <h2 id="workspace-search-title" className="sr-only">
           Find your workspace
@@ -592,7 +592,7 @@ export function WorkspaceShell({
             </p>
           ) : null}
         </div>
-        <div className="flex items-center gap-4 border-t border-border-subtle bg-surface-muted px-4 py-2 text-2xs text-muted-foreground">
+        <div className="flex items-center gap-4 border-t border-white/50 px-4 py-2 text-2xs text-muted-foreground">
           <span>
             <kbd className="rounded border bg-card px-1">↑</kbd>{' '}
             <kbd className="rounded border bg-card px-1">↓</kbd> to move

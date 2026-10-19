@@ -44,7 +44,7 @@ export function UploadCoverageButton({ banks }: { banks: { id: string; label: st
       <dialog
         ref={ref}
         aria-label="Upload coverage"
-        className={cn('fixed top-1/2 left-1/2 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 shadow-2xl backdrop:bg-stone-950/40', open ? '' : 'hidden')}
+        className={cn('fixed top-1/2 left-1/2 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 glass-strong rounded-[28px] p-0 backdrop:bg-stone-950/40', open ? '' : 'hidden')}
         onClose={() => setOpen(false)}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">

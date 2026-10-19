@@ -151,7 +151,7 @@ export function StatCard({
   );
   const cls = cn(
     'group relative min-w-0 overflow-hidden rounded-2xl border border-transparent p-4 sm:p-5',
-    emphasis ? 'brand-gradient text-white shadow-pop' : 'bg-card shadow-card',
+    emphasis ? 'brand-gradient text-white shadow-pop' : 'glass',
     href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
     className,
   );
@@ -267,8 +267,8 @@ export function MiniStat({
   );
   const cls = cn(
     // F-817: white on the canvas, soft grey when it sits inside a card (reference inner tiles)
-    'block min-w-0 rounded-2xl border bg-card px-3.5 py-2.5 shadow-card in-data-[slot=card]:bg-surface-muted in-data-[slot=card]:shadow-none',
-    active ? 'border-foreground ring-1 ring-foreground' : 'border-transparent',
+    'glass block min-w-0 rounded-2xl px-3.5 py-2.5 in-data-[slot=card]:border-transparent in-data-[slot=card]:bg-surface-muted in-data-[slot=card]:shadow-none in-data-[slot=card]:backdrop-blur-none',
+    active && 'border-foreground! ring-1 ring-foreground',
     href && 'transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
   );
   return href ? (
@@ -296,7 +296,7 @@ export function PillNav({
 }) {
   return (
     <nav aria-label={label} className={cn('-mx-1 overflow-x-auto px-1 pb-1', className)}>
-      <div className="inline-flex min-w-max gap-1 rounded-full bg-card p-1 shadow-card">
+      <div className="glass inline-flex min-w-max gap-1 rounded-full p-1">
         {items.map(({ href, label: text, count, icon: Icon }) => {
           const on = href === active;
           return (
@@ -544,7 +544,7 @@ export function RailCard({
   footer?: { href: string; label: string };
 }) {
   return (
-    <section className="rounded-2xl bg-card shadow-card">
+    <section className="glass rounded-2xl">
       <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
         {icon ? <IconTile icon={icon} tone="slate" size="sm" /> : null}
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{title}</h2>
