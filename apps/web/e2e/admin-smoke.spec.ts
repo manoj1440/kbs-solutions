@@ -93,6 +93,25 @@ test.describe('Admin workspace smoke', () => {
     await expect(page.getByRole('button', { name: 'Expand navigation' })).toBeVisible();
   });
 
+  test('F-817: theme toggle switches to dark, survives a reload, and System follows the OS', async () => {
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'desktop sidebar');
+    await page.goto('/admin');
+    const html = page.locator('html');
+    await page.getByRole('radio', { name: 'Dark' }).first().click();
+    await expect(html).toHaveClass(/\bdark\b/);
+    await page.reload();
+    await expect(html).toHaveClass(/\bdark\b/);
+    await expect(page.getByRole('radio', { name: 'Dark' }).first()).toHaveAttribute('aria-checked', 'true');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.getByRole('radio', { name: 'System' }).first().click();
+    await expect(html).not.toHaveClass(/\bdark\b/);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(html).toHaveClass(/\bdark\b/);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.getByRole('radio', { name: 'Light' }).first().click();
+    await expect(html).not.toHaveClass(/\bdark\b/);
+  });
+
   test('F-808: calling records filters by status, upload opens a dialog, old allocation URL lands on caller performance', async () => {
     await ensureTelecaller(ctx.request, ADMIN);
     await page.goto('/admin/calling-list');

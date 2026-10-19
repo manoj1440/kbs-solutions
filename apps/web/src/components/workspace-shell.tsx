@@ -52,6 +52,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 
 import { LogoutButton } from '@/components/logout-button';
 import { SessionKeepAlive } from '@/components/session-keep-alive';
+import { type Theme, ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { clientApi } from '@/lib/client-api';
 import { Avatar, humanize } from '@/components/ui/kit';
@@ -201,12 +202,15 @@ export function WorkspaceShell({
   session,
   area,
   navExpanded = false,
+  theme = 'system',
   children,
 }: {
   session: MeResponse;
   area: WorkspaceArea;
   /** F-817: sidebar shows labels (from the `kbs_nav` cookie, read by the layout so the first paint matches) */
   navExpanded?: boolean;
+  /** F-817 dark mode: the stored choice (cookie), so the toggle's first paint matches */
+  theme?: Theme;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -357,6 +361,9 @@ export function WorkspaceShell({
               {expanded ? <PanelLeftClose className="size-[18px]" /> : <PanelLeftOpen className="size-[18px]" />}
             </button>
           </div>
+          <div className={cn('shrink-0 px-2.5 pb-3', expanded ? '' : 'flex justify-center')}>
+            <ThemeToggle initial={theme} vertical={!expanded} />
+          </div>
           <nav aria-label={`${humanize(area)} navigation`} className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-3" onScroll={() => setTip(null)}>
             {GROUPS.map((group, gi) => (
               <div key={group.label} className={cn(gi > 0 && (expanded ? 'mt-4' : 'mt-2 border-t border-border-subtle pt-2'))}>
@@ -490,7 +497,7 @@ export function WorkspaceShell({
       <dialog
         ref={mobileNav}
         aria-label={`${humanize(area)} navigation menu`}
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] glass-strong rounded-r-[28px] p-0 text-foreground backdrop:bg-stone-950/40 backdrop:backdrop-blur-sm open:flex open:flex-col"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] glass-strong rounded-r-[28px] p-0 text-foreground backdrop:bg-black/45 backdrop:backdrop-blur-sm open:flex open:flex-col"
       >
         <div className="flex shrink-0 items-center justify-between px-4 py-4">
           <Link href={home} prefetch={false} className="flex items-center gap-2.5" onClick={() => mobileNav.current?.close()}>
@@ -502,6 +509,9 @@ export function WorkspaceShell({
           <button type="button" aria-label="Close navigation" className={iconButton} onClick={() => mobileNav.current?.close()}>
             <X className="size-5" />
           </button>
+        </div>
+        <div className="shrink-0 px-4 pb-3">
+          <ThemeToggle initial={theme} />
         </div>
         <nav aria-label={`Mobile ${area} navigation`} className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
           {drawerNavigation()}
@@ -524,7 +534,7 @@ export function WorkspaceShell({
           setQuery('');
           setCursor(0);
         }}
-        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none glass-strong overflow-hidden rounded-[28px] p-0 backdrop:bg-stone-950/40 backdrop:backdrop-blur-sm"
+        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none glass-strong overflow-hidden rounded-[28px] p-0 backdrop:bg-black/45 backdrop:backdrop-blur-sm"
       >
         <h2 id="workspace-search-title" className="sr-only">
           Find your workspace
@@ -592,7 +602,7 @@ export function WorkspaceShell({
             </p>
           ) : null}
         </div>
-        <div className="flex items-center gap-4 border-t border-white/50 px-4 py-2 text-2xs text-muted-foreground">
+        <div className="flex items-center gap-4 border-t border-border-subtle px-4 py-2 text-2xs text-muted-foreground">
           <span>
             <kbd className="rounded border bg-card px-1">↑</kbd>{' '}
             <kbd className="rounded border bg-card px-1">↓</kbd> to move

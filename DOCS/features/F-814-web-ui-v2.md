@@ -225,3 +225,4 @@ Status: `TODO` → `DONE` (set in the same commit that finishes the page). Commi
 | 4 | Responsive | 3 | 4 | 114 renders overflow 0; tile strips swipe on phones; compact phone rows; container queries where columns get narrow |
 | 5 | Implementation integrity | 3 | 4 | Detector clean; one kit (StatCard/StatStrip/DetailHeader/RailCard/charts); no page-local Stat/Panel copies; no eyebrows |
 | | **Total** | **13/20** | **18/20** | Excellent band (18–20) |
+- 2026-10-19: P8 dark mode delivered under F-817 round 4 (see `F-817-web-reference-redesign.md`).

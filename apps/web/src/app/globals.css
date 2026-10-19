@@ -133,6 +133,156 @@
   --elev-pop: 0 1px 2px hsl(24 30% 20% / 5%), 0 16px 32px -16px hsl(24 30% 20% / 20%);
 }
 
+/* F-817 dark mode: warm charcoal, the same orange hero and teal accent, brighter for dark surfaces.
+   `.dark` comes after the @kbs/ui-tokens block, so these win. Mobile is unaffected. */
+.dark {
+  color-scheme: dark;
+  --background: 24 9% 7%;
+  --foreground: 36 20% 93%;
+  --card: 24 8% 10.5%;
+  --card-foreground: 36 20% 93%;
+  --popover: 24 8% 11%;
+  --popover-foreground: 36 20% 93%;
+  --primary: 36 25% 94%;
+  --primary-foreground: 24 10% 9%;
+  --secondary: 24 7% 16%;
+  --secondary-foreground: 36 20% 90%;
+  --muted: 24 7% 16%;
+  --muted-foreground: 30 6% 64%;
+  --accent: 24 7% 16%;
+  --accent-foreground: 36 20% 93%;
+  --destructive: 0 75% 62%;
+  --destructive-foreground: 24 10% 9%;
+  --success: 172 60% 52%;
+  --success-foreground: 24 10% 9%;
+  --warning: 38 92% 58%;
+  --warning-foreground: 24 10% 9%;
+  --info: 175 55% 56%;
+  --info-foreground: 24 10% 9%;
+  --unknown: 30 6% 64%;
+  --ring: 36 25% 94%;
+  --border: 24 6% 19%;
+  --input: 24 6% 25%;
+
+  --canvas: 24 9% 7%;
+  --surface-muted: 24 7% 14%;
+  --surface-strong: 24 6% 21%;
+  --surface-selected: 14 40% 16%;
+  --fg-2: 34 10% 80%;
+  --fg-3: 30 6% 64%;
+  --border-subtle: 24 6% 15%;
+  --border-strong: 24 5% 30%;
+  --navy: 24 10% 9%;
+  --brand: 16 92% 60%;
+  --brand-strong: 22 95% 68%;
+  --brand-soft: 14 45% 15%;
+  --elev-card: 0 1px 2px hsl(0 0% 0% / 45%);
+  --elev-pop: 0 1px 2px hsl(0 0% 0% / 50%), 0 18px 36px -14px hsl(0 0% 0% / 65%);
+}
+
+/* Tinted Tailwind scales flip inside the workspace so `bg-amber-50 text-amber-700` style chips read on dark surfaces. */
+.dark .admin-workspace,
+.dark .admin-login {
+  --color-stone-50: oklch(14.7% 0.004 49.25);
+  --color-stone-100: oklch(21.6% 0.006 56.043);
+  --color-stone-200: oklch(26.8% 0.007 34.298);
+  --color-stone-300: oklch(37.4% 0.01 67.558);
+  --color-stone-400: oklch(44.4% 0.011 73.639);
+  --color-stone-500: oklch(55.3% 0.013 58.071);
+  --color-stone-600: oklch(70.9% 0.01 56.259);
+  --color-stone-700: oklch(86.9% 0.005 56.366);
+  --color-stone-800: oklch(92.3% 0.003 48.717);
+  --color-stone-900: oklch(97% 0.001 106.424);
+  --color-stone-950: oklch(98.5% 0.001 106.423);
+  --color-amber-50: oklch(27.9% 0.077 45.635);
+  --color-amber-100: oklch(41.4% 0.112 45.904);
+  --color-amber-200: oklch(47.3% 0.137 46.201);
+  --color-amber-300: oklch(55.5% 0.163 48.998);
+  --color-amber-400: oklch(66.6% 0.179 58.318);
+  --color-amber-500: oklch(76.9% 0.188 70.08);
+  --color-amber-600: oklch(82.8% 0.189 84.429);
+  --color-amber-700: oklch(87.9% 0.169 91.605);
+  --color-amber-800: oklch(92.4% 0.12 95.746);
+  --color-amber-900: oklch(96.2% 0.059 95.617);
+  --color-amber-950: oklch(98.7% 0.022 95.277);
+  --color-rose-50: oklch(27.1% 0.105 12.094);
+  --color-rose-100: oklch(41% 0.159 10.272);
+  --color-rose-200: oklch(45.5% 0.188 13.697);
+  --color-rose-300: oklch(51.4% 0.222 16.935);
+  --color-rose-400: oklch(58.6% 0.253 17.585);
+  --color-rose-500: oklch(64.5% 0.246 16.439);
+  --color-rose-600: oklch(71.2% 0.194 13.428);
+  --color-rose-700: oklch(81% 0.117 11.638);
+  --color-rose-800: oklch(89.2% 0.058 10.001);
+  --color-rose-900: oklch(94.1% 0.03 12.58);
+  --color-rose-950: oklch(96.9% 0.015 12.422);
+  --color-teal-50: oklch(27.7% 0.046 192.524);
+  --color-teal-100: oklch(38.6% 0.063 188.416);
+  --color-teal-200: oklch(43.7% 0.078 188.216);
+  --color-teal-300: oklch(51.1% 0.096 186.391);
+  --color-teal-400: oklch(60% 0.118 184.704);
+  --color-teal-500: oklch(70.4% 0.14 182.503);
+  --color-teal-600: oklch(77.7% 0.152 181.912);
+  --color-teal-700: oklch(85.5% 0.138 181.071);
+  --color-teal-800: oklch(91% 0.096 180.426);
+  --color-teal-900: oklch(95.3% 0.051 180.801);
+  --color-teal-950: oklch(98.4% 0.014 180.72);
+  --color-sky-50: oklch(29.3% 0.066 243.157);
+  --color-sky-100: oklch(39.1% 0.09 240.876);
+  --color-sky-200: oklch(44.3% 0.11 240.79);
+  --color-sky-300: oklch(50% 0.134 242.749);
+  --color-sky-400: oklch(58.8% 0.158 241.966);
+  --color-sky-500: oklch(68.5% 0.169 237.323);
+  --color-sky-600: oklch(74.6% 0.16 232.661);
+  --color-sky-700: oklch(82.8% 0.111 230.318);
+  --color-sky-800: oklch(90.1% 0.058 230.902);
+  --color-sky-900: oklch(95.1% 0.026 236.824);
+  --color-sky-950: oklch(97.7% 0.013 236.62);
+  --color-orange-50: oklch(26.6% 0.079 36.259);
+  --color-orange-100: oklch(40.8% 0.123 38.172);
+  --color-orange-200: oklch(47% 0.157 37.304);
+  --color-orange-300: oklch(55.3% 0.195 38.402);
+  --color-orange-400: oklch(64.6% 0.222 41.116);
+  --color-orange-500: oklch(70.5% 0.213 47.604);
+  --color-orange-600: oklch(75% 0.183 55.934);
+  --color-orange-700: oklch(83.7% 0.128 66.29);
+  --color-orange-800: oklch(90.1% 0.076 70.697);
+  --color-orange-900: oklch(95.4% 0.038 75.164);
+  --color-orange-950: oklch(98% 0.016 73.684);
+}
+
+.dark .admin-canvas::before {
+  background:
+    radial-gradient(44rem 30rem at 98% -6%, hsl(var(--brand) / 18%), transparent 62%),
+    radial-gradient(40rem 32rem at -8% 106%, hsl(175 70% 40% / 14%), transparent 62%),
+    radial-gradient(30rem 22rem at 62% 58%, hsl(20 95% 50% / 7%), transparent 70%);
+}
+
+@layer components {
+  .dark .glass,
+  .dark .glass-strong {
+    border-color: hsl(0 0% 100% / 7%);
+    background: hsl(var(--card) / 62%);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 6%),
+      var(--elev-card);
+  }
+  .dark .glass-strong {
+    background: hsl(var(--card) / 82%);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 7%),
+      var(--elev-pop);
+  }
+  .dark .glass-tile {
+    border-color: hsl(0 0% 100% / 5%);
+    background: hsl(var(--surface-muted) / 85%);
+  }
+}
+
+.dark select:not([multiple]):not([size]) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23a8a29e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
 .admin-content > *,
 .admin-content [data-slot='card'],
 .admin-content [data-slot='card-content'] {

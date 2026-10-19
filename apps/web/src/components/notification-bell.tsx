@@ -76,7 +76,7 @@ export function NotificationBell({ area }: { area: Area }) {
         <Bell />
         {unread ? <span className="absolute -top-0.5 -right-0.5 min-w-5 rounded-full bg-brand px-1 text-2xs leading-5 font-semibold text-white ring-2 ring-card">{unread > 99 ? '99+' : unread}</span> : null}
       </Button>
-      <dialog ref={ref} aria-label="Notifications" className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md glass-strong p-0 backdrop:bg-stone-950/40" onClick={(e) => e.target === ref.current && ref.current?.close()}>
+      <dialog ref={ref} aria-label="Notifications" className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md glass-strong p-0 backdrop:bg-black/45" onClick={(e) => e.target === ref.current && ref.current?.close()}>
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="grid">
             <h2 className="font-semibold">Notifications</h2>

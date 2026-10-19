@@ -39,7 +39,7 @@ export async function AccountPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <SectionCard icon={UserRound} tone="violet" title="Profile" description="Changes to name or mobile go through the Admin (mobile changes are audited).">
           <div className="grid gap-5">
-            <div className="flex min-w-0 items-center gap-4 rounded-xl bg-[linear-gradient(135deg,rgb(245_243_255)_0%,rgb(240_253_250)_100%)] p-4 ring-1 ring-border-subtle ring-inset">
+            <div className="flex min-w-0 items-center gap-4 glass-tile rounded-2xl bg-gradient-to-br from-brand-soft to-teal-50 p-4">
               <Avatar name={u.fullName || u.publicRef} size="lg" className="shadow-sm ring-4 ring-card" />
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-foreground">{u.fullName || '—'}</p>

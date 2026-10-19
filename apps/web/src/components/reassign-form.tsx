@@ -43,7 +43,7 @@ export function ReassignForm({
       <dialog
         ref={dialog}
         aria-labelledby={`reassign-title-${recordId}`}
-        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl backdrop:bg-stone-950/40 backdrop:backdrop-blur-[2px]"
+        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl backdrop:bg-black/45 backdrop:backdrop-blur-[2px]"
       >
         <form
           className="grid gap-4"
