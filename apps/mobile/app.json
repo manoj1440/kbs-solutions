@@ -11,19 +11,18 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F2EEE8"
     },
     "android": {
       "package": "com.kbs.dsa",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "POST_NOTIFICATIONS"
-      ],
-      "versionCode": 1
+      ]
     },
     "ios": {
       "supportsTablet": false
