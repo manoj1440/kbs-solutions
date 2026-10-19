@@ -20,21 +20,21 @@ export default async function LoginPage({
       <section className="relative flex h-dvh min-h-0 flex-col items-center justify-center gap-6 overflow-hidden px-6">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-40 -right-40 size-[420px] rounded-full bg-neutral-300/40 blur-3xl"
+          className="pointer-events-none absolute -top-40 -right-40 size-[420px] rounded-full bg-brand/10 blur-3xl"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-24 top-24 size-56 rounded-full bg-cyan-200/40 blur-3xl"
+          className="pointer-events-none absolute -right-24 top-24 size-56 rounded-full bg-orange-100/50 blur-3xl"
         />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -bottom-40 -left-32 size-96 rounded-full bg-neutral-400/20 blur-3xl"
         />
         <div className="relative flex items-center gap-2.5 lg:hidden">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-navy text-neutral-400">
+          <span className="flex size-9 items-center justify-center brand-gradient rounded-full text-white">
             <Building2 className="size-5" />
           </span>
-          <span className="text-lg font-bold tracking-tight text-navy">
+          <span className="text-lg font-bold tracking-tight text-foreground">
             KBS<span className="font-normal text-muted-foreground"> Solutions</span>
           </span>
         </div>

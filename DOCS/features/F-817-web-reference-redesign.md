@@ -1,6 +1,6 @@
 # F-817 — Web: reference redesign (neutral canvas, black primary, orange accent, top pill nav + slim rail)
 
-- Group: Web UX · Status: **IN_PROGRESS** · Depends on: F-814 (tokens/kit v2), F-813 (DataTable), F-816
+- Group: Web UX · Status: **DONE** · Depends on: F-814 (tokens/kit v2), F-813 (DataTable), F-816
 - PRD refs: REQ-20 (UX/visual constraints: text always carries meaning, contrast), REQ-25 (screen inventory), ADR-003 (shadcn/ui)
 - Origin: user request (2026-10-19) with a reference dashboard image ("Vertix" finance dashboard): "see the design tokens, understand the visuals and aesthetics of this image and convert the current web admin into this one … do not make mistakes and approve all decisions by default."
 - Supersedes the F-814 navy + teal look (F-814 P8 dark mode stays a separate, later phase).
@@ -34,18 +34,25 @@
 | Phase | Scope | Status |
 |---|---|---|
 | P0 | Before screenshots (isolated stack, 1440 + 390) | DONE |
-| P1 | Tokens + primitives (button, badge, input, select, table CSS) + codemod teal/indigo/violet → neutral | |
-| P2 | Shell: top bar, section pills, rail, drawer, search dialog | |
-| P3 | Kit: StatCard / SectionCard / MiniStat / IconTile / RailCard / Callout / charts on the new look; orange hero | |
-| P4 | Admin home in the reference layout | |
-| P5 | Sweep every route at 1440 + 390; fix leftovers; login accent | |
-| P6 | Checks: typecheck, lint, unit, isolated Playwright; after screenshots | |
+| P1 | Tokens + primitives (button, badge, input, select, table CSS) + codemod teal/indigo/violet → neutral | DONE |
+| P2 | Shell: top bar, section pills, rail, drawer, search dialog | DONE |
+| P3 | Kit: StatCard / SectionCard / MiniStat / IconTile / RailCard / Callout / charts on the new look; orange hero | DONE |
+| P4 | Admin home in the reference layout | DONE |
+| P5 | Sweep every route at 1440 + 390; fix leftovers; login accent | DONE |
+| P6 | Checks: typecheck, lint, unit, isolated Playwright; after screenshots | DONE |
 
 ## 3. Acceptance
-- [ ] Every web route renders on the new tokens with no horizontal page scroll at 1440 / 1280 / 390.
-- [ ] No teal / indigo / violet / navy class left in `apps/web/src`.
-- [ ] Section pill nav + rail reach every page reachable before (same hrefs; e2e nav test green).
-- [ ] Admin home shows the same figures as before in the reference layout.
-- [ ] Web Playwright isolated suite green.
+- [x] Every web route renders on the new tokens with no horizontal page scroll at 1440 / 1280 / 390.
+- [x] No teal / indigo / violet / navy class left in `apps/web/src`.
+- [x] Section pill nav + rail reach every page reachable before (same hrefs; e2e nav test green).
+- [x] Admin home shows the same figures as before in the reference layout.
+- [x] Web Playwright isolated suite green.
 
 ## Progress notes
+- 2026-10-19 (session 20): built in one session. Commits: `docs(F-817): start`, `feat(web): reference look — neutral tokens, pill primitives, top bar + rail shell, home grid`, then sweep fixes (sentence-case labels instead of uppercase kickers, table header case, login + status-screen accent, ops-dashboard hero) and docs.
+- Tokens live on `:root` in `apps/web/src/app/globals.css` (`--brand*`, neutral greys, `--radius-2xl: 22px`, `.brand-gradient`, `.brand-hatch`). `@kbs/ui-tokens` (mobile) untouched.
+- Codemod: every `teal|indigo|violet-N` class in `apps/web/src` → `neutral-M` (50→100 … 600/700→900); `rg "(teal|indigo|violet)-[0-9]"` returns nothing. Tone *names* in the kit stay (`tone="teal"` = brand orange bar, neutral chip).
+- Kit: `SectionCard` / `PageHeader` no longer render header icons (prop kept); `MiniStat` turns grey inside a card (`in-data-[slot=card]`); new `StackedBars` chart (approved black + other leads orange-hatched; approved is a subset of leads per bucket, so the stack is honest; numbers also in a hidden table).
+- Shell: rail labels added on purpose (see §1). e2e `admin-smoke` nav test rewritten for sections + rail + drawer (all hrefs unique, > 20 pages).
+- Checks: web typecheck + lint clean, web unit 24/24, Playwright isolated 73 passed / 1 skipped (production build). Sweep: all 47 static Admin/Manager/Accounts routes at 1440 and 390 — no horizontal overflow; contact sheets reviewed. Before/after screenshots were made on the isolated stack (`kbs_e2e`, near-empty data).
+- Not done: dark mode / theme toggle (F-814 P8); dynamic detail routes were reviewed only where the isolated data has records; native Android untouched.

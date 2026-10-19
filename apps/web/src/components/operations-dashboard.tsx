@@ -342,7 +342,7 @@ export function OpsSections({ d }: { d: OpsDashboard }) {
           <Tile label="Approved, unpaid" m={a.payouts.approvedUnpaid} money tone="amber" />
           <Tile label="On hold" m={a.payouts.onHold} money tone="rose" />
           <Tile label="Paid (events)" m={a.payouts.paid} money tone="emerald" />
-          <div className="col-span-2 flex min-w-0 flex-col rounded-xl border border-transparent bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(175_77%_21%)_55%,hsl(var(--navy-2))_100%)] p-4 text-white shadow-pop">
+          <div className="col-span-2 flex min-w-0 flex-col brand-gradient rounded-2xl border border-transparent p-4 text-white shadow-pop">
             <div className="flex items-center justify-between gap-2 text-xs font-medium text-neutral-100">
               Confirmed transfers
               <BadgeIndianRupee className="size-4" aria-hidden="true" />

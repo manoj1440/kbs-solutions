@@ -1,18 +1,18 @@
 # Web design system (F-806, refreshed by F-814)
 
-Premium operations console: calm grey canvas, white elevated surfaces, teal primary, navy sidebar, soft tinted badges, tabular numbers. Reference implementation: `src/app/(admin)/admin/mis/page.tsx`. F-814 plan and page tracker: `DOCS/features/F-814-web-ui-v2.md`.
+F-817 reference look: flat grey canvas, white 22px cards with no visible border, near-black primary, one orange accent (`brand`, used sparingly: hero tile, charts, progress, logo, unread dot), pill buttons/inputs/selects, soft tinted badges, tabular numbers. Shell: floating top bar (logo · section pills · icons · user) + slim rail with the section's pages. Reference implementation: `src/app/(admin)/admin/mis/page.tsx`. F-814 plan and page tracker: `DOCS/features/F-814-web-ui-v2.md`.
 
 ## Rules
 1. **Presentation only.** Never change API calls, payloads, routes, permissions, validation, form field names/ids, button labels used by tests, or compliance copy. Keep every piece of information a page shows today.
 2. **Bank values are verbatim.** Stage / Decision / Activation stay three separate labelled badges (`StageBadge`, `DecisionBadge`, `ActivationBadge`) with `ProvenanceChip`. Never humanise, recolour or merge them.
 3. **Humanise KBS enums only** with `humanize()` (`PENDING_ONBOARDING` → "Pending onboarding"). Config keys, public refs (`KBS-…`), file names and bank values are shown as-is.
 4. **One `h1` per page**, rendered by `PageHeader`.
-5. Links inside tables are styled automatically (teal, no underline) — do not add `underline`.
+5. Links inside tables are styled automatically (foreground, semibold, no underline) — do not add `underline`.
 6. Use `EmptyState` instead of "No … yet." table rows; `Callout` instead of ad-hoc coloured boxes.
 7. No new dependencies; icons from `lucide-react`; charts are the kit's SVG components (`TrendChart`, `Sparkline`, `MiniBars`, `Meter`). Exceptions: the shadcn `checkbox` primitive and TanStack Table v9 behind the common `DataTable` (ADR-014).
 8. Numbers: `tabular-nums`, right-aligned in tables.
 9. **Tokens only (F-814).** No `slate-*`, `bg-white`, hex or `shadow-[…]` in files you touch; text sizes are `text-2xs` (11) / `text-xs` (12) / `text-ui` (13) / `text-sm`+ — `text-[Npx]` only for display headings (15 px+) or glyphs inside marks. Run `node test/tokenize.mjs <files>` first, then fix what it lists as "left". New custom tokens must be added to `extendTailwindMerge` in `lib/utils.ts`.
-10. **No eyebrows** (uppercase kicker above a heading). `PageHeader` ignores `eyebrow`; the breadcrumb names the section.
+10. **No eyebrows** (uppercase kicker above a heading). `PageHeader` ignores `eyebrow` (and, since F-817, `icon`); the section pill + rail label name the page.
 
 ## Tokens (F-814, `app/globals.css` `:root`)
 | Utility | Use |
@@ -20,9 +20,9 @@ Premium operations console: calm grey canvas, white elevated surfaces, teal prim
 | `bg-canvas` / `bg-card` / `bg-surface-muted` / `bg-muted` / `bg-surface-strong` / `bg-surface-selected` | page ground → cards → table headers/hover → chips → tracks → selected rows |
 | `text-foreground` / `text-fg-2` / `text-muted-foreground` / `text-fg-3` | primary → secondary → hints → decorative only (fails 4.5:1 on white — never body text) |
 | `border-border` / `border-border-subtle` / `border-border-strong` | default → inner dividers → hover/emphasis |
-| `bg-navy` / `bg-navy-2` / `bg-navy-3` | shell only |
+| `bg-brand` / `text-brand-strong` / `bg-brand-soft`, `.brand-gradient`, `.brand-hatch` | the one accent — hero KPI, chart highlight, progress, logo |
 | `shadow-card` / `shadow-pop` | resting cards → lifted/hover, popovers, tooltips |
-| `text-primary`, `ring-ring` | teal primary, focus |
+| `text-primary`, `ring-ring` | near-black primary, focus |
 
 Fonts: Inter (`font-sans`) and JetBrains Mono (`font-mono`) via `next/font` in `app/layout.tsx`. The `@kbs/ui-tokens` package is shared with mobile — web overrides live in `globals.css`, never change the package for web.
 
@@ -64,7 +64,7 @@ Shell: no MIS clock since F-816 (bank status is a business rule, not a headline)
 ## Definition of done for a page (F-814)
 Tokens only · kit components only (no page-local `Stat`/`Panel`) · empty/loading/error/disabled states · 1440 and 390 screenshots with overflow 0 and no clipping · `npx impeccable detect <files>` clean (impeccable.style, free) · e2e selectors unchanged (or spec updated in the same commit).
 
-Tones: `teal` (primary/money), `indigo` (bank data), `sky` (info/activity), `violet` (people), `amber` (attention), `rose` (errors/exceptions), `emerald` (success/paid), `slate` (neutral).
+Tones (F-817): decorative tones share a neutral icon chip and differ only in bar/dot colour — `teal` = orange brand, `indigo` = black, `sky`/`violet`/`slate` = greys; `amber` (attention), `rose` (errors/exceptions), `emerald` (success/paid) keep their meaning. Raw `teal-*`/`indigo-*`/`violet-*` classes are gone from `src` — use neutral or the tokens.
 
 ## Tables (`@/components/data-table`, F-813 / ADR-014)
 

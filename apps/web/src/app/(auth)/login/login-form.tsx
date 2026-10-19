@@ -185,7 +185,7 @@ export function LoginForm({ next }: { next?: string }) {
             <Button
               type="submit"
               disabled={busy || !mobileValid}
-              className="relative h-14 w-full rounded-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-base font-semibold text-white shadow-lg shadow-neutral-900/30 transition-all hover:from-neutral-900 hover:to-neutral-500 hover:shadow-neutral-800/40 disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
+              className="relative h-14 w-full rounded-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-base font-semibold text-white shadow-lg shadow-neutral-900/30 transition-all hover:from-neutral-800 hover:to-neutral-700 hover:shadow-neutral-800/40 disabled:from-neutral-300 disabled:to-neutral-300 disabled:text-neutral-600 disabled:shadow-none"
             >
               {busy ? 'Sending…' : 'Send OTP'}
               <span className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20">
@@ -241,7 +241,7 @@ export function LoginForm({ next }: { next?: string }) {
             <Button
               type="submit"
               disabled={busy || code.length !== OTP_LEN}
-              className="relative h-14 w-full rounded-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-base font-semibold text-white shadow-lg shadow-neutral-900/30 transition-all hover:from-neutral-900 hover:to-neutral-500 hover:shadow-neutral-800/40 disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
+              className="relative h-14 w-full rounded-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-base font-semibold text-white shadow-lg shadow-neutral-900/30 transition-all hover:from-neutral-800 hover:to-neutral-700 hover:shadow-neutral-800/40 disabled:from-neutral-300 disabled:to-neutral-300 disabled:text-neutral-600 disabled:shadow-none"
             >
               {busy ? 'Verifying…' : 'Verify & Sign in'}
               <span className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20">
