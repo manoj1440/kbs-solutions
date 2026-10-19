@@ -77,6 +77,7 @@ Set `BOOTSTRAP_ADMIN_MOBILE` (10-digit mobile of the first Admin) on the Render 
 Migrations run before the new API starts, so they must stay backward-compatible with the running version (add columns/tables; drop in a later release).
 
 ## Known limits
+- Any env var that `next.config.ts` reads at build time must be listed under `tasks.build.env` in `turbo.json` (Turbo strict env mode drops undeclared ones — that is how the `/api/v1` proxy went missing on the first deploy).
 - Cold start ≈ 1 min if the ping missed; the app's update check times out silently and retries on next resume.
 - Client IP for the web goes through Vercel's proxy, so office-network gating (F-301) sees Vercel's address for web users; the mobile app (direct to Render, `TRUST_PROXY_HOPS=1`) is resolved correctly.
 - Staging uses the Supabase owner role; production applies runbook 03 (`kbs_app` role).
