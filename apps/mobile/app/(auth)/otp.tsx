@@ -1,7 +1,7 @@
 import { ApiClientError, type AuthSessionResponse, type OtpRequestResponse } from '@kbs/shared';
 import * as Device from 'expo-device';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text as RNText, TextInput, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { AuthShell } from '@/components/auth';
-import { Appear, Button, ErrorText, Icon, Muted } from '@/components/ui';
+import { Appear, Button, ErrorText, Icon, Muted, useDeferredFocus } from '@/components/ui';
 import { api } from '@/lib/api';
 import { routeFor, useSession } from '@/lib/session';
 import { colors } from '@/lib/theme';
@@ -63,7 +63,8 @@ export default function OtpScreen() {
     resendAfterSec: string;
   }>();
   const { signIn, refresh } = useSession();
-  const input = useRef<TextInput>(null);
+  // F-818: open the keyboard after the entrance animation (see useDeferredFocus)
+  const input = useDeferredFocus<TextInput>();
   const [challengeId, setChallengeId] = useState(params.challengeId);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -167,12 +168,11 @@ export default function OtpScreen() {
             keyboardType="number-pad"
             autoComplete="sms-otp"
             textContentType="oneTimeCode"
-            autoFocus
             className="absolute inset-0 opacity-0"
           />
         </Pressable>
       </Appear>
-      <Appear index={2} className="items-center">
+      <View className="items-center">
         {secondsLeft > 0 ? (
           <View className="flex-row items-center gap-1.5 rounded-full bg-canvas px-3.5 py-2">
             <Icon name="time-outline" size={15} color={colors.muted} />
@@ -193,9 +193,9 @@ export default function OtpScreen() {
             <RNText className="font-bold text-[14px] text-brand">Resend OTP</RNText>
           </Pressable>
         )}
-      </Appear>
+      </View>
       <ErrorText>{error}</ErrorText>
-      <Appear index={3} className="gap-3">
+      <View className="gap-3">
         <Button
           title={busy ? 'Verifying…' : 'Verify OTP'}
           size="lg"
@@ -208,7 +208,7 @@ export default function OtpScreen() {
           Didn&apos;t receive OTP?
           {secondsLeft > 0 ? ' You can request a new one when the timer ends.' : ''}
         </Muted>
-      </Appear>
+      </View>
     </AuthShell>
   );
 }

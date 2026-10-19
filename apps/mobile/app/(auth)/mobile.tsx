@@ -6,10 +6,10 @@ import {
 } from '@kbs/shared';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text as RNText, View } from 'react-native';
+import { Pressable, Text as RNText, type TextInput, View } from 'react-native';
 
 import { AuthShell } from '@/components/auth';
-import { Appear, Button, ErrorText, Icon, Input, Muted } from '@/components/ui';
+import { Appear, Button, ErrorText, Icon, Input, Muted, useDeferredFocus } from '@/components/ui';
 import { api } from '@/lib/api';
 import { colors } from '@/lib/theme';
 
@@ -19,6 +19,7 @@ export default function MobileScreen() {
   const [mobile, setMobile] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const field = useDeferredFocus<TextInput>();
 
   async function submit() {
     setError(null);
@@ -60,6 +61,7 @@ export default function MobileScreen() {
       </Appear>
       <Appear index={2}>
         <Input
+          ref={field}
           label="Mobile Number"
           icon="call-outline"
           prefix="+91"
@@ -68,13 +70,12 @@ export default function MobileScreen() {
           placeholder="98765 43210"
           value={mobile}
           onChangeText={(t) => setMobile(mobileInput(t))}
-          autoFocus
           inputClassName="min-w-0"
           right={valid ? <Icon name="checkmark-circle" size={20} color={colors.success} /> : null}
         />
       </Appear>
       <ErrorText>{error}</ErrorText>
-      <Appear index={3} className="gap-4">
+      <View className="gap-4">
         <Button
           title={busy ? 'Sending…' : signup ? 'Send OTP' : 'Login'}
           size="lg"
@@ -89,8 +90,8 @@ export default function MobileScreen() {
             We will send a one-time code — passwords are never used.
           </Muted>
         </View>
-      </Appear>
-      <Appear index={4} className="mt-2 items-center">
+      </View>
+      <View className="mt-2 items-center">
         {signup ? (
           <Link href="/(auth)/mobile?purpose=LOGIN" asChild>
             <Pressable accessibilityRole="button" className="min-h-[44px] justify-center px-2">
@@ -108,7 +109,7 @@ export default function MobileScreen() {
             </Pressable>
           </Link>
         )}
-      </Appear>
+      </View>
     </AuthShell>
   );
 }

@@ -1,7 +1,7 @@
 import { ApiClientError, CreateTelecallerBody, mobileInput, type UserSummary } from '@kbs/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text as RNText, View } from 'react-native';
+import { Text as RNText, type TextInput, View } from 'react-native';
 
 import {
   AppBar,
@@ -18,6 +18,7 @@ import {
   Screen,
   StickyFooter,
   Text,
+  useDeferredFocus,
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { gradients, gradientStyle, shadow } from '@/lib/theme';
@@ -25,6 +26,7 @@ import { gradients, gradientStyle, shadow } from '@/lib/theme';
 /** F-201: Manager creates a Telecaller with name + mobile (REQ-05 §5.1). */
 export default function CreateTelecaller() {
   const [fullName, setFullName] = useState('');
+  const nameField = useDeferredFocus<TextInput>();
   const [mobile, setMobile] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -143,12 +145,12 @@ export default function CreateTelecaller() {
       <Appear index={1}>
         <Card className="gap-4">
           <Input
+            ref={nameField}
             label="Full name"
             icon="person-outline"
             placeholder="As on their ID"
             value={fullName}
             onChangeText={setFullName}
-            autoFocus
             autoCapitalize="words"
           />
           <Input

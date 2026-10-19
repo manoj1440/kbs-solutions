@@ -7,6 +7,7 @@ import {
   forwardRef,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ComponentProps,
   type PropsWithChildren,
@@ -200,6 +201,20 @@ export function PressableScale({
       {children}
     </AnimatedPressable>
   );
+}
+
+/**
+ * F-818: focus a field (open the keyboard) only after the screen's `Appear` entrance has finished. On Android the
+ * keyboard re-lays out the screen; if that lands mid-animation, later `Appear` items (the submit button) can stay
+ * invisible. Use instead of `autoFocus`.
+ */
+export function useDeferredFocus<T extends { focus(): void }>(delayMs = 650) {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const t = setTimeout(() => ref.current?.focus(), delayMs);
+    return () => clearTimeout(t);
+  }, [delayMs]);
+  return ref;
 }
 
 /** Staggered entrance for list items / sections. */
