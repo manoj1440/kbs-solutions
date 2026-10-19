@@ -109,3 +109,4 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-904-data-retention.md](./F-904-data-retention.md) | F-904 Data retention and deletion authority (BLOCKED) | Hardening | BLOCKED (structure built, fails closed) | F-104 |
 | [F-905-performance-acceptance.md](./F-905-performance-acceptance.md) | F-905 Performance acceptance harness | Hardening | DONE | F-505, F-307 |
 | [F-906-android-release.md](./F-906-android-release.md) | F-906 Android APK build and release checklist | Hardening | DONE | F-802, F-302 |
+| [F-907-staging-deploy-cicd.md](./F-907-staging-deploy-cicd.md) | F-907 Staging deployment on free tiers + CI/CD | Hardening | IN_PROGRESS | F-901, F-906, F-819 |

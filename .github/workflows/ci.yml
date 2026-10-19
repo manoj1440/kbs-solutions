@@ -3,12 +3,19 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: Run the idempotent baseline seed on staging after migrations (first deploy)
+        type: boolean
+        default: false
 
 # F-901: blocking checks. Quarantined (known-flaky) tests are tagged "[quarantine]" in their title and excluded from
 # the blocking jobs; they still run, non-blocking, in the nightly workflow (DOCS/conventions/01-engineering-conventions.md).
+# F-907: a push to main is never cancelled half-way through a deploy; PR runs still cancel superseded ones.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   REDIS_URL: redis://localhost:6379
@@ -78,7 +85,7 @@ jobs:
       - run: pnpm db:generate
       - run: pnpm --filter @kbs/db migrate:deploy
       - run: pnpm --filter @kbs/shared build && pnpm --filter @kbs/db build
-      - run: pnpm --filter api test:e2e -- --testNamePattern='^(?!.*\[quarantine\])'
+      - run: pnpm --filter api test:e2e --testNamePattern='^(?!.*\[quarantine\])'
 
   web-e2e:
     name: Web Playwright smoke (Admin, 1280 + 390 px)
@@ -109,7 +116,7 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: pnpm --filter @kbs/db migrate:deploy && pnpm db:seed
+      - run: pnpm --filter @kbs/db migrate:deploy && pnpm --filter @kbs/shared build && pnpm db:seed
       - run: pnpm build --filter=api --filter=web
       - run: pnpm --filter web exec playwright install --with-deps chromium
       - name: Start API and web
@@ -127,3 +134,74 @@ jobs:
             apps/web/test-results
             api.log
             web.log
+
+  # ── F-907 continuous deployment (staging, free tiers — DOCS/runbooks/05-staging-deploy.md) ──
+  # Only after every check above passed on main. Order: DB migrations → API (Render) → web (Vercel) → mobile OTA (EAS).
+  # Each step skips itself until its secret exists, so the pipeline stays green while accounts are being set up.
+  deploy-staging:
+    name: Deploy staging
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [verify, api-e2e, web-e2e]
+    runs-on: ubuntu-latest
+    environment: { name: staging, url: '${{ vars.STAGING_WEB_URL }}' }
+    concurrency: { group: deploy-staging, cancel-in-progress: false }
+    env:
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      - name: Migrate staging database
+        if: env.DATABASE_URL != ''
+        run: pnpm db:generate && pnpm --filter @kbs/db migrate:deploy
+      - name: Baseline seed (manual run only)
+        if: env.DATABASE_URL != '' && inputs.seed
+        env:
+          BOOTSTRAP_ADMIN_MOBILE: ${{ vars.STAGING_ADMIN_MOBILE }}
+          BOOTSTRAP_ADMIN_NAME: ${{ vars.STAGING_ADMIN_NAME || 'KBS Admin' }}
+        run: pnpm --filter @kbs/shared build && pnpm db:seed
+
+      - name: Deploy API (Render) and wait for this commit
+        if: env.RENDER_DEPLOY_HOOK_URL != '' && env.STAGING_API_URL != ''
+        run: |
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL&ref=$GITHUB_SHA" > /dev/null
+          # free instances may be asleep and builds take a few minutes; health reports RENDER_GIT_COMMIT
+          for i in $(seq 1 90); do
+            c=$(curl -s -m 20 "$STAGING_API_URL/health" | jq -r '.data.commit // .commit // empty' || true)
+            [ "$c" = "$GITHUB_SHA" ] && echo "API live at $c" && exit 0
+            sleep 10
+          done
+          echo "::error::API did not report commit $GITHUB_SHA within 15 min (check the Render deploy log)"; exit 1
+
+      - name: Deploy web (Vercel)
+        if: env.VERCEL_TOKEN != ''
+        run: |
+          npx -y vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx -y vercel@latest build --prod --token="$VERCEL_TOKEN"
+          npx -y vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: Mobile changed since the previous push?
+        id: mobile
+        run: |
+          before="${{ github.event.before }}"
+          if [ -z "$before" ] || ! git cat-file -e "$before^{commit}" 2>/dev/null; then echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git diff --quiet "$before" "$GITHUB_SHA" -- apps/mobile packages/shared packages/ui-tokens pnpm-lock.yaml \
+            && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Publish mobile OTA update (EAS, channel preview)
+        if: steps.mobile.outputs.changed == 'true' && env.EXPO_TOKEN != '' && env.STAGING_API_URL != ''
+        working-directory: apps/mobile
+        env:
+          EXPO_NO_DOTENV: '1'
+          APP_VARIANT: preview
+          EXPO_PUBLIC_API_URL: ${{ vars.STAGING_API_URL }}
+        run: npx -y eas-cli@latest update --channel preview --platform android --environment preview --message "${{ github.event.head_commit.message || github.sha }}" --non-interactive

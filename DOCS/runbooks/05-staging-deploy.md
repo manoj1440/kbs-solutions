@@ -1,0 +1,89 @@
+# Staging deployment on free tiers + CI/CD (F-907)
+
+Everything below is free and needs no credit card. One-time setup is ~45 minutes; after that **every push to `main` that passes CI deploys itself**.
+
+| Piece | Provider (free plan) | Notes / limits |
+|---|---|---|
+| Postgres + file storage | **Supabase** Free, region **Mumbai (ap-south-1)** | 500 MB DB, 1 GB storage (S3-compatible). Paused after 7 days with *no* traffic — the keep-warm ping prevents it. |
+| API + Redis | **Render** Free web service + Free Key Value, region Singapore (`render.yaml`) | 512 MB RAM, sleeps after 15 min idle (keep-warm ping), 750 h/month = one service 24/7. Key Value 25 MB, in memory only (jobs re-register on boot; outbox is in Postgres). |
+| Web admin | **Vercel** Hobby (`apps/web/vercel.json`, region sin1) | Hobby is for **non-commercial** use — for KBS's real business use move to Vercel Pro, or deploy the same app on Netlify/Cloudflare free (commercial use allowed). |
+| Mobile | **Expo EAS** Free | 15 Android builds/month, OTA updates to 1,000 monthly users. APKs are downloaded from the EAS link (Play Store costs $25 once; iOS needs an Apple Developer account, $99/year — neither is free). |
+| CI/CD | **GitHub Actions** | Repository is public → unlimited minutes. |
+
+Why not MongoDB / Neon: the data model is PostgreSQL-specific (Prisma `postgresql` schema, INV-01 trigger `kbs_guard_bank_status`, `set_config` transactions, raw SQL), so MongoDB would mean a rewrite. Neon's free plan caps compute hours and our 5-minute background jobs keep the database awake all month; Supabase's free Postgres has no compute-hour cap.
+
+## Why "staging" and not production
+There is no SMS provider yet (`OTP_PROVIDER=console` only, REQ-19 provider choice OPEN). `NODE_ENV=production` refuses to send OTPs at all, so the deployment runs `NODE_ENV=staging`: secure cookies, no error details, no Swagger — and login with the **secret master code** `OTP_DEV_MASTER_CODE` (guessable codes like `000000` are refused at boot). Share it only with testers; do not load real customer data until an SMS provider is chosen and the environment is switched to `production`.
+
+## 1. Supabase (database + storage)
+1. supabase.com → New project, name `kbs-staging`, region **South Asia (Mumbai)**, a strong DB password (save it in your password manager).
+2. *Connect* → copy the **Session pooler** URI exactly as shown (port **5432**, host `…pooler.supabase.com`, user `postgres.<ref>`). Replace `[YOUR-PASSWORD]`. This is `DATABASE_URL` for both Render and GitHub (IPv4, works from GitHub runners).
+3. *Storage* → New bucket `kbs-private`, **private**. *Storage → Settings → S3 Connection*: enable, note the **endpoint** (`https://<ref>.supabase.co/storage/v1/s3`), then *New access key* → access key id + secret.
+
+## 2. Render (API + Redis)
+1. render.com → sign in with GitHub → *New → Blueprint* → pick `manoj1440/kbs-solutions` → it reads `render.yaml` (service `kbs-solutions-api` + `kbs-solutions-redis`).
+2. Fill the `sync: false` values:
+   - `DATABASE_URL` = Supabase session pooler URI
+   - `DATA_ENCRYPTION_KEY` = output of `openssl rand -base64 32` (**keep a copy** — losing it makes encrypted PAN/bank fields unreadable)
+   - `OTP_DEV_MASTER_CODE` = any 6 random digits (not repeated digits, not 123456)
+   - `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` = Supabase S3 values
+   - `WEB_ORIGIN` = the Vercel URL (step 3; can be filled after) — `API_PUBLIC_URL` = the Render URL
+3. After creation: service → *Settings → Deploy Hook* → copy the URL (secret). Note the service URL (e.g. `https://kbs-solutions-api.onrender.com`). If it differs, update `apps/mobile/eas.json` (`preview` profile `EXPO_PUBLIC_API_URL`).
+
+## 3. Vercel (web)
+1. vercel.com → sign in with GitHub → *Add New → Project* → import the repo, **Root Directory `apps/web`**, framework Next.js. (`vercel.json` turns off Vercel's own git deploys — GitHub Actions deploys after CI.)
+2. *Settings → Environment Variables* (Production): `API_URL` = `https://<render-url>/api/v1`, `NEXT_PUBLIC_API_URL` = `/api/v1` (relative: the web proxies the API so login cookies are first-party).
+3. *Account Settings → Tokens* → create a token. For the two ids run `npx vercel link` inside `apps/web` once: `apps/web/.vercel/project.json` (git-ignored) holds `orgId` and `projectId`.
+
+## 4. Expo
+expo.dev → *Account settings → Access tokens* → create `github-actions` token.
+
+## 5. GitHub secrets and variables
+Run each line from the repo root; `gh` prompts for the value so it never lands in shell history:
+```bash
+gh secret set STAGING_DATABASE_URL
+```
+```bash
+gh secret set RENDER_DEPLOY_HOOK_URL
+```
+```bash
+gh secret set VERCEL_TOKEN
+```
+```bash
+gh secret set VERCEL_ORG_ID
+```
+```bash
+gh secret set VERCEL_PROJECT_ID
+```
+```bash
+gh secret set EXPO_TOKEN
+```
+Variables (not secret):
+```bash
+gh variable set STAGING_API_URL --body "https://kbs-solutions-api.onrender.com/api/v1"
+```
+```bash
+gh variable set STAGING_WEB_URL --body "https://<project>.vercel.app"
+```
+```bash
+gh variable set STAGING_ADMIN_MOBILE --body "<10-digit Admin mobile>"
+```
+
+## 6. First deploy
+Actions → **CI** → *Run workflow* on `main` with **seed = true** (migrations + baseline seed + first Admin from `STAGING_ADMIN_MOBILE`). Then sign in on the Vercel URL with that mobile and the master code. Later pushes deploy automatically (seed off).
+
+## What the pipeline does (`.github/workflows/ci.yml`)
+1. PRs and pushes: typecheck · lint · unit · DB invariants, API e2e (36 suites), web Playwright smoke.
+2. Push to `main`, all green → job **Deploy staging** (never cancelled mid-way, one at a time):
+   `prisma migrate deploy` on Supabase → Render deploy hook for this commit, then waits until `GET /health` reports `commit` = this SHA → Vercel `build` + `deploy --prebuilt --prod` → if `apps/mobile`, `packages/shared`, `packages/ui-tokens` or the lockfile changed: `eas update --channel preview` (phones pick it up on next open, F-819).
+   Each step skips itself until its secret/variable exists.
+3. `keep-warm.yml`: pings `/health` every 10 minutes (Render sleep, Supabase pause). GitHub disables schedules after 60 days without commits — re-enable in the Actions tab if needed.
+4. `mobile-build.yml` (manual): queues an EAS APK build (`preview` = staging API) when native code changed; bump `version` in `apps/mobile/app.json` first, then use Admin → Configuration → *Mobile app updates* to prompt or force the new APK (runbook 04).
+
+Migrations run before the new API starts, so they must stay backward-compatible with the running version (add columns/tables; drop in a later release).
+
+## Known limits
+- Cold start ≈ 1 min if the ping missed; the app's update check times out silently and retries on next resume.
+- Client IP for the web goes through Vercel's proxy, so office-network gating (F-301) sees Vercel's address for web users; the mobile app (direct to Render, `TRUST_PROXY_HOPS=1`) is resolved correctly.
+- Staging uses the Supabase owner role; production applies runbook 03 (`kbs_app` role).
+- Malware scanning is off (`SCAN_PROVIDER=noop` → files `SKIPPED`), push notifications use Expo's free service.

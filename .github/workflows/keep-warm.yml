@@ -1,0 +1,15 @@
+name: Keep staging warm
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+# F-907: Render's free instance sleeps after 15 min idle (first request then takes ~1 min, which times out web pages and
+# the app's update check). One instance running all month fits the free 750 h. Skips until STAGING_API_URL is set.
+jobs:
+  ping:
+    if: vars.STAGING_API_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: curl -fsS -m 90 "${{ vars.STAGING_API_URL }}/health" | head -c 300

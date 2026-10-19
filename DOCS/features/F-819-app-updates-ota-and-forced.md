@@ -28,10 +28,11 @@
 | P4 | Web: "Mobile app" group on Configuration; runbook release flow; APK build; prove OTA end-to-end on the S24 | |
 
 ## 3. Acceptance
-- [ ] Publishing `eas update --channel device` changes the login version line to `update xxxxxxxx` on the next app open, without reinstalling.
+- [x] Publishing `eas update --channel device` changes the login version line to `update xxxxxxxx` on the next app open, without reinstalling.
 - [ ] Setting `app.android.minVersion` above the installed version blocks the app with "Update required" and a working download link.
 - [ ] Offline launch still opens the app.
 - [ ] Shared/API/mobile tests green.
 
 ## Progress notes
 - 2026-10-19: P1 shared keys + `compareVersions` / `appUpdateState` (shared 51/51); P2 `GET /app/version` public + version-format validation (API e2e config 4/4); P3 `components/update-gate.tsx` around the root layout (launch: check → "Updating…" → `reloadAsync`, 10 s cap; resume: every 15 min, forced restart sheet; native required/available from the policy); web Configuration group "Mobile app updates"; runbook release table. Mobile typecheck / lint / tests, Android bundle export, web preview render OK.
+- 2026-10-19: APK `ae5558ff` (commit 060217b) on the S24 showed `built-in`; OTA `01a1537d` published to `device` → on reopen "Updating…" then `update 01a1537d` (**OTA proven on device**). Forced-update test blocked: the S24 cannot reach the Mac's API (`192.168.31.215:4000` loads in the Mac's browser but not the phone's — router client isolation; no app request in the API log). Moves to the staging API (F-907); dev `kbs_dev` policy reset to min `0.0.0`, no download link, after the attempt.

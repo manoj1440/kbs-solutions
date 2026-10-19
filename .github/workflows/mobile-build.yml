@@ -1,0 +1,26 @@
+name: Mobile build (APK)
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: EAS build profile
+        type: choice
+        options: [preview, production]
+        default: preview
+
+# F-907: native builds are manual — only needed when native code changes (new module, app.json plugin, SDK bump;
+# bump `version` in apps/mobile/app.json first). JS-only changes reach phones through the OTA step in ci.yml.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Queue EAS build
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx -y eas-cli@latest build --platform android --profile ${{ inputs.profile }} --non-interactive --no-wait

@@ -1,0 +1,51 @@
+# F-907: staging API on Render's free plan (runbook 05). Deploys are triggered by the CD job in .github/workflows/ci.yml
+# (deploy hook, after CI + migrations), never by a plain push. Values marked `sync: false` are entered once in the
+# Render dashboard when the Blueprint is created; they are never committed.
+services:
+  - type: web
+    name: kbs-solutions-api
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    autoDeployTrigger: "off"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm db:generate && pnpm turbo run build --filter=api
+    startCommand: node apps/api/dist/main.js
+    healthCheckPath: /api/v1/health
+    envVars:
+      - { key: NODE_VERSION, value: "22" }
+      - { key: NODE_ENV, value: staging }
+      - { key: API_PORT, value: "10000" }
+      - { key: TZ, value: UTC }
+      - { key: LOG_LEVEL, value: info }
+      # free plan = one process: run the BullMQ processors and MIS jobs inside the API (no paid worker)
+      - { key: JOBS_INLINE, value: "1" }
+      - { key: JOBS_DISPATCH, value: local }
+      - { key: TRUST_PROXY_HOPS, value: "1" }
+      - { key: WEB_ORIGIN, sync: false } # https://<vercel project>.vercel.app
+      - { key: API_PUBLIC_URL, sync: false } # https://kbs-solutions-api.onrender.com (as shown by Render)
+      - { key: DATABASE_URL, sync: false } # Supabase session pooler URI (port 5432)
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: kbs-solutions-redis, property: connectionString }
+      - { key: JWT_ACCESS_SECRET, generateValue: true }
+      - { key: JWT_REFRESH_SECRET, generateValue: true }
+      - { key: OTP_PEPPER, generateValue: true }
+      - { key: DATA_ENCRYPTION_KEY, sync: false } # openssl rand -base64 32 — keep a copy; losing it loses encrypted PAN/bank data
+      - { key: OTP_PROVIDER, value: console }
+      - { key: OTP_DEV_MASTER_CODE, sync: false } # secret 6 digits, shared only with testers (no SMS provider yet)
+      - { key: PUSH_PROVIDER, value: expo }
+      - { key: SCAN_PROVIDER, value: noop }
+      - { key: STORAGE_PROVIDER, value: s3 }
+      - { key: S3_ENDPOINT, sync: false } # https://<project-ref>.supabase.co/storage/v1/s3
+      - { key: S3_REGION, value: ap-south-1 }
+      - { key: S3_BUCKET, value: kbs-private }
+      - { key: S3_ACCESS_KEY, sync: false }
+      - { key: S3_SECRET_KEY, sync: false }
+      - { key: S3_FORCE_PATH_STYLE, value: "1" }
+
+  - type: keyvalue
+    name: kbs-solutions-redis
+    plan: free
+    region: singapore
+    maxmemoryPolicy: noeviction # BullMQ requirement
+    ipAllowList: [] # internal network only

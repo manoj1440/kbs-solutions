@@ -27,6 +27,11 @@ Error codes are an enum in `@kbs/shared` (`ErrorCode`). Messages are role-approp
 - Web session lifecycle (F-804): the refresh cookie is `Path=/api/v1/auth` on the API, so web pages never see it. A protected web page without the access cookie goes to `/session?next=…`; that browser page calls `POST /auth/refresh` with credentials (cookie-only, no tokens in the body) and returns, or sends the user to `/login?reason=session-expired|deactivated|required&next=…`. Open web shells refresh two minutes before `accessExpiresInSec`. `POST /auth/logout-all` ends every session of the account.
 - `GET /notifications/:id/target` → `{ entityType, entityId, targetRole }` after a scope re-check; `targetRole` is set for `User` targets so the web opens the Telecaller or Advisor page.
 
+## Public endpoints (no auth)
+- `GET /health` → `{ status, db, redis, queues, outbox, commit, time }`; `commit` is the deployed git SHA on Render (`RENDER_GIT_COMMIT`), `null` elsewhere — CD waits for it (F-907).
+- `GET /app/version` → `{ android: { minVersion, latestVersion, downloadUrl }, ios: {…} }` from SystemConfig `app.<platform>.*` (F-819). The mobile `UpdateGate` blocks below `minVersion` and offers the update below `latestVersion`; unreachable/unset never blocks.
+- Web deployments call the API same-origin: `NEXT_PUBLIC_API_URL=/api/v1` and Next rewrites `/api/v1/*` to `API_URL`, so the auth cookies are first-party on the web domain (F-907).
+
 ## Headers
 `Authorization: Bearer <access>` (mobile) · cookie (web) · `Idempotency-Key: <uuid>` on POST/PUT that create side effects · `X-Request-Id` optional (echoed) · `X-Network-Ssid-Hint` optional (Telecaller mobile).
 

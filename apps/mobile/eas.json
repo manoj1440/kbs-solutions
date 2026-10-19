@@ -23,7 +23,7 @@
       },
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://uat-api.example.invalid/api/v1",
+        "EXPO_PUBLIC_API_URL": "https://kbs-solutions-api.onrender.com/api/v1",
         "APP_VARIANT": "preview"
       }
     },
