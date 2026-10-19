@@ -58,4 +58,19 @@ describe('F-104 SystemConfig: reason + history, cross-instance invalidation, lau
     expect(Date.now() - started).toBeLessThan(1000);
     await request(a.getHttpServer()).put(`/api/v1/config/${key}`).set(auth(admin)).send({ value: before, reason: 'restore' }).expect(200);
   });
+
+  it('F-819: GET /app/version is public, follows the Admin config, and rejects malformed versions', async () => {
+    const before = (await request(a.getHttpServer()).get('/api/v1/app/version').expect(200)).body.data;
+    expect(before).toEqual({
+      android: { minVersion: '0.0.0', latestVersion: null, downloadUrl: null },
+      ios: { minVersion: '0.0.0', latestVersion: null, downloadUrl: null },
+    });
+    await request(a.getHttpServer()).put('/api/v1/config/app.android.minVersion').set(auth(admin)).send({ value: 'v2', reason: 'typo' }).expect(400);
+    await request(a.getHttpServer()).put('/api/v1/config/app.android.minVersion').set(auth(admin)).send({ value: '0.2.0', reason: 'force S24 testers onto 0.2.0' }).expect(200);
+    await request(a.getHttpServer()).put('/api/v1/config/app.android.downloadUrl').set(auth(admin)).send({ value: 'https://expo.dev/x.apk', reason: 'internal APK' }).expect(200);
+    const after = (await request(a.getHttpServer()).get('/api/v1/app/version').expect(200)).body.data;
+    expect(after.android).toEqual({ minVersion: '0.2.0', latestVersion: null, downloadUrl: 'https://expo.dev/x.apk' });
+    expect(after.ios.minVersion).toBe('0.0.0');
+    await request(a.getHttpServer()).put('/api/v1/config/app.android.minVersion').set(auth(admin)).send({ value: '0.0.0', reason: 'restore' }).expect(200);
+  });
 });

@@ -98,6 +98,9 @@ export class ConfigService implements OnModuleInit {
     const def = CONFIG_KEY_MAP.get(key);
     if (!def) throw AppError.notFound('Config key');
     this.validateType(def.valueType, value);
+    // F-819: app versions are dotted numbers (app.json `version`), so the app can compare them
+    if (/^app\.(android|ios)\.(min|latest)Version$/.test(key) && value !== null && !/^\d+(\.\d+){0,2}$/.test(String(value).trim()))
+      throw new AppError('VALIDATION_FAILED', 'Use a version like 0.2.0.');
     const before = await this.prisma.client.systemConfig.findUnique({ where: { key } });
     await this.prisma.client.$transaction([
       this.prisma.client.systemConfig.upsert({

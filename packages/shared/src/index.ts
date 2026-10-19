@@ -13,4 +13,5 @@ export * from './money';
 export * from './time';
 export * from './schemas';
 export * from './config-keys';
+export * from './app-version';
 export * from './client';

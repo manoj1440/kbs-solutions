@@ -96,6 +96,13 @@ export const CONFIG_KEYS: readonly ConfigKeyDefinition[] = [
   def('ux.timezone', ConfigValueType.STRING, 'Asia/Kolkata', 'Display timezone.'),
   def('support.contact', ConfigValueType.STRING, null, 'Support contact shown in profiles.'),
   def('audit.exportEnabled', ConfigValueType.BOOL, false, 'Allow audit export downloads (policy OPEN).'),
+  // mobile app updates (F-819) — versions are app.json `version` (e.g. 0.2.0); downloadUrl is the Play Store / App Store / APK link
+  def('app.android.minVersion', ConfigValueType.STRING, '0.0.0', 'Oldest Android app version allowed to run. Older installs are blocked with an "Update required" screen.'),
+  def('app.android.latestVersion', ConfigValueType.STRING, null, 'Newest Android app version. Older installs see a dismissible "New version available" prompt.'),
+  def('app.android.downloadUrl', ConfigValueType.STRING, null, 'Where Android users download the new version (Play Store or internal APK link).'),
+  def('app.ios.minVersion', ConfigValueType.STRING, '0.0.0', 'Oldest iOS app version allowed to run. Older installs are blocked with an "Update required" screen.'),
+  def('app.ios.latestVersion', ConfigValueType.STRING, null, 'Newest iOS app version. Older installs see a dismissible "New version available" prompt.'),
+  def('app.ios.downloadUrl', ConfigValueType.STRING, null, 'App Store (or TestFlight) link for the new iOS version.'),
 ];
 
 export const CONFIG_KEY_MAP: ReadonlyMap<string, ConfigKeyDefinition> = new Map(CONFIG_KEYS.map((k) => [k.key, k]));
