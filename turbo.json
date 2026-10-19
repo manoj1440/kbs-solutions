@@ -14,6 +14,10 @@
         "dist/**",
         ".next/**",
         "!.next/cache/**"
+      ],
+      "env": [
+        "API_URL",
+        "NEXT_PUBLIC_API_URL"
       ]
     },
     "generate": {
