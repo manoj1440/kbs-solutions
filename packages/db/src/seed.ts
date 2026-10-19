@@ -100,6 +100,8 @@ export async function seed(databaseUrl: string, env: NodeJS.ProcessEnv = process
   const prisma = createPrismaClient({ connectionString: databaseUrl, log: ['error'] });
   const summary: string[] = [];
   try {
+    // F-907: deployed start command seeds only a brand-new database, so Admin edits/deletions are never re-seeded
+    if (env.SEED_IF_EMPTY === '1' && (await prisma.user.count()) > 0) return ['skipped: database already has users'];
     // 1. single Admin
     const adminMobileRaw = env.BOOTSTRAP_ADMIN_MOBILE;
     const existingAdmin = await prisma.user.findFirst({ where: { role: 'ADMIN' } });

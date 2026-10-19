@@ -10,7 +10,8 @@ services:
     branch: main
     autoDeployTrigger: "off"
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm db:generate && pnpm turbo run build --filter=api
-    startCommand: node apps/api/dist/main.js
+    # Free plan has no pre-deploy command: migrate (and seed a brand-new DB once) right before the API starts.
+    startCommand: pnpm --filter @kbs/db migrate:deploy && SEED_IF_EMPTY=1 pnpm --filter @kbs/db seed && node apps/api/dist/main.js
     healthCheckPath: /api/v1/health
     envVars:
       - { key: NODE_VERSION, value: "22" }
@@ -22,7 +23,9 @@ services:
       - { key: JOBS_INLINE, value: "1" }
       - { key: JOBS_DISPATCH, value: local }
       - { key: TRUST_PROXY_HOPS, value: "1" }
-      - { key: WEB_ORIGIN, sync: false } # https://<vercel project>.vercel.app
+      - { key: BOOTSTRAP_ADMIN_MOBILE, sync: false } # 10-digit mobile of the first Admin (used only when the DB is empty)
+      - { key: BOOTSTRAP_ADMIN_NAME, value: KBS Admin }
+      - { key: WEB_ORIGIN, sync: false } # https://kbs-solutions-eta.vercel.app
       - { key: API_PUBLIC_URL, sync: false } # https://kbs-solutions-api.onrender.com (as shown by Render)
       - { key: DATABASE_URL, sync: false } # postgresql://postgres.wmbmlvaivnfokisweiul:<password>@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres
       - key: REDIS_URL

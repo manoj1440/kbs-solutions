@@ -41,9 +41,6 @@ expo.dev → *Account settings → Access tokens* → create `github-actions` to
 ## 5. GitHub secrets and variables
 Run each line from the repo root; `gh` prompts for the value so it never lands in shell history:
 ```bash
-gh secret set STAGING_DATABASE_URL
-```
-```bash
 gh secret set RENDER_DEPLOY_HOOK_URL
 ```
 ```bash
@@ -65,17 +62,14 @@ gh variable set STAGING_API_URL --body "https://kbs-solutions-api.onrender.com/a
 ```bash
 gh variable set STAGING_WEB_URL --body "https://<project>.vercel.app"
 ```
-```bash
-gh variable set STAGING_ADMIN_MOBILE --body "<10-digit Admin mobile>"
-```
 
 ## 6. First deploy
-Actions → **CI** → *Run workflow* on `main` with **seed = true** (migrations + baseline seed + first Admin from `STAGING_ADMIN_MOBILE`). Then sign in on the Vercel URL with that mobile and the master code. Later pushes deploy automatically (seed off).
+Set `BOOTSTRAP_ADMIN_MOBILE` (10-digit mobile of the first Admin) on the Render API service. Render's start command runs `prisma migrate deploy`, then the baseline seed **only if the database has no users** (`SEED_IF_EMPTY=1`), then the API. Then sign in on the Vercel URL with that mobile and the master code. Later pushes deploy automatically.
 
 ## What the pipeline does (`.github/workflows/ci.yml`)
 1. PRs and pushes: typecheck · lint · unit · DB invariants, API e2e (36 suites), web Playwright smoke.
 2. Push to `main`, all green → job **Deploy staging** (never cancelled mid-way, one at a time):
-   `prisma migrate deploy` on Supabase → Render deploy hook for this commit, then waits until `GET /health` reports `commit` = this SHA → Vercel `build` + `deploy --prebuilt --prod` → if `apps/mobile`, `packages/shared`, `packages/ui-tokens` or the lockfile changed: `eas update --channel preview` (phones pick it up on next open, F-819).
+   Render deploy hook for this commit (Render migrates on start), then waits until `GET /health` reports `commit` = this SHA → Vercel `build` + `deploy --prebuilt --prod` → if `apps/mobile`, `packages/shared`, `packages/ui-tokens` or the lockfile changed: `eas update --channel preview` (phones pick it up on next open, F-819).
    Each step skips itself until its secret/variable exists.
 3. `keep-warm.yml`: pings `/health` every 10 minutes (Render sleep, Supabase pause). GitHub disables schedules after 60 days without commits — re-enable in the Actions tab if needed.
 4. `mobile-build.yml` (manual): queues an EAS APK build (`preview` = staging API) when native code changed; bump `version` in `apps/mobile/app.json` first, then use Admin → Configuration → *Mobile app updates* to prompt or force the new APK (runbook 04).
