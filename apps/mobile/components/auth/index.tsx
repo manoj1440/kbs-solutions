@@ -1,6 +1,13 @@
 import { router } from 'expo-router';
-import { useEffect, type PropsWithChildren, type ReactNode } from 'react';
-import { Text as RNText, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
+import {
+  Keyboard,
+  Text as RNText,
+  ScrollView,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -104,6 +111,16 @@ export function AuthShell({
   back = true,
 }: PropsWithChildren<{ title: string; subtitle: ReactNode; footer?: ReactNode; back?: boolean }>) {
   const insets = useSafeAreaInsets();
+  // F-818: while the keyboard is open the brand header collapses so the field and its button stay above the keyboard
+  const [keyboard, setKeyboard] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboard(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboard(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   return (
     <Screen inset="none" statusBar="light" padded={false}>
       <View
@@ -111,7 +128,10 @@ export function AuthShell({
         className="absolute inset-0"
         style={gradientStyle(gradients.heroDeep, 160)}
       />
-      <View className="overflow-hidden" style={{ paddingTop: insets.top + 4, minHeight: '34%' }}>
+      <View
+        className="overflow-hidden"
+        style={{ paddingTop: insets.top + 4, minHeight: keyboard ? undefined : '34%' }}
+      >
         <Orbs />
         <View className="h-12 flex-row items-center px-4">
           {back && router.canGoBack() ? (
@@ -123,15 +143,19 @@ export function AuthShell({
             />
           ) : null}
         </View>
-        <Appear className="px-6 pb-10 pt-2">
-          <LogoMark size={52} />
+        <Appear className={keyboard ? 'px-6 pb-6' : 'px-6 pb-10 pt-2'}>
+          {keyboard ? null : <LogoMark size={52} />}
           <RNText
             accessibilityRole="header"
-            className="mt-5 font-extrabold text-[30px] leading-[36px] tracking-tight text-white"
+            className={
+              keyboard
+                ? 'font-extrabold text-[22px] leading-[28px] tracking-tight text-white'
+                : 'mt-5 font-extrabold text-[30px] leading-[36px] tracking-tight text-white'
+            }
           >
             {title}
           </RNText>
-          {typeof subtitle === 'string' ? (
+          {keyboard ? null : typeof subtitle === 'string' ? (
             <RNText className="mt-1.5 font-medium text-[15px] leading-[22px] text-white/70">
               {subtitle}
             </RNText>

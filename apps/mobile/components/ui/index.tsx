@@ -14,6 +14,7 @@ import {
 } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -1133,44 +1134,48 @@ export function Screen({
   );
   return (
     <GlassScope style={{ paddingTop: inset === 'top' ? insets.top : 0 }}>
-      {header}
-      {scroll ? (
-        <ScrollView
-          className="flex-1"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl
-                refreshing={!!refreshing}
-                onRefresh={onRefresh}
-                tintColor={colors.brand}
-                colors={[colors.brand]}
-              />
-            ) : undefined
-          }
-          contentContainerClassName={cx(
-            padded && 'px-4',
-            'gap-4 pb-10',
-            !/\bpt-/.test(contentClassName ?? '') && 'pt-2',
-            contentClassName,
-          )}
-        >
-          {children}
-        </ScrollView>
-      ) : (
-        <View
-          className={cx(
-            'flex-1',
-            padded && 'px-4',
-            !/\bpt-/.test(className ?? '') && 'pt-2',
-            className,
-          )}
-        >
-          {children}
-        </View>
-      )}
-      {footer}
+      {/* F-818: Android draws edge-to-edge (SDK 57 / Android 15+), so the window no longer shrinks for the keyboard —
+          lift the content and the pinned footer above it instead. */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        {header}
+        {scroll ? (
+          <ScrollView
+            className="flex-1"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl
+                  refreshing={!!refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={colors.brand}
+                  colors={[colors.brand]}
+                />
+              ) : undefined
+            }
+            contentContainerClassName={cx(
+              padded && 'px-4',
+              'gap-4 pb-10',
+              !/\bpt-/.test(contentClassName ?? '') && 'pt-2',
+              contentClassName,
+            )}
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          <View
+            className={cx(
+              'flex-1',
+              padded && 'px-4',
+              !/\bpt-/.test(className ?? '') && 'pt-2',
+              className,
+            )}
+          >
+            {children}
+          </View>
+        )}
+        {footer}
+      </KeyboardAvoidingView>
     </GlassScope>
   );
 }
@@ -1337,7 +1342,7 @@ export function BottomSheet({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-end">
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end' }}>
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
@@ -1383,7 +1388,7 @@ export function BottomSheet({
             <View className="flex-row gap-3 border-t border-line px-5 pt-3">{footer}</View>
           ) : null}
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
