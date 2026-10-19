@@ -16,6 +16,7 @@ F-818 (matches the web, F-817): light-first, cream `canvas` (#F2EEE8) with ambie
 7. **Touch targets ≥ 44pt**, labels always visible, `accessibilityLabel` on icon-only buttons.
 8. **Glass (F-818):** `Glass` (frosted surface, `strong` over content) and `Card variant="glass"` / `StatTile` for chrome and KPI tiles only — lists, forms and bank-status rows stay on solid `Card`s. Every `Screen` and tab layout is a `GlassScope` (ambient light inside a `BlurTargetView`); on Android a `Glass` blurs its nearest scope (SDK 31+, tinted fallback below), iOS/web blur natively. Never nest a `Glass` inside a `BlurTargetView`.
 9. Use classes, not inline colours, where a token exists: `bg-canvas`, `bg-navy`, `text-ink`, `text-brand`, `bg-gold`, `border-line`. JS colours for icons: `colors` from `@/lib/theme`. Gradients: `gradientStyle(stops, angle)` / `gradients.*`; shadows: `shadow.sm|md|lg|glow|gold`.
+9a. **No `className` on Reanimated components** (`Animated.View`, `createAnimatedComponent`) — on Android NativeWind does not apply it (web does, so previews hide the bug). Put classes on a plain `View` inside/outside the animated one, or use inline styles.
 10. Weight classes (`font-medium|semibold|bold|extrabold`) switch the Inter face — don't use `fontWeight` in styles.
 11. Tailwind opacity steps are 5/10/15/20/25/…; use `bg-white/[0.07]` style for others.
 
