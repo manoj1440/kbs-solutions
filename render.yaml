@@ -30,7 +30,9 @@ services:
       - { key: JWT_ACCESS_SECRET, generateValue: true }
       - { key: JWT_REFRESH_SECRET, generateValue: true }
       - { key: OTP_PEPPER, generateValue: true }
-      - { key: DATA_ENCRYPTION_KEY, sync: false } # openssl rand -base64 32 — keep a copy; losing it loses encrypted PAN/bank data
+      # Render generates a random base64 256-bit value once; copy it from the dashboard into a password manager —
+      # losing it makes encrypted PAN/bank fields unreadable
+      - { key: DATA_ENCRYPTION_KEY, generateValue: true }
       - { key: OTP_PROVIDER, value: console }
       - { key: OTP_DEV_MASTER_CODE, sync: false } # secret 6 digits, shared only with testers (no SMS provider yet)
       - { key: PUSH_PROVIDER, value: expo }
