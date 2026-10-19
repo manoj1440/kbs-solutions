@@ -15,7 +15,11 @@ describe('CryptoService (REQ-21 §21.1 encryption at rest; REQ-04 §4.1 OTP hash
 
   it('rejects tampered ciphertext', () => {
     const c = svc.encrypt('123456789012');
-    const tampered = c.slice(0, -2) + (c.endsWith('A') ? 'B' : 'A') + c.slice(-1);
+    // flip one ciphertext byte (replacing a base64 char was a no-op ~1/64 of the time when it already matched)
+    const [v, iv, tag, enc] = c.split('.');
+    const bytes = Buffer.from(enc, 'base64');
+    bytes[0] ^= 0x01;
+    const tampered = [v, iv, tag, bytes.toString('base64')].join('.');
     expect(() => svc.decrypt(tampered)).toThrow();
   });
 
