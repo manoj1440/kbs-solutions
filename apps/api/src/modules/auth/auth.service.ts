@@ -17,7 +17,7 @@ import { UsersService } from '../users/users.service';
 
 import { TokenService } from './token.service';
 
-const MASTER_CODE_ALLOWED_ENVS = new Set(['development', 'test']);
+const MASTER_CODE_ALLOWED_ENVS = new Set(['development', 'test', 'staging']);
 
 /** ADR-015: a used refresh token is accepted again only within this window, and only while its successor is unused. */
 export const REFRESH_REUSE_GRACE_MS = 30_000;

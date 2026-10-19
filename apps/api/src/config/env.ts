@@ -8,7 +8,8 @@ const bool = z
   .transform((v) => v === '1' || v === 'true');
 
 export const EnvSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  /** F-907: `staging` = deployed (secure cookies, no error details, no Swagger) but OTP via the secret master code — there is no SMS provider yet. */
+  NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   API_PORT: z.coerce.number().int().default(4000),
   WORKER_MODE: bool,
   JOBS_INLINE: bool,
@@ -56,11 +57,18 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     const issues = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n  ');
     throw new Error(`Invalid environment:\n  ${issues}`);
   }
-  if (parsed.data.NODE_ENV === 'production' && parsed.data.OTP_DEV_MASTER_CODE) {
-    throw new Error('OTP_DEV_MASTER_CODE must be empty in production');
-  }
+  assertMasterCodeAllowed(parsed.data);
   cached = parsed.data;
   return cached;
+}
+
+/** Production never accepts a master OTP; staging only a non-guessable one (F-907). */
+export function assertMasterCodeAllowed(env: Pick<Env, 'NODE_ENV' | 'OTP_DEV_MASTER_CODE'>): void {
+  const code = env.OTP_DEV_MASTER_CODE ?? '';
+  if (env.NODE_ENV === 'production' && code) throw new Error('OTP_DEV_MASTER_CODE must be empty in production');
+  if (env.NODE_ENV === 'staging' && /^(\d)\1{5}$|^123456$/.test(code)) {
+    throw new Error('OTP_DEV_MASTER_CODE in staging must be a secret code, not a guessable one');
+  }
 }
 
 export const ENV = Symbol('ENV');

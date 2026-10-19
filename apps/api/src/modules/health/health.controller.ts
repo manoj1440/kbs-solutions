@@ -23,6 +23,6 @@ export class HealthController {
     const outbox = db
       ? await Promise.all([this.prisma.client.outboxEvent.count({ where: { processedAt: null, attempts: { lt: 5 } } }), this.prisma.client.outboxEvent.count({ where: { processedAt: null, attempts: { gte: 5 } } })]).then(([pending, deadLettered]) => ({ pending, deadLettered }))
       : null;
-    return { status: db ? 'ok' : 'degraded', db, redis, queues, outbox, time: new Date().toISOString() };
+    return { status: db ? 'ok' : 'degraded', db, redis, queues, outbox, commit: process.env.RENDER_GIT_COMMIT ?? null, time: new Date().toISOString() };
   }
 }

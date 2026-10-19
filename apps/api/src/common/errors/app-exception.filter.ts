@@ -18,7 +18,7 @@ export class AppExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const res = host.switchToHttp().getResponse<Response>();
     const requestId = RequestContextStore.requestId() ?? 'unknown';
-    const isProd = process.env.NODE_ENV === 'production';
+    const isProd = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let body: ErrorBody = { error: { code: 'INTERNAL', message: 'Something went wrong.' }, meta: { requestId } };

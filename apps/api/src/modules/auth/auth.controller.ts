@@ -82,7 +82,7 @@ export class AuthController {
   }
 
   private setCookies(res: Response, access: string, refresh: string, accessSec: number) {
-    const secure = this.env.NODE_ENV === 'production';
+    const secure = this.env.NODE_ENV === 'production' || this.env.NODE_ENV === 'staging';
     const days = 30;
     res.cookie(ACCESS_COOKIE, access, { httpOnly: true, secure, sameSite: 'lax', maxAge: accessSec * 1000, path: '/' });
     res.cookie(REFRESH_COOKIE, refresh, { httpOnly: true, secure, sameSite: 'lax', maxAge: days * 86_400_000, path: '/api/v1/auth' });

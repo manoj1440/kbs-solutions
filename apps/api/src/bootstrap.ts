@@ -18,7 +18,7 @@ export async function createApp(): Promise<INestApplication> {
   app.use(cookieParser());
   app.enableCors({ origin: env.WEB_ORIGIN.split(','), credentials: true, exposedHeaders: ['X-Request-Id'] });
   app.enableShutdownHooks();
-  if (env.NODE_ENV !== 'production') {
+  if (env.NODE_ENV === 'development' || env.NODE_ENV === 'test') {
     const doc = new DocumentBuilder().setTitle('KBS Solutions API').setVersion('0.1').addBearerAuth().build();
     SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, doc));
   }
