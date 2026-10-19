@@ -22,6 +22,13 @@ eas build --platform android --profile device            # F-818: internal APK a
 
 **`device` profile (F-818):** extends `preview`, points `EXPO_PUBLIC_API_URL` at the developer Mac (`http://192.168.31.215:4000/api/v1` — update when the Mac's Wi-Fi IP changes: `ipconfig getifaddr en0`) and sets `APP_VARIANT=device`. `app.config.js` turns on `usesCleartextTraffic` for that variant only, so preview/production stay https-only. To use it: run the API with `pnpm dev` (it listens on all interfaces, port 4000), keep the phone on the same Wi-Fi, allow incoming connections if macOS asks. Never ship this APK.
 
+**JS-only fixes without a new APK (EAS Update):** the `device` build listens on channel `device` (runtime `0.1.0`). `apps/mobile/.env` (git-ignored, `localhost`) would win over the shell, so turn dotenv off and pass the build's values:
+```bash
+cd apps/mobile && EXPO_NO_DOTENV=1 APP_VARIANT=device EXPO_PUBLIC_API_URL=http://192.168.31.215:4000/api/v1 \
+  npx eas-cli@latest update --channel device --platform android --environment preview --message "…"
+```
+The phone downloads it on launch and applies it on the next launch (close and reopen the app twice). Native changes (new modules, app.json plugins) still need a build.
+
 **Monorepo build notes (F-818):** EAS runs `eas-build-post-install` (builds `@kbs/shared` / `@kbs/ui-tokens`, whose `dist/` is git-ignored); `babel-preset-expo` is a mobile devDependency; root `.npmrc` publicly hoists `@babel/*` because NativeWind's preset loads `@babel/plugin-transform-react-jsx` by name. Local proof before spending a cloud build: `cd apps/mobile && APP_VARIANT=device npx expo prebuild --platform android --no-install` (then delete `android/`) and `npx expo export --platform android`.
 
 ## Release checklist (REQ-28 §28.2 — all must pass)
