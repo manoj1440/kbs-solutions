@@ -1,6 +1,6 @@
 # F-907 Staging deployment on free tiers + CI/CD
 
-- Group: Hardening · Status: **IN_PROGRESS** (code done; waits on the user's provider accounts + first deploy) · Depends on: F-901, F-906, F-819
+- Group: Hardening · Status: **DONE** (follow-ups: Supabase S3 keys, backup of the generated `DATA_ENCRYPTION_KEY`) · Depends on: F-901, F-906, F-819
 - PRD refs: REQ-24 (operational acceptance), REQ-28 §28.2 (release gate)
 - Origin: user request (2026-10-19): "deploy everything but only use free sources like Vercel and a MongoDB free cluster … do a solid analysis and implement complete CI/CD". Trigger: the S24 could not reach the developer Mac's API (router client isolation), so the forced-update test (F-819) needs a reachable API.
 
@@ -26,13 +26,13 @@ Supabase (DB + storage; free plan placed it in Seoul ap-northeast-2, ~70 ms from
 | P1 | Fix red CI (e2e args, seed order) | DONE |
 | P2 | API `staging` mode + `/health.commit`; web same-origin proxy; `render.yaml`, `vercel.json`, eas `preview` URL | DONE |
 | P3 | Workflows: deploy job in `ci.yml`, `keep-warm.yml`, `mobile-build.yml`; runbook 05 | DONE |
-| P4 | Provider setup (state below); first deploy with seed; verify web login, APK on staging, F-819 forced update on the S24 | IN_PROGRESS |
+| P4 | Provider setup (state below); first deploy with seed; verify web login, APK on staging, F-819 forced update on the S24 | DONE |
 
 ## 4. Acceptance
 - [x] CI green on `main` (all three jobs).
 - [x] A push to `main` deploys API + web automatically; `/health.commit` equals the pushed SHA (run 39274225999, `6e906eb`).
 - [x] Web login on the Vercel URL with the Admin mobile + master code (user-confirmed).
-- [ ] A mobile-only change reaches the S24 as an OTA update without a new APK.
+- [x] A mobile-only change reaches the S24 as an OTA update without a new APK (CI run 39292477456 published to `preview`; the 0.2.0 app's login line switched from `built-in` to an update id — user-confirmed).
 - [x] F-819: `app.android.minVersion` above the installed version blocks the staging app (min 0.3.0 vs installed 0.2.0).
 
 ## Progress notes
@@ -58,3 +58,5 @@ Supabase (DB + storage; free plan placed it in Seoul ap-northeast-2, ~70 ms from
   **Remaining:** user web login with the Admin mobile + master code; install the staging APK; F-819 forced-update test (Admin → Configuration → Mobile app updates); Supabase S3 access key → Render `S3_ACCESS_KEY`/`S3_SECRET_KEY` (uploads fail until then); copy Render's generated `DATA_ENCRYPTION_KEY` to a password manager; optionally unlink the Vercel project's git link to `manojjangid1440/kbs-solutions`.
 - 2026-10-19: web login confirmed; F-819 forced update proven on staging; staging policy now min `0.2.0` + 0.2.0 APK link (0.2.0 APK: https://expo.dev/artifacts/eas/q028YCyeSEqU4T7FfSL7lbe1Yw6m2ZAQfEPMqhBCNDQ.apk). Open: "mobile-only change reaches the S24 as OTA" on the `preview` channel (OTA path itself proven on `device` in F-819), Supabase S3 keys, backup of the generated `DATA_ENCRYPTION_KEY`, optional Vercel git unlink.
 - 2026-10-19: deployment map with all env vars (secret values excluded — public repo; only where each is kept) in `DOCS/runbooks/06-staging-environment.md`.
+- 2026-10-19 (close): all acceptance items met. Open follow-ups (user-owned, not blocking): Supabase S3 access key → Render `S3_ACCESS_KEY`/`S3_SECRET_KEY` (uploads fail until then); copy Render's generated `DATA_ENCRYPTION_KEY` to a password manager; optional Vercel git unlink (`manojjangid1440/kbs-solutions`); SMS provider before any production/real-data use.
+
