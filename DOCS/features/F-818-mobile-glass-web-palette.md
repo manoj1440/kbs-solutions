@@ -7,7 +7,7 @@
 ## 0. Decisions (user, 2026-10-19)
 | Topic | Decision |
 |---|---|
-| Glass | **Real blur** with `expo-blur` (`BlurView`; Android uses `experimentalBlurMethod="dimezisBlurView"`). New native module → a new APK build is needed to see it on a phone. |
+| Glass | **Real blur** with `expo-blur` (`BlurView`; Android uses `blurMethod="dimezisBlurViewSdk31Plus"` against a `BlurTargetView`). New native module → a new APK build is needed to see it on a phone. |
 | Palette | **Match the web (F-817):** cream canvas, warm-white surfaces, near-black primary, orange hero accent (`#F05A28`), teal for positive. Replaces F-805 navy/indigo + gold (supersedes the F-815 "keep indigo + gold" decision). |
 | Light only | Mobile stays light (F-805 `darkMode: 'class'`, no dark variants). Dark mode on mobile is not part of this feature. |
 | Where glass goes | Floating tab bar, app bars, bottom sheets, hero overlays and KPI tiles; ambient orange / teal light behind screens. Lists, forms and bank-status rows stay on solid surfaces for legibility (same rule as web). |
@@ -18,8 +18,8 @@
 |---|---|---|
 | P0 | Before screenshots (Expo web 390×844) | DONE |
 | P1 | Tokens: `lib/theme.ts` + `tailwind.config.js` to the web palette; hard-coded F-805 hexes mapped | DONE |
-| P2 | Glass primitives: `Glass` (BlurView wrapper + tint + edge), `AmbientBackground`; `Card variant="glass"` | DONE |
-| P3 | Apply: tab bar, AppBar, HeroHeader, BottomSheet, StatTile, home KPI cards | DONE |
+| P2 | Glass primitives: `Glass` (BlurView wrapper + tint + edge), `GlassScope` (ambient light target); `Card variant="glass"` | DONE |
+| P3 | Apply: tab bar, StickyFooter, BottomSheet, StatTile / glass cards, IconButtons; HeroHeader recoloured (charcoal → orange), AppBar unchanged (sits on the ambient canvas) | DONE |
 | P4 | Checks: typecheck, lint, unit; after screenshots; web workspace still green | DONE |
 
 ## 2. Acceptance
