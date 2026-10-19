@@ -48,8 +48,10 @@
   --color-border-subtle: hsl(var(--border-subtle));
   --color-border-strong: hsl(var(--border-strong));
   --color-navy: hsl(var(--navy));
-  --color-navy-2: hsl(var(--navy-2));
-  --color-navy-3: hsl(var(--navy-3));
+  --color-brand: hsl(var(--brand));
+  --color-brand-strong: hsl(var(--brand-strong));
+  --color-brand-soft: hsl(var(--brand-soft));
+  --color-brand-foreground: hsl(var(--brand-foreground));
   --shadow-card: var(--elev-card);
   --shadow-pop: var(--elev-pop);
   /* F-814 type scale additions: dense data labels (11px) and UI body (13px) */
@@ -61,6 +63,7 @@
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
   --radius-xl: calc(var(--radius) + 8px);
+  --radius-2xl: 22px;
   --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -88,31 +91,41 @@
   animation: login-float 7s ease-in-out infinite;
 }
 
-/* F-814: one web palette (teal primary, navy shell) on :root so portaled popovers get it too.
-   The @kbs/ui-tokens package stays as is — mobile reads it. Values are HSL triplets. */
+/* F-817: reference look — neutral canvas, white cards, near-black primary, one orange accent. On :root so portaled
+   popovers get it too. The @kbs/ui-tokens package stays as is — mobile reads it. Values are HSL triplets. */
 :root {
-  --primary: 175 77% 26%;
-  --ring: 175 77% 26%;
-  --foreground: 219 37% 17%;
-  --border: 216 24% 90%;
-  --input: 216 24% 85%;
-  --muted-foreground: 215 16% 43%;
-  --accent: 170 35% 95%;
-  --radius: 8px;
+  --background: 0 0% 93%;
+  --foreground: 0 0% 9%;
+  --card-foreground: 0 0% 9%;
+  --popover-foreground: 0 0% 9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 95%;
+  --secondary-foreground: 0 0% 15%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 0 0% 95%;
+  --accent-foreground: 0 0% 9%;
+  --ring: 0 0% 9%;
+  --border: 0 0% 91%;
+  --input: 0 0% 87%;
+  --radius: 10px;
 
-  --canvas: 222 33% 97%;
-  --surface-muted: 210 40% 98%;
-  --surface-strong: 214 32% 91%;
-  --surface-selected: 168 33% 96%;
-  --fg-2: 215 19% 35%;
-  --fg-3: 215 14% 46%; /* F-814: ≥4.5:1 on white — it is used for placeholders and small text too */
-  --border-subtle: 216 33% 95%;
-  --border-strong: 213 27% 84%;
-  --navy: 215 61% 11%;
-  --navy-2: 208 59% 13%;
-  --navy-3: 214 47% 13%;
-  --elev-card: 0 1px 2px hsl(222 47% 11% / 4%), 0 4px 12px -6px hsl(222 47% 11% / 8%);
-  --elev-pop: 0 1px 2px hsl(222 47% 11% / 4%), 0 12px 28px -12px hsl(222 47% 11% / 18%);
+  --canvas: 0 0% 93%;
+  --surface-muted: 0 0% 96%;
+  --surface-strong: 0 0% 90%;
+  --surface-selected: 14 90% 97%;
+  --fg-2: 0 0% 30%;
+  --fg-3: 0 0% 42%; /* ≥4.5:1 on white — used for placeholders and small text too */
+  --border-subtle: 0 0% 94%;
+  --border-strong: 0 0% 82%;
+  --navy: 0 0% 9%;
+  --brand: 14 87% 55%; /* #F05A28 */
+  --brand-strong: 17 88% 40%; /* text/links on white, 5.2:1 */
+  --brand-soft: 14 90% 96%;
+  --brand-foreground: 0 0% 100%;
+  --elev-card: 0 1px 2px hsl(0 0% 0% / 3%);
+  --elev-pop: 0 1px 2px hsl(0 0% 0% / 4%), 0 16px 32px -16px hsl(0 0% 0% / 18%);
 }
 
 .admin-content > *,
@@ -147,26 +160,27 @@
 .admin-content [data-slot='table-head'] {
   height: 40px;
   color: hsl(var(--muted-foreground));
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .admin-content [data-slot='table-cell'] {
   padding-top: 14px;
   padding-bottom: 14px;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 .admin-content [data-slot='table-container'] {
   border: 1px solid hsl(var(--border-subtle));
-  border-radius: 12px;
+  border-radius: 16px;
   background: hsl(var(--card));
 }
 
 .admin-content [data-slot='table-container'] a:not([data-slot='button']) {
-  color: hsl(var(--primary));
-  font-weight: 500;
+  color: hsl(var(--foreground));
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -224,7 +238,7 @@ select:not([multiple]):not([size]) {
 }
 
 .admin-workspace select {
-  border-radius: 0.5rem;
+  border-radius: 9999px;
   border-color: hsl(var(--input));
   transition:
     border-color 0.15s,
@@ -242,17 +256,20 @@ select:not([multiple]):not([size]) {
 }
 
 .admin-workspace textarea {
-  border-radius: 0.5rem;
+  border-radius: 1rem;
   border-color: hsl(var(--input));
   background: hsl(var(--card));
 }
 
-/* F-806: calm canvas with a faint brand glow at the top */
+/* F-817: flat neutral canvas (reference look) */
 .admin-canvas {
-  background:
-    radial-gradient(900px 320px at 85% -80px, rgb(20 184 166 / 9%), transparent 70%),
-    radial-gradient(700px 280px at 20% -120px, rgb(79 70 229 / 6%), transparent 70%),
-    hsl(var(--canvas));
+  background: hsl(var(--canvas));
+}
+
+/* F-817: the orange "profit" hatch of the reference chart, reused for progress fills */
+.brand-hatch {
+  background-color: hsl(var(--brand));
+  background-image: repeating-linear-gradient(135deg, hsl(0 0% 100% / 28%) 0 2px, transparent 2px 7px);
 }
 
 @keyframes admin-in {
@@ -439,17 +456,6 @@ html:has(.admin-workspace)::-webkit-scrollbar-thumb:hover,
   background: hsl(var(--primary));
 }
 
-.admin-workspace aside ::-webkit-scrollbar-track,
-.admin-workspace dialog[aria-label$='navigation menu']::-webkit-scrollbar-track {
-  background: hsl(var(--navy-3));
-}
-
-.admin-workspace aside ::-webkit-scrollbar-thumb,
-.admin-workspace dialog[aria-label$='navigation menu']::-webkit-scrollbar-thumb {
-  border-color: hsl(var(--navy-3));
-  background: hsl(var(--fg-3));
-}
-
 @supports not selector(::-webkit-scrollbar) {
   html:has(.admin-workspace),
   .admin-workspace * {
@@ -464,4 +470,9 @@ html:has(.admin-workspace)::-webkit-scrollbar-thumb:hover,
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* F-817: the reference hero tile — warm orange gradient */
+.brand-gradient {
+  background: linear-gradient(160deg, hsl(18 92% 63%) 0%, hsl(var(--brand)) 45%, hsl(12 82% 48%) 100%);
 }

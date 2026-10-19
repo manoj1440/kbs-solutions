@@ -74,13 +74,13 @@ export function NotificationBell({ area }: { area: Area }) {
     <>
       <Button variant="ghost" size="icon" aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} className="relative" onClick={() => void open()}>
         <Bell />
-        {unread ? <span className="absolute -top-0.5 -right-0.5 min-w-5 rounded-full bg-rose-600 px-1 text-2xs leading-5 font-semibold text-white">{unread > 99 ? '99+' : unread}</span> : null}
+        {unread ? <span className="absolute -top-0.5 -right-0.5 min-w-5 rounded-full bg-brand px-1 text-2xs leading-5 font-semibold text-white ring-2 ring-card">{unread > 99 ? '99+' : unread}</span> : null}
       </Button>
-      <dialog ref={ref} aria-label="Notifications" className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-card p-0 shadow-2xl backdrop:bg-navy/50" onClick={(e) => e.target === ref.current && ref.current?.close()}>
+      <dialog ref={ref} aria-label="Notifications" className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-card p-0 shadow-2xl backdrop:bg-neutral-950/40" onClick={(e) => e.target === ref.current && ref.current?.close()}>
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="grid">
             <h2 className="font-semibold">Notifications</h2>
-            <a href={`/${area}/notifications`} className="text-xs text-teal-800 hover:underline">
+            <a href={`/${area}/notifications`} className="text-xs text-neutral-950 hover:underline">
               View all
             </a>
           </div>
@@ -112,10 +112,10 @@ export function NotificationBell({ area }: { area: Area }) {
           {rows?.length === 0 ? <li className="text-muted-foreground p-4 text-sm">No notifications yet.</li> : null}
           {rows?.map((n) => (
             <li key={n.id}>
-              <button type="button" className={`grid w-full gap-0.5 px-4 py-3 text-left hover:bg-surface-muted ${n.readAt ? '' : 'bg-teal-50/60'}`} onClick={() => void follow(n)}>
+              <button type="button" className={`grid w-full gap-0.5 px-4 py-3 text-left hover:bg-surface-muted ${n.readAt ? '' : 'bg-neutral-100/60'}`} onClick={() => void follow(n)}>
                 <span className="flex items-center justify-between gap-2 text-sm font-medium">
                   {n.title}
-                  {n.readAt ? null : <span className="size-2 shrink-0 rounded-full bg-teal-600" aria-label="unread" />}
+                  {n.readAt ? null : <span className="size-2 shrink-0 rounded-full bg-brand" aria-label="unread" />}
                 </span>
                 <span className="text-muted-foreground text-xs break-words">{n.body}</span>
                 <span className="text-muted-foreground text-2xs">{formatDateTime(n.createdAt)}</span>

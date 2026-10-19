@@ -174,7 +174,7 @@ export function LoginForm({ next }: { next?: string }) {
                   value={mobile}
                   onChange={(e) => setMobile(mobileInput(e.target.value))}
                   autoFocus
-                  className="h-14 rounded-2xl border-border bg-surface-muted pr-12 pl-12 text-[15px] tracking-wide transition-colors focus:border-teal-600 focus:bg-card"
+                  className="h-14 rounded-2xl border-border bg-surface-muted pr-12 pl-12 text-[15px] tracking-wide transition-colors focus:border-neutral-900 focus:bg-card"
                 />
                 {mobileValid ? (
                   <CheckCircle2 className="absolute top-1/2 right-4 size-5 -translate-y-1/2 text-emerald-500" />
@@ -185,7 +185,7 @@ export function LoginForm({ next }: { next?: string }) {
             <Button
               type="submit"
               disabled={busy || !mobileValid}
-              className="relative h-14 w-full rounded-full bg-gradient-to-r from-teal-700 to-teal-500 text-base font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:from-teal-600 hover:to-teal-400 hover:shadow-teal-500/40 disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
+              className="relative h-14 w-full rounded-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-base font-semibold text-white shadow-lg shadow-neutral-900/30 transition-all hover:from-neutral-900 hover:to-neutral-500 hover:shadow-neutral-800/40 disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
             >
               {busy ? 'Sending…' : 'Send OTP'}
               <span className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20">
@@ -231,8 +231,8 @@ export function LoginForm({ next }: { next?: string }) {
                     value={d}
                     onChange={(e) => setDigit(i, e.target.value)}
                     onKeyDown={(e) => onDigitKeyDown(i, e)}
-                    className={`h-14 w-full min-w-0 rounded-xl border-2 bg-surface-muted text-center font-mono text-xl font-bold transition-all focus:border-teal-600 focus:bg-card focus:ring-4 focus:ring-teal-600/15 focus:outline-none ${
-                      d ? 'border-teal-600/60 text-teal-900' : 'border-border text-foreground'
+                    className={`h-14 w-full min-w-0 rounded-xl border-2 bg-surface-muted text-center font-mono text-xl font-bold transition-all focus:border-neutral-900 focus:bg-card focus:ring-4 focus:ring-neutral-900/15 focus:outline-none ${
+                      d ? 'border-neutral-900/60 text-neutral-950' : 'border-border text-foreground'
                     }`}
                   />
                 ))}
@@ -241,7 +241,7 @@ export function LoginForm({ next }: { next?: string }) {
             <Button
               type="submit"
               disabled={busy || code.length !== OTP_LEN}
-              className="relative h-14 w-full rounded-full bg-gradient-to-r from-teal-700 to-teal-500 text-base font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:from-teal-600 hover:to-teal-400 hover:shadow-teal-500/40 disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
+              className="relative h-14 w-full rounded-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-base font-semibold text-white shadow-lg shadow-neutral-900/30 transition-all hover:from-neutral-900 hover:to-neutral-500 hover:shadow-neutral-800/40 disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
             >
               {busy ? 'Verifying…' : 'Verify & Sign in'}
               <span className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20">
@@ -259,7 +259,7 @@ export function LoginForm({ next }: { next?: string }) {
               <button
                 type="button"
                 disabled={!canResend || busy}
-                className="font-medium text-teal-700 underline-offset-4 hover:underline disabled:text-fg-3"
+                className="font-medium text-neutral-900 underline-offset-4 hover:underline disabled:text-fg-3"
                 onClick={() => void requestOtp(step.mobile)}
               >
                 {canResend ? 'Resend code' : `Resend in ${secondsLeft}s`}
@@ -291,7 +291,7 @@ export function LoginForm({ next }: { next?: string }) {
           </span>
         </div>
         <p className="text-center text-xs text-muted-foreground">
-          Need access? Contact your <span className="font-semibold text-teal-800">KBS administrator</span>.
+          Need access? Contact your <span className="font-semibold text-neutral-950">KBS administrator</span>.
         </p>
       </CardContent>
     </Card>

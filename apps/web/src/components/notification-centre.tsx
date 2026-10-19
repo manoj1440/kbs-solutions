@@ -178,8 +178,8 @@ export function NotificationCentre({ area }: { area: WebArea }) {
                   type="button"
                   onClick={() => void open(n)}
                   className={cn(
-                    'group flex w-full min-w-0 items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700 sm:px-6',
-                    n.readAt ? '' : 'bg-teal-50/50',
+                    'group flex w-full min-w-0 items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-900 sm:px-6',
+                    n.readAt ? '' : 'bg-neutral-100/50',
                   )}
                 >
                   <IconTile icon={icon} tone={tone} size="sm" className={cn(n.readAt && 'opacity-70')} />

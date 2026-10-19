@@ -214,7 +214,7 @@ export default async function ConfigPage() {
 
       <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto xl:grid-cols-[12.5rem_minmax(0,1fr)] xl:items-start">
         <nav aria-label="Configuration sections" className="xl:sticky xl:top-2">
-          <p className="mb-2 hidden px-1 text-2xs font-semibold tracking-[0.16em] text-muted-foreground uppercase xl:block">
+          <p className="mb-2 hidden px-1 text-2xs font-semibold tracking-[0.16em] text-muted-foreground xl:block">
             Sections
           </p>
           <ul className="flex flex-wrap gap-1.5 xl:grid xl:gap-0.5">
@@ -257,7 +257,7 @@ export default async function ConfigPage() {
                     {stars ? ` · ${stars} ★` : ''}
                   </span>
                 </div>
-                <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_10.5rem_9.5rem] gap-4 bg-surface-muted px-4 py-2 text-2xs font-semibold tracking-[0.06em] text-muted-foreground uppercase lg:grid">
+                <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_10.5rem_9.5rem] gap-4 bg-surface-muted px-4 py-2 text-2xs font-semibold tracking-[0.06em] text-muted-foreground lg:grid">
                   <span>Key · description</span>
                   <span>Value</span>
                   <span>Last change</span>
@@ -296,7 +296,7 @@ export default async function ConfigPage() {
                         <ConfigValue entry={c} />
                       </div>
                       <div className="text-xs text-muted-foreground lg:pt-0.5 lg:whitespace-nowrap">
-                        <span className="text-2xs font-semibold tracking-wide text-fg-3 uppercase lg:hidden">
+                        <span className="text-2xs font-semibold text-fg-3 lg:hidden">
                           Last change ·{' '}
                         </span>
                         {c.updatedAt ? formatDateTime(c.updatedAt) : 'default'}

@@ -11,15 +11,20 @@ import { cn } from '@/lib/utils';
 
 export type Tone = 'teal' | 'indigo' | 'sky' | 'violet' | 'amber' | 'rose' | 'emerald' | 'slate';
 
+/**
+ * F-817: the reference look is monochrome with one orange accent. Decorative tones share the neutral icon chip; only
+ * their bar/dot colour differs (teal = the orange brand, indigo = black). emerald / amber / rose keep their meaning.
+ */
+const NEUTRAL_TILE = 'bg-surface-muted text-foreground ring-transparent';
 export const TONE: Record<Tone, { tile: string; text: string; bar: string; soft: string }> = {
-  teal: { tile: 'bg-teal-50 text-teal-700 ring-teal-100', text: 'text-teal-700', bar: 'bg-teal-600', soft: 'bg-teal-50' },
-  indigo: { tile: 'bg-indigo-50 text-indigo-700 ring-indigo-100', text: 'text-indigo-700', bar: 'bg-indigo-500', soft: 'bg-indigo-50' },
-  sky: { tile: 'bg-sky-50 text-sky-700 ring-sky-100', text: 'text-sky-700', bar: 'bg-sky-500', soft: 'bg-sky-50' },
-  violet: { tile: 'bg-violet-50 text-violet-700 ring-violet-100', text: 'text-violet-700', bar: 'bg-violet-500', soft: 'bg-violet-50' },
-  amber: { tile: 'bg-amber-50 text-amber-700 ring-amber-100', text: 'text-amber-700', bar: 'bg-amber-500', soft: 'bg-amber-50' },
-  rose: { tile: 'bg-rose-50 text-rose-700 ring-rose-100', text: 'text-rose-700', bar: 'bg-rose-500', soft: 'bg-rose-50' },
-  emerald: { tile: 'bg-emerald-50 text-emerald-700 ring-emerald-100', text: 'text-emerald-700', bar: 'bg-emerald-500', soft: 'bg-emerald-50' },
-  slate: { tile: 'bg-muted text-fg-2 ring-border', text: 'text-fg-2', bar: 'bg-fg-3', soft: 'bg-surface-muted' },
+  teal: { tile: NEUTRAL_TILE, text: 'text-brand-strong', bar: 'bg-brand', soft: 'bg-brand-soft' },
+  indigo: { tile: NEUTRAL_TILE, text: 'text-foreground', bar: 'bg-neutral-900', soft: 'bg-surface-muted' },
+  sky: { tile: NEUTRAL_TILE, text: 'text-fg-2', bar: 'bg-neutral-500', soft: 'bg-surface-muted' },
+  violet: { tile: NEUTRAL_TILE, text: 'text-fg-2', bar: 'bg-neutral-400', soft: 'bg-surface-muted' },
+  amber: { tile: 'bg-amber-50 text-amber-700 ring-transparent', text: 'text-amber-700', bar: 'bg-amber-500', soft: 'bg-amber-50' },
+  rose: { tile: 'bg-rose-50 text-rose-700 ring-transparent', text: 'text-rose-700', bar: 'bg-rose-500', soft: 'bg-rose-50' },
+  emerald: { tile: 'bg-emerald-50 text-emerald-700 ring-transparent', text: 'text-emerald-700', bar: 'bg-emerald-500', soft: 'bg-emerald-50' },
+  slate: { tile: NEUTRAL_TILE, text: 'text-fg-2', bar: 'bg-neutral-300', soft: 'bg-surface-muted' },
 };
 
 /** KBS enum constant → sentence case (`PENDING_ONBOARDING` → "Pending onboarding"). Never use on bank MIS values. */
@@ -33,7 +38,7 @@ export function IconTile({ icon: Icon, tone = 'teal', size = 'md', className }: 
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-xl ring-1 ring-inset',
+        'inline-flex shrink-0 items-center justify-center rounded-full ring-1 ring-inset',
         size === 'sm' ? 'size-8 [&>svg]:size-4' : size === 'lg' ? 'size-12 [&>svg]:size-6' : 'size-10 [&>svg]:size-5',
         TONE[tone].tile,
         className,
@@ -44,13 +49,11 @@ export function IconTile({ icon: Icon, tone = 'teal', size = 'md', className }: 
   );
 }
 
-/** Every page starts with this: icon tile, the page's single h1, purpose line, actions, optional KPI strip. F-814 U9: `eyebrow` is accepted but no longer rendered (the breadcrumb names the section). */
+/** Every page starts with this: the page's single h1, purpose line, actions, optional KPI strip. F-814 U9: `eyebrow` is accepted but not rendered; F-817: `icon`/`tone` are accepted but not rendered (reference headers carry no icon). */
 export function PageHeader({
-  icon,
   title,
   description,
   actions,
-  tone = 'teal',
   meta,
   children,
 }: {
@@ -67,9 +70,8 @@ export function PageHeader({
     <header className="grid gap-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-4">
-          {icon ? <IconTile icon={icon} tone={tone} size="lg" className="hidden shadow-sm sm:inline-flex" /> : null}
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px] sm:leading-9">{title}</h1>
+            <h1 className="text-2xl font-medium tracking-tight text-foreground sm:text-[32px] sm:leading-10">{title}</h1>
             {description ? <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
             {meta ? <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">{meta}</div> : null}
           </div>
@@ -116,28 +118,28 @@ export function StatCard({
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <span className={cn('text-xs font-medium', emphasis ? 'text-teal-50' : 'text-fg-2')}>{label}</span>
+        <span className={cn('text-ui font-medium', emphasis ? 'text-white/85' : 'text-fg-2')}>{label}</span>
         {icon ? (
           emphasis ? (
-            <span className="inline-flex size-9 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/20 [&>svg]:size-[18px]">
+            <span className="inline-flex size-8 items-center justify-center rounded-full bg-white/20 text-white [&>svg]:size-4">
               {React.createElement(icon, { 'aria-hidden': true })}
             </span>
           ) : (
-            <IconTile icon={icon} tone={tone} size="sm" className="size-8 sm:size-9" />
+            <IconTile icon={icon} tone={tone} size="sm" className="bg-surface-muted text-fg-2" />
           )
         ) : null}
       </div>
       <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="truncate text-2xl font-semibold tracking-tight tabular-nums sm:text-[28px] sm:leading-9">{value}</span>
+        <span className="truncate text-[28px] leading-9 font-semibold tracking-tight tabular-nums sm:text-[32px] sm:leading-10">{value}</span>
         {delta}
       </div>
-      {hint ? <p className={cn('mt-1 text-xs leading-relaxed', emphasis ? 'text-teal-50/90' : 'text-muted-foreground')}>{hint}</p> : null}
+      {hint ? <p className={cn('mt-1 text-xs leading-relaxed', emphasis ? 'text-white/85' : 'text-muted-foreground')}>{hint}</p> : null}
       {chart ? <div className="mt-3">{chart}</div> : null}
       {source || href ? (
         <div
           className={cn(
             'mt-4 flex items-center justify-between gap-2 border-t pt-3 text-2xs font-medium',
-            emphasis ? 'border-white/15 text-teal-50/90' : 'border-border-subtle text-fg-3',
+            emphasis ? 'border-white/20 text-white/85' : 'border-border-subtle text-fg-3',
           )}
         >
           <span className="truncate">{source}</span>
@@ -147,10 +149,8 @@ export function StatCard({
     </>
   );
   const cls = cn(
-    'group relative min-w-0 overflow-hidden rounded-2xl border p-4 sm:p-5',
-    emphasis
-      ? 'border-transparent bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(175_77%_21%)_55%,hsl(var(--navy-2))_100%)] text-white shadow-pop'
-      : 'border-border bg-card shadow-card',
+    'group relative min-w-0 overflow-hidden rounded-2xl border border-transparent p-4 sm:p-5',
+    emphasis ? 'brand-gradient text-white shadow-pop' : 'bg-card shadow-card',
     href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
     className,
   );
@@ -163,12 +163,10 @@ export function StatCard({
   );
 }
 
-/** Card with a proper header row (icon, title, description, actions). Use instead of bare Card+CardHeader. */
+/** Card with a proper header row (title, description, actions). Use instead of bare Card+CardHeader. F-817: `icon`/`tone` accepted, not rendered. */
 export function SectionCard({
   title,
   description,
-  icon,
-  tone = 'slate',
   actions,
   children,
   className,
@@ -193,15 +191,14 @@ export function SectionCard({
       id={id}
       data-slot="card"
       className={cn(
-        'min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-card shadow-card',
+        'min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-transparent bg-card shadow-card',
         className,
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5 pb-4 sm:px-6">
         <div className="flex min-w-0 flex-1 basis-64 items-start gap-3">
-          {icon ? <IconTile icon={icon} tone={tone} size="sm" /> : null}
           <div className="min-w-0">
-            <h2 className="text-[15px] leading-6 font-semibold tracking-tight text-foreground">{title}</h2>
+            <h2 className="text-base leading-6 font-semibold tracking-tight text-foreground">{title}</h2>
             {description ? <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
           </div>
         </div>
@@ -230,8 +227,8 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface-muted px-6 py-10 text-center', className)}>
-      <span className="mb-1 inline-flex size-12 items-center justify-center rounded-2xl bg-card text-fg-3 shadow-sm ring-1 ring-border">
+    <div className={cn('flex flex-col items-center justify-center gap-2 rounded-2xl bg-surface-muted px-6 py-10 text-center', className)}>
+      <span className="mb-1 inline-flex size-12 items-center justify-center rounded-full bg-card text-fg-3 shadow-card">
         <Icon className="size-5" aria-hidden="true" />
       </span>
       <p className="text-sm font-semibold text-foreground">{title}</p>
@@ -268,9 +265,10 @@ export function MiniStat({
     </>
   );
   const cls = cn(
-    'block min-w-0 rounded-xl border bg-card px-3 py-2 shadow-card',
-    active ? 'border-primary ring-2 ring-primary/15' : 'border-border',
-    href && 'transition-colors hover:border-border-strong hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+    // F-817: white on the canvas, soft grey when it sits inside a card (reference inner tiles)
+    'block min-w-0 rounded-2xl border bg-card px-3.5 py-2.5 shadow-card in-data-[slot=card]:bg-surface-muted in-data-[slot=card]:shadow-none',
+    active ? 'border-foreground ring-1 ring-foreground' : 'border-transparent',
+    href && 'transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
   );
   return href ? (
     <Link href={href} prefetch={false} title={hint} aria-current={active ? 'true' : undefined} className={cls}>
@@ -297,7 +295,7 @@ export function PillNav({
 }) {
   return (
     <nav aria-label={label} className={cn('-mx-1 overflow-x-auto px-1 pb-1', className)}>
-      <div className="inline-flex min-w-max gap-1 rounded-xl border border-border bg-card p-1 shadow-card">
+      <div className="inline-flex min-w-max gap-1 rounded-full bg-card p-1 shadow-card">
         {items.map(({ href, label: text, count, icon: Icon }) => {
           const on = href === active;
           return (
@@ -307,7 +305,7 @@ export function PillNav({
               prefetch={false}
               aria-current={on ? 'page' : undefined}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-ui font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-ring',
+                'inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-ui font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-ring',
                 on ? 'bg-foreground text-background shadow-sm' : 'text-fg-2 hover:bg-muted hover:text-foreground',
               )}
             >
@@ -327,12 +325,12 @@ export function PillNav({
 }
 
 const AVATAR_TONES = [
-  'bg-teal-100 text-teal-800',
-  'bg-indigo-100 text-indigo-800',
+  'bg-neutral-200 text-neutral-950',
+  'bg-neutral-200 text-neutral-950',
   'bg-amber-100 text-amber-800',
   'bg-rose-100 text-rose-800',
   'bg-sky-100 text-sky-800',
-  'bg-violet-100 text-violet-800',
+  'bg-neutral-200 text-neutral-950',
   'bg-emerald-100 text-emerald-800',
 ];
 function hash(s: string) {
@@ -418,7 +416,7 @@ export function KeyValueGrid({ items, className, cols = 2 }: { items: [React.Rea
     >
       {items.map(([k, v], i) => (
         <div key={i} className="min-w-0">
-          <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">{k}</dt>
+          <dt className="text-2xs font-medium text-muted-foreground">{k}</dt>
           <dd className="mt-1 text-sm break-words text-foreground">{v}</dd>
         </div>
       ))}
@@ -431,7 +429,7 @@ const CALLOUT = {
   warning: 'border-amber-200 bg-amber-50 text-amber-950 [&_svg]:text-amber-600',
   danger: 'border-rose-200 bg-rose-50 text-rose-900 [&_svg]:text-rose-600',
   success: 'border-emerald-200 bg-emerald-50 text-emerald-900 [&_svg]:text-emerald-600',
-  neutral: 'border-border bg-surface-muted text-fg-2 [&_svg]:text-muted-foreground',
+  neutral: 'border-transparent bg-surface-muted text-fg-2 [&_svg]:text-muted-foreground',
 };
 export function Callout({
   tone = 'info',
@@ -449,7 +447,7 @@ export function Callout({
   role?: 'alert' | 'status';
 }) {
   return (
-    <div role={role} className={cn('flex gap-3 rounded-xl border px-4 py-3 text-sm', CALLOUT[tone], className)}>
+    <div role={role} className={cn('flex gap-3 rounded-2xl border px-4 py-3 text-sm', CALLOUT[tone], className)}>
       {Icon ? <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" /> : null}
       <div className="min-w-0 leading-relaxed">
         {title ? <p className="font-semibold">{title}</p> : null}
@@ -483,7 +481,7 @@ export function Field({ label, htmlFor, hint, children, className }: { label: Re
 }
 
 /** The class a native <select> should carry to match Input. */
-export const selectClass = 'h-10 w-full min-w-0 rounded-lg border border-border bg-card px-3 text-sm text-foreground';
+export const selectClass = 'h-10 w-full min-w-0 rounded-full border border-input bg-card px-4 text-sm text-foreground';
 
 /** F-814 detail-page identity (U14): back link, visual, the page's single h1, subtitle, meta chips, actions, optional summary strip. No eyebrow. */
 export function DetailHeader({
@@ -515,7 +513,7 @@ export function DetailHeader({
         <div className="flex min-w-0 items-center gap-4">
           {visual}
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-balance text-foreground sm:text-[28px] sm:leading-9">{title}</h1>
+            <h1 className="text-2xl font-medium tracking-tight text-balance text-foreground sm:text-[32px] sm:leading-10">{title}</h1>
             {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
           </div>
         </div>
@@ -531,7 +529,6 @@ export function DetailHeader({
 export function RailCard({
   title,
   icon,
-  tone = 'slate',
   count,
   items,
   empty,
@@ -546,11 +543,11 @@ export function RailCard({
   footer?: { href: string; label: string };
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card shadow-card">
+    <section className="rounded-2xl bg-card shadow-card">
       <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
-        {icon ? <IconTile icon={icon} tone={tone} size="sm" /> : null}
+        {icon ? <IconTile icon={icon} tone="slate" size="sm" /> : null}
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{title}</h2>
-        {count != null ? <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums', count ? TONE[tone].tile : 'bg-muted text-muted-foreground')}>{count}</span> : null}
+        {count != null ? <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums', count ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground')}>{count}</span> : null}
       </div>
       {items.length ? (
         <ul className="divide-y divide-border-subtle border-t border-border-subtle">
@@ -582,7 +579,7 @@ export function RailCard({
         <p className="border-t border-border-subtle px-4 py-4 text-xs text-muted-foreground">{empty}</p>
       )}
       {footer ? (
-        <Link href={footer.href} prefetch={false} className="flex items-center justify-between border-t border-border-subtle px-4 py-2.5 text-xs font-semibold text-primary hover:bg-surface-muted">
+        <Link href={footer.href} prefetch={false} className="flex items-center justify-between border-t border-border-subtle px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-surface-muted">
           {footer.label}
           <ArrowUpRight className="size-3.5" aria-hidden="true" />
         </Link>

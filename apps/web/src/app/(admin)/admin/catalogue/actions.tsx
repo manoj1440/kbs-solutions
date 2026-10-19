@@ -41,7 +41,7 @@ export function NewCardForm({ banks }: { banks: { id: string; label: string }[] 
     <SectionCard icon={Plus} tone="teal" title="New card / new bank" description="Cards start as DRAFT; fill details on the card page, then publish.">
       <div className="grid gap-5">
         <div className="grid gap-3">
-          <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
             <CreditCard className="size-3.5" aria-hidden="true" />
             Draft card
           </p>
@@ -74,7 +74,7 @@ export function NewCardForm({ banks }: { banks: { id: string; label: string }[] 
           </Button>
         </div>
         <div className="grid gap-3 border-t border-border-subtle pt-5">
-          <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
             <Building2 className="size-3.5" aria-hidden="true" />
             Bank
           </p>

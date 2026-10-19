@@ -146,7 +146,7 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
             <div key={i} className="grid gap-2.5 rounded-xl border border-border bg-card p-4 shadow-card">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-2 text-xs font-semibold text-fg-2">
-                  <span className="inline-flex size-6 items-center justify-center rounded-lg bg-violet-50 text-2xs text-violet-700 tabular-nums ring-1 ring-violet-100">{i + 1}</span>
+                  <span className="inline-flex size-6 items-center justify-center rounded-lg bg-neutral-100 text-2xs text-neutral-900 tabular-nums ring-1 ring-neutral-200">{i + 1}</span>
                   <Label>Question {i + 1}</Label>
                 </span>
                 <Button variant="ghost" size="sm" onClick={() => setQuestions((qs) => qs.filter((_, idx) => idx !== i))}>

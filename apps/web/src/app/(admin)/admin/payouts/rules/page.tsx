@@ -59,7 +59,7 @@ export default async function PayoutRulesPage() {
                       <BankMark code={r.bank.code} />
                       <div className="min-w-0">
                         <div className="text-2xs text-muted-foreground">{r.bank.displayName}</div>
-                        <Link className="line-clamp-2 block font-semibold break-words text-foreground after:absolute after:inset-0 after:rounded-xl hover:text-teal-700" href={`/admin/payouts/rules/${r.id}`}>
+                        <Link className="line-clamp-2 block font-semibold break-words text-foreground after:absolute after:inset-0 after:rounded-xl hover:text-neutral-900" href={`/admin/payouts/rules/${r.id}`}>
                           {r.name}
                         </Link>
                       </div>
@@ -70,17 +70,17 @@ export default async function PayoutRulesPage() {
                     </div>
                   </div>
                   <div className="rounded-xl bg-surface-muted px-3 py-2 text-xs break-words text-fg-2">
-                    <div className="mb-1 text-2xs font-semibold tracking-wide text-muted-foreground uppercase">Trigger</div>
+                    <div className="mb-1 text-2xs font-semibold text-muted-foreground">Trigger</div>
                     <code>{r.triggerField}</code> ∈ {r.triggerValues.map((v) => `“${v}”`).join(', ')}
                     {r.productCodePattern ? ` · product /${r.productCodePattern}/` : ''}
                   </div>
                   <div className="mt-auto flex flex-wrap items-end justify-between gap-3">
                     <div>
-                      <div className="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">Current rate</div>
+                      <div className="text-2xs font-semibold text-muted-foreground">Current rate</div>
                       <div className="text-lg font-semibold text-foreground tabular-nums">{r.currentRate ? `₹${r.currentRate.amountInr.toLocaleString('en-IN')}` : <span className="text-sm font-normal text-muted-foreground">none approved</span>}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">Entitlements</div>
+                      <div className="text-2xs font-semibold text-muted-foreground">Entitlements</div>
                       <div className="text-lg font-semibold text-foreground tabular-nums">{r.entitlementCount}</div>
                     </div>
                   </div>

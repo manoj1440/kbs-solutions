@@ -28,7 +28,7 @@ export function StatusScreen({
   return (
     <main className="admin-canvas flex min-h-dvh flex-col items-center justify-center gap-8 p-4">
       <div className="flex items-center gap-2.5 text-foreground">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-300 to-emerald-400 text-navy shadow-card">
+        <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-400 to-emerald-400 text-navy shadow-card">
           <Building2 className="size-5" />
         </span>
         <span className="text-lg font-bold tracking-tight">

@@ -5,26 +5,26 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all active:translate-y-px disabled:pointer-events-none disabled:opacity-60 disabled:shadow-none [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/40 focus-visible:ring-[3px]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all active:translate-y-px disabled:pointer-events-none disabled:opacity-60 disabled:shadow-none [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/40 focus-visible:ring-[3px]",
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-card hover:bg-primary/90 hover:shadow-md disabled:bg-surface-strong disabled:text-muted-foreground disabled:opacity-100',
+          'bg-primary text-primary-foreground hover:bg-primary/85 disabled:bg-surface-strong disabled:text-muted-foreground disabled:opacity-100',
         destructive:
-          'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 disabled:bg-surface-strong disabled:text-muted-foreground disabled:opacity-100',
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-surface-strong disabled:text-muted-foreground disabled:opacity-100',
         outline:
-          'border border-border bg-card text-fg-2 shadow-xs hover:border-border-strong hover:bg-surface-muted hover:text-foreground',
-        secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
-        soft: 'bg-primary/10 text-primary hover:bg-primary/15',
+          'border border-input bg-card text-foreground hover:bg-surface-muted',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-surface-strong',
+        soft: 'bg-secondary text-foreground hover:bg-surface-strong',
         ghost: 'text-fg-2 hover:bg-muted hover:text-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        link: 'text-foreground underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-8 gap-1.5 px-3 text-ui has-[>svg]:px-2.5',
+        default: 'h-10 px-5 py-2 has-[>svg]:px-4',
+        sm: 'h-9 gap-1.5 px-4 text-ui has-[>svg]:px-3',
         lg: 'h-11 px-6 has-[>svg]:px-4',
-        icon: 'size-9',
+        icon: 'size-10',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

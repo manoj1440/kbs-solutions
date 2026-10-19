@@ -29,16 +29,16 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
       <Button
         variant="ghost"
         size="sm"
-        className="-ml-2 h-7 px-2 text-2xs font-semibold tracking-wide uppercase"
+        className="-ml-2 h-7 px-2 text-xs font-medium text-muted-foreground"
         onClick={column.getToggleSortingHandler()}
         title={paged ? 'Sorts this page only' : undefined}
         aria-label={`Sort by ${title}`}
       >
         <span>{title}</span>
         {sorted === 'desc' ? (
-          <ArrowDown className="size-3 text-teal-700" aria-hidden="true" />
+          <ArrowDown className="size-3 text-neutral-900" aria-hidden="true" />
         ) : sorted === 'asc' ? (
-          <ArrowUp className="size-3 text-teal-700" aria-hidden="true" />
+          <ArrowUp className="size-3 text-neutral-900" aria-hidden="true" />
         ) : (
           <ChevronsUpDown className="size-3 text-fg-3" aria-hidden="true" />
         )}

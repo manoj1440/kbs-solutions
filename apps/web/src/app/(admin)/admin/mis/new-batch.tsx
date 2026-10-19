@@ -48,12 +48,12 @@ export function UploadMisButton({ banks }: { banks: { id: string; label: string 
       <dialog
         ref={ref}
         aria-label="Upload MIS"
-        className={cn('fixed top-1/2 left-1/2 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 shadow-2xl backdrop:bg-navy/50', open ? '' : 'hidden')}
+        className={cn('fixed top-1/2 left-1/2 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 shadow-2xl backdrop:bg-neutral-950/40', open ? '' : 'hidden')}
         onClose={() => setOpen(false)}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <span className="inline-flex size-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+            <span className="inline-flex size-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-900 ring-1 ring-neutral-200">
               <FileUp className="size-4.5" aria-hidden="true" />
             </span>
             <p className="text-[15px] font-semibold text-foreground">Upload MIS</p>
@@ -75,8 +75,8 @@ export function UploadMisButton({ banks }: { banks: { id: string; label: string 
               ))}
             </select>
           </div>
-          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-teal-200 bg-teal-50/40 px-4 py-6 text-center">
-            <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-card text-teal-700 shadow-sm ring-1 ring-teal-100">
+          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-100/40 px-4 py-6 text-center">
+            <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-card text-neutral-900 shadow-sm ring-1 ring-neutral-200">
               <FileUp className="size-5" aria-hidden="true" />
             </span>
             <p className="text-xs text-muted-foreground">The bank’s MIS file, Excel (.xlsx) or CSV. Lead statuses update as soon as it is read.</p>

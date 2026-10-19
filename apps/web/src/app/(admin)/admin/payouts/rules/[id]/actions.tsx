@@ -41,7 +41,7 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
     <SectionCard icon={Gavel} tone="teal" title="Actions" description="Approvals need a reason and are audited. Editing an approved rule creates a new draft version." bodyClassName="grid gap-4 md:grid-cols-2">
         <div className="grid content-start gap-2 rounded-xl border border-border bg-surface-muted p-4">
           <div className="mb-1 flex items-center gap-2 text-ui font-semibold text-foreground">
-            <BadgeCheck className="size-4 text-teal-700" aria-hidden="true" />
+            <BadgeCheck className="size-4 text-neutral-900" aria-hidden="true" />
             Approve or retire
           </div>
           <Label htmlFor="ra-reason">Reason (for approvals / retirement)</Label>
@@ -70,7 +70,7 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
         {rule.status !== 'RETIRED' ? (
           <div className="grid content-start gap-2 rounded-xl border border-border bg-surface-muted p-4">
             <div className="mb-1 flex items-center gap-2 text-ui font-semibold text-foreground">
-              <PencilLine className="size-4 text-teal-700" aria-hidden="true" />
+              <PencilLine className="size-4 text-neutral-900" aria-hidden="true" />
               Edit trigger, hold and rates
             </div>
             <Label htmlFor="ra-values">Trigger values (separate with |)</Label>

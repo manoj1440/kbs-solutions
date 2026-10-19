@@ -63,7 +63,7 @@ export default async function OnboardingQueuePage() {
                   <div className="flex min-w-0 items-start gap-3">
                     <Avatar name={r.fullName || r.publicRef} />
                     <div className="min-w-0 flex-1">
-                      <Link className="font-semibold break-words text-foreground hover:text-teal-700" href={`/admin/onboarding/${r.userId}`}>
+                      <Link className="font-semibold break-words text-foreground hover:text-neutral-900" href={`/admin/onboarding/${r.userId}`}>
                         {r.fullName || '(no name)'}
                       </Link>
                       <div className="font-mono text-2xs text-muted-foreground">{r.publicRef}</div>
@@ -83,13 +83,13 @@ export default async function OnboardingQueuePage() {
                   </div>
                   <dl className="grid grid-cols-2 gap-3 rounded-lg bg-surface-muted p-3 text-xs">
                     <div className="min-w-0">
-                      <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Identity</dt>
+                      <dt className="text-2xs font-medium text-muted-foreground">Identity</dt>
                       <dd className="mt-1">
                         <Badge variant={r.identityStatus === 'VERIFIED' ? 'success' : 'warning'}>{humanize(r.identityStatus)}</Badge>
                       </dd>
                     </div>
                     <div className="min-w-0">
-                      <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Bank</dt>
+                      <dt className="text-2xs font-medium text-muted-foreground">Bank</dt>
                       <dd className="mt-1 flex min-w-0 items-center gap-1 text-foreground">
                         <Landmark className="size-3 shrink-0 text-fg-3" aria-hidden="true" />
                         <span className="truncate">

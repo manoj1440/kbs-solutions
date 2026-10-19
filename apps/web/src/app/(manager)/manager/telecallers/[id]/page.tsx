@@ -55,7 +55,7 @@ export default async function TelecallerTrainingPage({
           <div className="grid gap-5 rounded-xl border border-border-subtle bg-surface-muted p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:items-center">
             <div className="grid gap-2">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Modules passed</span>
+                <span className="text-2xs font-medium text-muted-foreground">Modules passed</span>
                 <span className="text-lg font-semibold text-foreground tabular-nums">
                   {passedCount}/{d.modules.length}
                 </span>

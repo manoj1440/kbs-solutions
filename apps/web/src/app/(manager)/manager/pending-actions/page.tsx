@@ -33,7 +33,7 @@ export default async function ManagerPendingActionsPage() {
                   <div className="grid min-w-0 gap-1.5">
                     <p className="text-sm font-semibold break-words text-foreground">{a.whatToDo}</p>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                      <Link href={`/manager/leads/${a.leadId}`} className="font-mono font-medium text-teal-700 hover:text-teal-900">
+                      <Link href={`/manager/leads/${a.leadId}`} className="font-mono font-medium text-neutral-900 hover:text-neutral-950">
                         {a.leadRef}
                       </Link>
                       <span aria-hidden="true">·</span>

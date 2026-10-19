@@ -54,9 +54,9 @@ export async function AccountPage() {
             {support && supportHref ? (
               <a
                 href={supportHref}
-                className="lift flex min-w-0 items-center gap-3 rounded-xl border border-teal-100 bg-teal-50/60 p-4 text-teal-900 hover:border-teal-200"
+                className="lift flex min-w-0 items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-100/60 p-4 text-neutral-950 hover:border-neutral-300"
               >
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-teal-700 shadow-sm ring-1 ring-teal-100">
+                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-neutral-900 shadow-sm ring-1 ring-neutral-200">
                   {support.includes('@') ? <Mail className="size-5" aria-hidden="true" /> : <Phone className="size-5" aria-hidden="true" />}
                 </span>
                 <span className="min-w-0 font-semibold break-words">{support}</span>

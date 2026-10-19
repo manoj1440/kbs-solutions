@@ -90,17 +90,17 @@ export default async function CataloguePage() {
                           )}
                           <dl className="grid grid-cols-2 gap-2 rounded-xl bg-surface-muted px-3 py-2">
                             <div>
-                              <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Joining fee</dt>
+                              <dt className="text-2xs font-medium text-muted-foreground">Joining fee</dt>
                               <dd className="text-sm font-semibold text-foreground tabular-nums">{fee(c.joiningFee)}</dd>
                             </div>
                             <div>
-                              <dt className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Annual fee</dt>
+                              <dt className="text-2xs font-medium text-muted-foreground">Annual fee</dt>
                               <dd className="text-sm font-semibold text-foreground tabular-nums">{fee(c.annualFee)}</dd>
                             </div>
                           </dl>
                         </div>
                         <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-subtle pt-2.5">
-                          <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Link</span>
+                          <span className="text-2xs font-medium text-muted-foreground">Link</span>
                           {c.effectiveChannels.length ? (
                             <div className="flex flex-wrap justify-end gap-1">
                               {c.effectiveChannels.map((ch) => (

@@ -6,18 +6,18 @@ import { cn } from '@/lib/utils';
 
 /** Soft tinted badges (F-806): tone groups visually, the text always carries the meaning (REQ-20 §20.2). */
 const badgeVariants = cva(
-  'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-2xs leading-5 font-semibold w-fit whitespace-nowrap shrink-0 ring-1 ring-inset [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none transition-[color,box-shadow] overflow-hidden',
+  'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-2xs leading-5 font-semibold w-fit whitespace-nowrap shrink-0 ring-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none transition-[color,box-shadow] overflow-hidden',
   {
     variants: {
       variant: {
-        default: 'bg-primary/10 text-primary ring-primary/20',
-        secondary: 'bg-muted text-fg-2 ring-border',
+        default: 'bg-foreground text-background',
+        secondary: 'bg-muted text-fg-2',
         destructive: 'bg-destructive/10 text-destructive ring-destructive/20',
         success: 'bg-success/10 text-success ring-success/25',
         warning: 'bg-warning/10 text-warning ring-warning/25',
         info: 'bg-info/10 text-info ring-info/20',
         unknown: 'bg-unknown/10 text-fg-2 ring-unknown/20',
-        outline: 'text-foreground ring-border bg-card',
+        outline: 'text-foreground ring-1 ring-inset ring-border bg-card',
       },
     },
     defaultVariants: { variant: 'default' },

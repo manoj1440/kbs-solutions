@@ -9,9 +9,9 @@ import {
   BarChart3,
   Bell,
   BookOpenCheck,
-  Building2,
   CheckCircle2,
-  ChevronRight,
+  ChevronDown,
+  CircleHelp,
   ClipboardCheck,
   ClipboardList,
   Clock3,
@@ -21,6 +21,7 @@ import {
   History,
   LayoutDashboard,
   ListChecks,
+  LogOut,
   MapPin,
   Menu,
   Phone,
@@ -49,6 +50,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { LogoutButton } from '@/components/logout-button';
 import { SessionKeepAlive } from '@/components/session-keep-alive';
 import { Button } from '@/components/ui/button';
+import { clientApi } from '@/lib/client-api';
 import { Avatar, humanize } from '@/components/ui/kit';
 import { cn } from '@/lib/utils';
 
@@ -188,8 +190,9 @@ function matchLength(href: string, pathname: string, params: URLSearchParams, ro
 }
 
 /**
- * F-801 / F-806 workspace shell for every web area (Admin, Manager, Accounts): gradient sidebar grouped by area,
- * group › page breadcrumb, keyboard page search, notifications, refresh and the account menu.
+ * F-801 / F-806 / F-817 workspace shell for every web area (Admin, Manager, Accounts): floating top bar (logo, section
+ * pill-nav, search / notifications / refresh, account menu), a slim rail with the pages of the current section, the
+ * drawer below `xl`, and keyboard page search.
  */
 export function WorkspaceShell({
   session,
@@ -259,12 +262,20 @@ export function WorkspaceShell({
     router.push(href);
   }
 
-  function navigation() {
+  // F-817: the section (top pill nav) that owns the current page; its pages fill the rail
+  const section = [...GROUPS, you].find((g) => g.items.some((i) => i.href === active.href)) ?? GROUPS[0];
+
+  async function signOut() {
+    await clientApi.post('/auth/logout').catch(() => undefined);
+    router.replace('/login?reason=signed-out');
+    router.refresh();
+  }
+
+  /** Drawer (below `xl`): every section with its pages, labelled. */
+  function drawerNavigation() {
     return GROUPS.map((group) => (
       <div key={group.label} className="mb-5">
-        <p className="mb-1.5 px-3 text-2xs font-semibold tracking-[0.14em] text-white/45 uppercase">
-          {group.label}
-        </p>
+        <p className="mb-1.5 px-3 text-xs font-medium text-muted-foreground">{group.label}</p>
         <div className="grid gap-0.5">
           {group.items.map(({ href, label, icon: Icon }) => {
             const on = active.href === href;
@@ -276,19 +287,11 @@ export function WorkspaceShell({
                 onClick={() => mobileNav.current?.close()}
                 aria-current={on ? 'page' : undefined}
                 className={cn(
-                  'group relative flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-ui font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300',
-                  on
-                    ? 'bg-teal-400/15 text-white ring-1 ring-teal-300/20 ring-inset'
-                    : 'text-white/65 hover:bg-white/5 hover:text-white',
+                  'flex min-h-10 items-center gap-3 rounded-full px-3 py-2 text-ui font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                  on ? 'bg-foreground text-background' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
                 )}
               >
-                <Icon
-                  className={cn(
-                    'size-4 shrink-0 transition-colors',
-                    on ? 'text-teal-300' : 'text-white/40 group-hover:text-white/70',
-                  )}
-                  aria-hidden="true"
-                />
+                <Icon className="size-4 shrink-0" aria-hidden="true" />
                 {label}
               </Link>
             );
@@ -298,131 +301,84 @@ export function WorkspaceShell({
     ));
   }
 
+  const pill = 'rounded-full bg-card shadow-card';
+  const iconButton = 'inline-flex size-10 items-center justify-center rounded-full text-fg-2 transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60';
+
   const brand = (
-    <Link href={home} className="flex items-center gap-3">
-      <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-300 to-emerald-400 text-navy">
-        <Building2 className="size-5" />
+    <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className={cn(pill, 'flex h-11 shrink-0 items-center gap-2 pr-4 pl-1.5 focus-visible:outline-2 focus-visible:outline-ring')}>
+      <span className="brand-gradient flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" aria-hidden="true">
+        K
       </span>
-      <span>
-        <span className="block text-[17px] font-bold tracking-tight text-white">
-          KBS<span className="font-normal text-white/60"> Solutions</span>
-        </span>
-        <span className="block text-2xs text-white/50">{subtitle}</span>
+      <span className="text-[15px] font-semibold tracking-tight text-foreground">
+        KBS<span className="hidden font-normal text-fg-3 sm:inline"> Solutions</span>
       </span>
     </Link>
   );
 
-  const footer = (
-    <>
-      <Link
-        href={`${accountBase}/account`}
-        onClick={() => mobileNav.current?.close()}
-        className="relative flex items-center gap-3 border-t border-white/10 px-5 py-4 hover:bg-white/5"
-      >
-        <Avatar name={name} className="bg-teal-300/15 text-teal-200 ring-1 ring-teal-300/30" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-ui font-semibold text-white/90">{name}</span>
-          <span className="flex items-center gap-1 text-2xs text-white/55">
-            <ShieldCheck className="size-3 text-teal-300" /> {roleLabel}
-          </span>
-        </span>
-        <ChevronRight className="size-4 text-white/40" />
-      </Link>
-    </>
-  );
-
   return (
     <div className="admin-workspace admin-canvas min-h-screen text-foreground">
-      <a
-        href="#admin-content"
-        className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-card p-3 text-sm focus:not-sr-only"
-      >
+      <a href="#admin-content" className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-card p-3 text-sm focus:not-sr-only">
         Skip to content
       </a>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-[linear-gradient(180deg,hsl(var(--navy))_0%,hsl(var(--navy-2))_60%,hsl(var(--navy))_100%)] text-white lg:flex">
-        <div className="relative flex h-20 shrink-0 items-center px-6">{brand}</div>
-        <nav
-          aria-label={`${humanize(area)} navigation`}
-          className="relative min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-5"
-        >
-          {navigation()}
-        </nav>
-        {footer}
-      </aside>
-      <div className="min-w-0 lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-12 items-center justify-between gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-xl sm:px-8">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              aria-label="Open navigation"
-              onClick={() => mobileNav.current?.showModal()}
-            >
-              <Menu />
-            </Button>
-            <span className="hidden text-ui text-muted-foreground sm:inline">{active.group}</span>
-            <ChevronRight className="hidden size-3.5 text-fg-3 sm:block" />
-            <span className="flex min-w-0 items-center gap-2 text-ui font-semibold text-foreground">
-              <active.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
-              <span className="truncate">{active.label}</span>
-            </span>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <Button
-              variant="outline"
-              className="gap-2 rounded-lg text-muted-foreground xl:min-w-72 xl:justify-start"
-              aria-label="Search workspace"
-              onClick={() => search.current?.showModal()}
-            >
-              <Search />
-              <span className="hidden font-normal xl:inline">Jump to a page…</span>
-              <kbd className="ml-auto hidden rounded-md border border-border bg-surface-muted px-1.5 py-0.5 font-sans text-2xs font-medium xl:inline">
-                ⌘K
-              </kbd>
-            </Button>
-            <NotificationBell area={own} />
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Refresh business data"
-              title="Refresh data"
-              className="hidden sm:inline-flex"
-              disabled={refreshing}
-              onClick={() => startRefresh(() => router.refresh())}
-            >
-              <RefreshCw className={cn(refreshing && 'animate-spin')} />
-            </Button>
+      <header className="sticky top-0 z-30 bg-canvas/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-4 sm:h-[76px] sm:gap-3 sm:px-6">
+          <button type="button" aria-label="Open navigation" className={cn(pill, 'inline-flex size-11 shrink-0 items-center justify-center text-fg-2 hover:text-foreground xl:hidden')} onClick={() => mobileNav.current?.showModal()}>
+            <Menu className="size-5" />
+          </button>
+          {brand}
+          <nav aria-label={`${humanize(area)} sections`} className="mx-auto hidden xl:block">
+            <div className={cn(pill, 'flex h-11 items-center gap-0.5 p-1')}>
+              {GROUPS.map((g) => {
+                const on = g === section;
+                return (
+                  <Link
+                    key={g.label}
+                    href={g.items[0].href}
+                    prefetch={false}
+                    aria-current={on ? 'true' : undefined}
+                    className={cn(
+                      'inline-flex h-9 items-center rounded-full px-4 text-ui font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-ring',
+                      on ? 'bg-foreground text-background' : 'text-fg-2 hover:text-foreground',
+                    )}
+                  >
+                    {g.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+          <div className="ml-auto flex shrink-0 items-center gap-2 xl:ml-0">
+            <div className={cn(pill, 'flex h-11 items-center gap-0.5 px-1')}>
+              <button type="button" className={iconButton} aria-label="Search workspace" title="Search (⌘K)" onClick={() => search.current?.showModal()}>
+                <Search className="size-[18px]" />
+              </button>
+              <NotificationBell area={own} />
+              <button type="button" className={cn(iconButton, 'hidden sm:inline-flex')} aria-label="Refresh business data" title="Refresh data" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}>
+                <RefreshCw className={cn('size-[18px]', refreshing && 'animate-spin')} />
+              </button>
+            </div>
             <details className="relative">
-              <summary
-                className="flex cursor-pointer list-none items-center gap-2 rounded-full p-0.5 pr-1 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring sm:pr-2"
-                aria-label="Account menu"
-              >
-                <Avatar name={name} className="bg-primary text-primary-foreground" />
+              <summary className={cn(pill, 'flex h-11 cursor-pointer list-none items-center gap-2 p-1 focus-visible:outline-2 focus-visible:outline-ring sm:pr-3 [&::-webkit-details-marker]:hidden')} aria-label="Account menu">
+                <Avatar name={name} className="bg-foreground text-background" />
                 <span className="hidden text-left sm:block">
-                  <span className="block max-w-32 truncate text-xs font-semibold">{name}</span>
-                  <span className="text-2xs text-muted-foreground">{roleLabel}</span>
+                  <span className="block max-w-36 truncate text-ui leading-4 font-semibold">{name}</span>
+                  <span className="block text-2xs leading-4 text-muted-foreground">{roleLabel}</span>
                 </span>
+                <ChevronDown className="hidden size-4 text-fg-3 sm:block" aria-hidden="true" />
               </summary>
-              <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-card shadow-pop">
+              <div className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl bg-card shadow-pop">
                 <div className="flex items-center gap-3 bg-surface-muted px-4 py-3">
-                  <Avatar name={name} />
+                  <Avatar name={name} className="bg-foreground text-background" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{name}</p>
                     <p className="text-xs text-muted-foreground">{session.user.mobileMasked}</p>
                   </div>
                 </div>
                 <div className="grid p-1.5">
-                  <Link
-                    href={`${accountBase}/account`}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-fg-2 hover:bg-muted"
-                  >
+                  <Link href={`${accountBase}/account`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
                     <UserRound className="size-4 text-fg-3" /> Account & support
                   </Link>
-                  <Link
-                    href={`${accountBase}/notifications`}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-fg-2 hover:bg-muted"
-                  >
+                  <Link href={`${accountBase}/notifications`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
                     <Bell className="size-4 text-fg-3" /> All notifications
                   </Link>
                 </div>
@@ -432,36 +388,74 @@ export function WorkspaceShell({
               </div>
             </details>
           </div>
-        </header>
+        </div>
+      </header>
+      <div className="mx-auto flex max-w-[1600px] gap-5 px-4 sm:px-6">
+        <aside aria-label={section.label} className="sticky top-[76px] hidden h-[calc(100dvh-92px)] w-[88px] shrink-0 flex-col justify-between gap-3 md:flex">
+          <nav aria-label={`${humanize(area)} navigation`} className="min-h-0 overflow-y-auto rounded-[28px] bg-card p-1.5 shadow-card">
+            <div className="grid gap-1">
+              {section.items.map(({ href, label, icon: Icon }) => {
+                const on = active.href === href;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    prefetch={false}
+                    aria-current={on ? 'page' : undefined}
+                    title={label}
+                    className="group flex flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-center focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    <span className={cn('flex size-10 items-center justify-center rounded-full transition-colors', on ? 'bg-foreground text-background' : 'text-fg-2 group-hover:bg-surface-muted group-hover:text-foreground')}>
+                      <Icon className="size-[18px]" aria-hidden="true" />
+                    </span>
+                    <span className={cn('line-clamp-2 text-2xs leading-3 font-medium', on ? 'text-foreground' : 'text-muted-foreground')}>{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+          <div className="grid gap-1 rounded-[28px] bg-card p-1.5 shadow-card">
+            <Link href={`${accountBase}/account`} prefetch={false} title="Account & support" aria-label="Account & support" className="flex justify-center rounded-full py-0.5 focus-visible:outline-2 focus-visible:outline-ring">
+              <span className={cn(iconButton, 'size-10')}>
+                <CircleHelp className="size-[18px]" aria-hidden="true" />
+              </span>
+            </Link>
+            <button type="button" title="Sign out" aria-label="Sign out" className="flex justify-center rounded-full py-0.5 focus-visible:outline-2 focus-visible:outline-ring" onClick={() => void signOut()}>
+              <span className={cn(iconButton, 'size-10')}>
+                <LogOut className="size-[18px]" aria-hidden="true" />
+              </span>
+            </button>
+          </div>
+        </aside>
         <SessionKeepAlive accessExpiresInSec={session.account?.accessExpiresInSec ?? 900} />
-        <main
-          id="admin-content"
-          tabIndex={-1}
-          className="admin-content mx-auto min-w-0 max-w-[1600px] p-4 outline-none sm:p-6"
-        >
+        <main id="admin-content" tabIndex={-1} className="admin-content min-w-0 flex-1 pt-1 pb-10 outline-none">
           {children}
         </main>
       </div>
       <dialog
         ref={mobileNav}
         aria-label={`${humanize(area)} navigation menu`}
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] bg-navy p-0 text-white backdrop:bg-navy/60 backdrop:backdrop-blur-sm open:flex open:flex-col"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] rounded-r-[28px] bg-card p-0 text-foreground shadow-pop backdrop:bg-neutral-950/40 backdrop:backdrop-blur-sm open:flex open:flex-col"
       >
-        <div className="flex shrink-0 items-center justify-between px-6 py-5">
+        <div className="flex shrink-0 items-center justify-between px-4 py-4">
           {brand}
-          <button
-            type="button"
-            aria-label="Close navigation"
-            className="rounded-lg p-2 hover:bg-white/10"
-            onClick={() => mobileNav.current?.close()}
-          >
+          <button type="button" aria-label="Close navigation" className={iconButton} onClick={() => mobileNav.current?.close()}>
             <X className="size-5" />
           </button>
         </div>
-        <nav aria-label={`Mobile ${area} navigation`} className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-          {navigation()}
+        <nav aria-label={`Mobile ${area} navigation`} className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+          {drawerNavigation()}
         </nav>
-        <div className="shrink-0">{footer}</div>
+        <div className="flex shrink-0 items-center gap-3 border-t border-border-subtle px-4 py-3">
+          <Avatar name={name} className="bg-foreground text-background" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-ui font-semibold">{name}</span>
+            <span className="block text-2xs text-muted-foreground">{roleLabel}</span>
+          </span>
+          <button type="button" aria-label="Sign out" title="Sign out" className={iconButton} onClick={() => void signOut()}>
+            <LogOut className="size-[18px]" />
+          </button>
+        </div>
       </dialog>
       <dialog
         ref={search}
@@ -470,7 +464,7 @@ export function WorkspaceShell({
           setQuery('');
           setCursor(0);
         }}
-        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-pop backdrop:bg-navy/50 backdrop:backdrop-blur-sm"
+        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none overflow-hidden rounded-[28px] bg-card p-0 shadow-pop backdrop:bg-neutral-950/40 backdrop:backdrop-blur-sm"
       >
         <h2 id="workspace-search-title" className="sr-only">
           Find your workspace
@@ -520,9 +514,9 @@ export function WorkspaceShell({
                 search.current?.close();
               }}
               data-active={i === cursor || undefined}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-fg-2 data-[active]:bg-accent data-[active]:text-foreground"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-fg-2 data-[active]:bg-surface-muted data-[active]:text-foreground"
             >
-              <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <span className="flex size-8 items-center justify-center rounded-full bg-muted text-fg-2">
                 <Icon className="size-4" />
               </span>
               <span className="min-w-0 flex-1">

@@ -20,7 +20,7 @@ export default async function LoginPage({
       <section className="relative flex h-dvh min-h-0 flex-col items-center justify-center gap-6 overflow-hidden px-6">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-40 -right-40 size-[420px] rounded-full bg-teal-200/40 blur-3xl"
+          className="pointer-events-none absolute -top-40 -right-40 size-[420px] rounded-full bg-neutral-300/40 blur-3xl"
         />
         <div
           aria-hidden="true"
@@ -28,10 +28,10 @@ export default async function LoginPage({
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -bottom-40 -left-32 size-96 rounded-full bg-teal-300/20 blur-3xl"
+          className="pointer-events-none absolute -bottom-40 -left-32 size-96 rounded-full bg-neutral-400/20 blur-3xl"
         />
         <div className="relative flex items-center gap-2.5 lg:hidden">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-navy text-teal-300">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-navy text-neutral-400">
             <Building2 className="size-5" />
           </span>
           <span className="text-lg font-bold tracking-tight text-navy">
@@ -41,7 +41,7 @@ export default async function LoginPage({
         {reason ? (
           <p
             role={reason === 'deactivated' ? 'alert' : 'status'}
-            className={`relative flex w-full max-w-md items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${reason === 'deactivated' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-teal-200 bg-teal-50 text-teal-900'}`}
+            className={`relative flex w-full max-w-md items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${reason === 'deactivated' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-neutral-300 bg-neutral-100 text-neutral-950'}`}
           >
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             {LOGIN_NOTICES[reason]}

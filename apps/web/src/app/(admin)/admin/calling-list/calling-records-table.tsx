@@ -52,7 +52,7 @@ export function CallingRecordsTable({
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) =>
         row.original.assignedTelecaller ? (
-          <Link href={callerHref(row.original.assignedTelecaller.id)} className="inline-flex items-center gap-2 font-medium text-foreground hover:text-teal-700">
+          <Link href={callerHref(row.original.assignedTelecaller.id)} className="inline-flex items-center gap-2 font-medium text-foreground hover:text-neutral-900">
             <Avatar name={row.original.assignedTelecaller.fullName} size="sm" />
             {row.original.assignedTelecaller.fullName}
           </Link>
@@ -94,7 +94,7 @@ export function CallingRecordsTable({
       header: 'Actions',
       cell: ({ row }) =>
         row.original.recordStatus === 'NEEDS_REVIEW' ? (
-          <Link href={`/admin/calling-list/${row.original.batchId}`} className="text-ui font-medium text-teal-700 hover:underline">
+          <Link href={`/admin/calling-list/${row.original.batchId}`} className="text-ui font-medium text-neutral-900 hover:underline">
             Review in {row.original.batchRef}
           </Link>
         ) : row.original.recordStatus === 'EXCLUDED' || row.original.recordStatus === 'DO_NOT_CONTACT' || row.original.hiddenAt ? (

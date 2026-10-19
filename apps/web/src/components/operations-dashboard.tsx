@@ -107,7 +107,7 @@ function Tile({ label, m, money, tone = 'teal' }: { label: string; m: Metric; mo
 function TileGroup({ icon, tone, title, children }: { icon: LucideIcon; tone: Tone; title: string; children: React.ReactNode }) {
   return (
     <div className="grid gap-2.5">
-      <h3 className="flex items-center gap-2 text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
+      <h3 className="flex items-center gap-2 text-2xs font-semibold text-muted-foreground">
         <IconTile icon={icon} tone={tone} size="sm" className="size-6 rounded-lg [&>svg]:size-3.5" />
         {title}
       </h3>
@@ -239,7 +239,7 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
         <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md text-xs font-medium text-fg-2 hover:text-foreground [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="size-3.5" aria-hidden="true" />
           More filters
-          {moreCount ? <span className="rounded-full bg-teal-50 px-1.5 text-2xs font-semibold text-teal-700 tabular-nums">{moreCount}</span> : null}
+          {moreCount ? <span className="rounded-full bg-neutral-100 px-1.5 text-2xs font-semibold text-neutral-900 tabular-nums">{moreCount}</span> : null}
           <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
         </summary>
         <div className="mt-3 grid grid-cols-2 items-end gap-3 lg:grid-cols-4">
@@ -343,13 +343,13 @@ export function OpsSections({ d }: { d: OpsDashboard }) {
           <Tile label="On hold" m={a.payouts.onHold} money tone="rose" />
           <Tile label="Paid (events)" m={a.payouts.paid} money tone="emerald" />
           <div className="col-span-2 flex min-w-0 flex-col rounded-xl border border-transparent bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(175_77%_21%)_55%,hsl(var(--navy-2))_100%)] p-4 text-white shadow-pop">
-            <div className="flex items-center justify-between gap-2 text-xs font-medium text-teal-50">
+            <div className="flex items-center justify-between gap-2 text-xs font-medium text-neutral-100">
               Confirmed transfers
               <BadgeIndianRupee className="size-4" aria-hidden="true" />
             </div>
             <div className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums">{formatInr(a.payouts.confirmedTransfersInr.amountInr ?? 0)}</div>
             <div className="min-h-3 flex-1" />
-            <p className="border-t border-white/15 pt-2 text-2xs leading-snug text-teal-50/90">Accounts payment · {a.payouts.confirmedTransfersInr.dateBasis}</p>
+            <p className="border-t border-white/15 pt-2 text-2xs leading-snug text-neutral-100/90">Accounts payment · {a.payouts.confirmedTransfersInr.dateBasis}</p>
           </div>
         </TileGroup>
       </section>

@@ -168,7 +168,7 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
               ]}
             />
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Effective channels</span>
+              <span className="text-2xs font-medium text-muted-foreground">Effective channels</span>
               {c.effectiveChannels.length ? (
                 c.effectiveChannels.map((ch) => (
                   <Badge key={ch} variant="success">
@@ -215,10 +215,10 @@ export function CardEditor({ initial, categories, initialPublications }: { initi
                       key={cat.key}
                       className={cn(
                         'inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-ui transition-colors has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60',
-                        on ? 'border-teal-200 bg-teal-50 text-teal-800' : 'border-border bg-card text-fg-2 hover:border-border-strong',
+                        on ? 'border-neutral-300 bg-neutral-100 text-neutral-950' : 'border-border bg-card text-fg-2 hover:border-border-strong',
                       )}
                     >
-                      <input type="checkbox" className="accent-teal-700" disabled={readOnly} checked={on} onChange={(e) => setForm({ ...form, categoryKeys: e.target.checked ? [...form.categoryKeys, cat.key] : form.categoryKeys.filter((k) => k !== cat.key) })} />
+                      <input type="checkbox" className="accent-neutral-900" disabled={readOnly} checked={on} onChange={(e) => setForm({ ...form, categoryKeys: e.target.checked ? [...form.categoryKeys, cat.key] : form.categoryKeys.filter((k) => k !== cat.key) })} />
                       {cat.label}
                     </label>
                   );

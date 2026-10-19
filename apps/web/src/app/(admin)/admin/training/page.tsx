@@ -55,36 +55,36 @@ export default async function TrainingAdmin() {
                     key={m.id}
                     href={`/admin/training/${m.sequence}`}
                     prefetch={false}
-                    className="lift group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+                    className="lift group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                   >
                     <div className={cn('relative flex items-start justify-between gap-3 px-5 pt-5 pb-4', live ? 'bg-gradient-to-br from-sky-50 to-white' : 'bg-gradient-to-br from-amber-50/70 to-white')}>
                       <div className="flex items-center gap-3">
                         <span
                           className={cn(
                             'inline-flex size-14 items-center justify-center rounded-2xl text-2xl font-bold tracking-tight text-white tabular-nums shadow-sm',
-                            live ? 'bg-gradient-to-br from-sky-600 to-teal-600' : 'bg-gradient-to-br from-amber-500 to-orange-500',
+                            live ? 'bg-gradient-to-br from-sky-600 to-neutral-900' : 'bg-gradient-to-br from-amber-500 to-orange-500',
                           )}
                         >
                           {String(m.sequence).padStart(2, '0')}
                         </span>
                         <div>
-                          <p className="text-2xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">Module {m.sequence}</p>
+                          <p className="text-2xs font-semibold tracking-[0.14em] text-muted-foreground">Module {m.sequence}</p>
                           <Badge variant={live ? 'success' : 'warning'} className="mt-1">
                             {live ? `v${m.version}` : 'Draft'}
                           </Badge>
                         </div>
                       </div>
-                      <ArrowUpRight className="size-4 text-fg-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-teal-700" aria-hidden="true" />
+                      <ArrowUpRight className="size-4 text-fg-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-neutral-900" aria-hidden="true" />
                     </div>
                     <div className="flex flex-1 flex-col gap-4 px-5 pb-5">
-                      <p className="text-[15px] leading-snug font-semibold text-foreground group-hover:text-teal-800">{m.title}</p>
+                      <p className="text-[15px] leading-snug font-semibold text-foreground group-hover:text-neutral-950">{m.title}</p>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="rounded-xl bg-surface-muted px-3 py-2">
-                          <p className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Questions</p>
+                          <p className="text-2xs font-medium text-muted-foreground">Questions</p>
                           <p className="text-lg font-semibold text-foreground tabular-nums">{m.questionCount}</p>
                         </div>
                         <div className="rounded-xl bg-surface-muted px-3 py-2">
-                          <p className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Pass mark</p>
+                          <p className="text-2xs font-medium text-muted-foreground">Pass mark</p>
                           <p className="text-lg font-semibold text-foreground tabular-nums">{m.passThresholdPct}%</p>
                         </div>
                       </div>

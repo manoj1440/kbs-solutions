@@ -170,7 +170,7 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
                 Dual-approval backlog: <span className="font-semibold text-foreground tabular-nums">{d.approvals.pendingCount}</span> request(s) · {formatInr(d.approvals.pendingAmountInr)} · Manager {d.approvals.awaitingManager} · Admin {d.approvals.awaitingAdmin}
               </div>
               <div className="grid gap-2">
-                <div className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Age of pending requests</div>
+                <div className="text-2xs font-medium text-muted-foreground">Age of pending requests</div>
                 <div className="grid grid-cols-4 gap-2 text-center text-sm">
                   {aging.map(([l, n], i) => (
                     <div key={l} className="rounded-xl border border-border p-2.5">

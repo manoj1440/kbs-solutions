@@ -15,10 +15,10 @@ import { TONE, type Tone } from './kit';
 export type TrendSeries = { key: string; label: string; tone: Tone; values: number[] };
 
 const FILL: Partial<Record<Tone, string>> = {
-  teal: 'fill-teal-500/12',
-  indigo: 'fill-indigo-500/12',
+  teal: 'fill-neutral-800/12',
+  indigo: 'fill-neutral-800/12',
   sky: 'fill-sky-500/12',
-  violet: 'fill-violet-500/12',
+  violet: 'fill-neutral-800/12',
   amber: 'fill-amber-500/12',
   rose: 'fill-rose-500/12',
   emerald: 'fill-emerald-500/12',

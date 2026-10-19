@@ -52,12 +52,12 @@ function Diff({ before, after }: { before: unknown; after: unknown }) {
           <dt className="font-mono text-2xs font-semibold text-fg-2">{k}</dt>
           <dd className="grid items-start gap-1.5 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
             <div className="min-w-0 rounded-md bg-rose-50 px-2 py-1 ring-1 ring-rose-100 ring-inset">
-              <div className="text-[9.5px] font-semibold tracking-wider text-rose-500 uppercase">Before</div>
+              <div className="text-[9.5px] font-semibold text-rose-500">Before</div>
               <div className="font-mono break-all text-rose-800">{b[k] === undefined ? '—' : JSON.stringify(b[k])}</div>
             </div>
             <ArrowRight className="hidden size-3.5 self-center text-fg-3 sm:block" aria-hidden="true" />
             <div className="min-w-0 rounded-md bg-emerald-50 px-2 py-1 ring-1 ring-emerald-100 ring-inset">
-              <div className="text-[9.5px] font-semibold tracking-wider text-emerald-600 uppercase">After</div>
+              <div className="text-[9.5px] font-semibold text-emerald-600">After</div>
               <div className="font-mono break-all text-emerald-900">{a[k] === undefined ? '—' : JSON.stringify(a[k])}</div>
             </div>
           </dd>
@@ -106,7 +106,7 @@ export function AuditActionsTable({ rows, sp }: { rows: AuditRow[]; sp: Record<s
     a.accessor('action', {
       header: 'Action',
       cell: ({ getValue }) => (
-        <Link className="inline-block rounded-md bg-indigo-50 px-1.5 py-0.5 font-mono text-2xs break-all ring-1 ring-indigo-100 ring-inset" href={actionHref(getValue())}>
+        <Link className="inline-block rounded-md bg-neutral-100 px-1.5 py-0.5 font-mono text-2xs break-all ring-1 ring-neutral-200 ring-inset" href={actionHref(getValue())}>
           {getValue()}
         </Link>
       ),
@@ -138,7 +138,7 @@ export function AuditActionsTable({ rows, sp }: { rows: AuditRow[]; sp: Record<s
             {r.reason ? <div className="text-fg-2">{r.reason}</div> : null}
             {r.before !== null || r.after !== null ? (
               <details className="group mt-1">
-                <summary className="inline-flex cursor-pointer list-none items-center gap-1 font-medium text-teal-700 hover:text-teal-900 [&::-webkit-details-marker]:hidden">
+                <summary className="inline-flex cursor-pointer list-none items-center gap-1 font-medium text-neutral-900 hover:text-neutral-950 [&::-webkit-details-marker]:hidden">
                   <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" aria-hidden="true" />
                   Before / after
                 </summary>

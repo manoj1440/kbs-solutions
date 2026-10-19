@@ -72,7 +72,7 @@ export async function CallingDistribution({
                     key={t.id}
                     className={cn(
                       'flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4 shadow-card',
-                      t.needsReassignment ? 'border-rose-200' : telecallerId === t.id ? 'border-teal-300 ring-2 ring-teal-100' : 'border-border',
+                      t.needsReassignment ? 'border-rose-200' : telecallerId === t.id ? 'border-neutral-400 ring-2 ring-neutral-200' : 'border-border',
                     )}
                   >
                     <div className="flex min-w-0 items-start gap-3">
@@ -118,7 +118,7 @@ export async function CallingDistribution({
                       )}
                     </div>
                     <div className="mt-auto border-t border-border-subtle pt-3">
-                      <a className="text-ui font-medium text-teal-700 hover:text-teal-800" href={`${base}?telecallerId=${t.id}`}>
+                      <a className="text-ui font-medium text-neutral-900 hover:text-neutral-950" href={`${base}?telecallerId=${t.id}`}>
                         view records
                       </a>
                     </div>

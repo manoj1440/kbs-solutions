@@ -47,8 +47,8 @@ export default async function OnboardingReviewPage({ params }: { params: Promise
                 const current = i === at && d.step !== 'COMPLETE';
                 return (
                   <li key={s} aria-current={current ? 'step' : undefined} className="flex min-w-[5.5rem] flex-1 flex-col gap-1.5">
-                    <span className={cn('h-1.5 rounded-full', done ? 'bg-teal-600' : current ? 'bg-violet-500' : 'bg-surface-strong')} />
-                    <span className={cn('flex items-center gap-1 text-2xs leading-tight font-medium', done ? 'text-teal-800' : current ? 'text-violet-700' : 'text-fg-3')}>
+                    <span className={cn('h-1.5 rounded-full', done ? 'bg-neutral-900' : current ? 'bg-neutral-800' : 'bg-surface-strong')} />
+                    <span className={cn('flex items-center gap-1 text-2xs leading-tight font-medium', done ? 'text-neutral-950' : current ? 'text-neutral-900' : 'text-fg-3')}>
                       {done ? <Check className="size-3 shrink-0" aria-hidden="true" /> : null}
                       {humanize(s)}
                     </span>

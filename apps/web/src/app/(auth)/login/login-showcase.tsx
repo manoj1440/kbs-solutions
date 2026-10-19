@@ -37,7 +37,7 @@ export function LoginShowcase() {
       />
 
       <header className="relative flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-teal-400 text-navy shadow-lg shadow-teal-400/20">
+        <span className="flex size-11 items-center justify-center rounded-xl bg-neutral-500 text-navy shadow-lg shadow-neutral-500/20">
           <Building2 className="size-6" />
         </span>
         <span className="flex flex-col">
@@ -55,7 +55,7 @@ export function LoginShowcase() {
             <br />
             Every decision.
             <br />
-            <span className="text-teal-300">One clear view.</span>
+            <span className="text-neutral-400">One clear view.</span>
           </h1>
           <p className="mt-5 max-w-md text-[15px] leading-7 text-white/70">
             People, bank data and payouts—connected in one workspace.
@@ -64,7 +64,7 @@ export function LoginShowcase() {
             {FEATURES.map(({ icon: Icon, label }) => (
               <div key={label} className="flex flex-col items-start gap-2.5">
                 <span className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
-                  <Icon className="size-5 text-teal-300" />
+                  <Icon className="size-5 text-neutral-400" />
                 </span>
                 <span className="text-[11px] leading-tight text-white/70">{label}</span>
               </div>
@@ -78,8 +78,8 @@ export function LoginShowcase() {
         {STATS.map(({ icon: Icon, value, label }, i) => (
           <div key={label} className="flex flex-1 items-center gap-3">
             {i > 0 ? <span className="mr-3 h-10 w-px bg-white/10" aria-hidden="true" /> : null}
-            <span className="flex size-10 items-center justify-center rounded-full bg-teal-400/15">
-              <Icon className="size-5 text-teal-300" />
+            <span className="flex size-10 items-center justify-center rounded-full bg-neutral-500/15">
+              <Icon className="size-5 text-neutral-400" />
             </span>
             <span>
               <span className="block text-lg leading-tight font-bold">{value}</span>
