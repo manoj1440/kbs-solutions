@@ -168,4 +168,18 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(managerToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(201);
     expect((await api().get(`/api/v1/payouts/requests/${req.id}`).set(auth(adv2Token)).expect(200)).body.data.state).toBe('APPROVED');
   });
+
+  it('MIS correction while pending: approval refused for an UNDER_REVIEW item; rejection releases only the reserved one', async () => {
+    const ok = await entitlement(adv1Id, 'APP-611');
+    const corrected = await entitlement(adv1Id, 'APP-612');
+    const req = (await api().post('/api/v1/payouts/requests').set(auth(adv1Token)).set('idempotency-key', idem()).send({ entitlementIds: [ok.id, corrected.id] }).expect(201)).body.data;
+    await prisma.payoutEntitlement.update({ where: { id: corrected.id }, data: { state: 'UNDER_REVIEW', reviewReason: 'MIS now reports cardActivationStatus = "INACTIVE"' } });
+    const refused = await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(managerToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(409);
+    expect(refused.body.error.message).toContain('under review');
+    expect(await prisma.payoutApproval.count({ where: { requestId: req.id } })).toBe(0);
+    await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(managerToken)).set('idempotency-key', idem()).send({ decision: 'REJECTED', reason: 'one card reversed by the bank' }).expect(201);
+    expect(await prisma.payoutEntitlement.findUniqueOrThrow({ where: { id: ok.id } })).toMatchObject({ state: 'ELIGIBLE_AVAILABLE', currentRequestId: null });
+    expect(await prisma.payoutEntitlement.findUniqueOrThrow({ where: { id: corrected.id } })).toMatchObject({ state: 'UNDER_REVIEW', currentRequestId: null });
+    expect(await prisma.payoutEntitlementEvent.count({ where: { entitlementId: corrected.id, requestId: req.id, toState: 'ELIGIBLE_AVAILABLE' } })).toBe(0); // no false "released" event
+  });
 });

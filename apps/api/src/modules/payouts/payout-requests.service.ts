@@ -312,13 +312,21 @@ export class PayoutRequestsService {
     if (r.approvals.some((a) => a.approverRole === role)) throw new AppError('PAYOUT_APPROVAL_DUPLICATE', `${role} approval already recorded.`);
     if (role === 'ADMIN' && (this.config.getString('payouts.approvalOrder') ?? 'ANY') === 'MANAGER_FIRST' && !r.approvals.some((a) => a.approverRole === 'MANAGER')) throw new AppError('PAYOUT_STATE_INVALID', 'Manager approval is required first (payouts.approvalOrder = MANAGER_FIRST).');
     const entitlementIds = r.items.map((i) => i.entitlementId);
+    // an MIS correction after submission puts items UNDER_REVIEW: approving would send unpayable events to Accounts
+    if (body.decision === 'APPROVED') {
+      const notReserved = await this.prisma.client.payoutEntitlement.count({ where: { id: { in: entitlementIds }, state: { not: 'RESERVED' } } });
+      if (notReserved) throw new AppError('PAYOUT_STATE_INVALID', `${notReserved} card event(s) in ${r.publicRef} are under review after a bank MIS correction. Reject the request with a reason (the Advisor can request the rest again) or wait for the next MIS.`);
+    }
     const outcome = await this.prisma.client.$transaction(async (tx) => {
       await tx.payoutApproval.create({ data: { requestId: id, approverRole: role, approverUserId: actor.userId, decision: body.decision, reason: body.reason ?? null } });
       if (body.decision === 'REJECTED') {
         await tx.payoutRequest.update({ where: { id }, data: { state: 'REJECTED' } });
         await tx.payoutRequestItem.updateMany({ where: { requestId: id, active: true }, data: { active: false } });
-        await tx.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, state: 'RESERVED' }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null } });
-        await tx.payoutEntitlementEvent.createMany({ data: entitlementIds.map((e) => ({ entitlementId: e, fromState: 'RESERVED' as const, toState: 'ELIGIBLE_AVAILABLE' as const, requestId: id, actorUserId: actor.userId, reason: `released: ${role} rejected ${r.publicRef} — ${body.reason ?? ''}` })) });
+        // only RESERVED items go back to the claimable pool; UNDER_REVIEW ones stay in review but leave the request
+        const released = (await tx.payoutEntitlement.findMany({ where: { id: { in: entitlementIds }, state: 'RESERVED' }, select: { id: true } })).map((e) => e.id);
+        await tx.payoutEntitlement.updateMany({ where: { id: { in: released } }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null } });
+        await tx.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, currentRequestId: id }, data: { currentRequestId: null } });
+        await tx.payoutEntitlementEvent.createMany({ data: released.map((e) => ({ entitlementId: e, fromState: 'RESERVED' as const, toState: 'ELIGIBLE_AVAILABLE' as const, requestId: id, actorUserId: actor.userId, reason: `released: ${role} rejected ${r.publicRef} — ${body.reason ?? ''}` })) });
         return 'REJECTED' as const;
       }
       const all = await tx.payoutApproval.findMany({ where: { requestId: id, decision: 'APPROVED' } });
@@ -357,11 +365,13 @@ export class PayoutRequestsService {
     }
     if (r.payments.some((p) => LIVE.includes(p.state))) throw new AppError('PAYOUT_STATE_INVALID', 'A payment record exists; resolve it as an exception instead.');
     const entitlementIds = r.items.map((i) => i.entitlementId);
+    const released = (await this.prisma.client.payoutEntitlement.findMany({ where: { id: { in: entitlementIds }, state: 'RESERVED' }, select: { id: true } })).map((e) => e.id);
     await this.prisma.client.$transaction([
       this.prisma.client.payoutRequest.update({ where: { id }, data: { state: 'CANCELLED', cancelledAt: new Date(), cancelledByUserId: actor.userId, cancelReason: reason } }),
       this.prisma.client.payoutRequestItem.updateMany({ where: { requestId: id, active: true }, data: { active: false } }),
-      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, state: 'RESERVED' }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null } }),
-      this.prisma.client.payoutEntitlementEvent.createMany({ data: entitlementIds.map((e) => ({ entitlementId: e, fromState: 'RESERVED' as const, toState: 'ELIGIBLE_AVAILABLE' as const, requestId: id, actorUserId: actor.userId, reason: `released: ${r.publicRef} cancelled — ${reason}` })) }),
+      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: released } }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null } }),
+      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, currentRequestId: id }, data: { currentRequestId: null } }),
+      this.prisma.client.payoutEntitlementEvent.createMany({ data: released.map((e) => ({ entitlementId: e, fromState: 'RESERVED' as const, toState: 'ELIGIBLE_AVAILABLE' as const, requestId: id, actorUserId: actor.userId, reason: `released: ${r.publicRef} cancelled — ${reason}` })) }),
     ]);
     RequestContextStore.audit({ entityId: id, before: { state: r.state }, after: { state: 'CANCELLED' }, reason });
     if (!isAdvisor) await this.notifications.notify({ recipientUserId: r.advisorUserId, kind: 'PAYOUT_DECISION', title: 'Payout request cancelled by Admin', body: `${r.publicRef}: ${reason}. The card events are available again.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:cancel:${id}` });
