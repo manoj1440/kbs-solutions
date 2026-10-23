@@ -68,7 +68,10 @@ export class OutcomesService {
       // operational interest (never an entitlement, INV-05)
       let interestId: string | null = null;
       if (card && (body.outcome === 'CONNECTED_INTERESTED' || body.outcome === 'CONNECTED_LINK_OR_PDF_SHARED')) {
-        const i = await tx.callingInterest.create({ data: { callingRecordId, telecallerUserId: actor.userId, cardId: card.id } });
+        // one interest per record + card + caller: a link share may already have created it
+        const i =
+          (await tx.callingInterest.findFirst({ where: { callingRecordId, telecallerUserId: actor.userId, cardId: card.id }, select: { id: true } })) ??
+          (await tx.callingInterest.create({ data: { callingRecordId, telecallerUserId: actor.userId, cardId: card.id } }));
         interestId = i.id;
         // collision flag: an Advisor lead with the same mobile (exact) → flag both, change nothing else (REQ-08 §8.7 OPEN)
         const lead = await tx.lead.findFirst({ where: { customerMobile: r.mobile }, select: { id: true } });

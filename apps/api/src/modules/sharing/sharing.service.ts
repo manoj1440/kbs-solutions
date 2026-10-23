@@ -97,7 +97,12 @@ export class SharingService {
       // verbatim URL — never normalised (WA-02)
       text = `Hi ${target.customerName}, here is the ${card.bank.displayName} ${card.name} application link as discussed:\n${link.url}\n— ${me.fullName}, KBS Solutions`;
       if (target.callingRecordId) {
-        const i = await this.prisma.client.callingInterest.create({ data: { callingRecordId: target.callingRecordId, telecallerUserId: actor.userId, cardId: card.id, applicationLinkId: link.id } });
+        // one interest per record + card + caller: re-sharing or an earlier outcome must not count it twice
+        const where = { callingRecordId: target.callingRecordId, telecallerUserId: actor.userId, cardId: card.id };
+        const prior = await this.prisma.client.callingInterest.findFirst({ where, select: { id: true } });
+        const i = prior
+          ? await this.prisma.client.callingInterest.update({ where: { id: prior.id }, data: { applicationLinkId: link.id } })
+          : await this.prisma.client.callingInterest.create({ data: { ...where, applicationLinkId: link.id } });
         callingInterestId = i.id;
         await this.prisma.client.callingRecord.update({ where: { id: target.callingRecordId }, data: { interactionStatus: 'LINK_SHARED' } });
       }

@@ -80,6 +80,12 @@ describe('F-312 official ID / F-311 WhatsApp sharing (WA-01, WA-02)', () => {
     expect(sa).toMatchObject({ kind: 'APPLICATION_LINK', cardId, callingRecordId: rec, targetMobileMasked: '+91••••••0001', deliveryStatus: 'UNKNOWN' });
     expect(sa.assetVersionRef).toMatch(/^link:.*:v1$/);
     expect((await prisma.callingRecord.findUniqueOrThrow({ where: { id: rec } })).interactionStatus).toBe('LINK_SHARED');
+    // the matching outcome and a re-share reuse that interest — one customer + card counts once
+    const out = await api().post(`/api/v1/calling/records/${rec}/outcomes`).set(auth(tcToken)).set('idempotency-key', idem()).send({ outcome: 'CONNECTED_LINK_OR_PDF_SHARED', selectedCardId: cardId }).expect(201);
+    expect(out.body.data.interestId).toBe(interest.id);
+    const again = await api().post('/api/v1/share').set(auth(tcToken)).set('idempotency-key', idem()).send({ targetType: 'CALLING_RECORD', targetId: rec, kind: 'APPLICATION_LINK', cardId }).expect(201);
+    expect(again.body.data.callingInterestId).toBe(interest.id);
+    expect(await prisma.callingInterest.count({ where: { callingRecordId: rec } })).toBe(1);
 
     // benefit PDF → redirect link, which resolves to a presigned URL and logs the open
     const pdf = await api().post('/api/v1/share').set(auth(tcToken)).set('idempotency-key', idem()).send({ targetType: 'CALLING_RECORD', targetId: rec, kind: 'BENEFIT_PDF', cardId }).expect(201);
@@ -96,7 +102,7 @@ describe('F-312 official ID / F-311 WhatsApp sharing (WA-01, WA-02)', () => {
     expect((await prisma.shareAction.findUniqueOrThrow({ where: { id: id.body.data.shareActionId } })).assetVersionRef).toMatch(/^idcard:.*:v1$/);
 
     const list = await api().get(`/api/v1/calling/records/${rec}/shares`).set(auth(team.manager.accessToken)).expect(200);
-    expect(list.body.data.map((s: { kind: string }) => s.kind).sort()).toEqual(['APPLICATION_LINK', 'BENEFIT_PDF', 'OFFICE_ID']);
+    expect(list.body.data.map((s: { kind: string }) => s.kind).sort()).toEqual(['APPLICATION_LINK', 'APPLICATION_LINK', 'BENEFIT_PDF', 'OFFICE_ID']); // link shared twice above
     expect(list.body.data.every((s: { deliveryStatus: string }) => s.deliveryStatus === 'UNKNOWN')).toBe(true);
     // delivery webhook never touches hand-off rows
     await api().post('/api/v1/webhooks/whatsapp/delivery').send({ providerMessageId: 'x', status: 'DELIVERED' }).expect(201);

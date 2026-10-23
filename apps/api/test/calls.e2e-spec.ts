@@ -174,7 +174,7 @@ describe('F-309 calls / F-310 outcomes (CALL-01/02/04, CUST-04)', () => {
     const ov = await api().get('/api/v1/calling/team/overview').set(auth(team.manager.accessToken)).expect(200);
     expect(ov.body.data.telecallers.map((t: { id: string }) => t.id)).toEqual([team.telecallerId]);
     const me = ov.body.data.telecallers[0];
-    expect(me).toMatchObject({ training: 'PASSED', attempts: 2, connected: 1, talkTimeSec: 60, interests: 2 });
+    expect(me).toMatchObject({ training: 'PASSED', attempts: 2, connected: 1, talkTimeSec: 60, interests: 1 }); // INTERESTED then LINK_SHARED on the same record + card count once
     expect(me.outcomes.FOLLOW_UP).toBe(1);
     expect(me.outcomes.DECLINED).toBe(2);
     const act = await api().get(`/api/v1/calling/team/telecallers/${team.telecallerId}/activity`).set(auth(team.manager.accessToken)).expect(200);
