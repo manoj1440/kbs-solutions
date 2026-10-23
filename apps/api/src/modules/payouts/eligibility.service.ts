@@ -74,7 +74,10 @@ export class PayoutEligibilityService {
         if (!ok) continue;
       }
       const eventKey = `${lead.bankId}|${primaryReference}|${rule.triggerField}|${value}`;
-      const existing = await this.prisma.client.payoutEntitlement.findUnique({ where: { eventKey } });
+      // a rule's trigger values are alternatives of ONE card event (e.g. "V + ACTIVE" → "TXN ACTIVE - Rs 100"):
+      // any live entitlement of the same rule on this lead already pays it (INV-06)
+      const existing = await this.prisma.client.payoutEntitlement.findFirst({ where: { leadId, state: { not: 'VOID' }, rule: { bankId: rule.bankId, name: rule.name, triggerField: rule.triggerField } }, orderBy: { createdAt: 'asc' } });
+      if (!existing && (await this.prisma.client.payoutEntitlement.findUnique({ where: { eventKey }, select: { id: true } }))) continue; // voided event stays voided
       if (existing) {
         // a correction that restores the trigger value re-opens a reviewed entitlement
         if (existing.state === 'UNDER_REVIEW') await this.transition(existing.id, existing.state, existing.eligibleAt <= new Date() ? 'ELIGIBLE_AVAILABLE' : 'PENDING_HOLD', { batchId, reason: `MIS ${batchId} again reports ${rule.triggerField} = ${value}` });
@@ -100,12 +103,13 @@ export class PayoutEligibilityService {
 
   /** Correction handling: open entitlements whose trigger value the bank no longer reports go UNDER_REVIEW; PAID ones raise an exception event. */
   private async reviewLead(leadId: string, batchId: string, snap: Record<string, unknown>, tokens: string[]): Promise<string[]> {
-    const ents = await this.prisma.client.payoutEntitlement.findMany({ where: { leadId, state: { in: [...OPEN_STATES, 'PAID'] } }, include: { rule: { select: { triggerField: true } } } });
+    const ents = await this.prisma.client.payoutEntitlement.findMany({ where: { leadId, state: { in: [...OPEN_STATES, 'PAID'] } }, include: { rule: { select: { triggerField: true, triggerValues: true } } } });
     const reviewed: string[] = [];
     for (const e of ents) {
       const raw = snap[e.rule.triggerField];
       const current = typeof raw === 'string' && !isBlankBankValue(raw, tokens) ? raw.trim() : null;
-      if (current === e.triggerFieldValue) continue;
+      // still one of the rule's trigger values (e.g. activation moved up a level) → same event, not a correction
+      if (current === e.triggerFieldValue || (current !== null && ((e.rule.triggerValues as string[]) ?? []).includes(current))) continue;
       const reason = `MIS now reports ${e.rule.triggerField} = ${current === null ? '(blank)' : `"${current}"`} (was "${e.triggerFieldValue}")`;
       if (e.state === 'PAID') {
         const last = await this.prisma.client.payoutEntitlementEvent.findFirst({ where: { entitlementId: e.id }, orderBy: { at: 'desc' } });

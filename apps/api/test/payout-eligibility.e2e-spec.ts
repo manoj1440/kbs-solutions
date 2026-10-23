@@ -124,6 +124,21 @@ describe('F-602 entitlement evaluation (PAY-01, PAY-06, INV-05/06)', () => {
     await applyBatch([{ 'Application No': 'APP-501', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'INACTIVE', CUSTOMER_NAME: 'Pay A', 'Creation Date': '03-09-2026' }], 'b6.xlsx');
     expect(await prisma.outboxEvent.count({ where: { type: 'payouts.exception' } })).toBe(1);
     expect((await ents()).body.meta.counts).toMatchObject({ paid: 1, eligible: 1, availableToClaim: 0 });
-    void leadB;
+  });
+
+  it('INV-06: a rule whose trigger values are activation levels pays the card once as activation moves between them', async () => {
+    const rule = (await api().post('/api/v1/payouts/rules').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: hdfcId, name: 'HDFC any activation', triggerValues: ['V + ACTIVE', 'TXN ACTIVE - Rs 100'], effectiveFrom: '2026-01-01T00:00:00.000Z' }).expect(201)).body.data;
+    const rate = (await api().post(`/api/v1/payouts/rules/${rule.id}/rates`).set(auth(adminToken)).set('idempotency-key', idem()).send({ amountInr: 1000, effectiveFrom: '2026-01-01T00:00:00.000Z' }).expect(201)).body.data.rates[0];
+    await api().post(`/api/v1/payouts/rates/${rate.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'sheet' }).expect(201);
+    await api().post(`/api/v1/payouts/rules/${rule.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'sheet' }).expect(201);
+    await api().post('/api/v1/payouts/evaluate').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: hdfcId }).expect(201); // B reports TXN ACTIVE
+    const forB = () => prisma.payoutEntitlement.findMany({ where: { leadId: leadB, ruleId: rule.id } });
+    expect(await forB()).toHaveLength(1);
+    for (const [i, value] of ['V + ACTIVE', 'TXN ACTIVE - Rs 100'].entries()) {
+      await applyBatch([{ 'Application No': 'APP-502', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': value, CUSTOMER_NAME: 'Pay B' }], `lv${i}.xlsx`);
+      const rows = await forB();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.state).toBe('ELIGIBLE_AVAILABLE');
+    }
   });
 });
