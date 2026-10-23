@@ -32,7 +32,9 @@ export function BankActions({ id, active }: { id: string; active: boolean }) {
 
 export function NewCardForm({ banks }: { banks: { id: string; label: string }[] }) {
   const router = useRouter();
-  const [bankId, setBankId] = useState(banks[0]?.id ?? '');
+  const [picked, setBankId] = useState(banks[0]?.id ?? '');
+  // banks arrive after mount when the first one is added (router.refresh): fall back to the first listed bank
+  const bankId = banks.some((b) => b.id === picked) ? picked : (banks[0]?.id ?? '');
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [bankName, setBankName] = useState('');
