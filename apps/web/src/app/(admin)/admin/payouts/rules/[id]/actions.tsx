@@ -1,7 +1,7 @@
 'use client';
 
 import { ApiClientError, amountInput, digitsOnly, type PayoutRuleView } from '@kbs/shared';
-import { Archive, BadgeCheck, Check, Gavel, PencilLine, Plus, Save } from 'lucide-react';
+import { Archive, BadgeCheck, Check, Gavel, PencilLine, Plus, RefreshCw, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -26,7 +26,7 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
     setMsg(null);
     try {
       const r = await fn();
-      setMsg(ok);
+      if (ok) setMsg(ok);
       const to = navigateTo?.(r);
       if (to) router.push(to);
       else router.refresh();
@@ -58,6 +58,22 @@ export function RuleActions({ rule }: { rule: PayoutRuleView }) {
               <Button variant="destructive" disabled={busy || reason.trim().length < 3} onClick={() => void run(() => clientApi.post(`/payouts/rules/${rule.id}/retire`, { reason }), 'Rule retired.')}>
                 <Archive />
                 Retire
+              </Button>
+            ) : null}
+            {rule.status === 'APPROVED' ? (
+              // MIS applied before this rule was approved creates nothing until the bank's matched leads are checked again
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    const r = await clientApi.post<{ leads: number; created: number; reviewed: number }>('/payouts/evaluate', { bankId: rule.bank.id });
+                    setMsg(`Checked ${r.data.leads} ${rule.bank.code} lead(s): ${r.data.created} new payout event(s), ${r.data.reviewed} under review.`);
+                  }, '')
+                }
+              >
+                <RefreshCw />
+                Re-check {rule.bank.code} leads
               </Button>
             ) : null}
             {draftRates.map((x) => (
