@@ -20,7 +20,7 @@ eas build --platform android --profile device            # F-818: internal APK a
 
 `eas` is not installed globally on the Mac — use `npx eas-cli@latest …`. Project: `d52957fe-d8b8-497b-ac7c-52ca691f43be` (owner `manojskidoss-team`, slug `kbs`).
 
-**`device` profile (F-818):** extends `preview`, points `EXPO_PUBLIC_API_URL` at the developer Mac (`http://192.168.31.215:4000/api/v1` — update when the Mac's Wi-Fi IP changes: `ipconfig getifaddr en0`) and sets `APP_VARIANT=device`. `app.config.js` turns on `usesCleartextTraffic` for that variant only, so preview/production stay https-only. To use it: run the API with `pnpm dev` (it listens on all interfaces, port 4000), keep the phone on the same Wi-Fi, allow incoming connections if macOS asks. Never ship this APK.
+**`device` profile (F-818):** extends `preview`, points `EXPO_PUBLIC_API_URL` at the developer Mac (`http://192.168.31.215:4000/api/v1` — update when the Mac's Wi-Fi IP changes: `ipconfig getifaddr en0`) and sets `APP_VARIANT=device`. `app.config.js` turns on `usesCleartextTraffic` for that variant only, so preview/production stay https-only. To use it: run the API with `pnpm dev` (it listens on all interfaces, port 4000), keep the phone on the same Wi-Fi, allow incoming connections if macOS asks. Never ship this APK. **Files on the phone:** set `S3_ENDPOINT=http://<Mac IP>:9000` in `apps/api/.env` too — signed links to videos and PDFs use that host, and `localhost` on a phone is the phone itself (training videos stay at 00:00, PDF links fail).
 
 ## App updates (F-819)
 | Change | What to do | What users see |
@@ -35,7 +35,7 @@ OTA updates only reach installs with the same `version` (`runtimeVersion.policy:
 cd apps/mobile && EXPO_NO_DOTENV=1 APP_VARIANT=device EXPO_PUBLIC_API_URL=http://192.168.31.215:4000/api/v1 \
   npx eas-cli@latest update --channel device --platform android --environment preview --message "…"
 ```
-The phone downloads it on launch and applies it on the next launch (close and reopen the app twice). Native changes (new modules, app.json plugins) still need a build.
+The phone downloads it on launch and applies it on the next launch (close and reopen the app twice). For emulator QA screenshots add `EXPO_PUBLIC_QA_ALLOW_CAPTURE=1` to that command (protected screens otherwise capture as black); publish once more without it when done. Only ever on the `device` channel. Native changes (new modules, app.json plugins) still need a build.
 
 **Monorepo build notes (F-818):** EAS runs `eas-build-post-install` (builds `@kbs/shared` / `@kbs/ui-tokens`, whose `dist/` is git-ignored); `babel-preset-expo` is a mobile devDependency; root `.npmrc` publicly hoists `@babel/*` because NativeWind's preset loads `@babel/plugin-transform-react-jsx` by name. Local proof before spending a cloud build: `cd apps/mobile && APP_VARIANT=device npx expo prebuild --platform android --no-install` (then delete `android/`) and `npx expo export --platform android`.
 
