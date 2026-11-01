@@ -102,6 +102,11 @@ REQ-20 §20.5 warns not to block assistive tech silently. Android `FLAG_SECURE` 
 - **Only never-worked records move:** `interactionStatus=UNTOUCHED`, no call attempt, no follow-up date, not hidden/suppressed; newest assignment first; re-checked inside the transaction. Each move is an `AllocationEvent` (`reason=REBALANCE: …`, `algorithmVersion=REBALANCE:v1`) and the receiver gets one "New customers assigned (N)" notification.
 - **Switch:** `allocation.rebalanceOnTrainingPass` (default `true`). REQ-06 §6.2 (a re-upload never redistributes an assigned customer) is unchanged.
 
+### A21. Telecaller "leads" reach the bank MIS through a typed application number (user decision 2026-11-01, F-316)
+- **Problem:** B6 models a Telecaller lead as a `CallingInterest`, which had no bank reference, so MIS rows for those customers were always UNMATCHED. INV-08 forbids name/mobile matching, and a per-agent tracking code (LC2/promo code) would identify the Telecaller, not the customer.
+- **Resolution:** the Telecaller types the bank application number (as the customer received it from the bank) on the interest — the same exact-reference mechanism Advisors use (F-407). MIS matching falls back to interest references when no lead carries the reference; apply writes a separate `CallingBankStatus` under the same INV-01 guard. One reference belongs to one record across leads and interests. Interests stay non-commission (INV-05): no `Lead`, no `BankStatusSnapshot`, no payout evaluation.
+- **Telecaller self view:** REQ-15 gives Managers/Admin the evidence counts; Telecallers now see the same counts for themselves only (`/calling/me/performance`), with no ranking.
+
 ---
 
 ## B. Ambiguities in the PRD that would cause divergent implementations
