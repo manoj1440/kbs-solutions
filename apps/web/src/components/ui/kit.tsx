@@ -340,7 +340,8 @@ function hash(s: string) {
   return h;
 }
 export function initials(name: string | null | undefined) {
-  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  // skip leading punctuation so "Manoj (device agent)" gives "MD", not "M("
+  const parts = (name ?? '').trim().split(/\s+/).map((p) => p.replace(/^[^\p{L}\p{N}]+/u, '')).filter(Boolean);
   return (parts.slice(0, 2).map((p) => p[0]).join('') || '?').toUpperCase();
 }
 

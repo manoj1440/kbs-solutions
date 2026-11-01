@@ -55,11 +55,14 @@ export function CallDesk({
   recordId,
   canCall,
   cards,
+  lastOutcomeAt,
   onChanged,
 }: {
   recordId: string;
   canCall: boolean;
   cards: AvailableCard[];
+  /** When the newest outcome on this record was saved; a call after it is still "open" for an outcome. */
+  lastOutcomeAt: string | null;
   onChanged: () => Promise<void>;
 }) {
   const [call, setCall] = useState<CallAttemptView | null>(null);
@@ -75,6 +78,28 @@ export function CallDesk({
   const [saved, setSaved] = useState<string | null>(null);
 
   const live = call !== null && LIVE.has(call.providerState);
+
+  // the agent may leave for the card screen to share during a call; coming back must not lose the call (or its outcome link)
+  useEffect(() => {
+    let alive = true;
+    void api
+      .get<CallAttemptView[]>(`/calling/records/${recordId}/calls`)
+      .then((r) => {
+        const latest = r.data[0];
+        if (!alive || !latest) return;
+        const started = new Date(latest.initiatedAt).getTime();
+        const recent = Date.now() - started < 30 * 60_000;
+        const noOutcomeYet = !lastOutcomeAt || new Date(lastOutcomeAt).getTime() < started;
+        if (recent && noOutcomeYet) {
+          setCall((c) => c ?? latest);
+          setNow(Date.now());
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [recordId, lastOutcomeAt]);
 
   // poll while the call is live (SSE later)
   useEffect(() => {

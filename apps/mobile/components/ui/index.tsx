@@ -699,6 +699,7 @@ export function Avatar({
   const initials =
     name
       .split(/\s+/)
+      .map((p) => p.replace(/^[^\p{L}\p{N}]+/u, '')) // "(device agent)" → "device", not "("
       .filter(Boolean)
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase())

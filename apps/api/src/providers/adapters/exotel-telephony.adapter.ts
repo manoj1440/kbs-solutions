@@ -69,7 +69,9 @@ export class ExotelTelephonyAdapter implements TelephonyProvider {
       sid = /<Sid>([^<]+)<\/Sid>/.exec(text)?.[1]; // XML when the account ignores the .json suffix
       message = /<Message>([^<]+)<\/Message>/.exec(text)?.[1];
     }
-    if (!res.ok || !sid) return { providerCallId: sid ?? '', state: 'FAILED' as const, reason: `EXOTEL_${res.status}${message ? `: ${message.slice(0, 160)}` : ''}` };
+    // 401 almost always means the account lives on the other region's host (api.exotel.com vs api.in.exotel.com)
+    const hint = res.status === 401 ? ` (check EXOTEL_HOST — this account may be on the other region than ${this.cfg.host})` : '';
+    if (!res.ok || !sid) return { providerCallId: sid ?? '', state: 'FAILED' as const, reason: `EXOTEL_${res.status}${message ? `: ${message.slice(0, 160)}` : ''}${hint}` };
     return { providerCallId: sid, state: 'REQUESTED' as const };
   }
 

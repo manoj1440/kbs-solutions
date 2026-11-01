@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import { isProtectedRoute } from '@/lib/secure-routes';
 
 const KEY = 'kbs-protected';
+/** QA only: bundles published to the developer `device` channel with this flag allow screenshots (emulator testing). Never set for preview/production. */
+const QA_ALLOW_CAPTURE = process.env.EXPO_PUBLIC_QA_ALLOW_CAPTURE === '1';
 
 /**
  * F-302: applies FLAG_SECURE from the route policy in `lib/secure-routes.ts`. Mounted once in the root layout, so moving
@@ -13,7 +15,7 @@ const KEY = 'kbs-protected';
  */
 export function ScreenProtection() {
   const segments = useSegments();
-  const protect = isProtectedRoute(segments);
+  const protect = !QA_ALLOW_CAPTURE && isProtectedRoute(segments);
   useEffect(() => {
     void (protect ? ScreenCapture.preventScreenCaptureAsync(KEY) : ScreenCapture.allowScreenCaptureAsync(KEY)).catch(() => undefined);
   }, [protect]);

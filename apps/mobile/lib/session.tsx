@@ -1,11 +1,19 @@
 import type { Gates, MeResponse, UserSummary } from '@kbs/shared';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type PropsWithChildren,
+} from 'react';
 import { AppState } from 'react-native';
 
 import { checkDeviceIntegrity } from '@/lib/device-integrity';
 import { onPushTap, registerForPush } from '@/lib/push';
 
-import { api, tokenStore } from './api';
+import { api, onSessionEnded, tokenStore } from './api';
 
 interface SessionState {
   status: 'loading' | 'signed-out' | 'signed-in';
@@ -59,6 +67,16 @@ export function SessionProvider({ children }: PropsWithChildren) {
       sub.remove();
     };
   }, [refresh]);
+
+  // a revoked session (e.g. this Telecaller signed in on another phone) returns to the login screen
+  useEffect(
+    () =>
+      onSessionEnded(() => {
+        setMe(null);
+        setStatus('signed-out');
+      }),
+    [],
+  );
 
   // F-302: one integrity report per signed-in app session
   const userId = me?.user?.id;

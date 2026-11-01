@@ -194,6 +194,7 @@ export default function RecordScreen() {
                 recordId={rec.id}
                 canCall={rec.canCall}
                 cards={cards?.cards ?? []}
+                lastOutcomeAt={rec.outcomes[0]?.at ?? null}
                 onChanged={load}
               />
             ) : (
@@ -260,7 +261,7 @@ export default function RecordScreen() {
               {rec.outcomes.length === 0 ? (
                 <View className="flex-row items-center gap-3">
                   <Icon name="time-outline" size={18} color={colors.subtle} />
-                  <Muted>No calls logged yet.</Muted>
+                  <Muted>No outcome recorded yet.</Muted>
                 </View>
               ) : null}
               {rec.outcomes.map((o, i) => (
