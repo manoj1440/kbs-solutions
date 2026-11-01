@@ -7,6 +7,7 @@ import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { AllocationService } from '../calling-list/allocation.service';
 import { ConfigService } from '../config/config.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { HierarchyService } from '../users/hierarchy.service';
@@ -31,6 +32,7 @@ export class TrainingLearnerService {
     private readonly content: TrainingContentService,
     private readonly notifications: NotificationsService,
     private readonly hierarchy: HierarchyService,
+    private readonly allocation: AllocationService,
   ) {}
 
   /** Enrollment + one result row per module (M1 in progress, M2/M3 locked) — idempotent. */
@@ -173,6 +175,7 @@ export class TrainingLearnerService {
       const managerId = await this.hierarchy.currentParentId(actor.userId);
       await this.notifications.notify({ recipientUserId: actor.userId, kind: 'TRAINING_PASSED', title: 'Training complete', body: 'You passed all three modules. Your calling queue is now available.', dedupeKey: `training.passed:${enrollment.id}` });
       if (managerId) await this.notifications.notify({ recipientUserId: managerId, kind: 'TRAINING_PASSED', title: 'Telecaller completed training', body: 'A Telecaller on your team passed all three modules.', deepLink: { entityType: 'User', entityId: actor.userId }, dedupeKey: `training.passed.mgr:${enrollment.id}` });
+      await this.allocation.rebalance({ actorUserId: actor.userId, reason: 'Telecaller passed training' });
     }
     return {
       attemptId,

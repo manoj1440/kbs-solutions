@@ -33,8 +33,8 @@ interface Eligible {
 
 /**
  * F-305: allocation of accepted, unassigned calling records to trained, active Telecallers.
- * Only records with `reviewStatus=ACCEPTED`, not hidden, not suppressed, and `assignedTelecallerUserId=null` are ever touched;
- * existing assignments are never redistributed automatically (REQ-06 §6.2).
+ * Batch allocation only touches records with `reviewStatus=ACCEPTED`, not hidden, not suppressed, and `assignedTelecallerUserId=null`.
+ * The one automatic move of assigned records is `rebalance()` when a Telecaller passes training, and it only moves never-called records (A20).
  */
 @Injectable()
 export class AllocationService {
@@ -166,6 +166,61 @@ export class AllocationService {
       out.set(r.id, chosen.userId);
     }
     return out;
+  }
+
+  /**
+   * A20 (user decision 2026-11-01): when a Telecaller passes training, even out loads across the eligible pool by moving records from
+   * the busiest Telecaller to the least busy until they differ by at most one. Only never-called records move (UNTOUCHED, no call
+   * attempt, no follow-up, not hidden/suppressed), newest assignment first, so a Telecaller never loses a customer they have worked.
+   */
+  async rebalance(trigger: { actorUserId: string; reason: string }) {
+    if (!this.config.getBool('allocation.rebalanceOnTrainingPass')) return { moved: 0, perTelecaller: {} };
+    const cap = this.config.getInt('allocation.maxActivePerTelecaller');
+    const pool = (await this.eligiblePool()).map((p) => ({ ...p, load: p.active }));
+    if (pool.length < 2) return { moved: 0, perTelecaller: {} };
+    const movable = await this.prisma.client.callingRecord.findMany({
+      where: { assignedTelecallerUserId: { in: pool.map((p) => p.userId) }, interactionStatus: 'UNTOUCHED', nextFollowUpAt: null, hiddenAt: null, suppressed: false, reviewStatus: 'ACCEPTED', callAttempts: { none: {} } },
+      select: { id: true, batchId: true, assignedTelecallerUserId: true },
+      orderBy: [{ assignedAt: 'desc' }, { sourceRowNumber: 'desc' }],
+    });
+    const spare = new Map<string, typeof movable>();
+    for (const r of movable) spare.set(r.assignedTelecallerUserId as string, [...(spare.get(r.assignedTelecallerUserId as string) ?? []), r]);
+    const order = (a: (typeof pool)[number], b: (typeof pool)[number]) => a.load - b.load || (a.employeeCode ?? '￿').localeCompare(b.employeeCode ?? '￿') || a.userId.localeCompare(b.userId);
+    const moves: { record: (typeof movable)[number]; from: string; to: string }[] = [];
+    for (;;) {
+      const to = pool.filter((p) => cap === null || p.load < cap).sort(order)[0];
+      const from = pool.filter((p) => spare.get(p.userId)?.length).sort((a, b) => order(b, a))[0];
+      if (!to || !from || from.load - to.load <= 1) break;
+      const record = spare.get(from.userId)?.shift() as (typeof movable)[number];
+      moves.push({ record, from: from.userId, to: to.userId });
+      from.load--;
+      to.load++;
+    }
+    if (!moves.length) return { moved: 0, perTelecaller: {} };
+    const now = new Date();
+    const perTelecaller: Record<string, number> = {};
+    await this.prisma.client.$transaction(async (tx) => {
+      for (const m of moves) {
+        // re-check inside the transaction: a call may have started since the plan was made
+        const { count } = await tx.callingRecord.updateMany({ where: { id: m.record.id, assignedTelecallerUserId: m.from, interactionStatus: 'UNTOUCHED', callAttempts: { none: {} } }, data: { assignedTelecallerUserId: m.to, assignedAt: now } });
+        if (!count) continue;
+        await tx.allocationEvent.create({ data: { callingRecordId: m.record.id, fromTelecallerUserId: m.from, toTelecallerUserId: m.to, batchId: m.record.batchId, actorUserId: trigger.actorUserId, reason: `REBALANCE: ${trigger.reason}`, algorithmVersion: `REBALANCE:${ALLOCATION_ALGORITHM_VERSION}` } });
+        perTelecaller[m.to] = (perTelecaller[m.to] ?? 0) + 1;
+      }
+    });
+    for (const [userId, n] of Object.entries(perTelecaller)) {
+      await this.notifications.notify({
+        recipientUserId: userId,
+        kind: 'ASSIGNMENT_NEW',
+        title: `New customers assigned (${n})`,
+        body: `${n} customer${n === 1 ? '' : 's'} added to your calling queue.`,
+        deepLink: { entityType: 'CallingQueue', entityId: userId },
+        dedupeKey: `rebalance:${userId}:${now.getTime()}`,
+      });
+    }
+    const moved = Object.values(perTelecaller).reduce((a, b) => a + b, 0);
+    this.log.log(`rebalance (${trigger.reason}): moved ${moved} record(s)`);
+    return { moved, perTelecaller };
   }
 
   /** Org / team / own totals (REQ-06 §6.4 visibility). */

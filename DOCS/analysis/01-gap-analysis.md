@@ -97,6 +97,11 @@ REQ-20 §20.5 warns not to block assistive tech silently. Android `FLAG_SECURE` 
 - **Web wording deviates from REQ-14 §14.1 / REQ-13 / REQ-27 MIS-04 labels:** web shows "Awaiting bank update" (not "Awaiting MIS Update"), "Last bank update", "Bank status"; the per-bank MIS clock (REQ-16 §16.3 / REQ-20 §20.3 freshness) and source footers are gone from web. Mobile, API and `@kbs/shared` keep the PRD labels; web rewords at display time (`apps/web/src/lib/bank-text.ts`).
 - **Unchanged:** INV-01..03 and INV-08 — bank status is still written only by MIS apply, by exact reference only. The API resolve/preview endpoints stay (no web consumer). Rows with no KBS lead are counted on the upload result and are not surfaced as errors.
 
+### A20. Rebalance calling records when a Telecaller passes training (user decision 2026-11-01)
+- **DEVIATION (owner instruction):** REQ-06 §6.4 / F-305 only allocated unassigned records, so a Telecaller trained after an upload got nothing. Now, when a Telecaller passes all three modules, `AllocationService.rebalance()` evens out loads across the eligible pool (ACTIVE + PASSED, all Managers) until the busiest and least busy differ by at most one — e.g. 100 records over 4 (25 each) become 20 each when a 5th passes.
+- **Only never-worked records move:** `interactionStatus=UNTOUCHED`, no call attempt, no follow-up date, not hidden/suppressed; newest assignment first; re-checked inside the transaction. Each move is an `AllocationEvent` (`reason=REBALANCE: …`, `algorithmVersion=REBALANCE:v1`) and the receiver gets one "New customers assigned (N)" notification.
+- **Switch:** `allocation.rebalanceOnTrainingPass` (default `true`). REQ-06 §6.2 (a re-upload never redistributes an assigned customer) is unchanged.
+
 ---
 
 ## B. Ambiguities in the PRD that would cause divergent implementations
