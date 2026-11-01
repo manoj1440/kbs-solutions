@@ -362,9 +362,9 @@ export class MisPipelineService {
       return Object.keys(data).filter((k) => k !== 'finalDecisionDate');
     });
     if (changed.length) {
-      const i = await this.prisma.client.callingInterest.findUniqueOrThrow({ where: { id: interestId }, select: { telecallerUserId: true, callingRecord: { select: { fullName: true } }, bankStatus: true } });
+      const i = await this.prisma.client.callingInterest.findUniqueOrThrow({ where: { id: interestId }, select: { telecallerUserId: true, callingRecordId: true, callingRecord: { select: { fullName: true } }, bankStatus: true } });
       const parts = changed.filter((f) => f !== 'applicationNo').map((f) => `${MIS_NOTIFY_FIELD_LABEL[f as keyof typeof MIS_NOTIFY_FIELD_LABEL] ?? f}: ${(i.bankStatus as Record<string, unknown> | null)?.[f] ?? ''}`);
-      await this.notifications.notify({ recipientUserId: i.telecallerUserId, kind: 'MIS_CHANGED', title: 'Bank MIS updated', body: `${i.callingRecord.fullName} — ${parts.join(', ') || 'matched in bank MIS'} (MIS ${batch.publicRef}).`, deepLink: { entityType: 'CallingInterest', entityId: interestId }, sourceRef: { batchId: batch.id, fields: changed }, dedupeKey: `mis.interest.changed:${interestId}:${batch.id}` });
+      await this.notifications.notify({ recipientUserId: i.telecallerUserId, kind: 'MIS_CHANGED', title: 'Bank MIS updated', body: `${i.callingRecord.fullName} — ${parts.join(', ') || 'matched in bank MIS'} (MIS ${batch.publicRef}).`, deepLink: { entityType: 'CallingRecord', entityId: i.callingRecordId } /* the record screen shows its Applications */, sourceRef: { batchId: batch.id, fields: changed }, dedupeKey: `mis.interest.changed:${interestId}:${batch.id}` });
     }
     return changed.length > 0;
   }

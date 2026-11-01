@@ -7,7 +7,12 @@ import { routeFor, useSession } from '@/lib/session';
 
 const TABS: TabSpec[] = [
   { name: 'index', label: 'Queue', icon: 'call-outline', iconActive: 'call' },
-  { name: 'performance', label: 'My stats', icon: 'stats-chart-outline', iconActive: 'stats-chart' },
+  {
+    name: 'performance',
+    label: 'My stats',
+    icon: 'stats-chart-outline',
+    iconActive: 'stats-chart',
+  },
   { name: 'id-card', label: 'ID card', icon: 'id-card-outline', iconActive: 'id-card' },
   { name: 'profile', label: 'Profile', icon: 'person-circle-outline', iconActive: 'person-circle' },
 ];

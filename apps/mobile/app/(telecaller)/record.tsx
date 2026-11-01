@@ -1,4 +1,10 @@
-import { ApiClientError, type CallingQueueRow, formatDateTime } from '@kbs/shared';
+import {
+  ApiClientError,
+  type CallingQueueRow,
+  type CallOutcome,
+  formatDateTime,
+  OUTCOME_LABELS,
+} from '@kbs/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
@@ -48,6 +54,25 @@ interface RecordDetail extends CallingQueueRow {
   shareActions: { id: string; kind: string; channel: string; handoffResult: string; at: string }[];
   allocationEvents: { id: string; at: string; reason: string }[];
   remarks: { id: string; text: string; at: string; author: { fullName: string } }[];
+}
+
+const SHARE_KIND: Record<string, string> = {
+  APPLICATION_LINK: 'Application link',
+  BENEFIT_PDF: 'Benefit PDF',
+  OFFICE_ID: 'Official ID',
+};
+const SHARE_CHANNEL: Record<string, string> = {
+  WHATSAPP_HANDOFF: 'WhatsApp',
+  WHATSAPP_BUSINESS_API: 'WhatsApp Business',
+};
+
+/** Plain words for an AllocationEvent reason (`AUTO_ALLOCATION`, `REBALANCE: …`, `MANUAL_REASSIGNMENT: <reason>`). */
+function allocationLabel(reason: string) {
+  if (reason === 'AUTO_ALLOCATION') return 'Assigned automatically';
+  if (reason.startsWith('REBALANCE')) return 'Moved here to balance the team';
+  if (reason.startsWith('MANUAL_REASSIGNMENT:'))
+    return `Reassigned — ${reason.slice('MANUAL_REASSIGNMENT:'.length).trim()}`;
+  return humanize(reason);
 }
 
 function HeroChip({
@@ -244,7 +269,7 @@ export default function RecordScreen() {
                   icon="create-outline"
                   tone="info"
                   last={i === rec.outcomes.length - 1}
-                  title={`${o.outcome.replace('_', ' ')}${o.remarks ? ` — ${o.remarks}` : ''}`}
+                  title={`${OUTCOME_LABELS[o.outcome as CallOutcome] ?? o.outcome}${o.remarks ? ` — ${o.remarks}` : ''}`}
                   meta={`${formatDateTime(o.at)} · ${o.telecaller.fullName}${o.followUpAt ? ` · follow-up ${formatDateTime(o.followUpAt)}` : ''}`}
                 />
               ))}
@@ -288,8 +313,8 @@ export default function RecordScreen() {
                     icon="share-social-outline"
                     tone="success"
                     last={i === rec.shareActions.length - 1}
-                    title={`${s.kind} via ${s.channel}`}
-                    meta={`${s.handoffResult.toLowerCase()} · ${formatDateTime(s.at)}`}
+                    title={`${SHARE_KIND[s.kind] ?? humanize(s.kind)} via ${SHARE_CHANNEL[s.channel] ?? humanize(s.channel)}`}
+                    meta={`${s.handoffResult === 'OPENED' ? 'Share sheet opened' : humanize(s.handoffResult)} · ${formatDateTime(s.at)}`}
                   />
                 ))}
               </Card>
@@ -304,7 +329,7 @@ export default function RecordScreen() {
                   key={e.id}
                   icon="swap-horizontal"
                   tone="secondary"
-                  title={e.reason}
+                  title={allocationLabel(e.reason)}
                   meta={formatDateTime(e.at)}
                 />
               ))}

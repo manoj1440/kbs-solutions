@@ -78,7 +78,9 @@ describe('A21 Telecaller interest → bank application number → MIS status', (
     expect(await prisma.misRow.count({ where: { matchedCallingInterestId: interestId } })).toBe(1);
     expect(await prisma.bankStatusSnapshot.count()).toBe(0);
     expect(await prisma.payoutEntitlement.count()).toBe(0); // INV-05
-    expect(await prisma.notification.count({ where: { recipientUserId: tc.id, kind: 'MIS_CHANGED' } })).toBe(1);
+    const note = await prisma.notification.findFirstOrThrow({ where: { recipientUserId: tc.id, kind: 'MIS_CHANGED' } });
+    const target = await api().get(`/api/v1/notifications/${note.id}/target`).set(auth(tc.accessToken)).expect(200);
+    expect(target.body.data).toMatchObject({ entityType: 'CallingRecord' }); // opens the record screen with its Applications
     const list = await api().get('/api/v1/calling/interests').set(auth(tc.accessToken)).expect(200);
     expect(list.body.data.find((i: { id: string }) => i.id === interestId)).toMatchObject({ stage: 'APPROVED', reference: { verified: true }, bankStatus: { provenance: 'BANK_MIS', finalDecision: 'Approved' } });
     // verified → the Telecaller can no longer change it

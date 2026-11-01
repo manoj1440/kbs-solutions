@@ -1,4 +1,4 @@
-import { ApiClientError, type CallingQueueRow, formatDateTime, type QueueTab } from '@kbs/shared';
+import { ApiClientError, type CallingQueueRow, type CallOutcome, formatDateTime, OUTCOME_LABELS, type QueueTab } from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, Text as RNText, View } from 'react-native';
@@ -130,7 +130,7 @@ function RecordCard({ item, now, index }: { item: CallingQueueRow; now: number; 
               style={{ marginTop: 2 }}
             />
             <Muted numberOfLines={2} className="flex-1 text-[12px]">
-              Last: {item.lastOutcome.outcome.replace('_', ' ').toLowerCase()}
+              Last: {OUTCOME_LABELS[item.lastOutcome.outcome as CallOutcome] ?? item.lastOutcome.outcome}
               {item.lastOutcome.remarks ? ` — ${item.lastOutcome.remarks}` : ''}
             </Muted>
           </View>

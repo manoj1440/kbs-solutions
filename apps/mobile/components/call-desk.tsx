@@ -106,16 +106,20 @@ export function CallDesk({
     }
   };
 
-  const elapsed = call?.connectedAt
-    ? Math.max(
-        0,
-        Math.round(
-          ((call.endedAt ? new Date(call.endedAt).getTime() : now) -
-            new Date(call.connectedAt).getTime()) /
-            1000,
-        ),
-      )
-    : null;
+  // once ended, the provider-confirmed duration wins over webhook arrival times (they differ, e.g. on delayed events)
+  const elapsed =
+    call?.endedAt && call.durationSec !== null
+      ? call.durationSec
+      : call?.connectedAt
+        ? Math.max(
+            0,
+            Math.round(
+              ((call.endedAt ? new Date(call.endedAt).getTime() : now) -
+                new Date(call.connectedAt).getTime()) /
+                1000,
+            ),
+          )
+        : null;
 
   const submit = async () => {
     if (!outcome) return;
@@ -176,12 +180,13 @@ export function CallDesk({
           />
           <View className="flex-1">
             <Text className="font-bold text-[16px]">Call</Text>
-            <Muted className="text-[12px]">
+            <Muted className="text-[12px]" numberOfLines={1}>
               {call ? `To ${call.targetMobileMasked}` : 'No call started yet'}
             </Muted>
           </View>
-          {call ? <Badge label={STATE_LABEL[call.providerState]} variant={stateTone} dot /> : null}
         </View>
+        {/* own row: the long "Requesting connection…" label used to squeeze the number onto two lines */}
+        {call ? <Badge label={STATE_LABEL[call.providerState]} variant={stateTone} dot /> : null}
         {call?.disclosureText ? (
           <Callout kind="warning" title="Say before dialing" icon="megaphone-outline">
             {`“${call.disclosureText}”`}
@@ -191,9 +196,6 @@ export function CallDesk({
           <View className="flex-row items-center justify-between rounded-2xl bg-[#F7F4EF] px-4 py-3">
             <View className="flex-1">
               <Muted className="text-[12px]">started {formatDateTime(call.initiatedAt)}</Muted>
-              {call.durationSec !== null ? (
-                <Muted className="text-[12px]">{call.durationSec}s</Muted>
-              ) : null}
               {call.failureReason ? (
                 <Muted className="text-[12px]">Reason: {call.failureReason}</Muted>
               ) : null}

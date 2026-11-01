@@ -55,7 +55,7 @@ function screenFor(area: Area, entityType: string): string | null {
   const map: Record<Area, Record<string, string>> = {
     advisor: { Lead: '/(advisor)/lead', PayoutRequest: '/(advisor)/payout-request' },
     manager: { PayoutRequest: '/(manager)/payout-request', User: '/(manager)/telecaller' },
-    telecaller: { CallingRecord: '/(telecaller)/record' },
+    telecaller: { CallingRecord: '/(telecaller)/record', CallingQueue: '/(telecaller)' },
   };
   return map[area][entityType] ?? null;
 }
