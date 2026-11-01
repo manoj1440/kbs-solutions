@@ -1,5 +1,5 @@
 import { InitiateCallBody, RecordOutcomeBody, RemarkBody } from '@kbs/shared';
-import { Body, Controller, Get, Headers, HttpCode, Param, Post, Put, Req } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Param, Post, Query, Put, Req } from '@nestjs/common';
 import type { Request } from 'express';
 
 import type { Actor } from '../../common/actor';
@@ -48,8 +48,8 @@ export class CallsController {
   @Public()
   @Post('webhooks/telephony/:provider')
   @HttpCode(200)
-  webhook(@Param('provider') provider: string, @Headers() headers: Record<string, string | string[] | undefined>, @Body() body: unknown) {
-    return this.calls.applyWebhook(provider, headers, body);
+  webhook(@Param('provider') provider: string, @Headers() headers: Record<string, string | string[] | undefined>, @Body() body: unknown, @Query() query: Record<string, unknown>) {
+    return this.calls.applyWebhook(provider, headers, body, query);
   }
 
   @Post('calling/records/:id/outcomes')

@@ -223,7 +223,9 @@ export function CallDesk({
           <View className="flex-row items-center gap-3 rounded-2xl bg-[#E3F4F1] px-4 py-3">
             <View className="h-2.5 w-2.5 rounded-full bg-[#0F766E]" />
             <RNText className="flex-1 font-medium text-[13px] text-[#115E59]">
-              Call in progress on your phone. Record the outcome once it ends.
+              {call?.providerState === 'REQUESTED' || call?.providerState === 'RINGING'
+                ? 'Your phone will ring from the KBS number — answer it and the customer is connected.'
+                : 'Call in progress on your phone. Record the outcome once it ends.'}
             </RNText>
           </View>
         ) : (

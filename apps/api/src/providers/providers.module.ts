@@ -4,6 +4,7 @@ import { ENV, type Env } from '../config/env';
 
 import { ClamdScanAdapter } from './adapters/clamd-scan.adapter';
 import { ConsoleOtpAdapter } from './adapters/console-otp.adapter';
+import { ExotelTelephonyAdapter } from './adapters/exotel-telephony.adapter';
 import { ExpoPushAdapter } from './adapters/expo-push.adapter';
 import { HandoffWhatsAppAdapter } from './adapters/handoff-whatsapp.adapter';
 import { MemoryStorageAdapter } from './adapters/memory-storage.adapter';
@@ -20,7 +21,14 @@ import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER,
 @Module({
   providers: [
     { provide: OTP_PROVIDER, inject: [ENV], useFactory: (env: Env) => new ConsoleOtpAdapter(env.NODE_ENV === 'production') },
-    { provide: TELEPHONY_PROVIDER, useFactory: () => new MockTelephonyAdapter() },
+    {
+      provide: TELEPHONY_PROVIDER,
+      inject: [ENV],
+      useFactory: (env: Env) =>
+        env.TELEPHONY_PROVIDER === 'exotel'
+          ? new ExotelTelephonyAdapter({ host: env.EXOTEL_HOST, accountSid: env.EXOTEL_ACCOUNT_SID as string, apiKey: env.EXOTEL_API_KEY as string, apiToken: env.EXOTEL_API_TOKEN as string, callerId: env.EXOTEL_CALLER_ID as string, webhookToken: env.EXOTEL_WEBHOOK_TOKEN as string })
+          : new MockTelephonyAdapter(),
+    },
     { provide: WHATSAPP_PROVIDER, useFactory: () => new HandoffWhatsAppAdapter() },
     { provide: KYC_PROVIDER, useFactory: () => new MockKycAdapter() },
     { provide: PAN_PROVIDER, useFactory: () => new MockPanAdapter() },

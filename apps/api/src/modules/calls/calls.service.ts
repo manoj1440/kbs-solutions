@@ -55,7 +55,8 @@ export class CallsService {
     });
     let result: Awaited<ReturnType<TelephonyProvider['initiateCall']>>;
     try {
-      result = await this.telephony.initiateCall({ fromUserId: actor.userId, toMobileE164: r.mobile, callbackUrl: `${this.env.API_PUBLIC_URL}/api/v1/webhooks/telephony/${this.telephony.name}` });
+      const agent = await this.prisma.client.user.findUniqueOrThrow({ where: { id: actor.userId }, select: { mobile: true } });
+      result = await this.telephony.initiateCall({ fromUserId: actor.userId, fromMobileE164: agent.mobile, toMobileE164: r.mobile, callbackUrl: `${this.env.API_PUBLIC_URL}/api/v1/webhooks/telephony/${this.telephony.name}` });
     } catch (e) {
       result = { providerCallId: '', state: 'FAILED', reason: e instanceof Error ? e.message : 'PROVIDER_ERROR' };
     }
@@ -82,9 +83,15 @@ export class CallsService {
   }
 
   /** Provider webhook: idempotent per (providerCallId, type, at); unknown call ids are logged and ignored. */
-  async applyWebhook(providerName: string, headers: Record<string, string | string[] | undefined>, body: unknown) {
+  async applyWebhook(providerName: string, headers: Record<string, string | string[] | undefined>, body: unknown, query: Record<string, unknown> = {}) {
     if (providerName !== this.telephony.name) throw AppError.notFound('Provider');
-    const events = this.telephony.parseWebhook(headers, body);
+    let events: TelephonyEvent[];
+    try {
+      events = this.telephony.parseWebhook(headers, body, query);
+    } catch (e) {
+      this.log.warn(`telephony webhook refused: ${(e as Error).message}`);
+      throw new AppError('AUTH_REQUIRED', 'Webhook not authenticated.');
+    }
     let applied = 0;
     for (const ev of events) {
       if (await this.applyEvent(ev)) applied++;
@@ -122,7 +129,19 @@ export class CallsService {
         return true;
       case 'RECORDING_AVAILABLE': {
         if (a.recording?.status === 'AVAILABLE') return false;
-        await this.prisma.client.callRecording.upsert({ where: { callAttemptId: a.id }, create: { callAttemptId: a.id, status: 'AVAILABLE', providerRecordingId: ev.recordingRef, durationSec: ev.durationSec, retrievedAt: ev.at }, update: { status: 'AVAILABLE', providerRecordingId: ev.recordingRef, durationSec: ev.durationSec, retrievedAt: ev.at, failureReason: null } });
+        // provider-hosted audio is copied into KBS storage first; "available" only once we really hold it (CALL-02)
+        let fileId: string | null = null;
+        if (this.telephony.fetchRecording && ev.recordingRef && /^https?:\/\//.test(ev.recordingRef)) {
+          try {
+            const audio = await this.telephony.fetchRecording(ev.recordingRef);
+            fileId = (await this.files.storeSystemFile({ purpose: 'RECORDING', originalName: `call-${a.id}.mp3`, contentType: audio.contentType, body: audio.body })).id;
+          } catch (e) {
+            const reason = `RECORDING_DOWNLOAD_FAILED: ${(e as Error).message}`.slice(0, 200);
+            await this.prisma.client.callRecording.upsert({ where: { callAttemptId: a.id }, create: { callAttemptId: a.id, status: 'FAILED', failureReason: reason }, update: { status: 'FAILED', failureReason: reason } });
+            return true;
+          }
+        }
+        await this.prisma.client.callRecording.upsert({ where: { callAttemptId: a.id }, create: { callAttemptId: a.id, status: 'AVAILABLE', fileId, providerRecordingId: ev.recordingRef, durationSec: ev.durationSec, retrievedAt: ev.at }, update: { status: 'AVAILABLE', fileId, providerRecordingId: ev.recordingRef, durationSec: ev.durationSec, retrievedAt: ev.at, failureReason: null } });
         return true;
       }
       case 'RECORDING_FAILED': {
@@ -143,7 +162,12 @@ export class CallsService {
     if (actor.role === 'TELECALLER') throw new AppError('RBAC_FORBIDDEN', 'Recording playback is limited to Managers and the Admin.');
     if (!a.recording || a.recording.status !== 'AVAILABLE') throw new AppError('CONFLICT', 'No recording is available for this call.', { status: a.recording?.status ?? 'NOT_ATTEMPTED' });
     await this.audit.sensitiveAccess({ entityType: 'CallAttempt', entityId: callId, field: 'RECORDING', purpose: 'PLAYBACK' });
-    if (a.recording.fileId) return { url: (await this.files.downloadUrl(actor, a.recording.fileId)).url, source: 'FILE' as const, expiresInSec: this.config.getInt('files.presignExpirySec') ?? 300 };
+    const expiresInSec = this.config.getInt('files.presignExpirySec') ?? 300;
+    if (a.recording.fileId) {
+      // scope already checked above (Manager team / Admin); recordings are system files, so presign directly
+      const file = await this.prisma.client.storedFile.findUniqueOrThrow({ where: { id: a.recording.fileId } });
+      return { url: await this.files.presign(file, expiresInSec), source: 'FILE' as const, expiresInSec };
+    }
     // provider-hosted recording: the adapter would mint a signed URL; the mock returns a deterministic placeholder
     return { url: `${this.env.API_PUBLIC_URL}/api/v1/calls/${callId}/recording/${a.recording.providerRecordingId ?? 'unknown'}`, source: 'PROVIDER' as const, expiresInSec: 300 };
   }

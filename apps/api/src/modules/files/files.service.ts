@@ -96,6 +96,15 @@ export class FilesService {
     return this.toDto(file);
   }
 
+  /**
+   * Files the system itself fetches (provider call recordings): same sniff, scan and storage path as an upload, owned by the
+   * Admin account so no Telecaller can read them through the generic file endpoints.
+   */
+  async storeSystemFile(input: { purpose: FilePurpose; originalName: string; contentType: string; body: Buffer }) {
+    const admin = await this.prisma.client.user.findFirstOrThrow({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true, role: true } });
+    return this.upload({ userId: admin.id, role: 'ADMIN' } as Actor, { purpose: input.purpose, originalName: input.originalName, declaredType: input.contentType, body: input.body });
+  }
+
   async get(actor: Actor, id: string) {
     const file = await this.prisma.client.storedFile.findUnique({ where: { id } });
     if (!file || !(await this.canRead(actor, file))) throw AppError.notFound('File');

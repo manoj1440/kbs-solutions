@@ -28,7 +28,16 @@ export const EnvSchema = z.object({
   OTP_PEPPER: z.string().min(8).default('dev-pepper-change-me'),
   OTP_PROVIDER: z.enum(['console']).default('console'),
   OTP_DEV_MASTER_CODE: z.string().regex(/^\d{6}$/).optional().or(z.literal('')),
-  TELEPHONY_PROVIDER: z.enum(['mock']).default('mock'),
+  TELEPHONY_PROVIDER: z.enum(['mock', 'exotel']).default('mock'),
+  /** Exotel click-to-call (Connect Two Numbers). Host: api.exotel.com (Singapore) or api.in.exotel.com (Mumbai). */
+  EXOTEL_HOST: z.string().default('api.exotel.com'),
+  EXOTEL_ACCOUNT_SID: z.string().optional(),
+  EXOTEL_API_KEY: z.string().optional(),
+  EXOTEL_API_TOKEN: z.string().optional(),
+  /** The ExoPhone shown to both sides. */
+  EXOTEL_CALLER_ID: z.string().optional(),
+  /** Random secret added to the status-callback URL; callbacks without it are refused. */
+  EXOTEL_WEBHOOK_TOKEN: z.string().optional(),
   WHATSAPP_PROVIDER: z.enum(['handoff', 'mock-business']).default('handoff'),
   KYC_PROVIDER: z.enum(['mock']).default('mock'),
   PAN_PROVIDER: z.enum(['mock']).default('mock'),
@@ -58,6 +67,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Invalid environment:\n  ${issues}`);
   }
   assertMasterCodeAllowed(parsed.data);
+  if (parsed.data.TELEPHONY_PROVIDER === 'exotel') {
+    const missing = (['EXOTEL_ACCOUNT_SID', 'EXOTEL_API_KEY', 'EXOTEL_API_TOKEN', 'EXOTEL_CALLER_ID', 'EXOTEL_WEBHOOK_TOKEN'] as const).filter((k) => !parsed.data[k]);
+    if (missing.length) throw new Error(`TELEPHONY_PROVIDER=exotel needs ${missing.join(', ')}`);
+  }
   cached = parsed.data;
   return cached;
 }

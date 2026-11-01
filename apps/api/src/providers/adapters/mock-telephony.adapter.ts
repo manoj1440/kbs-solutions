@@ -5,7 +5,7 @@ import type { TelephonyEvent, TelephonyProvider } from '../ports';
 /** Simulates a provider. Events are produced by POSTing to the dev webhook with { events: [...] }. */
 export class MockTelephonyAdapter implements TelephonyProvider {
   readonly name = 'mock';
-  async initiateCall(input: { fromUserId: string; toMobileE164: string; callbackUrl: string }) {
+  async initiateCall(input: { fromUserId: string; fromMobileE164: string; toMobileE164: string; callbackUrl: string }) {
     if (input.toMobileE164.endsWith('0000')) return { providerCallId: `mock-${randomUUID()}`, state: 'FAILED' as const, reason: 'MOCK_FAILURE' };
     return { providerCallId: `mock-${randomUUID()}`, state: 'REQUESTED' as const };
   }

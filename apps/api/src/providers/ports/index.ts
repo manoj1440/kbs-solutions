@@ -21,8 +21,12 @@ export interface TelephonyEvent {
 }
 export interface TelephonyProvider {
   readonly name: string;
-  initiateCall(input: { fromUserId: string; toMobileE164: string; callbackUrl: string }): Promise<{ providerCallId: string; state: 'REQUESTED' | 'FAILED'; reason?: string }>;
-  parseWebhook(headers: Record<string, string | string[] | undefined>, body: unknown): TelephonyEvent[];
+  /** `fromMobileE164` is the Telecaller's own phone: bridge providers ring it first, then the customer. */
+  initiateCall(input: { fromUserId: string; fromMobileE164: string; toMobileE164: string; callbackUrl: string }): Promise<{ providerCallId: string; state: 'REQUESTED' | 'FAILED'; reason?: string }>;
+  /** Must reject callbacks it cannot authenticate (throw). `query` carries the callback URL's own parameters. */
+  parseWebhook(headers: Record<string, string | string[] | undefined>, body: unknown, query?: Record<string, unknown>): TelephonyEvent[];
+  /** Provider-hosted recordings: download the audio so it is kept in KBS storage (never played from the provider's URL). */
+  fetchRecording?(recordingRef: string): Promise<{ body: Buffer; contentType: string }>;
 }
 
 export const WHATSAPP_PROVIDER = Symbol('WHATSAPP_PROVIDER');

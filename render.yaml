@@ -47,6 +47,14 @@ services:
       - { key: S3_ACCESS_KEY, sync: false }
       - { key: S3_SECRET_KEY, sync: false }
       - { key: S3_FORCE_PATH_STYLE, value: "1" }
+      # F-309 real calls via Exotel click-to-call (trial: only whitelisted numbers). Set TELEPHONY_PROVIDER=mock to switch back.
+      - { key: TELEPHONY_PROVIDER, sync: false } # mock until the EXOTEL_* values below are set, then exotel (boot refuses exotel without them)
+      - { key: EXOTEL_HOST, sync: false } # api.exotel.com (Singapore) or api.in.exotel.com (Mumbai) — as shown in the Exotel dashboard
+      - { key: EXOTEL_ACCOUNT_SID, sync: false }
+      - { key: EXOTEL_API_KEY, sync: false }
+      - { key: EXOTEL_API_TOKEN, sync: false }
+      - { key: EXOTEL_CALLER_ID, sync: false } # the ExoPhone
+      - { key: EXOTEL_WEBHOOK_TOKEN, sync: false } # random string, e.g. `openssl rand -hex 24`
 
   - type: keyvalue
     name: kbs-solutions-redis
