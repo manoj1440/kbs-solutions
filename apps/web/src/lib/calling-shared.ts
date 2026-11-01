@@ -32,6 +32,8 @@ export interface OverviewRow {
   outcomes: Record<string, number>;
   shares: Record<string, number>;
   interests: number;
+  /** A21: bank results of those interests, from the MIS only */
+  applications: { total: number; AWAITING_REFERENCE: number; AWAITING_BANK_UPDATE: number; IN_PROCESS: number; APPROVED: number; DECLINED: number; activated: number };
 }
 
 export function rangeParams(sp: { from?: string; to?: string }) {

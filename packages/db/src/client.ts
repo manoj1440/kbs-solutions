@@ -15,7 +15,7 @@ export class BankStatusWriteForbiddenError extends Error {
   }
 }
 
-const PROTECTED_MODELS = new Set(['BankStatusSnapshot', 'BankStatusHistory']);
+const PROTECTED_MODELS = new Set(['BankStatusSnapshot', 'BankStatusHistory', 'CallingBankStatus']);
 const WRITE_OPS = new Set([
   'create',
   'createMany',

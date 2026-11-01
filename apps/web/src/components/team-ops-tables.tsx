@@ -62,6 +62,22 @@ export function TeamActivityTable({
     c.accessor('attempts', { header: 'Attempted',  }),
     c.accessor('connected', { header: 'Connected',  }),
     c.accessor('interests', { header: 'Succeeded',  }),
+    c.accessor((r) => r.applications?.APPROVED ?? 0, {
+      id: 'bankApproved',
+      header: 'Bank approved',
+      cell: ({ row }) => {
+        const a = row.original.applications;
+        if (!a?.total) return <span className="text-fg-3">—</span>;
+        return (
+          <>
+            <span className="font-semibold text-foreground">{a.APPROVED}</span>
+            <div className="mt-0.5 text-2xs whitespace-nowrap text-fg-3">
+              {a.DECLINED} declined · {a.AWAITING_REFERENCE} need app no.
+            </div>
+          </>
+        );
+      },
+    }),
     c.accessor('talkTimeSec', {
       header: 'Talk time',
             cell: ({ getValue }) => <span className="text-xs whitespace-nowrap">{fmtTalk(getValue())}</span>,

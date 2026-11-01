@@ -5,6 +5,7 @@ import { Text as RNText, View } from 'react-native';
 
 import { CreditCardArt } from '@/components/brand/credit-card-art';
 import { CallDesk } from '@/components/call-desk';
+import { InterestCard, type InterestView } from '@/components/interest-card';
 import { humanize, TimelineItem } from '@/components/team';
 import {
   AppBar,
@@ -75,12 +76,17 @@ export default function RecordScreen() {
   const [rec, setRec] = useState<RecordDetail | null>(null);
   const [cards, setCards] = useState<AvailableCardsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [interests, setInterests] = useState<InterestView[]>([]);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const r = await api.get<RecordDetail>(`/calling/records/${id}`);
+      const [r, i] = await Promise.all([
+        api.get<RecordDetail>(`/calling/records/${id}`),
+        api.get<InterestView[]>(`/calling/interests?callingRecordId=${id}`),
+      ]);
       setRec(r.data);
+      setInterests(i.data);
       if (!r.data.hiddenAt) setCards((await fetchCardsForRecord(id)).data);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load this customer.');
@@ -263,20 +269,19 @@ export default function RecordScreen() {
             </Appear>
           ) : null}
 
-          {rec.interests.length || rec.shareActions.length ? (
+          {interests.length ? (
             <Appear index={5} className="gap-3">
-              <SectionHeader title="Cards & shares" />
+              <SectionHeader title="Applications" />
+              {interests.map((it) => (
+                <InterestCard key={it.id} interest={it} onChanged={() => void load()} />
+              ))}
+            </Appear>
+          ) : null}
+
+          {rec.shareActions.length ? (
+            <Appear index={5} className="gap-3">
+              <SectionHeader title="Shares" />
               <Card>
-                {rec.interests.map((it, i) => (
-                  <TimelineItem
-                    key={it.id}
-                    icon="heart-outline"
-                    tone="gold"
-                    last={i === rec.interests.length - 1 && rec.shareActions.length === 0}
-                    title={`Interested: ${it.card.bank.displayName} ${it.card.name}`}
-                    meta={formatDateTime(it.at)}
-                  />
-                ))}
                 {rec.shareActions.map((s, i) => (
                   <TimelineItem
                     key={s.id}

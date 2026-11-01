@@ -62,12 +62,19 @@ export class MisPipelineService {
     return new Map(rows.map((l) => [`${l.referenceKind}|${l.referenceValue}`, l.leadId]));
   }
 
+  /** A21: "kind|value" → callingInterestId for references Telecallers entered on their interests (same exact-match rule). */
+  private async interestMap(bankId: string): Promise<Map<string, string>> {
+    const rows = await this.prisma.client.callingInterest.findMany({ where: { bankReferenceBankId: bankId, bankReferenceValue: { not: null } }, select: { id: true, bankReferenceKind: true, bankReferenceValue: true } });
+    return new Map(rows.map((i) => [`${i.bankReferenceKind}|${i.bankReferenceValue}`, i.id]));
+  }
+
   /** Runs matching for every row that is not already resolved (MATCHED by Admin / IGNORED keep their state). */
   async match(batchId: string, onProgress?: MisProgress) {
     const batch = await this.prisma.client.misImportBatch.findUniqueOrThrow({ where: { id: batchId } });
     // FAILED = an apply that stopped part-way (F-508 retry): re-match only rows not yet applied
     if (![...PREVIEW_STAGES, 'FAILED'].includes(batch.stage as never)) throw new AppError('MIS_BATCH_STAGE_INVALID', `Batch is ${batch.stage}; matching runs on MAPPED/PREVIEWED batches.`);
     const linkages = await this.linkageMap(batch.bankId);
+    const interests = await this.interestMap(batch.bankId);
     const rows = await this.prisma.client.misRow.findMany({ where: { batchId, matchState: { in: ['PENDING', 'MATCHED', 'UNMATCHED', 'CONFLICT'] }, resolution: null, appliedAt: null }, select: { id: true, referenceValues: true, mapped: true } });
     // divergent duplicates: same reference on ≥2 rows with different mapped status values
     const byRef = new Map<string, { id: string; sig: string }[]>();
@@ -86,9 +93,14 @@ export class MisPipelineService {
     let done = 0;
     for (const r of rows) {
       const refs = (r.referenceValues as unknown as RefValue[]) ?? [];
-      const res = divergent.has(r.id) ? { state: 'CONFLICT' as MatchState, leadId: null, explanation: 'DUPLICATE_IN_BATCH_DIVERGENT: the same reference appears on several rows with different status values.' } : matchRow(refs, linkages);
+      let res: { state: MatchState; leadId: string | null; explanation: string; interestId?: string | null } = divergent.has(r.id) ? { state: 'CONFLICT' as MatchState, leadId: null, explanation: 'DUPLICATE_IN_BATCH_DIVERGENT: the same reference appears on several rows with different status values.' } : matchRow(refs, linkages);
+      // A21: no lead carries it → a Telecaller's calling interest may (exact reference only, INV-08)
+      if (res.state === 'UNMATCHED') {
+        const im = matchRow(refs, interests);
+        if (im.state !== 'UNMATCHED') res = { state: im.state, leadId: null, interestId: im.leadId, explanation: im.explanation.replace(/lead/g, 'calling interest') };
+      }
       if (res.state === 'MATCHED') matched++;
-      await this.prisma.client.misRow.update({ where: { id: r.id }, data: { matchState: res.state, matchedLeadId: res.leadId, matchExplanation: res.explanation } });
+      await this.prisma.client.misRow.update({ where: { id: r.id }, data: { matchState: res.state, matchedLeadId: res.leadId, matchedCallingInterestId: res.interestId ?? null, matchExplanation: res.explanation } });
       await onProgress?.('match', ++done, rows.length);
     }
     return { rows: rows.length, matched };
@@ -189,7 +201,9 @@ export class MisPipelineService {
     if (!opts.onlyRowIds && batch.stage !== 'APPLYING') await this.match(batchId, opts.onProgress);
     await this.prisma.client.misImportBatch.update({ where: { id: batchId }, data: opts.onlyRowIds ? {} : { stage: 'APPLYING', error: null } });
     const blankTokens = this.blankTokens();
-    const rows = await this.prisma.client.misRow.findMany({ where: { batchId, matchState: 'MATCHED', appliedAt: null, ...(opts.onlyRowIds ? { id: { in: opts.onlyRowIds } } : {}) }, orderBy: { sourceRowNumber: 'asc' } });
+    const matchedRows = await this.prisma.client.misRow.findMany({ where: { batchId, matchState: 'MATCHED', appliedAt: null, ...(opts.onlyRowIds ? { id: { in: opts.onlyRowIds } } : {}) }, orderBy: { sourceRowNumber: 'asc' } });
+    const rows = matchedRows.filter((r) => r.matchedLeadId);
+    const interestRows = matchedRows.filter((r) => !r.matchedLeadId && r.matchedCallingInterestId);
     const changedLeads = new Map<string, string[]>();
     const firstMatches = new Set<string>();
     const reviewEntitlements = new Set<string>();
@@ -264,6 +278,12 @@ export class MisPipelineService {
         await opts.onProgress?.('apply', updatedChanged + updatedNoChange, rows.length);
       }
 
+      for (const row of interestRows) {
+        if (await this.applyInterestRow(batch, row, blankTokens)) updatedChanged++;
+        else updatedNoChange++;
+        await opts.onProgress?.('apply', updatedChanged + updatedNoChange, matchedRows.length);
+      }
+
       // FULL_SNAPSHOT: leads matched by an earlier batch of this bank but absent now → ABSENT_FROM_BATCH (values untouched)
       if (!opts.onlyRowIds && batch.profile.snapshotMode === 'FULL_SNAPSHOT') {
         const present = new Set((await this.prisma.client.misRow.findMany({ where: { batchId, matchState: 'MATCHED' }, select: { matchedLeadId: true } })).map((r) => r.matchedLeadId));
@@ -304,13 +324,49 @@ export class MisPipelineService {
     }
     if (!opts.onlyRowIds) {
       const counts = Object.fromEntries((await this.prisma.client.misRow.groupBy({ by: ['matchState'], where: { batchId }, _count: { _all: true } })).map((g) => [g.matchState, g._count._all]));
-      const totals = { ...((batch.totals as Record<string, unknown>) ?? {}), updatedChanged, updatedNoChange, unmatched: counts.UNMATCHED ?? 0, conflicts: counts.CONFLICT ?? 0, invalid: counts.INVALID ?? 0, ignored: counts.IGNORED ?? 0, needsReview: (counts.UNMATCHED ?? 0) + (counts.CONFLICT ?? 0), appliedRows: rows.length };
+      const totals = { ...((batch.totals as Record<string, unknown>) ?? {}), updatedChanged, updatedNoChange, unmatched: counts.UNMATCHED ?? 0, conflicts: counts.CONFLICT ?? 0, invalid: counts.INVALID ?? 0, ignored: counts.IGNORED ?? 0, needsReview: (counts.UNMATCHED ?? 0) + (counts.CONFLICT ?? 0), appliedRows: matchedRows.length, callingInterestsApplied: interestRows.length };
       await this.prisma.client.misImportBatch.update({ where: { id: batchId }, data: { stage: 'APPLIED', appliedAt: batch.appliedAt ?? new Date(), totals } });
-      await this.notifications.notify({ recipientUserId: actor.userId, kind: 'MIS_IMPORT_RESULT', title: `MIS upload ${batch.publicRef} done`, body: `${updatedChanged} lead(s) updated, ${updatedNoChange} unchanged, ${totals.needsReview + totals.invalid} row(s) with no KBS lead.`, deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:applied:${batchId}:${rows.length}` });
+      await this.notifications.notify({ recipientUserId: actor.userId, kind: 'MIS_IMPORT_RESULT', title: `MIS upload ${batch.publicRef} done`, body: `${updatedChanged} lead(s) updated, ${updatedNoChange} unchanged, ${totals.needsReview + totals.invalid} row(s) with no KBS lead.`, deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:applied:${batchId}:${matchedRows.length}` });
       RequestContextStore.audit({ entityId: batchId, after: { stage: 'APPLIED', totals } });
       return totals;
     }
-    return { updatedChanged, updatedNoChange, appliedRows: rows.length };
+    return { updatedChanged, updatedNoChange, appliedRows: matchedRows.length };
+  }
+
+  /**
+   * A21: one MIS row → a Telecaller's `CallingBankStatus`. Same rules as leads: only inside the MIS apply transaction (INV-01, F-903),
+   * blank = unknown and never overwrites (INV-02), stage / decision / activation kept apart (INV-03), no payout evaluation (INV-05).
+   * Returns whether a bank value changed; the Telecaller is notified when it did.
+   */
+  private async applyInterestRow(batch: { id: string; bankId: string; uploadedAt: Date; publicRef: string }, row: { id: string; mapped: unknown; mappedDates: unknown; matchedCallingInterestId: string | null }, blankTokens: string[]) {
+    const interestId = row.matchedCallingInterestId as string;
+    const mapped = (row.mapped as Record<string, string>) ?? {};
+    const dates = (row.mappedDates as Record<string, { iso: string | null }>) ?? {};
+    const FIELDS = ['applicationNo', 'currentStage', 'finalDecision', 'cardActivationStatus'] as const;
+    const changed = await this.prisma.client.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(MIS_APPLY_SET_LOCAL);
+      const snap = await tx.callingBankStatus.findUnique({ where: { callingInterestId: interestId } });
+      const data: Record<string, string | Date> = {};
+      for (const f of FIELDS) {
+        const raw = mapped[f];
+        if (raw === undefined || isBlankBankValue(raw, blankTokens)) continue;
+        if (snap?.[f] !== raw.trim()) data[f] = raw.trim();
+      }
+      const fdd = dates.finalDecisionDate?.iso;
+      if (fdd && snap?.finalDecisionDate?.toISOString() !== fdd) data.finalDecisionDate = new Date(fdd);
+      const meta = { lastMatchedAt: batch.uploadedAt, lastMatchedBatchId: batch.id };
+      if (snap) await tx.callingBankStatus.update({ where: { id: snap.id }, data: { ...data, ...meta } });
+      else await tx.callingBankStatus.create({ data: { callingInterestId: interestId, bankId: batch.bankId, firstMatchedAt: batch.uploadedAt, ...data, ...meta } });
+      await tx.callingInterest.update({ where: { id: interestId }, data: { bankReferenceVerified: true } });
+      await tx.misRow.update({ where: { id: row.id }, data: { appliedAt: new Date() } });
+      return Object.keys(data).filter((k) => k !== 'finalDecisionDate');
+    });
+    if (changed.length) {
+      const i = await this.prisma.client.callingInterest.findUniqueOrThrow({ where: { id: interestId }, select: { telecallerUserId: true, callingRecord: { select: { fullName: true } }, bankStatus: true } });
+      const parts = changed.filter((f) => f !== 'applicationNo').map((f) => `${MIS_NOTIFY_FIELD_LABEL[f as keyof typeof MIS_NOTIFY_FIELD_LABEL] ?? f}: ${(i.bankStatus as Record<string, unknown> | null)?.[f] ?? ''}`);
+      await this.notifications.notify({ recipientUserId: i.telecallerUserId, kind: 'MIS_CHANGED', title: 'Bank MIS updated', body: `${i.callingRecord.fullName} — ${parts.join(', ') || 'matched in bank MIS'} (MIS ${batch.publicRef}).`, deepLink: { entityType: 'CallingInterest', entityId: interestId }, sourceRef: { batchId: batch.id, fields: changed }, dedupeKey: `mis.interest.changed:${interestId}:${batch.id}` });
+    }
+    return changed.length > 0;
   }
 
   /** F-408 §3: change history grouped by batch for one lead. */

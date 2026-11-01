@@ -5,6 +5,8 @@ import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 
+import { countStages, emptyStageCounts, STAGE_SELECT } from './interest-stage';
+
 export interface DateRange {
   from: Date;
   to: Date;
@@ -21,6 +23,7 @@ export class TeamOpsService {
   private scope(actor: Actor): string[] | null {
     if (actor.role === 'ADMIN') return null;
     if (actor.role === 'MANAGER') return actor.teamUserIds;
+    if (actor.role === 'TELECALLER') return [actor.userId]; // A21: own performance only
     throw new AppError('RBAC_FORBIDDEN', 'Team views are for Managers and the Admin.');
   }
 
@@ -40,7 +43,7 @@ export class TeamOpsService {
     const uids = users.map((u) => u.id);
     if (!uids.length) return { range: { from: range.from.toISOString(), to: range.to.toISOString() }, telecallers: [] };
     const inRange = { gte: range.from, lte: range.to };
-    const [queue, dueNow, attempts, connected, outcomes, shares, interests] = await Promise.all([
+    const [queue, dueNow, attempts, connected, outcomes, shares, interests, applications] = await Promise.all([
       this.prisma.client.callingRecord.groupBy({ by: ['assignedTelecallerUserId'], where: { assignedTelecallerUserId: { in: uids }, hiddenAt: null, suppressed: false }, _count: { _all: true } }),
       this.prisma.client.callingRecord.groupBy({ by: ['assignedTelecallerUserId'], where: { assignedTelecallerUserId: { in: uids }, hiddenAt: null, nextFollowUpAt: { lte: now } }, _count: { _all: true } }),
       this.prisma.client.callAttempt.groupBy({ by: ['telecallerUserId'], where: { telecallerUserId: { in: uids }, initiatedAt: inRange }, _count: { _all: true } }),
@@ -48,7 +51,10 @@ export class TeamOpsService {
       this.prisma.client.callOutcome.groupBy({ by: ['telecallerUserId', 'outcome'], where: { telecallerUserId: { in: uids }, at: inRange }, _count: { _all: true } }),
       this.prisma.client.shareAction.groupBy({ by: ['actorUserId', 'kind'], where: { actorUserId: { in: uids }, at: inRange }, _count: { _all: true } }),
       this.prisma.client.callingInterest.groupBy({ by: ['telecallerUserId'], where: { telecallerUserId: { in: uids }, at: inRange }, _count: { _all: true } }),
+      // A21: bank results of the interests created in the range (MIS only)
+      this.prisma.client.callingInterest.findMany({ where: { telecallerUserId: { in: uids }, at: inRange }, select: STAGE_SELECT }),
     ]);
+    const stageMap = countStages(applications);
     const m = <T extends { _count: { _all: number } }>(rows: T[], key: (r: T) => string | null) => new Map(rows.map((r) => [key(r) as string, r._count._all]));
     const queueMap = m(queue, (r) => r.assignedTelecallerUserId);
     const dueMap = m(dueNow, (r) => r.assignedTelecallerUserId);
@@ -77,6 +83,7 @@ export class TeamOpsService {
         outcomes: outcomesMap.get(u.id) ?? {},
         shares: sharesMap.get(u.id) ?? {},
         interests: interestMap.get(u.id) ?? 0,
+        applications: stageMap.get(u.id) ?? emptyStageCounts(),
       })),
     };
   }

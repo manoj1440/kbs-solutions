@@ -5,7 +5,7 @@
 export const AUDIT_ACTION_GROUPS = {
   uploads: { label: 'Uploads (accepted / rejected)', actions: ['files.upload', 'files.quarantine', 'files.rescan', 'customerBatch.create', 'customerBatch.confirm', 'misBatch.create', 'pincodeBatch.create', 'pincodeBatch.confirm', 'pincodeMaster.import', 'suppression.import'] },
   mappingRevisions: { label: 'Mapping revisions', actions: ['customerBatch.mapping', 'misProfile.update', 'misProfile.approve', 'misProfile.acknowledgeValues', 'pincodeProfile.update', 'pincodeProfile.approve', 'crosswalk.upsert'] },
-  leadReferenceLinkage: { label: 'Lead reference linkage', actions: ['lead.create', 'lead.bankReference', 'lead.linkShare', 'lead.linkOpen'] },
+  leadReferenceLinkage: { label: 'Lead reference linkage', actions: ['lead.create', 'lead.bankReference', 'lead.linkShare', 'lead.linkOpen', 'callingInterest.bankReference'] },
   bankStatusChanges: { label: 'Bank status changes (MIS apply / resolve)', actions: ['misBatch.preview', 'misBatch.apply', 'misBatch.previewCompleted', 'misBatch.applyCompleted', 'misBatch.jobFailed', 'misBatch.reject', 'misRow.resolve'] },
   assignmentsAndWfh: { label: 'Telecaller assignment & WFH', actions: ['allocation.run', 'allocation.reassign', 'hierarchy.reassign', 'wfh.grant', 'wfh.revoke'] },
   trainingReactivation: { label: 'Training expiry & reactivation', actions: ['training.expire', 'training.reactivate', 'training.module.publish', 'training.module.update'] },

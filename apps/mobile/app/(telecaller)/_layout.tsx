@@ -7,6 +7,7 @@ import { routeFor, useSession } from '@/lib/session';
 
 const TABS: TabSpec[] = [
   { name: 'index', label: 'Queue', icon: 'call-outline', iconActive: 'call' },
+  { name: 'performance', label: 'My stats', icon: 'stats-chart-outline', iconActive: 'stats-chart' },
   { name: 'id-card', label: 'ID card', icon: 'id-card-outline', iconActive: 'id-card' },
   { name: 'profile', label: 'Profile', icon: 'person-circle-outline', iconActive: 'person-circle' },
 ];
@@ -27,6 +28,7 @@ export default function TelecallerLayout() {
         tabBar={(props) => <TabBar {...props} tabs={TABS} />}
       >
         <Tabs.Screen name="index" options={{ title: 'Queue' }} />
+        <Tabs.Screen name="performance" options={{ title: 'My stats' }} />
         <Tabs.Screen name="id-card" options={{ title: 'ID card' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
         <Tabs.Screen name="notifications" options={{ href: null }} />

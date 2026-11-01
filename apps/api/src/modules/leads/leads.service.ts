@@ -523,6 +523,8 @@ export class LeadsService {
     if (current && current.verificationStatus === 'VERIFIED_BY_MIS_MATCH' && actor.role !== 'ADMIN') throw new AppError('CONFLICT', 'This reference was verified by the bank MIS and can only be changed by the Admin review flow.');
     const clash = await this.prisma.client.bankApplicationLinkage.findUnique({ where: { bankId_referenceKind_referenceValue: { bankId: l.bankId, referenceKind: body.referenceKind, referenceValue: value } } });
     if (clash && clash.leadId !== id) throw new AppError('CONFLICT', 'This reference is already linked to another lead; contact Admin.');
+    // A21: a Telecaller's calling interest may already carry this reference — one bank application belongs to one record
+    if (await this.prisma.client.callingInterest.count({ where: { bankReferenceBankId: l.bankId, bankReferenceKind: body.referenceKind, bankReferenceValue: value } })) throw new AppError('CONFLICT', 'This reference is already linked to another lead; contact Admin.');
     if (clash && clash.leadId === id && !clash.supersededAt) return this.detail(actor, id);
     const row = await this.prisma.client.$transaction(async (tx) => {
       if (current) await tx.bankApplicationLinkage.update({ where: { id: current.id }, data: { supersededAt: new Date() } });

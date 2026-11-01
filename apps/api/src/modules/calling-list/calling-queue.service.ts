@@ -128,7 +128,7 @@ export class CallingQueueService {
         batch: { select: { publicRef: true, uploadedAt: true } },
         outcomes: { orderBy: { at: 'desc' }, select: { id: true, outcome: true, remarks: true, followUpAt: true, selectedCardId: true, doNotContact: true, at: true, telecaller: { select: { id: true, fullName: true } } } },
         callAttempts: { orderBy: { initiatedAt: 'desc' }, select: { id: true, providerState: true, initiatedAt: true, connectedAt: true, endedAt: true, durationSec: true, failureReason: true, telecaller: { select: { id: true, fullName: true } }, recording: { select: { status: true } } } },
-        interests: { orderBy: { at: 'desc' }, select: { id: true, at: true, card: { select: { id: true, name: true, bank: { select: { displayName: true } } } } } },
+        interests: { orderBy: { at: 'desc' }, select: { id: true, at: true, bankReferenceKind: true, bankReferenceValue: true, bankReferenceVerified: true, card: { select: { id: true, name: true, bank: { select: { displayName: true } } } }, bankStatus: { select: { applicationNo: true, currentStage: true, finalDecision: true, cardActivationStatus: true, lastMatchedAt: true } } } },
         shareActions: { orderBy: { at: 'desc' }, select: { id: true, kind: true, channel: true, handoffResult: true, deliveryStatus: true, at: true } },
         allocationEvents: { orderBy: { at: 'asc' }, select: { id: true, at: true, reason: true, fromTelecallerUserId: true, toTelecallerUserId: true, actorUserId: true } },
       },

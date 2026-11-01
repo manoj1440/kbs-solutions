@@ -10,6 +10,8 @@ export const PROTECTED_ROUTES: ReadonlySet<string> = new Set([
   '(telecaller)/record',
   '(telecaller)/card',
   '(telecaller)/id-card',
+  // A21: own performance lists customers and their bank results
+  '(telecaller)/performance',
   // Advisor: customer leads (PAN), payout ledger / requests, profile with bank details
   '(advisor)/index',
   '(advisor)/lead-new',
