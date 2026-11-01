@@ -11,7 +11,7 @@ export default function ManagerPayoutRequestScreen() {
       scroll
       header={<AppBar title="Payout request" subtitle="Review the evidence before you decide" />}
     >
-      <PayoutRequestDetail id={id} />
+      <PayoutRequestDetail key={id} id={id} />
     </Screen>
   );
 }

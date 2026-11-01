@@ -1,6 +1,7 @@
 import {
   ApiClientError,
   formatDateTime,
+  formatInr,
   type LeadStatusRow,
   type MisHistoryGroup,
   type OperationalEvent,
@@ -87,6 +88,12 @@ interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   }[];
   linkActivity: { id: string; action: string; linkVersion: number; at: string; label: string }[];
   shares: { id: string; kind: string; at: string; handoffResult: string; deliveryStatus: string }[];
+  payouts: {
+    entitlementId: string;
+    position: string;
+    amountInr: number;
+    request: { publicRef: string; paidAt: string | null } | null;
+  }[];
 }
 interface RemarkField {
   field: string;
@@ -343,6 +350,38 @@ export default function LeadScreen() {
           ) : null}
         </SectionCard>
       </Appear>
+
+      {l.payouts.length ? (
+        <Appear index={1}>
+          <SectionCard
+            icon="wallet-outline"
+            tone="success"
+            title="Your earning"
+            subtitle="From the bank MIS and the KBS payout rule"
+          >
+            {l.payouts.map((p) => (
+              <KeyValue
+                key={p.entitlementId}
+                label={formatInr(p.amountInr)}
+                value={
+                  <View className="items-end gap-1">
+                    <Badge
+                      label={p.position}
+                      variant={p.position === 'Paid' ? 'success' : p.position === 'Available for claim' ? 'info' : 'warning'}
+                    />
+                    {p.request ? (
+                      <Muted>
+                        {p.request.publicRef}
+                        {p.request.paidAt ? ` · paid ${formatDateTime(p.request.paidAt)}` : ''}
+                      </Muted>
+                    ) : null}
+                  </View>
+                }
+              />
+            ))}
+          </SectionCard>
+        </Appear>
+      ) : null}
 
       <Appear index={2}>
         <Segmented<Tab>

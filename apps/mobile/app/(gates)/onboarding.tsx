@@ -7,7 +7,7 @@ import {
   type OnboardingView,
 } from '@kbs/shared';
 import * as ImagePicker from 'expo-image-picker';
-import { useFocusEffect } from 'expo-router';
+import { Redirect, useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Text as RNText, View } from 'react-native';
 
@@ -33,7 +33,7 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { useSession } from '@/lib/session';
+import { routeFor, useSession } from '@/lib/session';
 
 const STEP_TITLES: Record<string, string> = {
   PERSONAL: 'Your details',
@@ -64,7 +64,7 @@ const PROGRESS = ['PERSONAL', 'CONSENT', 'IDENTITY', 'BANK', 'CHEQUE', 'AGENT_CO
  * renders that step, and the user can revisit earlier ones. No Aadhaar data is ever entered here — the provider handles it.
  */
 export default function OnboardingGate() {
-  const { signOut, refresh } = useSession();
+  const { signOut, refresh, user, gates } = useSession();
   const [v, setV] = useState<OnboardingView | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +128,9 @@ export default function OnboardingGate() {
       onPress={() => void signOut()}
     />
   );
+
+  // approved by KBS: leave the gate for the Advisor home (Refresh re-fetches gates)
+  if (user && gates?.onboarding.complete) return <Redirect href={routeFor(user, gates) as never} />;
 
   if (!v) {
     return (
@@ -412,14 +415,17 @@ export default function OnboardingGate() {
                   const res = await ImagePicker.launchImageLibraryAsync({
                     mediaTypes: ['images'],
                     quality: 0.8,
+                    base64: true,
                   });
                   if (res.canceled || !res.assets[0]) return;
                   const a = res.assets[0];
+                  // expo/fetch (the global fetch since SDK 57) rejects RN `{ uri }` parts; it sends parts exposing bytes()
+                  const bytes = Uint8Array.from(atob(a.base64 ?? ''), (c) => c.charCodeAt(0));
                   const fd = new FormData();
                   fd.append('file', {
-                    uri: a.uri,
                     name: a.fileName ?? 'cheque.jpg',
                     type: a.mimeType ?? 'image/jpeg',
+                    bytes: async () => bytes,
                   } as unknown as Blob);
                   const up = await api.post<{ id: string }>('/files/cheque', fd);
                   await api.put('/onboarding/me/cheque', { fileId: up.data.id });

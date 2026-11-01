@@ -1,4 +1,4 @@
-import { ApiClientError, formatDateTime, formatInr, type LedgerPosition } from '@kbs/shared';
+import { ApiClientError, formatDateTime, formatInr, type LedgerPosition, newIdempotencyKey } from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
@@ -30,11 +30,6 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { colors, gradientStyle, shadow, type Tone } from '@/lib/theme';
-
-const newKey = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random()}`;
 
 interface LedgerRow {
   entitlementId: string;
@@ -139,7 +134,7 @@ export default function Payouts() {
     setBusy(true);
     setError(null);
     try {
-      const k = key ?? newKey();
+      const k = key ?? newIdempotencyKey();
       setKey(k); // a double tap re-sends the same key and replays the same request
       const r = await api.post<Req>(
         '/payouts/requests',
@@ -152,9 +147,9 @@ export default function Payouts() {
       await load();
       router.push({ pathname: '/(advisor)/payout-request', params: { id: r.data.id } });
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not submit the request.');
       setKey(null);
-      await load();
+      await load(); // refresh first: load() clears `error`, so the message must be set after it
+      setError(e instanceof ApiClientError ? e.message : 'Could not submit the request.');
     } finally {
       setBusy(false);
     }

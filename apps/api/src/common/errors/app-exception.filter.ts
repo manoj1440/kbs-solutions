@@ -31,7 +31,8 @@ export class AppExceptionFilter implements ExceptionFilter {
       body = {
         error: {
           code: 'VALIDATION_FAILED',
-          message: 'Some fields are invalid.',
+          // name the fields so every screen shows something actionable ("Check: email.") without per-screen mapping
+          message: `Check: ${[...new Set(exception.issues.map((i) => String(i.path.at(-1) ?? 'input').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()))].join(', ')}.`,
           details: exception.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
         },
         meta: { requestId },

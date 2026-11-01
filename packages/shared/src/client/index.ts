@@ -31,7 +31,8 @@ export interface ApiClientOptions {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-function uuid(): string {
+/** UUID v4 for Idempotency-Key headers; falls back to Math.random where crypto.randomUUID is missing (Hermes). */
+export function newIdempotencyKey(): string {
   const g = globalThis as { crypto?: { randomUUID?: () => string } };
   if (g.crypto?.randomUUID) return g.crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -52,13 +53,13 @@ export function createApiClient(opts: ApiClientOptions) {
   ): Promise<ApiSuccess<T>> {
     const headers: Record<string, string> = {
       Accept: 'application/json',
-      'X-Request-Id': uuid(),
+      'X-Request-Id': newIdempotencyKey(),
       ...(opts.extraHeaders?.() ?? {}),
     };
     const token = await opts.getAccessToken?.();
     if (token) headers.Authorization = `Bearer ${token}`;
     if (body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
-    if (MUTATING.has(method)) headers['Idempotency-Key'] = init.idempotencyKey ?? uuid();
+    if (MUTATING.has(method)) headers['Idempotency-Key'] = init.idempotencyKey ?? newIdempotencyKey();
 
     const res = await f(`${opts.baseUrl}${path}`, {
       method,

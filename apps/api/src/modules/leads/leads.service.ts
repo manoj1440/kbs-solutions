@@ -14,6 +14,7 @@ import { PincodeMasterService } from '../calling-list/pincode-master.service';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { ConfigService } from '../config/config.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PayoutRequestsService } from '../payouts/payout-requests.service';
 import { HierarchyService } from '../users/hierarchy.service';
 
 const DRAFT_TTL_MS = 7 * 24 * 3600_000;
@@ -442,9 +443,10 @@ export class LeadsService {
     const tokens = this.blankTokens();
     const matched = l.statusSnapshot !== null;
     const current = l.linkages.find((x) => !x.supersededAt) ?? null;
-    const [followUps, remarks] = await Promise.all([
+    const [followUps, remarks, payouts] = await Promise.all([
       this.prisma.client.followUpTask.findMany({ where: { leadId: id }, orderBy: { dueAt: 'asc' }, include: { owner: { select: { id: true, fullName: true } } } }),
       this.prisma.client.operationalRemark.findMany({ where: { entityType: 'Lead', entityId: id }, orderBy: { at: 'desc' }, include: { author: { select: { id: true, fullName: true } } } }),
+      this.prisma.client.payoutEntitlement.findMany({ where: { leadId: id }, orderBy: { eligibleAt: 'asc' }, include: { requestItems: { where: { active: true }, take: 1, include: { request: { select: { id: true, publicRef: true, state: true, paidAt: true, approvals: { select: { approverRole: true, decision: true } } } } } } } }),
     ]);
     const row = this.toRow({ ...l, linkages: current ? [current] : [] }, await this.crosswalks([l]), tokens);
     const s = l.statusSnapshot;
@@ -485,6 +487,11 @@ export class LeadsService {
       referenceHistory: l.linkages.map((x) => ({ id: x.id, kind: x.referenceKind, value: x.referenceValue, status: x.verificationStatus, source: x.source, at: x.at.toISOString(), supersededAt: x.supersededAt?.toISOString() ?? null })),
       linkActivity: l.linkInitiations.map((i) => ({ id: i.id, action: i.action, linkVersion: i.linkVersion, at: i.at.toISOString(), label: i.action === 'SHARED' ? 'Application link shared (KBS activity)' : 'Application link opened (KBS activity)', provenance: 'KBS_OPERATIONAL' })),
       shares: l.shareActions.map((s) => ({ id: s.id, kind: s.kind, at: s.at.toISOString(), handoffResult: s.handoffResult, deliveryStatus: s.deliveryStatus })),
+      /** Advisor earnings for this lead, same position wording as the payout ledger (F-603). Paid events can never be claimed again. */
+      payouts: payouts.map((e) => {
+        const req = e.requestItems[0]?.request ?? null;
+        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), amountInr: Number(e.amountInr), eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null } : null };
+      }),
     };
   }
 

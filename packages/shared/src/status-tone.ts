@@ -11,7 +11,10 @@ export type StatusKind = 'stage' | 'decision' | 'activation';
 export function statusTone(kind: StatusKind, field: StatusField): StatusTone {
   if (!field.value || field.display === AWAITING_MIS_UPDATE || field.display === NOT_REPORTED) return 'unknown';
   const v = field.value.toUpperCase();
-  if (kind === 'decision') return v === 'APPROVE' ? 'success' : v === 'DECLINE' ? 'destructive' : v === 'INPROCESS' ? 'warning' : 'secondary';
+  if (kind === 'decision') {
+    const b = decisionBucket(v); // banks write Approve / Approved / APPROVED
+    return b === 'approved' ? 'success' : b === 'declined' ? 'destructive' : 'warning';
+  }
   if (kind === 'activation') return v.includes('ACTIVE') && !v.startsWith('INACTIVE') ? 'success' : v === 'INACTIVE' ? 'warning' : 'secondary';
   return 'info';
 }

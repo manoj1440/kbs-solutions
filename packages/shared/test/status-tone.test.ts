@@ -15,6 +15,7 @@ describe('F-803 status tones (REQ-20 §20.2, VIEW-01)', () => {
   it('a reported Inprocess decision is not neutral (never confused with "Awaiting MIS Update")', () => {
     expect(statusTone('decision', f('Inprocess', 'Inprocess'))).toBe('warning');
     expect(statusTone('decision', f('Approve', 'APPROVE'))).toBe('success');
+    expect(statusTone('decision', f('Approved', 'Approved'))).toBe('success'); // bank wording varies
     expect(statusTone('decision', f('Decline', 'Decline'))).toBe('destructive');
     expect(statusTone('activation', f('Active', 'ACTIVE'))).toBe('success');
     expect(statusTone('activation', f('Inactive', 'INACTIVE'))).toBe('warning');

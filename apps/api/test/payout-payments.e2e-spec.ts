@@ -118,6 +118,9 @@ describe('F-605 Accounts payment recording (PAY-05, PAY-06, PAY-07)', () => {
     expect(ledger.rows.filter((x: { entitlementId: string }) => r.ents.some((e) => e.id === x.entitlementId)).map((x: { position: string; rawActivation: string }) => `${x.position}|${x.rawActivation}`)).toEqual(['Paid|V + ACTIVE', 'Paid|V + ACTIVE']);
     expect([await prisma.bankStatusSnapshot.count(), await prisma.bankStatusHistory.count()]).toEqual(bankRowsBefore);
     await post('/payouts/requests', advToken, { entitlementIds: [r.ents[0].id] }).expect(409); // paid event never claimable again
+    // the lead itself shows the earning as Paid with the request ref (FOS lead screen)
+    const leadView = (await api().get(`/api/v1/leads/${r.ents[0].leadId}`).set(auth(advToken)).expect(200)).body.data;
+    expect(leadView.payouts).toEqual([expect.objectContaining({ position: 'Paid', request: expect.objectContaining({ publicRef: r.publicRef, state: 'PAID' }) })]);
     // Advisor: receipt summary, no proof, no operator, masked reference
     const adv = (await api().get(`/api/v1/payouts/requests/${r.id}`).set(auth(advToken)).expect(200)).body.data;
     expect(adv.receipt).toMatchObject({ state: 'VERIFIED', amountInr: 3000, transferReferenceMasked: '•••••••0001', method: 'NEFT' });

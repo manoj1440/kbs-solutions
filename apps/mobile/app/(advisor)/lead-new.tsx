@@ -125,7 +125,7 @@ export default function LeadNew() {
     setBusy(true);
     setError(null);
     try {
-      const r = await api.post<{ id: string; publicRef: string }>(
+      const r = await api.post<{ id: string; kbsRef: string }>(
         `/leads/drafts/${d.id}/submit`,
         {},
       );
@@ -133,7 +133,7 @@ export default function LeadNew() {
         pathname: '/(advisor)/lead-created',
         params: {
           id: r.data.id,
-          publicRef: r.data.publicRef,
+          publicRef: r.data.kbsRef,
           cardId: d.card.id,
           cardName: d.card.name,
           bankName: d.card.bank.displayName,

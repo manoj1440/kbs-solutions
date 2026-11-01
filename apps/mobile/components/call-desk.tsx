@@ -4,6 +4,7 @@ import {
   type CallAttemptView,
   type CallOutcome,
   formatDateTime,
+  newIdempotencyKey,
   OUTCOME_LABELS,
   recordingChip,
 } from '@kbs/shared';
@@ -37,15 +38,6 @@ const STATE_LABEL: Record<CallAttemptView['providerState'], string> = {
   NO_ANSWER: 'No answer',
   UNKNOWN: 'Unknown',
 };
-
-function newKey() {
-  const g = globalThis as { crypto?: { randomUUID?: () => string } };
-  if (g.crypto?.randomUUID) return g.crypto.randomUUID();
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
 
 /**
  * F-309 §7 / F-310: persistent call control bar + outcome editor on the record screen.
@@ -118,7 +110,7 @@ export function CallDesk({
 
   const dial = async () => {
     setError(null);
-    const k = key ?? newKey();
+    const k = key ?? newIdempotencyKey();
     setKey(k);
     try {
       const r = await api.post<CallAttemptView>('/calls', { callingRecordId: recordId }, k);

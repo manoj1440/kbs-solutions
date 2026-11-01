@@ -10,7 +10,7 @@ export default function AdvisorPayoutRequestScreen() {
       scroll
       header={<AppBar title="Payout request" subtitle="Approvals, payment and card events" />}
     >
-      <PayoutRequestDetail id={id} />
+      <PayoutRequestDetail key={id} id={id} />
     </Screen>
   );
 }
