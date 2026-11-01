@@ -46,7 +46,7 @@ All ten invariants: `DOCS/requirements/REQ-00-document-authority-and-interpretat
 ```
 apps/api (NestJS)  apps/web (Next.js+shadcn)  apps/mobile (Expo)
 packages/db (Prisma)  packages/shared (Zod contracts)  packages/ui-tokens  packages/config
-DOCS/ (everything above)  docker/ (postgres, redis, minio)
+DOCS/ (everything above)  docker/ (postgres, redis, S3 storage)
 ```
 
 ## 6. Commands

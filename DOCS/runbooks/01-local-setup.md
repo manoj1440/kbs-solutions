@@ -3,7 +3,7 @@
 ```bash
 # prerequisites: Node 22, pnpm 10 (corepack enable), Docker
 pnpm install
-pnpm infra:up                 # postgres:5432, redis:6379, minio:9000/9001
+pnpm infra:up                 # postgres:5432, redis:6379, S3 storage (RustFS, service "minio") :9000, console :9001
 cp apps/api/.env.example apps/api/.env
 cp packages/db/.env.example packages/db/.env
 cp apps/web/.env.example apps/web/.env.local
@@ -34,3 +34,6 @@ memory storage) and a production web build (`.next-e2e`, :3300), runs Playwright
 This mirrors the CI `web-e2e` job. Do not point the suite at `kbs_dev` (`E2E_PG_DB=kbs_dev`): every run used to add
 an "E2E … Manager" or an unnamed Advisor there — `apps/web/test/e2e-users-in-dev.sql` lists them (SELECT only).
 
+
+## Storage
+Local files (benefit PDFs, training videos, uploads) go to the S3-compatible container from `pnpm infra:up` with `STORAGE_PROVIDER=s3` (the `.env.example` default). MinIO no longer publishes public images, so the `minio` service runs RustFS (same `MINIO_ROOT_*` credentials, bucket `kbs-private` created by `minio-init`). `STORAGE_PROVIDER=memory` also works but presigned URLs are `memory://…` (benefit PDF links do not open) and files are lost on every API restart — use it only for tests.
