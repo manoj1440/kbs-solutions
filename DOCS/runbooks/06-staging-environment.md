@@ -57,7 +57,7 @@ Native app changes: bump `version` in `apps/mobile/app.json`, run **Mobile build
 | `OTP_PEPPER` | generated | **secret** — Render-generated |
 | `DATA_ENCRYPTION_KEY` | generated (base64, 32 bytes) | **secret** — Render-generated; **copy to a password manager** (losing it = encrypted PAN/bank fields unreadable) |
 | `OTP_PROVIDER` | `console` | — |
-| `OTP_DEV_MASTER_CODE` | 6 digits | **secret** — Render dashboard; the staging login code, shared only with testers |
+| `OTP_DEV_MASTER_CODE` | 6 digits | **secret** — Render dashboard; the one login code for **every** staging user (web + APK, all roles), shared only with testers. Boot refuses `123456` and repeated digits. Changing it restarts the API. |
 | `PUSH_PROVIDER` | `expo` | — |
 | `SCAN_PROVIDER` | `noop` | — |
 | `STORAGE_PROVIDER` | `s3` | — |
@@ -99,6 +99,22 @@ Native app changes: bump `version` in `apps/mobile/app.json`, run **Mobile build
 | `app.android.minVersion` | `0.2.0` (0.1.0 installs are blocked) |
 | `app.android.downloadUrl` | the 0.2.0 APK link above |
 | `app.android.latestVersion` | unset |
+
+## Reset staging data (keep only the Admin + seed)
+
+Irreversible. Supabase → project **kbs-staging** → SQL Editor (check the project name first):
+
+```sql
+DO $$
+DECLARE t text;
+BEGIN
+  SELECT string_agg(format('%I', tablename), ',') INTO t
+  FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations';
+  EXECUTE 'TRUNCATE ' || t || ' RESTART IDENTITY CASCADE';
+END $$;
+```
+
+Then restart the Render API (*Manual Deploy → Restart*, or any env change / deploy). The start command sees no users and runs the baseline seed: Admin on `BOOTSTRAP_ADMIN_MOBILE`, config defaults, categories, banks, MIS/pincode profiles (DRAFT), two example DRAFT cards. Optional: empty the Supabase Storage bucket (uploaded files are orphaned) and flush Render Key Value. Everyone is signed out; sign in with the master code.
 
 ## Rotating a secret
 Change it at the place listed above, then redeploy: Render → *Manual Deploy* (API values), or re-run **CI** on `main` (GitHub/Vercel values). Rotating `JWT_*` signs everyone out; never rotate `DATA_ENCRYPTION_KEY` without a re-encryption plan.
