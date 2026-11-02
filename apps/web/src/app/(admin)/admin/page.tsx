@@ -148,7 +148,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
             {clock.dateLabel} · leads, bank results, calling and payouts at a glance.
           </p>
         </div>
-        <details className="group/period relative ml-auto">
+        <details data-popover className="group/period relative ml-auto">
           <summary
             aria-label="Period"
             className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full bg-card px-4 text-ui font-medium text-foreground shadow-card hover:bg-surface-muted [&::-webkit-details-marker]:hidden"

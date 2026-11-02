@@ -455,7 +455,7 @@ export function WorkspaceShell({
                   <RefreshCw className={cn('size-[18px]', refreshing && 'animate-spin')} />
                 </button>
               </div>
-              <details className="relative">
+              <details data-popover className="relative">
                 <summary className={cn(pill, 'flex h-11 cursor-pointer list-none items-center gap-2 p-1 focus-visible:outline-2 focus-visible:outline-ring sm:pr-3 [&::-webkit-details-marker]:hidden')} aria-label="Account menu">
                   <Avatar name={name} className="bg-foreground text-background" />
                   <span className="hidden text-left sm:block">
