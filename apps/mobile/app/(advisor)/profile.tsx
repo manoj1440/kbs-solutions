@@ -1,5 +1,6 @@
 import {
   type AdvisorProfileView,
+  shareCodeOf,
   agentCodeInput,
   ApiClientError,
   formatDateTime,
@@ -83,6 +84,17 @@ export default function Profile() {
               <Icon name="briefcase" size={12} color="#1C1917" />
               <RNText className="font-bold text-[12px] text-ink">{user?.role ?? ''}</RNText>
             </View>
+            {user ? (
+              <View
+                accessibilityLabel={`My link code ${shareCodeOf(user.publicRef)}, added to every apply link you share`}
+                className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1"
+              >
+                <Icon name="link-outline" size={12} color="#fff" />
+                <RNText className="font-semibold text-[12px] text-white">
+                  My link code {shareCodeOf(user.publicRef)}
+                </RNText>
+              </View>
+            ) : null}
             {p?.reporting.agentCode ? (
               <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1">
                 <Icon name="key-outline" size={12} color="#fff" />

@@ -1,47 +1,34 @@
-import { makePublicRef, RefPrefix } from '@kbs/shared';
+import { makePublicRef, RefPrefix, shareCodeOf } from '@kbs/shared';
 import type { INestApplication } from '@nestjs/common';
-import ExcelJS from 'exceljs';
 import request from 'supertest';
 
 import type { PrismaService } from '../src/infra/prisma/prisma.service';
 
 import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase, setupManagerAndTelecaller } from './helpers';
 
-const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const EMPTY = 'No card available for this pincode from current uploaded data';
+const AU_LINK = 'https://cconboarding.au.bank.in/auccself/#/?utm_source=KBS&agent={code}';
 
-describe('F-308 card availability (sourceability ∩ publication ∩ link)', () => {
+/**
+ * Catalogue rewrite: a card is offered where its own availability says (all India, a pincode list, or a legacy state
+ * publication) ∩ PUBLISHED (active) ∩ an effective link for the channel. Bank coverage sheets no longer gate it.
+ */
+describe('F-308 card availability (card availability ∩ active ∩ link)', () => {
   let app: INestApplication;
   let prisma: PrismaService['client'];
   let adminToken: string;
   const api = () => request(app.getHttpServer());
   let rblId: string;
-  let hsbcId: string;
-  let cardA: string;
+  let auId: string;
+  let platinum: string;
+  let jaipur: string;
 
-  async function sheet(name: string, headers: string[], rows: string[][]) {
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet(name);
-    ws.addRow(headers);
-    rows.forEach((r) => ws.addRow(r));
-    const buf = Buffer.from(await wb.xlsx.writeBuffer());
-    const up = await api().post('/api/v1/files/bank_pincode').set(auth(adminToken)).attach('file', buf, { filename: `${name}.xlsx`, contentType: XLSX }).expect(201);
-    return up.body.data.id as string;
+  /** One-form create, as the catalogue modal sends it. */
+  async function card(bankId: string, name: string, extra: Record<string, unknown>) {
+    const c = await api().post('/api/v1/catalogue/cards').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId, name, benefits: ['2x points'], categoryKeys: ['TRAVEL'], ...extra }).expect(201);
+    return c.body.data as { id: string; status: string; applyUrl: string | null; availability: { allIndia: boolean; pincodeCount: number }; pincodes: string[] };
   }
-  async function importAndApprove(bankCode: string, fileId: string) {
-    const p = await prisma.bankPincodeProfile.findFirstOrThrow({ where: { bank: { code: bankCode }, status: 'DRAFT' } });
-    const b = await api().post(`/api/v1/pincode-profiles/${p.id}/batches`).set(auth(adminToken)).set('idempotency-key', idem()).send({ fileId }).expect(201);
-    await api().post(`/api/v1/pincode-batches/${b.body.data.id}/confirm`).set(auth(adminToken)).set('idempotency-key', idem()).expect(201);
-    await api().post(`/api/v1/pincode-profiles/${p.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).expect(201);
-  }
-  async function card(bankId: string, name: string, opts: { publish?: boolean; link?: boolean; publication?: { scope: 'GLOBAL' | 'STATE' | 'PINCODE'; pincode?: string; state?: string; channel?: string } }) {
-    const c = await api().post('/api/v1/catalogue/cards').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId, name, benefits: ['2x points'], categoryKeys: ['TRAVEL'] }).expect(201);
-    const id = c.body.data.id as string;
-    if (opts.link) await api().post(`/api/v1/catalogue/cards/${id}/links`).set(auth(adminToken)).set('idempotency-key', idem()).send({ channel: 'BOTH', url: `https://apply.example.com/${name.replace(/\s/g, '')}?utm_source=KBS#top` }).expect(201);
-    if (opts.publish) await api().post(`/api/v1/catalogue/cards/${id}/publish`).set(auth(adminToken)).set('idempotency-key', idem()).send({}).expect(201);
-    if (opts.publication) await api().post(`/api/v1/catalogue/cards/${id}/publications`).set(auth(adminToken)).set('idempotency-key', idem()).send({ channel: opts.publication.channel ?? 'BOTH', ...opts.publication }).expect(201);
-    return id;
-  }
+  const names = (r: request.Response) => r.body.data.cards.map((c: { name: string }) => c.name);
 
   beforeAll(async () => {
     await resetDatabase(process.env.DATABASE_URL as string);
@@ -49,60 +36,54 @@ describe('F-308 card availability (sourceability ∩ publication ∩ link)', () 
     adminToken = (await loginAs(app, prisma, ADMIN_MOBILE)).accessToken;
     await api().put('/api/v1/config/network.enforceForTelecallers').set(auth(adminToken)).send({ value: false, reason: 'test' }).expect(200);
     rblId = (await prisma.bank.findUniqueOrThrow({ where: { code: 'RBL' } })).id;
-    hsbcId = (await prisma.bank.findUniqueOrThrow({ where: { code: 'HSBC' } })).id;
+    auId = (await prisma.bank.findUniqueOrThrow({ where: { code: 'AU' } })).id;
     await prisma.pincodeMaster.createMany({ data: [{ pincode: '302001', officeName: 'Jaipur GPO', district: 'Jaipur', state: 'Rajasthan' }, { pincode: '302002', officeName: 'Jaipur City', district: 'Jaipur', state: 'Rajasthan' }], skipDuplicates: true });
-    const rblHeaders = ['Pincode', 'City', 'City Code', 'City_Unique_Code', 'State', 'State Code', 'State_Unique_Code', 'Region Code', 'Country: Country Name', 'Sourceable', 'Is Online City'];
-    const rblFile = await sheet('rbl bank', rblHeaders, [
-      ['302001', 'Jaipur', 'J', 'J1', 'Rajasthan', 'RJ', 'R1', 'N', 'India', 'Y', 'Y'],
-      ['302002', 'Jaipur', 'J', 'J1', 'Rajasthan', 'RJ', 'R1', 'N', 'India', 'Y', 'N'],
-      ['110001', 'Delhi', 'D', 'D1', 'Delhi', 'DL', 'D2', 'N', 'India', 'N', 'Y'],
-      ['400001', 'Mumbai', 'M', 'M1', 'Maharashtra', 'MH', 'M2', 'W', 'India', '', 'Y'],
-    ]);
-    await importAndApprove('RBL', rblFile);
-    const hsbcFile = await sheet('HSBC BANK', ['CARDDELIVERYFLAG', 'CITY', 'COUNTRY', 'DISTRICT', 'FLAG', 'PINCODE', 'PINCODEFLAG', 'STATE', 'STATUS', 'STDCODE'], [['Y', 'Jaipur', 'IN', 'Jaipur', 'A', '302001', 'Y', 'RJ', 'ACTIVE', '0141']]);
-    await importAndApprove('HSBC', hsbcFile);
 
-    cardA = await card(rblId, 'RBL Platinum', { publish: true, link: true, publication: { scope: 'GLOBAL' } });
-    await card(rblId, 'RBL NoLink', { publish: true, link: false, publication: { scope: 'GLOBAL' } });
-    await card(rblId, 'RBL Draft', { publish: false, link: true, publication: { scope: 'GLOBAL' } });
-    await card(rblId, 'RBL Rajasthan Only', { publish: true, link: true, publication: { scope: 'STATE', state: 'Rajasthan' } });
-    await card(rblId, 'RBL Advisor Only', { publish: true, link: true, publication: { scope: 'GLOBAL', channel: 'ADVISOR' } });
-    await card(hsbcId, 'HSBC Ambiguous', { publish: true, link: true, publication: { scope: 'GLOBAL' } });
+    const p = await card(rblId, 'RBL Platinum', { applyUrl: 'https://apply.example.com/RBLPlatinum?utm_source=KBS#top', availability: 'ALL_INDIA', active: true });
+    platinum = p.id;
+    expect(p).toMatchObject({ status: 'PUBLISHED', availability: { allIndia: true, pincodeCount: 0 }, pincodes: [] });
+    const j = await card(auId, 'AU Jaipur', { applyUrl: AU_LINK, availability: ['302001', '302001', '302003'], active: true });
+    jaipur = j.id;
+    expect(j).toMatchObject({ applyUrl: AU_LINK, availability: { allIndia: false, pincodeCount: 2 }, pincodes: ['302001', '302003'] }); // duplicates collapse
+    await card(rblId, 'RBL Draft', { applyUrl: 'https://apply.example.com/draft', availability: 'ALL_INDIA', active: false });
+    // legacy paths still honoured: no link → hidden; state publication; advisor-only channel
+    const noLink = await card(rblId, 'RBL NoLink', { availability: 'ALL_INDIA', active: true });
+    expect(noLink.applyUrl).toBeNull();
+    const state = await card(rblId, 'RBL Rajasthan Only', { applyUrl: 'https://apply.example.com/raj', active: true });
+    await api().post(`/api/v1/catalogue/cards/${state.id}/publications`).set(auth(adminToken)).set('idempotency-key', idem()).send({ channel: 'BOTH', scope: 'STATE', state: 'Rajasthan' }).expect(201);
+    const adv = await card(rblId, 'RBL Advisor Only', { applyUrl: 'https://apply.example.com/adv', active: true });
+    await api().post(`/api/v1/catalogue/cards/${adv.id}/publications`).set(auth(adminToken)).set('idempotency-key', idem()).send({ channel: 'ADVISOR', scope: 'GLOBAL' }).expect(201);
   });
   afterAll(async () => app.close());
 
-  it('PIN-02/03: sourceable+published+linked shown; unpublished, unlinked, ambiguous-flag and other-channel hidden; state publications resolve via pincode master', async () => {
+  it('the card\'s own pincodes decide: all-India everywhere, pincode list only there, state via pincode master; inactive / unlinked / other-channel hidden', async () => {
     const r = await api().get('/api/v1/cards/available?pincode=302001&channel=TELECALLER').set(auth(adminToken)).expect(200);
-    expect(r.body.data.cards.map((c: { name: string }) => c.name)).toEqual(['RBL Platinum', 'RBL Rajasthan Only']);
+    expect(names(r)).toEqual(['AU Jaipur', 'RBL Platinum', 'RBL Rajasthan Only']);
     expect(r.body.data.message).toBeNull();
-    const a = r.body.data.cards[0];
-    expect(a.link).toMatchObject({ version: 1, channel: 'BOTH' });
-    expect(a.provenance).toMatchObject({ sourceability: 'SOURCEABLE', publication: { scope: 'GLOBAL' }, rawFlags: { Sourceable: 'Y', 'Is Online City': 'Y' } });
-    expect(a.provenance.batchUploadedAt).toBeTruthy();
-    expect(r.body.data.cards[1].provenance.publication.scope).toBe('STATE');
-    // ADVISOR channel sees the advisor-only card too
+    expect(r.body.data.cards[0].provenance).toEqual({ publication: { scope: 'PINCODE', id: expect.any(String) } });
+    expect(r.body.data.cards[1].provenance.publication.scope).toBe('GLOBAL');
+    expect(r.body.data.cards[2].provenance.publication.scope).toBe('STATE');
     const adv = await api().get('/api/v1/cards/available?pincode=302001&channel=ADVISOR').set(auth(adminToken)).expect(200);
-    expect(adv.body.data.cards.map((c: { name: string }) => c.name)).toEqual(['RBL Advisor Only', 'RBL Platinum', 'RBL Rajasthan Only']);
+    expect(names(adv)).toEqual(['AU Jaipur', 'RBL Advisor Only', 'RBL Platinum', 'RBL Rajasthan Only']);
+    // no bank coverage upload exists at all, and an unknown pincode still gets the all-India card
+    expect(await prisma.bankPincodeRow.count()).toBe(0);
+    expect(names(await api().get('/api/v1/cards/available?pincode=110001&channel=TELECALLER').set(auth(adminToken)).expect(200))).toEqual(['RBL Platinum']);
   });
 
-  it('NOT_SOURCEABLE, ambiguous and unknown pincodes → exact empty message (never "ineligible")', async () => {
-    for (const pin of ['110001', '400001', '999999']) {
-      const r = await api().get(`/api/v1/cards/available?pincode=${pin}&channel=TELECALLER`).set(auth(adminToken)).expect(200);
-      expect(r.body.data).toMatchObject({ cards: [], message: EMPTY });
-      expect(JSON.stringify(r.body).toLowerCase()).not.toContain('ineligible');
-    }
-    // ending the only publication hides the card again
-    const pubs = await api().get(`/api/v1/catalogue/cards/${cardA}/publications`).set(auth(adminToken)).expect(200);
-    await api().post(`/api/v1/catalogue/publications/${pubs.body.data[0].id}/end`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'campaign paused' }).expect(201);
-    const r = await api().get('/api/v1/cards/available?pincode=302001&channel=TELECALLER').set(auth(adminToken)).expect(200);
-    expect(r.body.data.cards.map((c: { name: string }) => c.name)).toEqual(['RBL Rajasthan Only']);
-    // pincode-scoped publication for another pincode does not leak
-    await api().post(`/api/v1/catalogue/cards/${cardA}/publications`).set(auth(adminToken)).set('idempotency-key', idem()).send({ channel: 'BOTH', scope: 'PINCODE', pincode: '302002' }).expect(201);
-    const r2 = await api().get('/api/v1/cards/available?pincode=302001&channel=TELECALLER').set(auth(adminToken)).expect(200);
-    expect(r2.body.data.cards.map((c: { name: string }) => c.name)).toEqual(['RBL Rajasthan Only']);
-    const r3 = await api().get('/api/v1/cards/available?pincode=302002&channel=TELECALLER').set(auth(adminToken)).expect(200);
-    expect(r3.body.data.cards.map((c: { name: string }) => c.name)).toEqual(['RBL Platinum', 'RBL Rajasthan Only']);
-    expect(r3.body.data.cards[0].provenance.publication.scope).toBe('PINCODE');
+  it('editing replaces the pincode list; making a card inactive hides it → exact empty message (never "ineligible")', async () => {
+    const e = await api().patch(`/api/v1/catalogue/cards/${jaipur}`).set(auth(adminToken)).send({ availability: ['302002'] }).expect(200);
+    expect(e.body.data).toMatchObject({ availability: { allIndia: false, pincodeCount: 1 }, pincodes: ['302002'] });
+    expect(names(await api().get('/api/v1/cards/available?pincode=302001&channel=TELECALLER').set(auth(adminToken)).expect(200))).not.toContain('AU Jaipur');
+    expect(names(await api().get('/api/v1/cards/available?pincode=302002&channel=TELECALLER').set(auth(adminToken)).expect(200))).toContain('AU Jaipur');
+    await api().patch(`/api/v1/catalogue/cards/${platinum}`).set(auth(adminToken)).send({ active: false }).expect(200);
+    const r = await api().get('/api/v1/cards/available?pincode=110001&channel=TELECALLER').set(auth(adminToken)).expect(200);
+    expect(r.body.data).toMatchObject({ cards: [], message: EMPTY });
+    expect(JSON.stringify(r.body).toLowerCase()).not.toContain('ineligible');
+    // re-activating publishes it again (version bump), list view shows it paginated with its availability
+    await api().patch(`/api/v1/catalogue/cards/${platinum}`).set(auth(adminToken)).send({ active: true }).expect(200);
+    const list = await api().get('/api/v1/catalogue/cards?pageSize=2&page=1&q=RBL').set(auth(adminToken)).expect(200);
+    expect(list.body.data).toHaveLength(2);
+    expect(list.body.meta).toMatchObject({ page: 1, pageSize: 2, total: 5 });
   });
 
   it('record-scoped lookup / CALL-03: Telecaller gets cards for an assigned record only, with benefits, PDF, link, ID and remarks reachable in the call context', async () => {
@@ -114,7 +95,7 @@ describe('F-308 card availability (sourceability ∩ publication ∩ link)', () 
     const other = await prisma.callingRecord.create({ data: { batchId: batch.id, sourceRowNumber: 3, fullName: 'Other', mobile: '+919555700002', pincode: '302002' } });
     const t = await loginAs(app, prisma, s.telecallerMobile);
     const r = await api().get(`/api/v1/calling/records/${mine.id}/cards`).set(auth(t.accessToken)).expect(200);
-    expect(r.body.data.cards).toHaveLength(2);
+    expect(r.body.data.cards.map((c: { name: string }) => c.name)).toEqual(['AU Jaipur', 'RBL Platinum', 'RBL Rajasthan Only']);
     expect(r.body.data.location).toMatchObject({ state: 'Rajasthan' });
     // CALL-03: everything the call needs is reachable from the record without leaving the calling context
     for (const c of r.body.data.cards) {
@@ -122,6 +103,11 @@ describe('F-308 card availability (sourceability ∩ publication ∩ link)', () 
       expect(c).toHaveProperty('benefitPdfFileId');
       expect(c.link).toMatchObject({ id: expect.any(String), version: expect.any(Number) });
     }
+    // the shared apply link carries the sharer's own code in place of {code}; links without {code} stay verbatim
+    const share = await api().post('/api/v1/share').set(auth(t.accessToken)).set('idempotency-key', idem()).send({ targetType: 'CALLING_RECORD', targetId: mine.id, kind: 'APPLICATION_LINK', cardId: jaipur }).expect(201);
+    const code = shareCodeOf((await prisma.user.findUniqueOrThrow({ where: { id: s.telecallerId } })).publicRef);
+    expect(decodeURIComponent(share.body.data.handoffUrl)).toContain(AU_LINK.replace('{code}', code));
+    expect(code).toMatch(/^[0-9A-Z]{6,}$/);
     const rec = await api().get(`/api/v1/calling/records/${mine.id}`).set(auth(t.accessToken)).expect(200);
     expect(rec.body.data).toHaveProperty('outcomes'); // remarks live on outcomes
     await api().get(`/api/v1/calling/records/${mine.id}/shares`).set(auth(t.accessToken)).expect(200);
@@ -131,28 +117,19 @@ describe('F-308 card availability (sourceability ∩ publication ∩ link)', () 
     await api().get('/api/v1/cards/available?pincode=302002&channel=TELECALLER').set(auth(t.accessToken)).expect(200);
   });
 
-  it('F-405 browse: PUBLISHED + ADVISOR link, category/text filters, pincode annotation (true/false/unknown), Advisor gate', async () => {
+  it('F-405 browse: PUBLISHED + ADVISOR link, filters; with a pincode only the cards available there', async () => {
     const all = await api().get('/api/v1/cards/browse').set(auth(adminToken)).expect(200);
-    const names = all.body.data.cards.map((c: { name: string }) => c.name);
-    expect(names).toEqual(expect.arrayContaining(['RBL Platinum', 'RBL Advisor Only', 'RBL Rajasthan Only', 'HSBC Ambiguous']));
-    expect(names).not.toContain('RBL NoLink');
-    expect(names).not.toContain('RBL Draft');
+    expect(names(all)).toEqual(expect.arrayContaining(['RBL Platinum', 'RBL Advisor Only', 'RBL Rajasthan Only', 'AU Jaipur']));
+    expect(names(all)).not.toContain('RBL NoLink');
+    expect(names(all)).not.toContain('RBL Draft');
     expect(all.body.data.cards[0].sourceableAtPincode).toBeNull();
     const travel = await api().get('/api/v1/cards/browse?category=TRAVEL&q=advisor').set(auth(adminToken)).expect(200);
-    expect(travel.body.data.cards.map((c: { name: string }) => c.name)).toEqual(['RBL Advisor Only']);
-    const pin = await api().get('/api/v1/cards/browse?pincode=110001').set(auth(adminToken)).expect(200);
-    const byName = Object.fromEntries(pin.body.data.cards.map((c: { name: string; sourceableAtPincode: unknown }) => [c.name, c.sourceableAtPincode]));
-    expect(byName['RBL Platinum']).toBe(false); // RBL says N for 110001
-    expect(byName['HSBC Ambiguous']).toBe(false); // HSBC has no row for 110001 → not sourceable
-    const pin2 = await api().get('/api/v1/cards/browse?pincode=302001').set(auth(adminToken)).expect(200);
-    const byName2 = Object.fromEntries(pin2.body.data.cards.map((c: { name: string; sourceableAtPincode: unknown; sourceabilityProvenance: { sourceability: string } | null }) => [c.name, c]));
-    expect(byName2['RBL Platinum'].sourceableAtPincode).toBe(true);
-    expect(byName2['HSBC Ambiguous']).toMatchObject({ sourceableAtPincode: false, sourceabilityProvenance: { sourceability: 'REQUIRES_BANK_MAPPING' } });
-    // a bank with no approved import → 'unknown'
-    const au = await prisma.bank.findUniqueOrThrow({ where: { code: 'AU' } });
-    await card(au.id, 'AU Unknown', { publish: true, link: true });
-    const pin3 = await api().get('/api/v1/cards/browse?pincode=302001&q=AU%20Unknown').set(auth(adminToken)).expect(200);
-    expect(pin3.body.data.cards[0].sourceableAtPincode).toBe('unknown');
+    expect(names(travel)).toEqual(['RBL Advisor Only']);
+    const far = await api().get('/api/v1/cards/browse?pincode=110001').set(auth(adminToken)).expect(200);
+    expect(names(far).sort()).toEqual(['RBL Advisor Only', 'RBL Platinum']);
+    const near = await api().get('/api/v1/cards/browse?pincode=302002').set(auth(adminToken)).expect(200);
+    expect(names(near).sort()).toEqual(['AU Jaipur', 'RBL Advisor Only', 'RBL Platinum', 'RBL Rajasthan Only']);
+    expect(near.body.data.cards.every((c: { sourceableAtPincode: unknown }) => c.sourceableAtPincode === true)).toBe(true);
     // an Advisor still onboarding is gated
     const req = await api().post('/api/v1/auth/otp/request').send({ mobile: '9333301111', purpose: 'ADVISOR_SIGNUP' }).expect(201);
     const v = await api().post('/api/v1/auth/otp/verify').send({ challengeId: req.body.data.challengeId, code: '000000', platform: 'ANDROID' }).expect(201);

@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-import { maskMobile, type ShareBody, type ShareResult } from '@kbs/shared';
+import { maskMobile, personaliseLink, shareCodeOf, type ShareBody, type ShareResult } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -84,7 +84,7 @@ export class SharingService {
     let assetVersionRef: string | null = null;
     let linkVersion: number | null = null;
     let callingInterestId: string | null = null;
-    const me = await this.prisma.client.user.findUniqueOrThrow({ where: { id: actor.userId }, select: { fullName: true } });
+    const me = await this.prisma.client.user.findUniqueOrThrow({ where: { id: actor.userId }, select: { fullName: true, publicRef: true } });
 
     if (body.kind === 'APPLICATION_LINK') {
       if (!body.cardId) throw new AppError('VALIDATION_FAILED', 'cardId is required for an application link.');
@@ -94,8 +94,8 @@ export class SharingService {
       if (!link) throw new AppError('CONFLICT', 'No application link is effective for this card right now.');
       linkVersion = link.version;
       assetVersionRef = `link:${link.id}:v${link.version}`;
-      // verbatim URL — never normalised (WA-02)
-      text = `Hi ${target.customerName}, here is the ${card.bank.displayName} ${card.name} application link as discussed:\n${link.url}\n— ${me.fullName}, KBS Solutions`;
+      // verbatim URL — never normalised (WA-02) — except `{code}`, filled with the sharer's own code
+      text = `Hi ${target.customerName}, here is the ${card.bank.displayName} ${card.name} application link as discussed:\n${personaliseLink(link.url, shareCodeOf(me.publicRef))}\n— ${me.fullName}, KBS Solutions`;
       if (target.callingRecordId) {
         // one interest per record + card + caller: re-sharing or an earlier outcome must not count it twice
         const where = { callingRecordId: target.callingRecordId, telecallerUserId: actor.userId, cardId: card.id };

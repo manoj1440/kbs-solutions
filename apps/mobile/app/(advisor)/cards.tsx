@@ -29,19 +29,7 @@ interface Category {
   label: string;
 }
 
-function SourcingBadge({ value }: { value: BrowseCard['sourceableAtPincode'] }) {
-  if (value === null) return null;
-  return (
-    <Badge
-      size="sm"
-      dot
-      label={value === true ? 'Sourceable' : value === false ? 'Not here' : 'Pending'}
-      variant={value === true ? 'success' : value === false ? 'destructive' : 'warning'}
-    />
-  );
-}
-
-/** S10 Card Catalogue (F-405): search, category chips, card rows with Apply CTA. */
+/** S10 Card Catalogue (F-405): pincode first — with a pincode only the cards available there are listed; then search, category chips, Apply. */
 export default function CardCatalogue() {
   const [cards, setCards] = useState<BrowseCard[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
@@ -80,6 +68,7 @@ export default function CardCatalogue() {
     }, [load]),
   );
 
+  const pin = /^\d{6}$/.test(pincode) ? pincode : null;
   const openCard = (item: BrowseCard) =>
     router.push({ pathname: '/(advisor)/card', params: { card: JSON.stringify(item), pincode } });
 
@@ -93,12 +82,28 @@ export default function CardCatalogue() {
           Card Catalogue
         </RNText>
         <Muted>
-          {loaded ? `${cards.length} card${cards.length === 1 ? '' : 's'}` : 'Loading cards…'}
+          {loaded
+            ? `${cards.length} card${cards.length === 1 ? '' : 's'}${pin ? ` available at ${pin}` : ''}`
+            : 'Loading cards…'}
         </Muted>
       </View>
       <Callout kind="info" icon="add-circle">
         Pick a card to start a new lead
       </Callout>
+      <Input
+        icon="location-outline"
+        placeholder="Customer pincode"
+        hint={
+          pin
+            ? `Showing cards available at ${pin}`
+            : 'Enter the 6-digit pincode to see the cards available there'
+        }
+        value={pincode}
+        keyboardType="number-pad"
+        maxLength={6}
+        onChangeText={(t) => setPincode(digitsOnly(t, 6))}
+        onSubmitEditing={() => void load()}
+      />
       <Input
         icon="search"
         placeholder="Search cards, banks…"
@@ -106,16 +111,6 @@ export default function CardCatalogue() {
         onChangeText={setQ}
         onSubmitEditing={() => void load()}
         returnKeyType="search"
-      />
-      <Input
-        icon="location-outline"
-        placeholder="Customer pincode (optional)"
-        hint="Checks bank sourcing for the customer's pincode"
-        value={pincode}
-        keyboardType="number-pad"
-        maxLength={6}
-        onChangeText={(t) => setPincode(digitsOnly(t, 6))}
-        onSubmitEditing={() => void load()}
       />
       <ScrollView
         horizontal
@@ -161,8 +156,12 @@ export default function CardCatalogue() {
           ) : loading ? null : (
             <EmptyState
               icon="card-outline"
-              title="No cards match."
-              body="Cards appear here once KBS publishes them with an application link. Bank status for any application is shown only after the MIS upload."
+              title={pin ? `No cards for pincode ${pin}.` : 'No cards match.'}
+              body={
+                pin
+                  ? 'No published card is available at this pincode. Check the pincode with the customer, or clear the search.'
+                  : 'Cards appear here once KBS publishes them with an application link.'
+              }
             />
           )
         }
@@ -185,7 +184,7 @@ export default function CardCatalogue() {
                     {item.name}
                   </RNText>
                   <Muted numberOfLines={1}>{item.bank.displayName}</Muted>
-                  <SourcingBadge value={item.sourceableAtPincode} />
+                  {pin ? <Badge size="sm" dot label="Available here" variant="success" /> : null}
                 </View>
               </PressableScale>
               <View className="flex-row items-center gap-3 border-t border-line pt-3">

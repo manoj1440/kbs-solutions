@@ -21,8 +21,28 @@ export const CardBody = z.object({
   imageFileId: z.string().uuid().nullable().optional(),
   benefitPdfFileId: z.string().uuid().nullable().optional(),
   categoryKeys: z.array(z.string().min(1)).max(10).optional(),
+  /** Apply link for Advisors and Telecallers; `{code}` is replaced by the sharer's own code when shared or opened. */
+  applyUrl: z.string().trim().min(8).max(2000).refine((u) => /^https?:\/\//i.test(u), 'Must start with http(s)://').optional(),
+  /** Where the card is offered: all India, or exactly these pincodes (replaces the previous list). */
+  availability: z.union([z.literal('ALL_INDIA'), z.array(z.string().regex(/^\d{6}$/, 'Pincodes are 6 digits')).min(1).max(30_000)]).optional(),
+  /** true = published (offered), false = draft (hidden). */
+  active: z.boolean().optional(),
 });
 export type CardBody = z.infer<typeof CardBody>;
+
+export const CardsQuery = z.object({
+  q: z.string().trim().max(80).optional(),
+  bankId: z.string().uuid().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'RETIRED']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type CardsQuery = z.infer<typeof CardsQuery>;
+
+/** A user's own code in apply links: their public ref without the `KBS-U-` prefix (unique, already on every user). */
+export const shareCodeOf = (publicRef: string) => publicRef.replace(/^KBS-U-/, '');
+/** Fills `{code}` in a catalogue apply link; the rest of the URL stays verbatim (WA-02). */
+export const personaliseLink = (url: string, code: string) => url.replace(/\{code\}/gi, encodeURIComponent(code));
 export const UpdateCardBody = CardBody.partial().omit({ bankId: true });
 export type UpdateCardBody = z.infer<typeof UpdateCardBody>;
 
@@ -110,7 +130,8 @@ export interface AvailableCard {
   imageFileId: string | null;
   benefitPdfFileId: string | null;
   link: { id: string; version: number; channel: string } | null;
-  provenance: { sourceability: string; batchId: string; rawFlags: Record<string, string>; batchUploadedAt: string | null; publication: { scope: 'GLOBAL' | 'STATE' | 'PINCODE'; id: string } };
+  /** Why the card is offered here: the card's own availability (all India, a state, or this pincode). */
+  provenance: { publication: { scope: 'GLOBAL' | 'STATE' | 'PINCODE'; id: string } };
 }
 
 // ── F-405 Advisor browse ──

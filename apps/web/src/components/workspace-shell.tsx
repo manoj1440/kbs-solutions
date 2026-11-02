@@ -23,7 +23,6 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
-  MapPin,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -97,7 +96,6 @@ const ADMIN_GROUPS: NavGroup[] = [
     label: 'Products',
     items: [
       { href: '/admin/catalogue', label: 'Card catalogue', icon: CreditCard },
-      { href: '/admin/pincode-profiles', label: 'Bank coverage', icon: MapPin },
     ],
   },
   {

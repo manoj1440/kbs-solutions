@@ -1,5 +1,4 @@
 import type { AvailableCard } from '@kbs/shared';
-import { formatDateTime } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -210,25 +209,16 @@ export default function CardDetailScreen() {
           <View className="flex-row items-start gap-2">
             <Icon name="business-outline" size={15} color={colors.muted} style={{ marginTop: 2 }} />
             <Muted className="flex-1 leading-[19px]">
-              Bank marked pincode sourceable (upload{' '}
-              {card.provenance.batchUploadedAt
-                ? formatDateTime(card.provenance.batchUploadedAt)
-                : '—'}
-              ); published {card.provenance.publication.scope.toLowerCase()}; link v
-              {card.link?.version ?? '—'} for {card.link?.channel ?? '—'}.
+              {card.provenance.publication.scope === 'GLOBAL'
+                ? 'KBS offers this card all over India'
+                : card.provenance.publication.scope === 'STATE'
+                  ? "KBS offers this card in the customer's state"
+                  : "KBS offers this card at the customer's pincode"}
+              ; link v{card.link?.version ?? '—'} for {card.link?.channel ?? '—'}.
             </Muted>
           </View>
-          {Object.entries(card.provenance.rawFlags).length ? (
-            <View className="rounded-xl bg-[#F7F4EF] px-3 py-1">
-              {Object.entries(card.provenance.rawFlags)
-                .slice(0, 6)
-                .map(([k, v], i, arr) => (
-                  <KeyValue key={k} label={k} value={v || '(blank)'} last={i === arr.length - 1} />
-                ))}
-            </View>
-          ) : null}
           <Muted className="text-[12px]">
-            Sourceable is not a promise of approval. Record {recordId?.slice(0, 8)}
+            Offered is not a promise of approval. Record {recordId?.slice(0, 8)}
           </Muted>
         </Card>
       </Appear>

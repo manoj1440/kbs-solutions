@@ -66,7 +66,11 @@ interface StepView {
 
 /** F-406 S13–S20: server-side draft; each step PATCHes and the server decides the next step. Resumes by draftId. */
 export default function LeadNew() {
-  const { cardId, draftId } = useLocalSearchParams<{ cardId?: string; draftId?: string }>();
+  const {
+    cardId,
+    draftId,
+    pincode: searchedPincode,
+  } = useLocalSearchParams<{ cardId?: string; draftId?: string; pincode?: string }>();
   const [d, setD] = useState<LeadDraftView | null>(null);
   const [editing, setEditing] = useState<LeadStep | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +81,7 @@ export default function LeadNew() {
     fullName: '',
     email: '',
     pan: '',
-    pincode: '',
+    pincode: /^\d{6}$/.test(searchedPincode ?? '') ? (searchedPincode as string) : '', // carried over from the catalogue search
     city: '',
     state: '',
     confirmed: false,
@@ -125,10 +129,7 @@ export default function LeadNew() {
     setBusy(true);
     setError(null);
     try {
-      const r = await api.post<{ id: string; kbsRef: string }>(
-        `/leads/drafts/${d.id}/submit`,
-        {},
-      );
+      const r = await api.post<{ id: string; kbsRef: string }>(`/leads/drafts/${d.id}/submit`, {});
       router.replace({
         pathname: '/(advisor)/lead-created',
         params: {

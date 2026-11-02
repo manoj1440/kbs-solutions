@@ -1,10 +1,10 @@
-import { ApiClientError, type BrowseCard, digitsOnly, formatDateTime } from '@kbs/shared';
+import { ApiClientError, type BrowseCard, digitsOnly } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Image, Text as RNText, View } from 'react-native';
 
-import { MetaLine, SectionCard } from '@/components/advisor/parts';
+import { SectionCard } from '@/components/advisor/parts';
 import { CreditCardArt } from '@/components/brand/credit-card-art';
 import {
   Appear,
@@ -38,7 +38,6 @@ export default function AdvisorCardDetail() {
   const [sourcing, setSourcing] = useState<BrowseCard['sourceableAtPincode']>(
     card?.sourceableAtPincode ?? null,
   );
-  const [prov, setProv] = useState(card?.sourceabilityProvenance ?? null);
   const [error, setError] = useState<string | null>(null);
   if (card?.imageFileId && imageUrl === null)
     setTimeout(
@@ -56,8 +55,7 @@ export default function AdvisorCardDetail() {
         `/cards/browse?pincode=${pincode}&bankId=${card.bank.id}`,
       );
       const me = r.data.cards.find((c) => c.id === card.id);
-      setSourcing(me?.sourceableAtPincode ?? 'unknown');
-      setProv(me?.sourceabilityProvenance ?? null);
+      setSourcing(Boolean(me)); // browse with a pincode returns only the cards available there
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not check.');
     }
@@ -90,7 +88,10 @@ export default function AdvisorCardDetail() {
               icon="person-add-outline"
               className="flex-[2]"
               onPress={() =>
-                router.push({ pathname: '/(advisor)/lead-new', params: { cardId: card.id } })
+                router.push({
+                  pathname: '/(advisor)/lead-new',
+                  params: { cardId: card.id, pincode },
+                })
               }
             />
           </View>
@@ -220,7 +221,7 @@ export default function AdvisorCardDetail() {
             icon="location-outline"
             tone="success"
             title="Sourcing availability"
-            subtitle="From the bank's uploaded pincode data"
+            subtitle="Pincodes KBS has set for this card"
           >
             <View className="flex-row items-start gap-2">
               <View className="flex-1">
@@ -245,29 +246,11 @@ export default function AdvisorCardDetail() {
             {sourcing !== null ? (
               <Badge
                 label={
-                  sourcing === true
-                    ? 'Bank sources this pincode'
-                    : sourcing === false
-                      ? 'Bank does not source this pincode'
-                      : 'No sourcing data from this bank yet'
+                  sourcing === true ? 'Available at this pincode' : 'Not available at this pincode'
                 }
-                variant={
-                  sourcing === true ? 'success' : sourcing === false ? 'destructive' : 'warning'
-                }
-                icon={
-                  sourcing === true
-                    ? 'checkmark-circle'
-                    : sourcing === false
-                      ? 'close-circle'
-                      : 'help-circle'
-                }
+                variant={sourcing === true ? 'success' : 'destructive'}
+                icon={sourcing === true ? 'checkmark-circle' : 'close-circle'}
               />
-            ) : null}
-            {prov?.batchUploadedAt ? (
-              <MetaLine icon="cloud-upload-outline">
-                From the bank pincode upload of {formatDateTime(prov.batchUploadedAt)}. Sourceable
-                is not a promise of approval.
-              </MetaLine>
             ) : null}
             <ErrorText>{error}</ErrorText>
           </SectionCard>

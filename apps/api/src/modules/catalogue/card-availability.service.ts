@@ -8,19 +8,18 @@ import { PrismaService } from '../../infra/prisma/prisma.service';
 import { PincodeMasterService } from '../calling-list/pincode-master.service';
 
 import { CatalogueService } from './catalogue.service';
-import { PincodeProfileService } from './pincode-profile.service';
 
 type Channel = 'TELECALLER' | 'ADVISOR';
 
 /**
- * F-308: cards offered for a pincode = bank SOURCEABLE (approved profile, latest batch) ∩ card PUBLISHED ∩ publication covers
- * pincode/state/global for the channel ∩ an application link is effective now. "Sourceable ≠ offered ≠ qualifies" (REQ-07 §7.1).
+ * F-308: cards offered for a pincode = card PUBLISHED ∩ the card's own availability (publication) covers the pincode, its state
+ * or all India for the channel ∩ an application link is effective now. Availability is set per card in the catalogue modal;
+ * bank coverage sheets no longer gate it (user decision, catalogue rewrite).
  */
 @Injectable()
 export class CardAvailabilityService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly profiles: PincodeProfileService,
     private readonly catalogue: CatalogueService,
     private readonly pincodes: PincodeMasterService,
   ) {}
@@ -52,44 +51,15 @@ export class CardAvailabilityService {
   // ── availability ──
   async available(pincode: string, channel: Channel): Promise<{ cards: AvailableCard[]; message: string | null; asOf: string; pincode: string; location: { state: string | null; district: string | null } }> {
     const asOf = new Date();
-    const [sourceable, loc] = await Promise.all([this.profiles.sourceability(pincode), this.pincodes.lookup(pincode)]);
-    const sourceableBanks = sourceable.filter((s) => s.sourceability === 'SOURCEABLE'); // REQUIRES_BANK_MAPPING never counts (PIN-02)
+    const loc = await this.pincodes.lookup(pincode);
     const empty = { cards: [] as AvailableCard[], message: NO_CARD_AVAILABLE_MESSAGE, asOf: asOf.toISOString(), pincode, location: { state: loc.state, district: loc.district } };
-    if (!sourceableBanks.length) return empty;
-
-    const state = loc.state?.toUpperCase() ?? null;
-    const pubs = await this.prisma.client.cardPincodePublication.findMany({
-      where: {
-        channel: { in: [channel, 'BOTH'] },
-        effectiveFrom: { lte: asOf },
-        OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
-        AND: [{ OR: [{ pincode }, ...(state ? [{ state }] : []), { pincode: null, state: null }] }],
-        card: { status: 'PUBLISHED', bankId: { in: sourceableBanks.map((b) => b.bankId) }, bank: { active: true } },
-      },
-      include: { card: { include: { bank: { select: { id: true, code: true, displayName: true } }, categories: { include: { category: { select: { key: true, label: true } } } } } } },
-    });
-    if (!pubs.length) return empty;
-
-    // most specific publication per card wins (PINCODE > STATE > GLOBAL)
-    const rank = (p: { pincode: string | null; state: string | null }) => (p.pincode ? 0 : p.state ? 1 : 2);
-    const byCard = new Map<string, (typeof pubs)[number]>();
-    for (const p of pubs) {
-      const cur = byCard.get(p.cardId);
-      if (!cur || rank(p) < rank(cur)) byCard.set(p.cardId, p);
-    }
-    const batchIds = [...new Set(sourceableBanks.map((b) => b.batchId))];
-    const [batches, rawRows] = await Promise.all([
-      this.prisma.client.bankPincodeBatch.findMany({ where: { id: { in: batchIds } }, select: { id: true, uploadedAt: true } }),
-      this.prisma.client.bankPincodeRow.findMany({ where: { pincode, batchId: { in: batchIds }, sourceability: 'SOURCEABLE' }, select: { bankId: true, raw: true } }),
-    ]);
-    const uploadedAt = new Map(batches.map((b) => [b.id, b.uploadedAt]));
-    const rawByBank = new Map(rawRows.map((r) => [r.bankId, r.raw as Record<string, string>]));
+    const byCard = await this.publicationsAt(pincode, loc.state, channel, asOf);
+    if (!byCard.size) return empty;
 
     const cards: AvailableCard[] = [];
     for (const p of byCard.values()) {
       const link = await this.catalogue.effectiveLink(p.cardId, channel, asOf);
       if (!link) continue; // no effective link for this channel → not offered
-      const s = sourceableBanks.find((b) => b.bankId === p.card.bankId)!;
       const c = p.card;
       cards.push({
         id: c.id,
@@ -107,11 +77,34 @@ export class CardAvailabilityService {
         imageFileId: c.imageFileId,
         benefitPdfFileId: c.benefitPdfFileId,
         link: { id: link.id, version: link.version, channel: link.channel },
-        provenance: { sourceability: s.sourceability, batchId: s.batchId, rawFlags: rawByBank.get(c.bankId) ?? {}, batchUploadedAt: uploadedAt.get(s.batchId)?.toISOString() ?? null, publication: { scope: p.pincode ? 'PINCODE' : p.state ? 'STATE' : 'GLOBAL', id: p.id } },
+        provenance: { publication: { scope: p.pincode ? 'PINCODE' : p.state ? 'STATE' : 'GLOBAL', id: p.id } },
       });
     }
     cards.sort((a, b) => a.bank.displayName.localeCompare(b.bank.displayName) || a.name.localeCompare(b.name));
     return { ...empty, cards, message: cards.length ? null : NO_CARD_AVAILABLE_MESSAGE };
+  }
+
+  /** Open publications covering a pincode (or its state, or all India) for PUBLISHED cards of active banks; most specific per card wins. */
+  private async publicationsAt(pincode: string, state: string | null, channel: Channel, asOf: Date) {
+    const st = state?.toUpperCase() ?? null;
+    const pubs = await this.prisma.client.cardPincodePublication.findMany({
+      where: {
+        channel: { in: [channel, 'BOTH'] },
+        effectiveFrom: { lte: asOf },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
+        AND: [{ OR: [{ pincode }, ...(st ? [{ state: st }] : []), { pincode: null, state: null }] }],
+        card: { status: 'PUBLISHED', bank: { active: true } },
+      },
+      include: { card: { include: { bank: { select: { id: true, code: true, displayName: true } }, categories: { include: { category: { select: { key: true, label: true } } } } } } },
+    });
+    // PINCODE > STATE > GLOBAL
+    const rank = (p: { pincode: string | null; state: string | null }) => (p.pincode ? 0 : p.state ? 1 : 2);
+    const byCard = new Map<string, (typeof pubs)[number]>();
+    for (const p of pubs) {
+      const cur = byCard.get(p.cardId);
+      if (!cur || rank(p) < rank(cur)) byCard.set(p.cardId, p);
+    }
+    return byCard;
   }
 
   /** Cards for a calling record (Telecaller own / Manager team / Admin), using the record's stored pincode. */
@@ -140,15 +133,13 @@ export class CardAvailabilityService {
       },
       include: { bank: { select: { id: true, code: true, displayName: true } }, categories: { include: { category: { select: { key: true, label: true } } } } },
     });
-    const sourceable = q.pincode ? await this.profiles.sourceability(q.pincode) : null;
-    const banksWithData = q.pincode ? new Set((await this.profiles.liveBatches()).map((l) => l.bankId)) : new Set<string>();
-    const batchIds = sourceable ? [...new Set(sourceable.map((s) => s.batchId))] : [];
-    const uploadedAt = new Map((batchIds.length ? await this.prisma.client.bankPincodeBatch.findMany({ where: { id: { in: batchIds } }, select: { id: true, uploadedAt: true } }) : []).map((b) => [b.id, b.uploadedAt]));
+    // with a pincode the list is only the cards available there (user decision: FOS search by pincode)
+    const here = q.pincode ? await this.publicationsAt(q.pincode, (await this.pincodes.lookup(q.pincode)).state, 'ADVISOR', asOf) : null;
     const out: BrowseCard[] = [];
     for (const c of cards) {
+      if (here && !here.has(c.id)) continue;
       const link = await this.catalogue.effectiveLink(c.id, 'ADVISOR', asOf);
       if (!link) continue;
-      const s = sourceable?.find((x) => x.bankId === c.bankId) ?? null;
       out.push({
         id: c.id,
         name: c.name,
@@ -165,9 +156,8 @@ export class CardAvailabilityService {
         imageFileId: c.imageFileId,
         benefitPdfFileId: c.benefitPdfFileId,
         link: { id: link.id, version: link.version, channel: link.channel },
-        // unknown = the bank has no approved+imported pincode data yet; absent row under live data = not sourceable
-        sourceableAtPincode: !q.pincode ? null : !banksWithData.has(c.bankId) ? 'unknown' : s?.sourceability === 'SOURCEABLE',
-        sourceabilityProvenance: s ? { sourceability: s.sourceability, batchUploadedAt: uploadedAt.get(s.batchId)?.toISOString() ?? null } : null,
+        sourceableAtPincode: here ? true : null,
+        sourceabilityProvenance: null,
       });
     }
     const key = q.sort;

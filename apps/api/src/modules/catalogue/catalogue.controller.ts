@@ -1,4 +1,4 @@
-import { CardBody, CreateBankBody, CreateCrosswalkBody, CreateLinkBody, PublishCardBody, ReasonBody, UpdateBankBody, UpdateCardBody } from '@kbs/shared';
+import { CardBody, CardsQuery, CreateBankBody, CreateCrosswalkBody, CreateLinkBody, PublishCardBody, ReasonBody, UpdateBankBody, UpdateCardBody } from '@kbs/shared';
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
 
@@ -7,7 +7,6 @@ import { Audited, CurrentActor, Idempotent, RequirePermission } from '../../comm
 
 import { CatalogueService } from './catalogue.service';
 
-const CardsQuery = z.object({ status: z.enum(['DRAFT', 'PUBLISHED', 'RETIRED']).optional(), bankId: z.string().uuid().optional() });
 const BanksQuery = z.object({ includeInactive: z.coerce.boolean().optional() });
 
 /** F-403 catalogue administration. Reads are open to every role (CATALOGUE_READ); writes need CATALOGUE_MANAGE. */
@@ -52,8 +51,8 @@ export class CatalogueController {
   @RequirePermission('CATALOGUE_MANAGE')
   @Idempotent()
   @Audited({ action: 'card.create', entityType: 'CreditCard', entityIdFrom: 'id' })
-  createCard(@Body() raw: unknown) {
-    return this.svc.createCard(CardBody.parse(raw));
+  createCard(@CurrentActor() actor: Actor, @Body() raw: unknown) {
+    return this.svc.createCard(actor, CardBody.parse(raw));
   }
 
   @Get('cards/:id')
@@ -65,8 +64,8 @@ export class CatalogueController {
   @Patch('cards/:id')
   @RequirePermission('CATALOGUE_MANAGE')
   @Audited({ action: 'card.update', entityType: 'CreditCard', entityIdFrom: 'id' })
-  updateCard(@Param('id') id: string, @Body() raw: unknown) {
-    return this.svc.updateCard(id, UpdateCardBody.parse(raw));
+  updateCard(@CurrentActor() actor: Actor, @Param('id') id: string, @Body() raw: unknown) {
+    return this.svc.updateCard(actor, id, UpdateCardBody.parse(raw));
   }
 
   @Post('cards/:id/publish')

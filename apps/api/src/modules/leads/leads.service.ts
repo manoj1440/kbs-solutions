@@ -1,5 +1,5 @@
 import type { Prisma } from '@kbs/db';
-import { activationBucket, type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, decisionBucket, DEFAULT_BLANK_TOKENS, type DeclarationText, FILTER_AWAITING, FILTER_NOT_REPORTED, isBlankBankValue, isValidE164India, type LeadFilterOptions, type OperationalEvent, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, RefPrefix, toE164India } from '@kbs/shared';
+import { activationBucket, type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, decisionBucket, DEFAULT_BLANK_TOKENS, type DeclarationText, FILTER_AWAITING, FILTER_NOT_REPORTED, isBlankBankValue, isValidE164India, type LeadFilterOptions, type OperationalEvent, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, personaliseLink, RefPrefix, shareCodeOf, toE164India } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -514,8 +514,9 @@ export class LeadsService {
     if (!link) throw new AppError('CONFLICT', 'No application link is effective for this card right now.');
     const row = await this.prisma.client.leadLinkInitiation.create({ data: { leadId: id, applicationLinkId: link.id, linkVersion: link.version, action, byUserId: actor.userId } });
     RequestContextStore.audit({ entityId: row.id, after: { leadId: id, action, linkVersion: link.version } });
-    // the URL is returned verbatim for OPENED so the app can launch it; bank status untouched (INV-01)
-    return { id: row.id, action, linkVersion: link.version, url: link.url, at: row.at.toISOString(), label: action === 'SHARED' ? 'Application link shared (KBS activity)' : 'Application link opened (KBS activity)' };
+    // verbatim URL with `{code}` filled by the Advisor's own code, so the bank can trace the application; bank status untouched (INV-01)
+    const me = await this.prisma.client.user.findUniqueOrThrow({ where: { id: actor.userId }, select: { publicRef: true } });
+    return { id: row.id, action, linkVersion: link.version, url: personaliseLink(link.url, shareCodeOf(me.publicRef)), at: row.at.toISOString(), label: action === 'SHARED' ? 'Application link shared (KBS activity)' : 'Application link opened (KBS activity)' };
   }
 
   // ── F-407 bank reference ──
