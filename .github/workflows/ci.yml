@@ -188,4 +188,6 @@ jobs:
           EXPO_NO_DOTENV: '1'
           APP_VARIANT: preview
           EXPO_PUBLIC_API_URL: ${{ vars.STAGING_API_URL }}
-        run: npx -y eas-cli@latest update --channel preview --platform android --environment preview --message "${{ github.event.head_commit.message || github.sha }}" --non-interactive
+          # via env, never inlined: a multi-line message (or one with quotes/braces) broke the command
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: npx -y eas-cli@latest update --channel preview --platform android --environment preview --message "$(printf '%s' "${COMMIT_MESSAGE:-$GITHUB_SHA}" | head -n 1 | cut -c1-200)" --non-interactive
