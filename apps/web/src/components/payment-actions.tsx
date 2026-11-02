@@ -65,7 +65,7 @@ function PaymentForm({ request, mode, onDone }: { request: PayoutRequestDto; mod
   const [reason, setReason] = useState('');
   const [key, setKey] = useState(newKey);
   const amt = Number(amount);
-  const mismatch = amount !== '' && Math.round(amt * 100) !== Math.round(request.totalAmountInr * 100);
+  const mismatch = amount !== '' && Math.round(amt * 100) !== Math.round((request.totalAmountInr ?? 0) * 100);
   const valid = date && date <= todayIst() && amt > 0 && ref.trim().length >= 4 && (mode === 'record' || reason.trim().length >= 5);
   const submit = () =>
     run(
@@ -111,7 +111,7 @@ function PaymentForm({ request, mode, onDone }: { request: PayoutRequestDto; mod
       </div>
       {mismatch ? (
         <Callout tone="warning" icon={AlertTriangle}>
-          This differs from the approved {formatInr(request.totalAmountInr)}. It will be recorded as an exception and the request held for Admin review — partial or excess payments are never marked Paid.
+          This differs from the approved {formatInr(request.totalAmountInr ?? 0)}. It will be recorded as an exception and the request held for Admin review — partial or excess payments are never marked Paid.
         </Callout>
       ) : null}
       <div className="flex flex-wrap items-center gap-2 text-sm">

@@ -16,6 +16,10 @@ import { clientApi } from '@/lib/client-api';
 export function RequestActions({ request }: { request: PayoutRequestDto }) {
   const router = useRouter();
   const [reason, setReason] = useState('');
+  const [amount, setAmount] = useState('');
+  // rate-free payouts: Admin's approval sets the amount to transfer (the Manager approves first, without one)
+  const needsAmount = request.me.role === 'ADMIN' && request.me.canApprove;
+  const amountInr = Number(amount);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const run = async (fn: () => Promise<unknown>, ok: string) => {
@@ -44,12 +48,21 @@ export function RequestActions({ request }: { request: PayoutRequestDto }) {
   }
   return (
     <SectionCard icon={Gavel} tone="teal" title={`Your decision${request.me.role ? ` as ${request.me.role.toLowerCase()}` : ''}`} description="Every decision is recorded with actor, role, time and reason. A rejection releases the card events for a new request." bodyClassName="grid gap-2">
+        {needsAmount ? (
+          <>
+            <Label htmlFor="pr-amount">Amount to transfer (₹)</Label>
+            <Input id="pr-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))} placeholder="e.g. 1500" />
+          </>
+        ) : null}
         <Label htmlFor="pr-reason">Reason (required to reject or cancel)</Label>
-        <Input id="pr-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. checked against the HDFC bank status" />
+        <Input id="pr-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. checked against the bank status" />
         <div className="mt-1 flex flex-wrap gap-2">
           {request.me.canApprove ? (
             <>
-              <Button disabled={busy} onClick={() => void run(() => clientApi.post(`/payouts/requests/${request.id}/approvals`, { decision: 'APPROVED', ...(reason.trim() ? { reason: reason.trim() } : {}) }), 'Approval recorded.')}>
+              <Button
+                disabled={busy || (needsAmount && !(amountInr > 0))}
+                onClick={() => void run(() => clientApi.post(`/payouts/requests/${request.id}/approvals`, { decision: 'APPROVED', ...(needsAmount ? { amountInr: Math.round(amountInr * 100) / 100 } : {}), ...(reason.trim() ? { reason: reason.trim() } : {}) }), 'Approval recorded.')}
+              >
                 <Check />
                 Approve
               </Button>

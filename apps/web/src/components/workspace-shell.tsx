@@ -34,7 +34,6 @@ import {
   Search,
   Settings2,
   ShieldCheck,
-  SlidersHorizontal,
   UserPlus,
   UserRound,
   Users,
@@ -103,8 +102,6 @@ const ADMIN_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/payouts/requests', label: 'Payout requests', icon: Wallet },
       { href: '/admin/payouts/entitlements', label: 'Entitlement ledger', icon: ListChecks },
-      { href: '/admin/payouts/liability', label: 'Payout liability', icon: Scale },
-      { href: '/admin/payouts/rules', label: 'Payout rules', icon: SlidersHorizontal },
     ],
   },
   {
@@ -154,7 +151,6 @@ const MANAGER_GROUPS: NavGroup[] = [
     items: [
       { href: '/manager/payouts', label: 'Team payouts', icon: Wallet },
       { href: '/manager/payouts/requests', label: 'Payout approvals', icon: BadgeCheck },
-      { href: '/manager/payouts/liability', label: 'Payout liability', icon: Scale },
     ],
   },
 ];

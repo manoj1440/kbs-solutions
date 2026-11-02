@@ -237,9 +237,9 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
             {ents.data.map((e) => (
               <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border px-4 py-3">
                 <PayoutStateBadge state={e.state} />
-                <span className="text-base font-semibold tabular-nums">{formatInr(e.amountInr)}</span>
+                {e.amountInr ? <span className="text-base font-semibold tabular-nums">{formatInr(e.amountInr)}</span> : null}
                 <span className="min-w-0 text-xs text-muted-foreground">
-                  <code>{e.triggerField}</code> = “{e.triggerFieldValue}” · {e.rule.name} v{e.rule.version} · eligible {formatDateTime(e.eligibleAt)} · evidence {e.evidence.batchRef}
+                  <code>{e.triggerField}</code> = “{e.triggerFieldValue}”{e.rule ? ` · ${e.rule.name} v${e.rule.version}` : ''} · eligible {formatDateTime(e.eligibleAt)} · evidence {e.evidence.batchRef}
                 </span>
                 {e.reviewReason ? <span className="text-xs">{e.reviewReason}</span> : null}
               </li>

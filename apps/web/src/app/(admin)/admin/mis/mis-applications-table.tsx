@@ -4,7 +4,7 @@ import { formatDateTime } from '@kbs/shared';
 import { Inbox } from 'lucide-react';
 import Link from 'next/link';
 
-import { BankCell, columnHelper, DataTable } from '@/components/data-table';
+import { columnHelper, DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/kit';
 
@@ -50,11 +50,6 @@ const columns = c.columns([
         ) : null}
       </>
     ),
-  }),
-  c.accessor((r) => r.bank.code, {
-    id: 'bank',
-    header: 'Bank',
-    cell: ({ row }) => <BankCell code={row.original.bank.code} />,
   }),
   c.accessor('customer', {
     header: 'Customer',

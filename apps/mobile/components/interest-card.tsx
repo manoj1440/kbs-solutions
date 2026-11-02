@@ -15,6 +15,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import type { Tone } from '@/lib/theme';
+import { withBank } from '@/lib/cards';
 
 type RefKind = 'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER' | 'OTHER';
 
@@ -89,11 +90,11 @@ export function InterestCard({
           <Text className="font-semibold">
             {showCustomer
               ? interest.customer.fullName
-              : `${interest.bank.displayName} ${interest.card.name}`}
+              : withBank(interest.bank, interest.card.name)}
           </Text>
           <Muted>
             {showCustomer
-              ? `${interest.bank.displayName} ${interest.card.name} · ${interest.customer.mobileMasked}`
+              ? `${withBank(interest.bank, interest.card.name)} · ${interest.customer.mobileMasked}`
               : `Interested ${formatDateTime(interest.at)}`}
           </Muted>
         </View>

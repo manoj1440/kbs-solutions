@@ -7,20 +7,18 @@ import { useEffect, useRef, useState } from 'react';
 
 import { FileUploadButton } from '@/components/file-upload-button';
 import { Button } from '@/components/ui/button';
-import { selectClass } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
 /**
- * F-809/F-816: one-step MIS import — pick the bank, choose the file, done. Every bank sends the same standard format,
+ * F-809/F-816: one-step MIS import — choose the file, done (bank-independent: it only updates the matching leads' status). Standard format,
  * so there is nothing to map; the modal creates the batch and applies it (match runs inside apply). Large files become a
  * background job; either way the upload page shows what changed.
  */
-export function UploadMisButton({ banks }: { banks: { id: string; label: string }[] }) {
+export function UploadMisButton() {
   const router = useRouter();
   const ref = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
-  const [bankId, setBankId] = useState(banks[0]?.id ?? '');
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -35,8 +33,6 @@ export function UploadMisButton({ banks }: { banks: { id: string; label: string 
         type="button"
         size="sm"
         className="h-9 shrink-0"
-        disabled={banks.length === 0}
-        title={banks.length === 0 ? 'Add a bank under Products first' : undefined}
         onClick={() => {
           setMsg(null);
           setOpen(true);
@@ -63,23 +59,11 @@ export function UploadMisButton({ banks }: { banks: { id: string; label: string 
           </button>
         </div>
         <div className="grid gap-4 px-5 py-5">
-          <div className="grid gap-1.5">
-            <label htmlFor="mis-bank" className="text-xs font-medium text-fg-2">
-              Bank
-            </label>
-            <select id="mis-bank" className={selectClass} value={bankId} onChange={(e) => setBankId(e.target.value)}>
-              {banks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.label}
-                </option>
-              ))}
-            </select>
-          </div>
           <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-stone-300 bg-stone-100/40 px-4 py-6 text-center">
             <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-card text-stone-900 shadow-sm ring-1 ring-stone-200">
               <FileUp className="size-5" aria-hidden="true" />
             </span>
-            <p className="text-xs text-muted-foreground">The bank’s MIS file, Excel (.xlsx) or CSV. Lead statuses update as soon as it is read.</p>
+            <p className="text-xs text-muted-foreground">The MIS file, Excel (.xlsx) or CSV. Matching leads’ statuses update as soon as it is read.</p>
             <FileUploadButton
               purpose="mis"
               accept=".xlsx,.csv"
@@ -89,7 +73,7 @@ export function UploadMisButton({ banks }: { banks: { id: string; label: string 
                 setBusy(true);
                 setMsg(null);
                 try {
-                  const r = await clientApi.post<{ id: string; stage?: string; duplicateOf?: string }>('/mis/batches', { bankId, fileId: f.id });
+                  const r = await clientApi.post<{ id: string; stage?: string; duplicateOf?: string }>('/mis/batches', { fileId: f.id });
                   if (!r.data.duplicateOf && r.data.stage !== 'REJECTED') {
                     try {
                       await clientApi.post(`/mis/batches/${r.data.id}/apply`, {});

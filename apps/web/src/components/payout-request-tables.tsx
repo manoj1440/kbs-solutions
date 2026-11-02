@@ -20,7 +20,7 @@ export interface RequestItem {
   card: string;
   triggerField: string;
   triggerFieldValue: string;
-  rule: { name: string; version: number };
+  rule: { name: string; version: number } | null;
   evidence: { batchRef: string; uploadedAt: string };
   eligibleAt: string;
   priorRequests: { id: string; publicRef: string; state: string; submittedAt: string }[];
@@ -63,7 +63,10 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
       cell: ({ row }) => (
         <>
           {leadBase ? (
-            <Link className="font-mono text-xs font-semibold" href={`${leadBase}/${row.original.lead.id}`}>
+            <Link
+              className="font-mono text-xs font-semibold"
+              href={`${leadBase}/${row.original.lead.id}`}
+            >
               {row.original.lead.publicRef}
             </Link>
           ) : (
@@ -95,24 +98,12 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
         <>
           <code>{row.original.triggerField}</code> = “{row.original.triggerFieldValue}”
           <div className="mt-0.5 text-2xs text-muted-foreground">
-            batch {row.original.evidence.batchRef} · {formatDateTime(row.original.evidence.uploadedAt)} · eligible {formatDateTime(row.original.eligibleAt)}
+            batch {row.original.evidence.batchRef} ·{' '}
+            {formatDateTime(row.original.evidence.uploadedAt)} · eligible{' '}
+            {formatDateTime(row.original.eligibleAt)}
           </div>
         </>
       ),
-    }),
-    i.accessor((r) => r.rule.name, {
-      id: 'rule',
-      header: 'Rule',
-      meta: { cellClassName: 'text-xs' },
-      cell: ({ row }) => (
-        <>
-          {row.original.rule.name} <span className="text-muted-foreground">v{row.original.rule.version}</span>
-        </>
-      ),
-    }),
-    i.accessor('amountSnapshotInr', {
-      header: 'Amount',
-            cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-foreground">{formatInr(getValue())}</span>,
     }),
     i.display({
       id: 'warnings',
@@ -127,9 +118,22 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
                 {w}
               </Badge>
             ))}
-            {r.priorRequests.length ? <div className="text-muted-foreground">Prior: {r.priorRequests.map((p) => `${p.publicRef} (${p.state.toLowerCase()})`).join(', ')}</div> : null}
-            {r.entitlementState !== 'RESERVED' && r.entitlementState !== 'PAID' ? <div className="text-muted-foreground">entitlement now {r.entitlementState.toLowerCase()}</div> : null}
-            {!r.warnings.length && !r.priorRequests.length && (r.entitlementState === 'RESERVED' || r.entitlementState === 'PAID') ? <span className="text-fg-3">—</span> : null}
+            {r.priorRequests.length ? (
+              <div className="text-muted-foreground">
+                Prior:{' '}
+                {r.priorRequests.map((p) => `${p.publicRef} (${p.state.toLowerCase()})`).join(', ')}
+              </div>
+            ) : null}
+            {r.entitlementState !== 'RESERVED' && r.entitlementState !== 'PAID' ? (
+              <div className="text-muted-foreground">
+                entitlement now {r.entitlementState.toLowerCase()}
+              </div>
+            ) : null}
+            {!r.warnings.length &&
+            !r.priorRequests.length &&
+            (r.entitlementState === 'RESERVED' || r.entitlementState === 'PAID') ? (
+              <span className="text-fg-3">—</span>
+            ) : null}
           </>
         );
       },
@@ -148,7 +152,9 @@ export function PaymentHistoryTable({ rows }: { rows: PaymentEntry[] }) {
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
-          <Badge variant={PAYMENT_STATE[row.original.state]?.tone ?? 'unknown'}>{PAYMENT_STATE[row.original.state]?.label ?? row.original.state}</Badge>
+          <Badge variant={PAYMENT_STATE[row.original.state]?.tone ?? 'unknown'}>
+            {PAYMENT_STATE[row.original.state]?.label ?? row.original.state}
+          </Badge>
           <div className="mt-1 text-2xs text-muted-foreground">
             {row.original.recordedBy.fullName} · {formatDateTime(row.original.recordedAt)}
           </div>
@@ -160,9 +166,13 @@ export function PaymentHistoryTable({ rows }: { rows: PaymentEntry[] }) {
       meta: { cellClassName: 'text-xs' },
       cell: ({ row }) => (
         <>
-          <span className="font-semibold text-foreground tabular-nums">{formatInr(row.original.amountInr)}</span> · {row.original.method ?? '—'}
+          <span className="font-semibold text-foreground tabular-nums">
+            {formatInr(row.original.amountInr)}
+          </span>{' '}
+          · {row.original.method ?? '—'}
           <div className="text-fg-2">
-            <code>{row.original.transferReference}</code> · paid {formatDateTime(row.original.paidAt)}
+            <code>{row.original.transferReference}</code> · paid{' '}
+            {formatDateTime(row.original.paidAt)}
           </div>
         </>
       ),
@@ -171,7 +181,12 @@ export function PaymentHistoryTable({ rows }: { rows: PaymentEntry[] }) {
       id: 'proof',
       header: 'Proof',
       meta: { cellClassName: 'text-xs' },
-      cell: ({ row }) => (row.original.proofFileId ? <ProofLink fileId={row.original.proofFileId} /> : <span className="text-muted-foreground">none</span>),
+      cell: ({ row }) =>
+        row.original.proofFileId ? (
+          <ProofLink fileId={row.original.proofFileId} />
+        ) : (
+          <span className="text-muted-foreground">none</span>
+        ),
     }),
     p.display({
       id: 'notes',
@@ -184,12 +199,20 @@ export function PaymentHistoryTable({ rows }: { rows: PaymentEntry[] }) {
             {r.correctionReason ? <div>Correction: {r.correctionReason}</div> : null}
             {r.correctionDecision ? (
               <div className="text-muted-foreground">
-                Admin {r.state === 'CORRECTION_REJECTED' ? 'rejected' : 'approved'} ({r.correctionDecision.by?.fullName ?? '—'}, {formatDateTime(r.correctionDecision.at)}): {r.correctionDecision.reason}
+                Admin {r.state === 'CORRECTION_REJECTED' ? 'rejected' : 'approved'} (
+                {r.correctionDecision.by?.fullName ?? '—'},{' '}
+                {formatDateTime(r.correctionDecision.at)}): {r.correctionDecision.reason}
               </div>
             ) : null}
             {r.exceptionReason ? <div className="text-destructive">{r.exceptionReason}</div> : null}
-            {r.resolutionNote ? <div className="text-muted-foreground">Resolved: {r.resolutionNote}</div> : null}
-            {r.supersededAt ? <div className="text-muted-foreground">Superseded {formatDateTime(r.supersededAt)}</div> : null}
+            {r.resolutionNote ? (
+              <div className="text-muted-foreground">Resolved: {r.resolutionNote}</div>
+            ) : null}
+            {r.supersededAt ? (
+              <div className="text-muted-foreground">
+                Superseded {formatDateTime(r.supersededAt)}
+              </div>
+            ) : null}
           </>
         );
       },

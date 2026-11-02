@@ -1,4 +1,10 @@
-import { ApiClientError, formatDateTime, formatInr, type LedgerPosition, newIdempotencyKey } from '@kbs/shared';
+import {
+  ApiClientError,
+  formatDateTime,
+  formatInr,
+  type LedgerPosition,
+  newIdempotencyKey,
+} from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
@@ -30,6 +36,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { colors, gradientStyle, shadow, type Tone } from '@/lib/theme';
+import { withBank } from '@/lib/cards';
 
 interface LedgerRow {
   entitlementId: string;
@@ -44,7 +51,8 @@ interface LedgerRow {
   lastMatchedAt: string | null;
   rawActivation: string;
   triggerField: string;
-  payableUnderRule: { name: string; version: number };
+  /** null since payouts became rate-free */
+  payableUnderRule: { name: string; version: number } | null;
   amountInr: number;
   eligibleAt: string;
   evidence: { batchRef: string; uploadedAt: string };
@@ -73,7 +81,8 @@ interface Req {
   publicRef: string;
   state: string;
   itemCount: number;
-  totalAmountInr: number;
+  /** Admin sets it; the Advisor sees it once paid (null before). */
+  totalAmountInr: number | null;
   submittedAt: string;
   outstanding: string[];
 }
@@ -127,7 +136,6 @@ export default function Payouts() {
   );
   const available = ledger?.rows.filter((r) => r.state === 'ELIGIBLE_AVAILABLE') ?? [];
   const chosen = available.filter((r) => selected.includes(r.entitlementId));
-  const total = chosen.reduce((a, r) => a + r.amountInr, 0);
   const toggle = (id: string) =>
     setSelected((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const submit = async () => {
@@ -155,9 +163,10 @@ export default function Payouts() {
     }
   };
   const t = ledger?.totals;
+  // rate-free payouts: card counts per stage; money appears only as what was paid
   const tiles: [string, Tot | undefined, IconName, Tone | 'gold'][] = [
-    ['Eligible', t?.eligible, 'ribbon-outline', 'default'],
-    ['Available for claim', t?.available, 'wallet-outline', 'gold'],
+    ['Activated cards', t?.eligible, 'ribbon-outline', 'default'],
+    ['Ready to claim', t?.available, 'wallet-outline', 'gold'],
     ['Requested', t?.requested, 'paper-plane-outline', 'info'],
     ['Approved, unpaid', t?.approvedUnpaid, 'hourglass-outline', 'warning'],
     ['Paid', t?.paid, 'checkmark-done-outline', 'success'],
@@ -183,8 +192,8 @@ export default function Payouts() {
             <Button
               title={
                 chosen.length
-                  ? `Review ${chosen.length} card event(s) · ${formatInr(total)}`
-                  : 'Select card events to request'
+                  ? `Request payout for ${chosen.length} card${chosen.length === 1 ? '' : 's'}`
+                  : 'Select activated cards to request'
               }
               variant={chosen.length ? 'gold' : 'default'}
               icon="wallet-outline"
@@ -212,15 +221,15 @@ export default function Payouts() {
         </View>
         <View className="mt-6">
           <RNText className="font-semibold text-[12px] uppercase tracking-[1.4px] text-white/60">
-            Available for claim
+            Total earnings
           </RNText>
           {t ? (
             <Appear>
               <RNText
-                accessibilityLabel={`Available for claim ${formatInr(t.available.amountInr)}`}
+                accessibilityLabel={`Total earnings ${formatInr(t.paid.amountInr)}`}
                 className="mt-1 font-extrabold text-[40px] tracking-tight text-gold"
               >
-                {formatInr(t.available.amountInr)}
+                {formatInr(t.paid.amountInr)}
               </RNText>
             </Appear>
           ) : (
@@ -231,13 +240,13 @@ export default function Payouts() {
               <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
                 <View className="h-1.5 w-1.5 rounded-full bg-gold" />
                 <RNText className="font-semibold text-[12px] text-white">
-                  {t.available.count} card event(s)
+                  {t.available.count} to claim
                 </RNText>
               </View>
               <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
                 <View className="h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
                 <RNText className="font-semibold text-[12px] text-white">
-                  Paid {formatInr(t.paid.amountInr)}
+                  {t.paid.count} paid
                 </RNText>
               </View>
             </View>
@@ -260,7 +269,7 @@ export default function Payouts() {
                           adjustsFontSizeToFit
                           className="font-extrabold text-[19px] tracking-tight text-ink"
                         >
-                          {formatInr(v.amountInr)}
+                          {label === 'Paid' ? formatInr(v.amountInr) : v.count}
                         </RNText>
                         <RNText
                           numberOfLines={1}
@@ -268,7 +277,9 @@ export default function Payouts() {
                         >
                           {label}
                         </RNText>
-                        <Muted className="text-[11px]">{v.count} card event(s)</Muted>
+                        <Muted className="text-[11px]">
+                          {v.count} card{v.count === 1 ? '' : 's'}
+                        </Muted>
                       </View>
                     ) : (
                       <Skeleton className="h-5 w-20" />
@@ -279,11 +290,12 @@ export default function Payouts() {
             </View>
             <View className="px-1 pb-1 pt-2">
               <MetaLine icon="git-branch-outline">
-                Buckets overlap (e.g. requested events are also eligible) — don&apos;t add them up.
+                Activated cards include the ones already requested or paid.
               </MetaLine>
               {ledger ? (
                 <MetaLine icon="business-outline">
-                  Source: bank MIS + KBS payout rule · as of {formatDateTime(ledger.asOf)}
+                  Card activation from the bank MIS; KBS decides each payout amount · as of{' '}
+                  {formatDateTime(ledger.asOf)}
                 </MetaLine>
               ) : null}
             </View>
@@ -298,8 +310,8 @@ export default function Payouts() {
 
         <Appear index={2}>
           <Callout kind="neutral">
-            Card events appear here only when the bank MIS confirms the configured value under an
-            approved KBS rule. Submitting a request is not an approval.
+            A card appears here once the bank MIS reports it activated. Your Manager approves your
+            request, then KBS decides the amount and pays it.
           </Callout>
         </Appear>
 
@@ -340,7 +352,7 @@ export default function Payouts() {
                 <PressableScale
                   accessibilityRole={selectable ? 'checkbox' : 'button'}
                   accessibilityState={selectable ? { checked: isSel } : undefined}
-                  accessibilityLabel={`${row.customer}, ${formatInr(row.amountInr)}, ${row.position}`}
+                  accessibilityLabel={`${row.customer}, ${row.position}`}
                   scaleTo={0.985}
                   onPress={() =>
                     selectable
@@ -363,12 +375,9 @@ export default function Payouts() {
                         {row.customer}
                       </Text>
                       <Muted numberOfLines={1} className="text-[12px]">
-                        {row.kbsRef} · {row.bank.displayName} {row.card}
+                        {row.kbsRef} · {withBank(row.bank, row.card)}
                       </Muted>
                     </View>
-                    <RNText className="font-extrabold text-[17px] text-ink">
-                      {formatInr(row.amountInr)}
-                    </RNText>
                   </View>
                   <View className="flex-row flex-wrap items-center gap-2">
                     <Badge
@@ -384,8 +393,7 @@ export default function Payouts() {
                     </View>
                   </View>
                   <Muted className="text-[12px]">
-                    bank ref {row.bankReference?.value ?? '—'} · {row.payableUnderRule.name} v
-                    {row.payableUnderRule.version} · MIS {row.evidence.batchRef}
+                    application no. {row.bankReference?.value ?? '—'} · MIS {row.evidence.batchRef}
                     {row.lastMatchedAt
                       ? ` · last matched ${formatDateTime(row.lastMatchedAt)}`
                       : ''}
@@ -419,7 +427,11 @@ export default function Payouts() {
               <View className="flex-row items-center gap-3">
                 <IconCircle icon="receipt-outline" tone="gold" size={40} />
                 <View className="flex-1">
-                  <Text className="font-bold text-[15px]">{formatInr(r.totalAmountInr)}</Text>
+                  <Text className="font-bold text-[15px]">
+                    {r.totalAmountInr != null
+                      ? formatInr(r.totalAmountInr)
+                      : `${r.itemCount} card${r.itemCount === 1 ? '' : 's'}`}
+                  </Text>
                   <Muted className="text-[12px]">{r.publicRef}</Muted>
                 </View>
                 <PayoutStateBadge state={r.state} />
@@ -469,17 +481,15 @@ export default function Payouts() {
                 <Text className="font-semibold text-[14px]">{c.customer}</Text>
                 <Muted className="text-[12px]">{c.kbsRef}</Muted>
               </View>
-              <Text className="font-bold text-[14px]">{formatInr(c.amountInr)}</Text>
             </View>
           ))}
         </View>
-        <View className="flex-row items-center justify-between">
-          <Muted>{chosen.length} card event(s)</Muted>
-          <RNText className="font-extrabold text-[24px] text-ink">{formatInr(total)}</RNText>
-        </View>
+        <Muted>
+          {chosen.length} activated card{chosen.length === 1 ? '' : 's'}
+        </Muted>
         <Callout kind="info">
-          Amounts are the rates in force when each event became eligible; they will not change after
-          submission.
+          Your Manager approves first, then KBS decides the amount and pays it. You will see the
+          amount once it is paid.
         </Callout>
         <ErrorText>{error}</ErrorText>
       </BottomSheet>

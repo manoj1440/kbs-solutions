@@ -10,6 +10,7 @@ import { Paginated } from '../../common/interceptors/response-envelope.intercept
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { defaultBankId } from '../catalogue/default-bank';
 import { FilesService } from '../files/files.service';
 
 import { parseBankDate } from './mis-dates';
@@ -75,7 +76,9 @@ export class MisImportService {
     return { file, checksum, ...parsed };
   }
 
-  async create(actor: Actor, body: CreateMisBatchBody) {
+  async create(actor: Actor, input: CreateMisBatchBody) {
+    // MIS is bank-independent in the product: no bank picked → the hidden internal bank every new card/lead uses
+    const body = { ...input, bankId: input.bankId ?? (await defaultBankId(this.prisma.client)) };
     // F-809/F-816: every bank uses the same MIS layout, so the upload only names the bank; the latest APPROVED profile
     // resolves the field map, and a bank without one gets the built-in standard format (no mapping to set up).
     const profile = body.profileId

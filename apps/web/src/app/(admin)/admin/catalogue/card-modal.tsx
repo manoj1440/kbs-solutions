@@ -8,17 +8,12 @@ import { useEffect, useRef, useState } from 'react';
 import { FileUploadButton } from '@/components/file-upload-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Callout, Field, selectClass } from '@/components/ui/kit';
+import { Callout, Field } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
-export interface Option {
-  id: string;
-  label: string;
-}
 interface CardDetail {
   id: string;
-  bankId: string;
   name: string;
   productCode: string | null;
   description: string | null;
@@ -38,7 +33,6 @@ interface CardDetail {
 }
 
 const blank = {
-  bankId: '',
   name: '',
   productCode: '',
   categoryKeys: [] as string[],
@@ -70,7 +64,6 @@ const textOrNull = (v: string) => (v.trim() === '' ? null : v.trim());
 
 function fromDetail(c: CardDetail): Form {
   return {
-    bankId: c.bankId,
     name: c.name,
     productCode: c.productCode ?? '',
     categoryKeys: c.categories.map((x) => x.key),
@@ -96,23 +89,19 @@ function fromDetail(c: CardDetail): Form {
  */
 function CardModal({
   cardId,
-  banks,
   categories,
   onClose,
 }: {
   cardId: string | null;
-  banks: Option[];
   categories: { key: string; label: string }[];
   onClose: () => void;
 }) {
   const router = useRouter();
   const ref = useRef<HTMLDialogElement>(null);
-  const [f, setF] = useState<Form>({ ...blank, bankId: banks[0]?.id ?? '' });
+  const [f, setF] = useState<Form>(blank);
   const [loading, setLoading] = useState(Boolean(cardId));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [bankList, setBankList] = useState(banks);
-  const [newBank, setNewBank] = useState<{ code: string; name: string } | null>(null);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
 
   useEffect(() => {
@@ -127,22 +116,6 @@ function CardModal({
 
   const pins = parsePincodes(f.pincodes);
   const hasCode = /\{code\}/i.test(f.applyUrl);
-
-  async function addBank() {
-    if (!newBank) return;
-    try {
-      const r = await clientApi.post<{ id: string; displayName: string }>('/catalogue/banks', {
-        code: newBank.code,
-        displayName: newBank.name,
-      });
-      setBankList((b) => [...b, { id: r.data.id, label: r.data.displayName }]);
-      set('bankId', r.data.id);
-      setNewBank(null);
-      setMsg(null);
-    } catch (e) {
-      setMsg(e instanceof ApiClientError ? e.message : 'Could not add the bank.');
-    }
-  }
 
   async function save() {
     if (!f.allIndia && pins.length === 0)
@@ -175,7 +148,7 @@ function CardModal({
     setMsg(null);
     try {
       if (cardId) await clientApi.patch(`/catalogue/cards/${cardId}`, body);
-      else await clientApi.post('/catalogue/cards', { ...body, bankId: f.bankId });
+      else await clientApi.post('/catalogue/cards', body); // cards are bank-independent
       ref.current?.close();
       router.refresh();
     } catch (e) {
@@ -221,35 +194,6 @@ function CardModal({
         >
           <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-5 py-5">
             <section className="grid gap-3 sm:grid-cols-2">
-              <Field label="Bank" htmlFor="cm-bank">
-                <div className="flex gap-2">
-                  <select
-                    id="cm-bank"
-                    className={selectClass}
-                    value={f.bankId}
-                    disabled={Boolean(cardId)}
-                    onChange={(e) => set('bankId', e.target.value)}
-                  >
-                    {bankList.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.label}
-                      </option>
-                    ))}
-                  </select>
-                  {cardId ? null : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      aria-label="Add a bank"
-                      title="Add a bank"
-                      onClick={() => setNewBank(newBank ? null : { code: '', name: '' })}
-                    >
-                      <Plus />
-                    </Button>
-                  )}
-                </div>
-              </Field>
               <Field label="Card name" htmlFor="cm-name">
                 <Input
                   id="cm-name"
@@ -259,36 +203,6 @@ function CardModal({
                   onChange={(e) => set('name', e.target.value)}
                 />
               </Field>
-              {newBank ? (
-                <div className="grid gap-2 rounded-2xl border border-border p-3 sm:col-span-2 sm:grid-cols-[1fr_2fr_auto] sm:items-end">
-                  <Field label="Bank code" htmlFor="cm-bank-code">
-                    <Input
-                      id="cm-bank-code"
-                      placeholder="KOTAK"
-                      value={newBank.code}
-                      onChange={(e) =>
-                        setNewBank({ ...newBank, code: e.target.value.toUpperCase() })
-                      }
-                    />
-                  </Field>
-                  <Field label="Bank name" htmlFor="cm-bank-name">
-                    <Input
-                      id="cm-bank-name"
-                      placeholder="Kotak Mahindra Bank"
-                      value={newBank.name}
-                      onChange={(e) => setNewBank({ ...newBank, name: e.target.value })}
-                    />
-                  </Field>
-                  <Button
-                    type="button"
-                    variant="soft"
-                    disabled={newBank.code.length < 2 || newBank.name.length < 2}
-                    onClick={() => void addBank()}
-                  >
-                    Add bank
-                  </Button>
-                </div>
-              ) : null}
               <Field label="Joining fee (₹)" htmlFor="cm-jf">
                 <Input
                   id="cm-jf"
@@ -543,7 +457,7 @@ function CardModal({
             <Button type="button" variant="outline" onClick={() => ref.current?.close()}>
               Cancel
             </Button>
-            <Button type="submit" disabled={busy || !f.bankId}>
+            <Button type="submit" disabled={busy}>
               {busy ? 'Saving…' : cardId ? 'Save card' : 'Create card'}
             </Button>
           </div>
@@ -556,11 +470,9 @@ function CardModal({
 /** Opens the modal for a new card (`cardId` omitted) or an existing one. Mounted only while open, so each opening starts fresh. */
 export function CardModalButton({
   cardId,
-  banks,
   categories,
 }: {
   cardId?: string;
-  banks: Option[];
   categories: { key: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
@@ -578,12 +490,7 @@ export function CardModalButton({
         </Button>
       )}
       {open ? (
-        <CardModal
-          cardId={cardId ?? null}
-          banks={banks}
-          categories={categories}
-          onClose={() => setOpen(false)}
-        />
+        <CardModal cardId={cardId ?? null} categories={categories} onClose={() => setOpen(false)} />
       ) : null}
     </>
   );

@@ -59,6 +59,7 @@ export function PersonCell({
 
 /** Bank monogram + code (MIS applications, dashboards). */
 export function BankCell({ code, name }: { code: string; name?: string }) {
+  if (code === 'KBS') return null; // hidden internal bank: cards and MIS are bank-independent
   return (
     <span className="inline-flex items-center gap-2">
       <BankMark code={code} size="sm" />

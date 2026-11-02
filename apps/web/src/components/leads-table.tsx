@@ -16,7 +16,7 @@ import {
 } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, BankMark, EmptyState, KeyValueGrid } from '@/components/ui/kit';
+import { Avatar, EmptyState, KeyValueGrid } from '@/components/ui/kit';
 import { AWAITING_BANK } from '@/lib/bank-text';
 
 const c = columnHelper<LeadStatusRow>();
@@ -70,17 +70,13 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         </div>
       ),
     }),
-    c.accessor((r) => `${r.bank.displayName} ${r.card.name}`, {
+    c.accessor((r) => r.card.name, {
       id: 'bankCard',
-      header: 'Bank / card',
+      header: 'Card',
       cell: ({ row }) => (
         <div className="grid min-w-0 gap-0.5">
-          <div className="flex min-w-0 items-center gap-2 font-medium text-foreground">
-            <BankMark code={row.original.bank.code} size="sm" className="h-6 min-w-6 shrink-0 text-[7.5px]" />
-            <span className="truncate">{row.original.bank.displayName}</span>
-          </div>
+          <div className="truncate font-medium text-foreground">{row.original.card.name}</div>
           <div className="truncate text-xs text-muted-foreground">
-            {row.original.card.name}
             {row.original.card.crosswalked && row.original.card.crosswalked.id !== row.original.card.id
               ? ` · ${row.original.card.crosswalked.productCode} → ${row.original.card.crosswalked.name}`
               : ''}

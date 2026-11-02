@@ -40,7 +40,9 @@ describe('F-606 payout reconciliation + exceptions (DASH-02 payout population, P
     const r = (await post('/payouts/requests', adv[advIdx].token, { entitlementIds: ids }).expect(201)).body.data;
     const m = mgr[advIdx < 2 ? 0 : 1];
     if (approve >= 1) await post(`/payouts/requests/${r.id}/approvals`, m.token, { decision: 'APPROVED' }).expect(201);
-    if (approve >= 2) await post(`/payouts/requests/${r.id}/approvals`, admin, { decision: 'APPROVED' }).expect(201);
+    // rate-free payouts: Admin's approval sets the amount — the entitlements' amounts here, so the reconciliation sums hold
+    const amountInr = (r.snapshot.items as { amountInr: number }[]).reduce((x, i) => x + i.amountInr, 0);
+    if (approve >= 2) await post(`/payouts/requests/${r.id}/approvals`, admin, { decision: 'APPROVED', amountInr }).expect(201);
     return r.id as string;
   }
 

@@ -25,6 +25,7 @@ import { ago, TodayCard, todayLabel } from '@/components/today';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { withBank } from '@/lib/cards';
 
 interface LedgerTotals {
   totals: Record<
@@ -134,9 +135,10 @@ export default function AdvisorHome() {
   const applications = leads.filter(
     (l) => l.matched || l.bankApplicationNo || l.bankApplicationReference,
   ).length;
-  const earnings = totals?.eligible.amountInr ?? 0;
-  const available = totals?.available.amountInr ?? 0;
-  const paid = totals?.paid.amountInr ?? 0;
+  // rate-free payouts: earnings = what KBS actually paid; claimable cards are counted, never priced
+  const earnings = totals?.paid.amountInr ?? 0;
+  const claimable = totals?.available.count ?? 0;
+  const inProgress = (totals?.requested.count ?? 0) + (totals?.approvedUnpaid.count ?? 0);
   const name = user?.fullName ?? '';
   const first = name.split(' ')[0] || 'Advisor';
   const funnel: { label: string; value: number; icon: IconName }[] = [
@@ -179,12 +181,12 @@ export default function AdvisorHome() {
         </View>
         <View className="mt-7">
           <RNText className="font-semibold text-[12px] uppercase tracking-[1.4px] text-white/60">
-            Total eligible earnings
+            Total earnings
           </RNText>
           {loaded ? (
             <Appear>
               <RNText
-                accessibilityLabel={`Total eligible earnings ${formatInr(earnings, { decimals: 0 })}`}
+                accessibilityLabel={`Total earnings ${formatInr(earnings, { decimals: 0 })}`}
                 className="mt-1 font-extrabold text-[40px] tracking-tight text-white"
               >
                 {formatInr(earnings, { decimals: 0 })}
@@ -197,13 +199,13 @@ export default function AdvisorHome() {
             <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
               <View className="h-1.5 w-1.5 rounded-full bg-gold" />
               <RNText className="font-semibold text-[12px] text-white">
-                Available {formatInr(available, { decimals: 0 })}
+                {claimable} card{claimable === 1 ? '' : 's'} to claim
               </RNText>
             </View>
             <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
               <View className="h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
               <RNText className="font-semibold text-[12px] text-white">
-                Paid {formatInr(paid, { decimals: 0 })}
+                {inProgress} in progress
               </RNText>
             </View>
           </View>
@@ -273,10 +275,14 @@ export default function AdvisorHome() {
                   key: a.id,
                   title: a.whatToDo,
                   subtitle: `${a.customer} · ${a.issuer}`,
-                  onPress: () => router.push({ pathname: '/(advisor)/lead', params: { id: a.leadId } }),
+                  onPress: () =>
+                    router.push({ pathname: '/(advisor)/lead', params: { id: a.leadId } }),
                 })),
                 seeAll: pending?.length
-                  ? { label: 'All pending actions', onPress: () => router.push('/(advisor)/pending' as never) }
+                  ? {
+                      label: 'All pending actions',
+                      onPress: () => router.push('/(advisor)/pending' as never),
+                    }
                   : undefined,
               },
               {
@@ -289,8 +295,9 @@ export default function AdvisorHome() {
                 rows: (drafts ?? []).slice(0, 3).map((d) => ({
                   key: d.id,
                   title: d.customer || 'Customer not added yet',
-                  subtitle: d.card ? `${d.card.name} · ${d.card.bank.displayName}` : null,
-                  onPress: () => router.push({ pathname: '/(advisor)/lead-new', params: { draftId: d.id } }),
+                  subtitle: d.card ? withBank(d.card.bank, d.card.name, ' · ') : null,
+                  onPress: () =>
+                    router.push({ pathname: '/(advisor)/lead-new', params: { draftId: d.id } }),
                 })),
                 seeAll: drafts?.length
                   ? { label: 'My leads', onPress: () => router.push('/(advisor)/leads' as never) }
@@ -303,12 +310,12 @@ export default function AdvisorHome() {
                 tone: 'gold',
                 count: totals ? totals.available.count : null,
                 empty: 'Nothing to claim yet.',
-                rows: available
+                rows: claimable
                   ? [
                       {
                         key: 'available',
-                        title: `Claim ${formatInr(available, { decimals: 0 })}`,
-                        subtitle: `${totals?.available.count ?? 0} card event(s) available`,
+                        title: `Request payout for ${claimable} activated card${claimable === 1 ? '' : 's'}`,
+                        subtitle: 'KBS decides the amount; you see it once paid',
                         onPress: () => router.push('/(advisor)/payouts' as never),
                       },
                     ]

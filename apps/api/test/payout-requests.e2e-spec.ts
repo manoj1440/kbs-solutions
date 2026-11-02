@@ -79,7 +79,8 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     expect([r1.status, r2.status].sort()).toEqual([201, 409]);
     expect(await prisma.payoutRequest.count()).toBe(1);
     const req = (r1.status === 201 ? r1 : r2).body.data;
-    expect(req).toMatchObject({ state: 'PENDING_APPROVALS', itemCount: 1, totalAmountInr: 1500, managerApprover: { id: managerId }, approvals: { outstanding: ['MANAGER', 'ADMIN'] } });
+    // rate-free payouts: no amount until Admin sets it, and the Advisor sees it only once paid
+    expect(req).toMatchObject({ state: 'PENDING_APPROVALS', itemCount: 1, totalAmountInr: null, managerApprover: { id: managerId }, approvals: { outstanding: ['MANAGER', 'ADMIN'], order: 'MANAGER_FIRST' } });
     expect(req.publicRef).toMatch(/^KBS-PR-/);
     // double-tap with the same key replays
     const key = idem();
@@ -93,12 +94,8 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     // scope: adv2 sees nothing of adv1
     expect((await api().get('/api/v1/payouts/me/ledger').set(auth(adv2Token)).expect(200)).body.data.rows).toEqual([]);
     await api().get(`/api/v1/payouts/requests/${req.id}`).set(auth(adv2Token)).expect(404);
-    // snapshot immutability: new rate approved → request amount unchanged
-    const nr = (await api().post(`/api/v1/payouts/rules/${ruleId}/rates`).set(auth(adminToken)).set('idempotency-key', idem()).send({ amountInr: 100, effectiveFrom: '2026-01-02T00:00:00.000Z' }).expect(201)).body.data.rates.find((x: { amountInr: number }) => x.amountInr === 100);
-    await api().post(`/api/v1/payouts/rates/${nr.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'cut' }).expect(201);
     const again = (await api().get(`/api/v1/payouts/requests/${req.id}`).set(auth(adv1Token)).expect(200)).body.data;
-    expect(again.totalAmountInr).toBe(1500);
-    expect(again.snapshot.items[0].amountInr).toBe(1500);
+    expect(again.totalAmountInr).toBeNull();
     expect((await api().get('/api/v1/payouts/me/ledger').set(auth(adv1Token)).expect(200)).body.data.rows.find((r: { entitlementId: string }) => r.entitlementId === e1.id).position).toBe('Manager approval pending');
   });
 
@@ -106,9 +103,8 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     const req = (await api().get('/api/v1/payouts/requests').set(auth(adv1Token)).expect(200)).body.data.find((r: { itemCount: number }) => r.itemCount === 1);
     // Accounts sees nothing yet
     expect((await api().get('/api/v1/payouts/requests').set(auth(accountsToken)).expect(200)).body.data).toEqual([]);
-    // Manager-first ordering blocks Admin
-    await api().put('/api/v1/config/payouts.approvalOrder').set(auth(adminToken)).send({ value: 'MANAGER_FIRST', reason: 'policy' }).expect(200);
-    await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(409);
+    // the Manager always approves first (user decision), whatever payouts.approvalOrder says
+    await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED', amountInr: 1500 }).expect(409);
     // advisor cannot approve; another manager cannot
     await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adv1Token)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(403);
     const other = await setupManagerAndTelecaller(app, prisma, '90002');
@@ -119,9 +115,11 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(managerToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(409); // duplicate
     expect((await api().get('/api/v1/payouts/requests').set(auth(accountsToken)).expect(200)).body.data).toEqual([]); // still not in Accounts queue
     expect((await api().get('/api/v1/payouts/requests?awaitingMe=true').set(auth(adminToken)).expect(200)).body.data.map((r: { id: string }) => r.id)).toContain(req.id);
-    // admin approves → APPROVED → Accounts queue
-    const ad = await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(201);
-    expect(ad.body.data).toMatchObject({ state: 'APPROVED', approvals: { outstanding: [] } });
+    // Admin must set the amount to approve; it becomes the request total → APPROVED → Accounts queue
+    await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(400);
+    const ad = await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED', amountInr: 1750 }).expect(201);
+    expect(ad.body.data).toMatchObject({ state: 'APPROVED', totalAmountInr: 1750, approvals: { outstanding: [] } });
+    expect((await api().get(`/api/v1/payouts/requests/${req.id}`).set(auth(adv1Token)).expect(200)).body.data.totalAmountInr).toBeNull(); // Advisor: only once paid
     expect(await prisma.payoutApproval.count({ where: { requestId: req.id } })).toBe(2); // Admin action never counted as both
     const acct = await api().get('/api/v1/payouts/requests').set(auth(accountsToken)).expect(200);
     expect(acct.body.data.map((r: { id: string }) => r.id)).toEqual([req.id]);
@@ -161,11 +159,12 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     await api().put('/api/v1/config/payouts.designatedApproverManagerUserId').set(auth(adminToken)).send({ value: managerId, reason: 'KBS designated approver' }).expect(200);
     const req = (await api().post('/api/v1/payouts/requests').set(auth(adv2Token)).set('idempotency-key', idem()).send({ entitlementIds: [e.id] }).expect(201)).body.data;
     expect(req.managerApprover.id).toBe(managerId);
-    // Admin alone cannot complete it
-    await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(201);
-    expect((await api().get(`/api/v1/payouts/requests/${req.id}`).set(auth(adv2Token)).expect(200)).body.data).toMatchObject({ state: 'PENDING_APPROVALS', approvals: { outstanding: ['MANAGER'] } });
+    // Admin cannot go first; the designated Manager approves, then Admin sets the amount
+    await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED', amountInr: 900 }).expect(409);
     expect((await api().get('/api/v1/payouts/requests?awaitingMe=true').set(auth(managerToken)).expect(200)).body.data.map((r: { id: string }) => r.id)).toContain(req.id);
     await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(managerToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(201);
+    expect((await api().get(`/api/v1/payouts/requests/${req.id}`).set(auth(adv2Token)).expect(200)).body.data).toMatchObject({ state: 'PENDING_APPROVALS', approvals: { outstanding: ['ADMIN'] } });
+    await api().post(`/api/v1/payouts/requests/${req.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED', amountInr: 900 }).expect(201);
     expect((await api().get(`/api/v1/payouts/requests/${req.id}`).set(auth(adv2Token)).expect(200)).body.data.state).toBe('APPROVED');
   });
 

@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import { StatusTrio } from '@/components/status';
 import { Avatar, Badge, Card, Muted, Text } from '@/components/ui';
 import { colors } from '@/lib/theme';
+import { withBank } from '@/lib/cards';
 
 /**
  * F-506 — compact mobile lead row (REQ-14 §14.3), restyled in F-805: customer + bank/card; KBS ref + bank ref if known;
@@ -32,7 +33,7 @@ export function LeadRow({ row, onPress }: { row: LeadStatusRow; onPress: () => v
             {row.customer.name}
           </Text>
           <Muted numberOfLines={1}>
-            {row.bank.displayName} · {row.card.name}
+            {withBank(row.bank, row.card.name, ' · ')}
           </Muted>
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.subtle} />

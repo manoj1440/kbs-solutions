@@ -103,14 +103,6 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
         <Form action={basePath} aria-label="Search & filters" className="border-b border-border-subtle">
           <div className="flex flex-wrap items-center gap-2 p-3">
             <input aria-label="Search" name="q" className={cn(selectClass, 'h-9 min-w-44 flex-[2_1_12rem]')} defaultValue={sp.q ?? ''} placeholder="Name, mobile, KBS-L-…, bank application no." />
-            <select aria-label="Bank" name="bankId" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} defaultValue={sp.bankId ?? ''}>
-              <option value="">All banks</option>
-              {filters.data.banks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.displayName}
-                </option>
-              ))}
-            </select>
             <select aria-label="Card" name="cardId" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} defaultValue={sp.cardId ?? ''}>
               <option value="">All cards</option>
               {filters.data.cards.map((c) => (

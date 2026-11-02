@@ -8,7 +8,8 @@ export type UpdateBankBody = z.infer<typeof UpdateBankBody>;
 
 export const Money = z.coerce.number().min(0).max(1_000_000);
 export const CardBody = z.object({
-  bankId: z.string().uuid(),
+  /** Optional: cards are bank-independent; omitted → the hidden internal bank. */
+  bankId: z.string().uuid().optional(),
   name: z.string().trim().min(2).max(120),
   productCode: z.string().trim().max(60).nullable().optional(),
   description: z.string().trim().max(4000).nullable().optional(),

@@ -446,7 +446,7 @@ export class LeadsService {
     const [followUps, remarks, payouts] = await Promise.all([
       this.prisma.client.followUpTask.findMany({ where: { leadId: id }, orderBy: { dueAt: 'asc' }, include: { owner: { select: { id: true, fullName: true } } } }),
       this.prisma.client.operationalRemark.findMany({ where: { entityType: 'Lead', entityId: id }, orderBy: { at: 'desc' }, include: { author: { select: { id: true, fullName: true } } } }),
-      this.prisma.client.payoutEntitlement.findMany({ where: { leadId: id }, orderBy: { eligibleAt: 'asc' }, include: { requestItems: { where: { active: true }, take: 1, include: { request: { select: { id: true, publicRef: true, state: true, paidAt: true, approvals: { select: { approverRole: true, decision: true } } } } } } } }),
+      this.prisma.client.payoutEntitlement.findMany({ where: { leadId: id }, orderBy: { eligibleAt: 'asc' }, include: { requestItems: { where: { active: true }, take: 1, include: { request: { select: { id: true, publicRef: true, state: true, paidAt: true, totalAmountInr: true, approvals: { select: { approverRole: true, decision: true } } } } } } } }),
     ]);
     const row = this.toRow({ ...l, linkages: current ? [current] : [] }, await this.crosswalks([l]), tokens);
     const s = l.statusSnapshot;
@@ -490,7 +490,8 @@ export class LeadsService {
       /** Advisor earnings for this lead, same position wording as the payout ledger (F-603). Paid events can never be claimed again. */
       payouts: payouts.map((e) => {
         const req = e.requestItems[0]?.request ?? null;
-        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), amountInr: Number(e.amountInr), eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null } : null };
+        // rate-free payouts: money shows only once the request (priced by Admin) is paid
+        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), amountInr: req?.state === 'PAID' ? Number(req.totalAmountInr) : null, eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null } : null };
       }),
     };
   }

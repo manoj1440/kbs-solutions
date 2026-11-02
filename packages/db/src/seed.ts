@@ -83,18 +83,6 @@ const PINCODE_PROFILES: Array<{
   },
 ];
 
-const EXAMPLE_LINKS = [
-  {
-    bank: 'HDFC',
-    cardName: 'Popcard partner link (example — assign to real card)',
-    url: 'https://balaji-partner-h.getpopcard.co/?utm_source=SRIBALAJI&utm_medium=cardifye&utm_campaign=CADF43_KBS',
-  },
-  {
-    bank: 'AU',
-    cardName: 'AU Bank self-onboarding link (example — assign to real card)',
-    url: 'https://cconboarding.au.bank.in/auccself/#/?utm_source=MMFNT&utm_medium=banner&utm_campaign=MMFNT-display-campaign-ENT-KBS_50263',
-  },
-];
 
 export async function seed(databaseUrl: string, env: NodeJS.ProcessEnv = process.env) {
   const prisma = createPrismaClient({ connectionString: databaseUrl, log: ['error'] });
@@ -206,24 +194,7 @@ export async function seed(databaseUrl: string, env: NodeJS.ProcessEnv = process
     }
     summary.push(`pincode profiles ${PINCODE_PROFILES.length}`);
 
-    // 7. example links as DRAFT cards (never published by seed)
-    const admin = await prisma.user.findFirstOrThrow({ where: { role: 'ADMIN' } });
-    for (const l of EXAMPLE_LINKS) {
-      const bankId = bankIds.get(l.bank) as string;
-      const existing = await prisma.creditCard.findFirst({ where: { bankId, name: l.cardName } });
-      if (!existing) {
-        await prisma.creditCard.create({
-          data: {
-            bankId,
-            name: l.cardName,
-            status: 'DRAFT',
-            description: 'Seeded placeholder for a user-supplied example partner URL (REQ-07 §7.5). Admin must assign it to a real card/channel.',
-            links: { create: { channel: 'BOTH', url: l.url, version: 1, effectiveFrom: new Date(), effectiveTo: new Date(), createdByUserId: admin.id } },
-          },
-        });
-      }
-    }
-    summary.push('example links seeded as draft');
+    // 7. no example cards: Admin creates cards in the catalogue modal (bank-independent)
 
     // 8. payout rules: intentionally none.
     const rules = await prisma.payoutRule.count();

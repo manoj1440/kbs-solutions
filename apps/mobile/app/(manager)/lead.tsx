@@ -37,6 +37,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { colors } from '@/lib/theme';
+import { withBank } from '@/lib/cards';
 
 interface RemarkField {
   field: string;
@@ -150,7 +151,7 @@ export default function ManagerLeadScreen() {
                     {l.customer.name}
                   </Text>
                   <Muted numberOfLines={2} className="text-[12px]">
-                    {l.bank.displayName} {l.card.name} · created {formatDateTime(l.leadCreatedAt)}{' '}
+                    {withBank(l.bank, l.card.name)} · created {formatDateTime(l.leadCreatedAt)}{' '}
                     (KBS activity)
                   </Muted>
                 </View>

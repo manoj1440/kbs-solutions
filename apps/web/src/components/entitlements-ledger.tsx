@@ -45,7 +45,7 @@ export async function EntitlementsLedger({ basePath, leadBase, sp, title }: { ba
       <h1 className="sr-only">{title}</h1>
       <StatStrip cols={6}>
         {tiles.map((x) => (
-          <MiniStat key={x.label} label={x.label} value={x.count} hint={x.amount !== undefined ? formatInr(x.amount) : 'card events'} tone={x.tone} />
+          <MiniStat key={x.label} label={x.label} value={x.count} hint={x.amount ? formatInr(x.amount) : 'activated cards'} tone={x.tone} />
         ))}
       </StatStrip>
       <DataTablePanel

@@ -32,6 +32,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { colors } from '@/lib/theme';
+import { bankName, withBank } from '@/lib/cards';
 
 const TITLES: Record<LeadStep, string> = {
   MOBILE: 'Customer mobile',
@@ -137,7 +138,7 @@ export default function LeadNew() {
           publicRef: r.data.kbsRef,
           cardId: d.card.id,
           cardName: d.card.name,
-          bankName: d.card.bank.displayName,
+          bankName: bankName(d.card.bank),
           customer: d.data.fullName ?? '',
         },
       });
@@ -495,7 +496,7 @@ export default function LeadNew() {
       header={
         <AppBar
           title={editing ? `Edit ${TITLES[step].toLowerCase()}` : 'Create lead'}
-          subtitle={`${d.card.bank.displayName} ${d.card.name}`}
+          subtitle={withBank(d.card.bank, d.card.name)}
         />
       }
       footer={
@@ -534,13 +535,13 @@ export default function LeadNew() {
 
       <Appear>
         <Card className="flex-row items-center gap-3.5 p-3">
-          <CreditCardArt bank={d.card.bank.displayName} name={d.card.name} width={96} compact />
+          <CreditCardArt bank={bankName(d.card.bank)} name={d.card.name} width={96} compact />
           <View className="flex-1">
             <Muted className="text-[12px]">Applying for</Muted>
             <RNText numberOfLines={1} className="font-bold text-[16px] text-ink">
               {d.card.name}
             </RNText>
-            <Muted numberOfLines={1}>{d.card.bank.displayName}</Muted>
+            {bankName(d.card.bank) ? <Muted numberOfLines={1}>{bankName(d.card.bank)}</Muted> : null}
           </View>
         </Card>
       </Appear>

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { withBank } from '@/lib/cards';
 
 export interface PayoutRequestDto {
   id: string;
@@ -30,7 +31,8 @@ export interface PayoutRequestDto {
   advisor: { id: string; fullName: string };
   managerApprover: { id: string; fullName: string } | null;
   itemCount: number;
-  totalAmountInr: number;
+  /** Set by Admin's approval; null until then (and for the Advisor until paid). */
+  totalAmountInr: number | null;
   submittedAt: string;
   cancelReason: string | null;
   approvals: {
@@ -51,7 +53,7 @@ export interface PayoutRequestDto {
     card: string;
     triggerField: string;
     triggerFieldValue: string;
-    rule: { name: string; version: number };
+    rule: { name: string; version: number } | null;
     evidence: { batchRef: string; uploadedAt: string };
     eligibleAt: string;
     priorRequests: { id: string; publicRef: string; state: string; submittedAt: string }[];
@@ -194,7 +196,9 @@ export function PayoutRequestDetail({ id }: { id: string }) {
             accessibilityRole="header"
             className="mt-2 font-extrabold text-[36px] tracking-tight text-gold"
           >
-            {formatInr(r.totalAmountInr)}
+            {r.totalAmountInr != null
+              ? formatInr(r.totalAmountInr)
+              : `${r.itemCount} card${r.itemCount === 1 ? '' : 's'}`}
           </RNText>
           <RNText className="mt-1 font-medium text-[13px] leading-[19px] text-white/75">
             {r.itemCount} card event(s) · submitted {formatDateTime(r.submittedAt)} by{' '}
@@ -350,12 +354,9 @@ export function PayoutRequestDetail({ id }: { id: string }) {
                   {i.lead.customerFullName}
                 </Text>
                 <Muted numberOfLines={1} className="text-[12px]">
-                  {i.lead.publicRef} · {i.bank.displayName} {i.card}
+                  {i.lead.publicRef} · {withBank(i.bank, i.card)}
                 </Muted>
               </View>
-              <RNText className="font-extrabold text-[16px] text-ink">
-                {formatInr(i.amountSnapshotInr)}
-              </RNText>
             </View>
             <View className="gap-1.5 rounded-xl bg-[#F2EEE8] p-3">
               <View className="flex-row items-start gap-1.5">
@@ -373,7 +374,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
                   style={{ marginTop: 2 }}
                 />
                 <Muted className="flex-1 text-[12px]">
-                  Rule {i.rule.name} v{i.rule.version} · eligible {formatDateTime(i.eligibleAt)}
+                  Card activated {formatDateTime(i.eligibleAt)}
                 </Muted>
               </View>
             </View>

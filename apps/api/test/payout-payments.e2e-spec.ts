@@ -44,7 +44,8 @@ describe('F-605 Accounts payment recording (PAY-05, PAY-06, PAY-07)', () => {
     for (const a of amounts) ents.push(await entitlement(a));
     const r = (await post('/payouts/requests', advToken, { entitlementIds: ents.map((e) => e.id) }).expect(201)).body.data;
     await post(`/payouts/requests/${r.id}/approvals`, managerToken, { decision: 'APPROVED' }).expect(201);
-    await post(`/payouts/requests/${r.id}/approvals`, adminToken, { decision: 'APPROVED' }).expect(201);
+    // rate-free payouts: Admin's approval sets the amount (here the sum the old rates gave, so the amounts below hold)
+    await post(`/payouts/requests/${r.id}/approvals`, adminToken, { decision: 'APPROVED', amountInr: amounts.reduce((x, y) => x + y, 0) }).expect(201);
     return { id: r.id as string, publicRef: r.publicRef as string, ents };
   }
 

@@ -21,7 +21,7 @@ import {
   SkeletonList,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { money } from '@/lib/cards';
+import { bankName, money, withBank } from '@/lib/cards';
 import { colors } from '@/lib/theme';
 
 interface Category {
@@ -170,12 +170,12 @@ export default function CardCatalogue() {
             <Card className="gap-3 p-3.5">
               <PressableScale
                 accessibilityRole="button"
-                accessibilityLabel={`${item.name}, ${item.bank.displayName}. View details`}
+                accessibilityLabel={`${withBank(item.bank, item.name)}. View details`}
                 scaleTo={0.985}
                 onPress={() => openCard(item)}
                 className="flex-row gap-3.5"
               >
-                <CreditCardArt bank={item.bank.displayName} name={item.name} width={120} compact />
+                <CreditCardArt bank={bankName(item.bank)} name={item.name} width={120} compact />
                 <View className="flex-1 justify-center gap-1">
                   <RNText
                     numberOfLines={2}
@@ -183,7 +183,7 @@ export default function CardCatalogue() {
                   >
                     {item.name}
                   </RNText>
-                  <Muted numberOfLines={1}>{item.bank.displayName}</Muted>
+                  {bankName(item.bank) ? <Muted numberOfLines={1}>{bankName(item.bank)}</Muted> : null}
                   {pin ? <Badge size="sm" dot label="Available here" variant="success" /> : null}
                 </View>
               </PressableScale>

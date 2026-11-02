@@ -1,12 +1,36 @@
 import { formatDateTime, formatInr } from '@kbs/shared';
-import { Ban, Banknote, Check, Circle, Clock, CreditCard, PauseCircle, UserCheck, Wallet, X, type LucideIcon } from 'lucide-react';
+import {
+  Ban,
+  Banknote,
+  Check,
+  Circle,
+  Clock,
+  CreditCard,
+  PauseCircle,
+  UserCheck,
+  Wallet,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { PayeeReveal, PaymentActions } from '@/components/payment-actions';
 import { RequestActions } from '@/components/payout-request-actions';
-import { type PaymentEntry, PaymentHistoryTable, type RequestItem, RequestItemsTable } from '@/components/payout-request-tables';
+import {
+  type PaymentEntry,
+  PaymentHistoryTable,
+  type RequestItem,
+  RequestItemsTable,
+} from '@/components/payout-request-tables';
 import { PayoutStateBadge } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, Callout, DetailHeader, IconTile, KeyValueGrid, SectionCard } from '@/components/ui/kit';
+import {
+  Avatar,
+  Callout,
+  DetailHeader,
+  IconTile,
+  KeyValueGrid,
+  SectionCard,
+} from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import { PAYMENT_STATE } from '@/lib/payment-states';
 import { cn } from '@/lib/utils';
@@ -24,7 +48,7 @@ export interface PayoutRequestDto {
   advisor: { id: string; fullName: string };
   managerApprover: { id: string; fullName: string } | null;
   itemCount: number;
-  totalAmountInr: number;
+  totalAmountInr: number | null;
   submittedAt: string;
   cancelledAt: string | null;
   cancelReason: string | null;
@@ -69,7 +93,15 @@ export interface PayoutRequestDto {
 export type { PaymentEntry } from '@/components/payout-request-tables';
 
 /** F-604 approval detail: itemised cards with bank evidence, rule/rate version, prior requests and warnings; two approval rows. */
-export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: string; backHref: string; leadBase?: string }) {
+export async function PayoutRequestDetail({
+  id,
+  backHref,
+  leadBase,
+}: {
+  id: string;
+  backHref: string;
+  leadBase?: string;
+}) {
   const r = (await apiFetch<PayoutRequestDto>(`/payouts/requests/${id}`)).data;
   const pending = r.state === 'PENDING_APPROVALS';
   return (
@@ -77,26 +109,44 @@ export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: stri
       <DetailHeader
         back={{ href: backHref, label: 'Requests' }}
         visual={<IconTile icon={Wallet} tone="teal" size="lg" className="hidden sm:inline-flex" />}
-        title={<span className="tabular-nums">{formatInr(r.totalAmountInr)}</span>}
+        title={
+          <span className="tabular-nums">
+            {r.totalAmountInr == null
+              ? `${r.itemCount} activated card${r.itemCount === 1 ? '' : 's'}`
+              : formatInr(r.totalAmountInr)}
+          </span>
+        }
         meta={
           <>
-            <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-2xs font-semibold text-fg-2">{r.publicRef}</span>
+            <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-2xs font-semibold text-fg-2">
+              {r.publicRef}
+            </span>
             <PayoutStateBadge state={r.state} />
             <span>{r.itemCount} card event(s)</span>
           </>
         }
         subtitle={
           <>
-            Submitted {formatDateTime(r.submittedAt)} by {r.advisor.fullName} · Manager approver {r.managerApprover?.fullName ?? '—'} · order {r.approvals.order}
+            Submitted {formatDateTime(r.submittedAt)} by {r.advisor.fullName} · Manager approver{' '}
+            {r.managerApprover?.fullName ?? '—'} · order {r.approvals.order}
           </>
         }
       >
         <Journey r={r} />
       </DetailHeader>
       <div className="grid items-start gap-6 lg:grid-cols-2">
-        <SectionCard icon={UserCheck} tone="violet" title="Approvals" description="Both the assigned Manager and the Admin must approve. One person never holds both.">
+        <SectionCard
+          icon={UserCheck}
+          tone="violet"
+          title="Approvals"
+          description="Both the assigned Manager and the Admin must approve. One person never holds both."
+        >
           <ol className="grid gap-0">
-            <ApprovalRow label={`Manager (${r.managerApprover?.fullName ?? '—'})`} a={r.approvals.manager} pending={pending} />
+            <ApprovalRow
+              label={`Manager (${r.managerApprover?.fullName ?? '—'})`}
+              a={r.approvals.manager}
+              pending={pending}
+            />
             <ApprovalRow label="Admin" a={r.approvals.admin} pending={pending} last />
           </ol>
           <div className="mt-4 grid gap-2 empty:hidden">
@@ -106,8 +156,13 @@ export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: stri
               </Callout>
             ) : null}
             {r.payment ? (
-              <Callout tone={PAYMENT_STATE[r.payment.state]?.tone === 'success' ? 'success' : 'info'} icon={Banknote}>
-                Payment {PAYMENT_STATE[r.payment.state]?.label ?? r.payment.state.toLowerCase()} · <span className="tabular-nums">{formatInr(r.payment.amountInr)}</span> · ref <code>{r.payment.transferReference}</code> · {formatDateTime(r.payment.paidAt)}
+              <Callout
+                tone={PAYMENT_STATE[r.payment.state]?.tone === 'success' ? 'success' : 'info'}
+                icon={Banknote}
+              >
+                Payment {PAYMENT_STATE[r.payment.state]?.label ?? r.payment.state.toLowerCase()} ·{' '}
+                <span className="tabular-nums">{formatInr(r.payment.amountInr)}</span> · ref{' '}
+                <code>{r.payment.transferReference}</code> · {formatDateTime(r.payment.paidAt)}
               </Callout>
             ) : r.state === 'APPROVED' ? (
               <Callout tone="info" icon={Clock}>
@@ -116,11 +171,21 @@ export async function PayoutRequestDetail({ id, backHref, leadBase }: { id: stri
             ) : null}
           </div>
         </SectionCard>
-        {r.state === 'PENDING_APPROVALS' || r.me.canCancel ? <RequestActions request={r} /> : <PaymentActions request={r} />}
+        {r.state === 'PENDING_APPROVALS' || r.me.canCancel ? (
+          <RequestActions request={r} />
+        ) : (
+          <PaymentActions request={r} />
+        )}
       </div>
       {r.state === 'PENDING_APPROVALS' || r.me.canCancel ? <PaymentActions request={r} /> : null}
       <PaymentTrace r={r} />
-      <SectionCard icon={CreditCard} tone="indigo" title="Itemised card events" description="What the bank reported, the rule/rate version in force at eligibility, and any earlier requests for the same lead." flush>
+      <SectionCard
+        icon={CreditCard}
+        tone="indigo"
+        title="Itemised card events"
+        description="What the bank reported, the rule/rate version in force at eligibility, and any earlier requests for the same lead."
+        flush
+      >
         <RequestItemsTable rows={r.items} leadBase={leadBase} />
       </SectionCard>
     </div>
@@ -143,8 +208,17 @@ const STEP_ICON: Record<StepState, LucideIcon> = {
 
 /** Request journey from existing fields only: submitted → Manager → Admin → payment recorded → paid. Approval is not payment. */
 function Journey({ r }: { r: PayoutRequestDto }) {
-  const approval = (a: Approval | null): [StepState, string] => (a ? [a.decision === 'APPROVED' ? 'done' : 'rejected', `${a.decision.toLowerCase()} · ${a.by.fullName}`] : r.state === 'PENDING_APPROVALS' ? ['current', 'pending'] : ['upcoming', '—']);
-  const bothApproved = r.approvals.manager?.decision === 'APPROVED' && r.approvals.admin?.decision === 'APPROVED';
+  const approval = (a: Approval | null): [StepState, string] =>
+    a
+      ? [
+          a.decision === 'APPROVED' ? 'done' : 'rejected',
+          `${a.decision.toLowerCase()} · ${a.by.fullName}`,
+        ]
+      : r.state === 'PENDING_APPROVALS'
+        ? ['current', 'pending']
+        : ['upcoming', '—'];
+  const bothApproved =
+    r.approvals.manager?.decision === 'APPROVED' && r.approvals.admin?.decision === 'APPROVED';
   const steps: { title: string; state: StepState; detail: string; at?: string | null }[] = [
     { title: 'Submitted', state: 'done', detail: r.advisor.fullName, at: r.submittedAt },
     {
@@ -162,7 +236,11 @@ function Journey({ r }: { r: PayoutRequestDto }) {
     {
       title: 'Payment recorded',
       state: r.payment ? 'done' : bothApproved && r.state !== 'CANCELLED' ? 'current' : 'upcoming',
-      detail: r.payment ? (PAYMENT_STATE[r.payment.state]?.label ?? r.payment.state.toLowerCase()) : bothApproved ? 'awaiting Accounts' : '—',
+      detail: r.payment
+        ? (PAYMENT_STATE[r.payment.state]?.label ?? r.payment.state.toLowerCase())
+        : bothApproved
+          ? 'awaiting Accounts'
+          : '—',
       at: r.payment?.recordedAt,
     },
     {
@@ -173,13 +251,33 @@ function Journey({ r }: { r: PayoutRequestDto }) {
     },
   ];
   return (
-    <ol aria-label="Request progress" className="grid gap-3 rounded-2xl border border-border bg-card p-4 shadow-card sm:grid-cols-5 sm:gap-0 sm:p-5">
+    <ol
+      aria-label="Request progress"
+      className="grid gap-3 rounded-2xl border border-border bg-card p-4 shadow-card sm:grid-cols-5 sm:gap-0 sm:p-5"
+    >
       {steps.map((s, i) => {
         const Icon = STEP_ICON[s.state];
         return (
-          <li key={s.title} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:gap-2 sm:text-center">
-            {i > 0 ? <span aria-hidden="true" className={cn('absolute top-3.5 right-1/2 hidden h-0.5 w-full -translate-x-3.5 sm:block', steps[i - 1].state === 'done' ? 'bg-teal-300' : 'bg-surface-strong')} /> : null}
-            <span className={cn('relative z-10 inline-flex size-7 shrink-0 items-center justify-center rounded-full ring-2', STEP_CLS[s.state])} aria-hidden="true">
+          <li
+            key={s.title}
+            className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:gap-2 sm:text-center"
+          >
+            {i > 0 ? (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'absolute top-3.5 right-1/2 hidden h-0.5 w-full -translate-x-3.5 sm:block',
+                  steps[i - 1].state === 'done' ? 'bg-teal-300' : 'bg-surface-strong',
+                )}
+              />
+            ) : null}
+            <span
+              className={cn(
+                'relative z-10 inline-flex size-7 shrink-0 items-center justify-center rounded-full ring-2',
+                STEP_CLS[s.state],
+              )}
+              aria-hidden="true"
+            >
               <Icon className="size-3.5" strokeWidth={3} />
             </span>
             <div className="min-w-0 sm:px-2">
@@ -194,19 +292,52 @@ function Journey({ r }: { r: PayoutRequestDto }) {
   );
 }
 
-function ApprovalRow({ label, a, pending, last }: { label: string; a: Approval | null; pending: boolean; last?: boolean }) {
-  const state: StepState = a ? (a.decision === 'APPROVED' ? 'done' : 'rejected') : pending ? 'current' : 'upcoming';
+function ApprovalRow({
+  label,
+  a,
+  pending,
+  last,
+}: {
+  label: string;
+  a: Approval | null;
+  pending: boolean;
+  last?: boolean;
+}) {
+  const state: StepState = a
+    ? a.decision === 'APPROVED'
+      ? 'done'
+      : 'rejected'
+    : pending
+      ? 'current'
+      : 'upcoming';
   const Icon = STEP_ICON[state];
   return (
     <li className="relative flex gap-3 pb-4 last:pb-0">
-      {!last ? <span aria-hidden="true" className="absolute top-8 bottom-0 left-[13px] w-0.5 bg-surface-strong" /> : null}
-      <span className={cn('relative inline-flex size-7 shrink-0 items-center justify-center rounded-full ring-2', STEP_CLS[state])} aria-hidden="true">
+      {!last ? (
+        <span
+          aria-hidden="true"
+          className="absolute top-8 bottom-0 left-[13px] w-0.5 bg-surface-strong"
+        />
+      ) : null}
+      <span
+        className={cn(
+          'relative inline-flex size-7 shrink-0 items-center justify-center rounded-full ring-2',
+          STEP_CLS[state],
+        )}
+        aria-hidden="true"
+      >
         <Icon className="size-3.5" strokeWidth={3} />
       </span>
       <div className="min-w-0 flex-1 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium text-foreground">{label}</span>
-          {a ? <Badge variant={a.decision === 'APPROVED' ? 'success' : 'destructive'}>{a.decision.toLowerCase()}</Badge> : <Badge variant={pending ? 'warning' : 'unknown'}>{pending ? 'pending' : '—'}</Badge>}
+          {a ? (
+            <Badge variant={a.decision === 'APPROVED' ? 'success' : 'destructive'}>
+              {a.decision.toLowerCase()}
+            </Badge>
+          ) : (
+            <Badge variant={pending ? 'warning' : 'unknown'}>{pending ? 'pending' : '—'}</Badge>
+          )}
         </div>
         {a ? (
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
@@ -222,14 +353,24 @@ function ApprovalRow({ label, a, pending, last }: { label: string; a: Approval |
 
 /** F-605 payment trace: payee (Accounts/Admin), hold, and every payment entry incl. superseded ones (REQ-18 §18.3). */
 function PaymentTrace({ r }: { r: PayoutRequestDto }) {
-  const show = r.payee || r.hold || r.paymentHistory.length > 0 || ['APPROVED', 'ON_HOLD', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID'].includes(r.state);
+  const show =
+    r.payee ||
+    r.hold ||
+    r.paymentHistory.length > 0 ||
+    ['APPROVED', 'ON_HOLD', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID'].includes(r.state);
   if (!show) return null;
   return (
     <SectionCard
       icon={Banknote}
       tone="emerald"
       title="Payment"
-      description={r.state === 'PAID' ? `Paid ${r.paidAt ? formatDateTime(r.paidAt) : ''} — every card event in this request is Paid for this event.` : r.state === 'APPROVED' ? 'Both approved — awaiting Accounts payment.' : 'Recorded transfers made outside KBS. Earlier entries are kept when corrected.'}
+      description={
+        r.state === 'PAID'
+          ? `Paid ${r.paidAt ? formatDateTime(r.paidAt) : ''} — every card event in this request is Paid for this event.`
+          : r.state === 'APPROVED'
+            ? 'Both approved — awaiting Accounts payment.'
+            : 'Recorded transfers made outside KBS. Earlier entries are kept when corrected.'
+      }
     >
       <div className="grid gap-5">
         {r.hold ? (
@@ -246,7 +387,12 @@ function PaymentTrace({ r }: { r: PayoutRequestDto }) {
               [
                 'Payee',
                 <span key="p" className="inline-flex flex-wrap items-center gap-1.5">
-                  {r.payee.accountHolderName ?? '—'} {r.payee.verified ? <Badge variant="success">verified at onboarding</Badge> : <Badge variant="warning">not verified</Badge>}
+                  {r.payee.accountHolderName ?? '—'}{' '}
+                  {r.payee.verified ? (
+                    <Badge variant="success">verified at onboarding</Badge>
+                  ) : (
+                    <Badge variant="warning">not verified</Badge>
+                  )}
                 </span>,
               ],
               [
@@ -259,7 +405,9 @@ function PaymentTrace({ r }: { r: PayoutRequestDto }) {
                 'Account',
                 <span key="a" className="inline-flex flex-wrap items-center gap-2">
                   <code>{r.payee.accountMasked ?? 'not on file'}</code>
-                  {r.payee.canReveal && r.payee.accountMasked ? <PayeeReveal requestId={r.id} /> : null}
+                  {r.payee.canReveal && r.payee.accountMasked ? (
+                    <PayeeReveal requestId={r.id} />
+                  ) : null}
                 </span>,
               ],
             ]}
@@ -271,7 +419,8 @@ function PaymentTrace({ r }: { r: PayoutRequestDto }) {
           </div>
         ) : r.receipt ? (
           <p className="text-sm">
-            <span className="font-semibold tabular-nums">{formatInr(r.receipt.amountInr)}</span> · ref {r.receipt.transferReferenceMasked} · {formatDateTime(r.receipt.paidAt)}
+            <span className="font-semibold tabular-nums">{formatInr(r.receipt.amountInr)}</span> ·
+            ref {r.receipt.transferReferenceMasked} · {formatDateTime(r.receipt.paidAt)}
           </p>
         ) : null}
       </div>

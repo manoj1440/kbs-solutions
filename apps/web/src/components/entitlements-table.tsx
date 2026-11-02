@@ -15,7 +15,7 @@ export interface EntitlementDto {
   eligibleAt: string;
   triggerField: string;
   triggerFieldValue: string;
-  rule: { id: string; name: string; version: number };
+  rule: { id: string; name: string; version: number } | null;
   lead: { id: string; publicRef: string; customerFullName: string };
   advisor: { id: string; fullName: string };
   bank: { code: string; displayName: string };
@@ -86,19 +86,10 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
         </>
       ),
     }),
-    c.accessor((r) => r.rule.name, {
-      id: 'rule',
-      header: 'Rule',
-      meta: { cellClassName: 'text-xs' },
-      cell: ({ row }) => (
-        <>
-          {row.original.rule.name} <span className="text-muted-foreground">v{row.original.rule.version}</span>
-        </>
-      ),
-    }),
     c.accessor('amountInr', {
       header: 'Amount',
-            cell: ({ getValue }) => <span className="font-semibold whitespace-nowrap text-foreground">{formatInr(getValue())}</span>,
+            // rate-free payouts: the amount lives on the request (set by Admin)
+            cell: ({ getValue }) => (getValue() ? <span className="font-semibold whitespace-nowrap text-foreground">{formatInr(getValue())}</span> : <span className="text-xs text-fg-3">Set by Admin</span>),
     }),
     c.accessor('eligibleAt', {
       header: 'Eligible at',

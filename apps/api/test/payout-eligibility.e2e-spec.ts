@@ -7,7 +7,7 @@ import type { PrismaService } from '../src/infra/prisma/prisma.service';
 import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase } from './helpers';
 import { hdfcWorkbook, type MisRowInput, XLSX_TYPE } from './mis-fixture';
 
-describe('F-602 entitlement evaluation (PAY-01, PAY-06, INV-05/06)', () => {
+describe('F-602 entitlement evaluation, rate-free (PAY-01, PAY-06, INV-05/06)', () => {
   let app: INestApplication;
   let prisma: PrismaService['client'];
   let adminToken: string;
@@ -53,63 +53,48 @@ describe('F-602 entitlement evaluation (PAY-01, PAY-06, INV-05/06)', () => {
   });
   afterAll(async () => app.close());
 
-  it('PAY-01: Approve + V + ACTIVE with NO approved rule → zero entitlements; approving a rule + re-evaluate creates exactly one per bank event', async () => {
+  it('PAY-01 (rate-free): the bank reporting the card activated makes the lead claimable once — no rule, no amount; blank/inactive do not', async () => {
     await applyBatch(
       [
         { 'Application No': 'APP-501', CURRENT_STAGE: 'Decisioned Cases and Card setup completed', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'V + ACTIVE', CUSTOMER_NAME: 'Pay A' },
-        { 'Application No': 'APP-502', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'TXN ACTIVE - Rs 100', CUSTOMER_NAME: 'Pay B' },
+        { 'Application No': 'APP-502', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': '', CUSTOMER_NAME: 'Pay B' },
       ],
       'b1.xlsx',
     );
-    expect(await prisma.payoutEntitlement.count()).toBe(0);
-    expect((await ents()).body.meta.counts).toMatchObject({ eligible: 0, availableToClaim: 0 });
-    // rule: V + ACTIVE only, 7-day hold, ₹1500
-    const rule = (await api().post('/api/v1/payouts/rules').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: hdfcId, name: 'HDFC activation', triggerValues: ['V + ACTIVE'], holdDays: 7, effectiveFrom: '2026-01-01T00:00:00.000Z' }).expect(201)).body.data;
-    const rate = (await api().post(`/api/v1/payouts/rules/${rule.id}/rates`).set(auth(adminToken)).set('idempotency-key', idem()).send({ amountInr: 1500, effectiveFrom: '2026-01-01T00:00:00.000Z' }).expect(201)).body.data.rates[0];
-    await api().post(`/api/v1/payouts/rates/${rate.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'sheet' }).expect(201);
-    await api().post(`/api/v1/payouts/rules/${rule.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'sheet' }).expect(201);
-    // Admin re-evaluates the bank (rule approved after the MIS was applied)
-    const re = await api().post('/api/v1/payouts/evaluate').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: hdfcId }).expect(201);
-    expect(re.body.data).toMatchObject({ leads: 2, created: 1 }); // TXN ACTIVE - Rs 100 is a distinct value and not a trigger
     const list = await ents();
     expect(list.body.data).toHaveLength(1);
-    expect(list.body.data[0]).toMatchObject({ state: 'PENDING_HOLD', amountInr: 1500, triggerField: 'cardActivationStatus', triggerFieldValue: 'V + ACTIVE', rule: { name: 'HDFC activation', version: 1 }, lead: { id: leadA } });
-    expect(list.body.meta.counts).toMatchObject({ pendingHold: 1, available: 0, eligible: 1, availableToClaim: 0 });
+    expect(list.body.data[0]).toMatchObject({ state: 'ELIGIBLE_AVAILABLE', amountInr: 0, rule: null, triggerField: 'cardActivationStatus', triggerFieldValue: 'V + ACTIVE', lead: { id: leadA } });
+    expect(list.body.meta.counts).toMatchObject({ available: 1, eligible: 1, availableToClaim: 1 });
     expect(await prisma.notification.count({ where: { recipientUserId: advId, kind: 'PAYOUT_ELIGIBLE' } })).toBe(1);
-    // the same activation in a second batch → still one (eventKey)
-    await applyBatch([{ 'Application No': 'APP-501', CURRENT_STAGE: 'Decisioned Cases and Card setup completed', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'V + ACTIVE', CUSTOMER_NAME: 'Pay A', 'Creation Date': '01-09-2026' }], 'b2.xlsx');
+    // the same activation again → still one; an INACTIVE card never becomes claimable
+    await applyBatch([{ 'Application No': 'APP-501', CURRENT_STAGE: 'Decisioned Cases and Card setup completed', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'V + ACTIVE', CUSTOMER_NAME: 'Pay A', 'Creation Date': '01-09-2026' }, { 'Application No': 'APP-502', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'INACTIVE', CUSTOMER_NAME: 'Pay B' }], 'b2.xlsx');
     expect(await prisma.payoutEntitlement.count()).toBe(1);
-    // rate change afterwards leaves amountInr untouched (§17.9)
-    const r2 = (await api().post(`/api/v1/payouts/rules/${rule.id}/rates`).set(auth(adminToken)).set('idempotency-key', idem()).send({ amountInr: 900, effectiveFrom: '2026-01-02T00:00:00.000Z' }).expect(201)).body.data.rates.find((x: { amountInr: number }) => x.amountInr === 900);
-    await api().post(`/api/v1/payouts/rates/${r2.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'cut' }).expect(201);
-    await api().post('/api/v1/payouts/evaluate').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: hdfcId }).expect(201);
-    expect(Number((await prisma.payoutEntitlement.findFirstOrThrow()).amountInr)).toBe(1500);
+    // INV-06: activation levels are one card event — B activates, then moves between active levels → one entitlement
+    for (const [i, value] of ['TXN ACTIVE - Rs 100', 'V + ACTIVE'].entries()) {
+      await applyBatch([{ 'Application No': 'APP-502', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': value, CUSTOMER_NAME: 'Pay B' }], `lv${i}.xlsx`);
+      const rows = await prisma.payoutEntitlement.findMany({ where: { leadId: leadB } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ state: 'ELIGIBLE_AVAILABLE', ruleId: null });
+    }
   });
 
-  it('hold: lazy check makes the entitlement available exactly at eligibleAt without a job; scope: other advisor sees nothing', async () => {
-    const e = await prisma.payoutEntitlement.findFirstOrThrow();
-    expect((await ents()).body.data[0].state).toBe('PENDING_HOLD');
-    await prisma.payoutEntitlement.update({ where: { id: e.id }, data: { eligibleAt: new Date(Date.now() - 1000) } });
-    const after = await ents();
-    expect(after.body.data[0].state).toBe('ELIGIBLE_AVAILABLE');
-    expect(after.body.meta.counts).toMatchObject({ available: 1, availableToClaim: 1, pendingHold: 0 });
-    expect(after.body.meta.amounts.available).toBe(1500);
+  it('scope + trace: events recorded; another advisor sees nothing', async () => {
+    const e = await prisma.payoutEntitlement.findFirstOrThrow({ where: { leadId: leadA } });
     const events = await api().get(`/api/v1/payouts/entitlements/${e.id}/events`).set(auth(advToken)).expect(200);
-    expect(events.body.data.map((x: { toState: string }) => x.toState)).toEqual(['PENDING_HOLD', 'ELIGIBLE_AVAILABLE']);
-    const other = await prisma.user.create({ data: { publicRef: makePublicRef(RefPrefix.USER), mobile: '+919555999402', role: 'ADVISOR', status: 'ACTIVE', fullName: 'Adv Other' } });
+    expect(events.body.data.map((x: { toState: string }) => x.toState)).toEqual(['ELIGIBLE_AVAILABLE']);
+    await prisma.user.create({ data: { publicRef: makePublicRef(RefPrefix.USER), mobile: '+919555999402', role: 'ADVISOR', status: 'ACTIVE', fullName: 'Adv Other' } });
     const otherToken = (await loginAs(app, prisma, '9555999402')).accessToken;
     expect((await ents(otherToken)).body.data).toEqual([]);
     await api().get(`/api/v1/payouts/entitlements/${e.id}/events`).set(auth(otherToken)).expect(404);
-    void other;
   });
 
   it('correction: activation reported INACTIVE → UNDER_REVIEW (nothing deleted); restored → available again; PAID stays PAID with an exception (PAY-06)', async () => {
-    const e = await prisma.payoutEntitlement.findFirstOrThrow();
+    const e = await prisma.payoutEntitlement.findFirstOrThrow({ where: { leadId: leadA } });
     await applyBatch([{ 'Application No': 'APP-501', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'INACTIVE', CUSTOMER_NAME: 'Pay A' }], 'b3.xlsx');
     let cur = await prisma.payoutEntitlement.findUniqueOrThrow({ where: { id: e.id } });
     expect(cur.state).toBe('UNDER_REVIEW');
     expect(cur.reviewReason).toContain('INACTIVE');
-    expect(await prisma.payoutEntitlement.count()).toBe(1);
+    expect(await prisma.payoutEntitlement.count()).toBe(2); // A (under review) + B
     await applyBatch([{ 'Application No': 'APP-501', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'V + ACTIVE', CUSTOMER_NAME: 'Pay A' }], 'b4.xlsx');
     cur = await prisma.payoutEntitlement.findUniqueOrThrow({ where: { id: e.id } });
     expect(cur.state).toBe('ELIGIBLE_AVAILABLE');
@@ -123,22 +108,6 @@ describe('F-602 entitlement evaluation (PAY-01, PAY-06, INV-05/06)', () => {
     // identical re-import of the same correction raises no second exception (MIS-08)
     await applyBatch([{ 'Application No': 'APP-501', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': 'INACTIVE', CUSTOMER_NAME: 'Pay A', 'Creation Date': '03-09-2026' }], 'b6.xlsx');
     expect(await prisma.outboxEvent.count({ where: { type: 'payouts.exception' } })).toBe(1);
-    expect((await ents()).body.meta.counts).toMatchObject({ paid: 1, eligible: 1, availableToClaim: 0 });
-  });
-
-  it('INV-06: a rule whose trigger values are activation levels pays the card once as activation moves between them', async () => {
-    const rule = (await api().post('/api/v1/payouts/rules').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: hdfcId, name: 'HDFC any activation', triggerValues: ['V + ACTIVE', 'TXN ACTIVE - Rs 100'], effectiveFrom: '2026-01-01T00:00:00.000Z' }).expect(201)).body.data;
-    const rate = (await api().post(`/api/v1/payouts/rules/${rule.id}/rates`).set(auth(adminToken)).set('idempotency-key', idem()).send({ amountInr: 1000, effectiveFrom: '2026-01-01T00:00:00.000Z' }).expect(201)).body.data.rates[0];
-    await api().post(`/api/v1/payouts/rates/${rate.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'sheet' }).expect(201);
-    await api().post(`/api/v1/payouts/rules/${rule.id}/approve`).set(auth(adminToken)).set('idempotency-key', idem()).send({ reason: 'sheet' }).expect(201);
-    await api().post('/api/v1/payouts/evaluate').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId: hdfcId }).expect(201); // B reports TXN ACTIVE
-    const forB = () => prisma.payoutEntitlement.findMany({ where: { leadId: leadB, ruleId: rule.id } });
-    expect(await forB()).toHaveLength(1);
-    for (const [i, value] of ['V + ACTIVE', 'TXN ACTIVE - Rs 100'].entries()) {
-      await applyBatch([{ 'Application No': 'APP-502', CURRENT_STAGE: 'Decisioned Cases', FINAL_DECISION: 'Approve', 'Card Activation Staus': value, CUSTOMER_NAME: 'Pay B' }], `lv${i}.xlsx`);
-      const rows = await forB();
-      expect(rows).toHaveLength(1);
-      expect(rows[0]!.state).toBe('ELIGIBLE_AVAILABLE');
-    }
+    expect((await ents()).body.meta.counts).toMatchObject({ paid: 1, eligible: 2, availableToClaim: 1 }); // B is still claimable
   });
 });

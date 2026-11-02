@@ -375,6 +375,7 @@ export const BANK_GRADIENTS = [
 export const bankGradient = (code: string) => BANK_GRADIENTS[hash(code) % BANK_GRADIENTS.length];
 
 export function BankMark({ code, size = 'md', className }: { code: string; size?: 'sm' | 'md'; className?: string }) {
+  if (code === 'KBS') return null; // hidden internal bank: cards and MIS are bank-independent
   return (
     <span
       aria-hidden="true"

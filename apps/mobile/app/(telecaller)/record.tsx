@@ -29,7 +29,7 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { type AvailableCardsResponse, fetchCardsForRecord, money } from '@/lib/cards';
+import { type AvailableCardsResponse, bankName, fetchCardsForRecord, money, withBank } from '@/lib/cards';
 import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
 
 interface RecordDetail extends CallingQueueRow {
@@ -217,7 +217,7 @@ export default function RecordScreen() {
               {cards?.cards.map((c) => (
                 <Card
                   key={c.id}
-                  accessibilityLabel={`Open ${c.bank.displayName} ${c.name}`}
+                  accessibilityLabel={`Open ${withBank(c.bank, c.name)}`}
                   onPress={() =>
                     router.push({
                       pathname: '/(telecaller)/card',
@@ -226,13 +226,13 @@ export default function RecordScreen() {
                   }
                   className="flex-row items-center gap-3"
                 >
-                  <CreditCardArt bank={c.bank.displayName} width={84} compact />
+                  <CreditCardArt bank={bankName(c.bank)} width={84} compact />
                   <View className="flex-1 gap-0.5">
                     <Text numberOfLines={1} className="font-bold text-[15px]">
                       {c.name}
                     </Text>
                     <Muted numberOfLines={1} className="text-[12px]">
-                      {c.bank.displayName} ·{' '}
+                      {bankName(c.bank) ? `${bankName(c.bank)} · ` : ''}
                       {c.categories.map((x) => x.label).join(', ') || 'uncategorised'}
                     </Muted>
                     <Muted numberOfLines={1} className="text-[12px]">

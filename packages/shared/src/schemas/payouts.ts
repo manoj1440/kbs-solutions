@@ -82,7 +82,12 @@ export const CreatePayoutRequestBody = z
 export type CreatePayoutRequestBody = z.infer<typeof CreatePayoutRequestBody>;
 
 export const PayoutApprovalBody = z
-  .object({ decision: z.enum(['APPROVED', 'REJECTED']), reason: z.string().trim().max(500).optional() })
+  .object({
+    decision: z.enum(['APPROVED', 'REJECTED']),
+    reason: z.string().trim().max(500).optional(),
+    /** Admin's approval sets the amount to transfer (payouts are rate-free; the Manager approves without one). */
+    amountInr: z.number().positive().max(10_000_000).multipleOf(0.01).optional(),
+  })
   .strict()
   .refine((b) => b.decision === 'APPROVED' || (b.reason?.length ?? 0) >= 3, 'A rejection needs a reason');
 export type PayoutApprovalBody = z.infer<typeof PayoutApprovalBody>;

@@ -34,12 +34,6 @@ interface Summary {
   activationBlank: number;
   values: { stages: string[]; decisions: string[]; activations: string[] };
 }
-interface Bank {
-  id: string;
-  code: string;
-  displayName: string;
-}
-
 /** Uploads whose leads are not updated yet (still running, or stopped part-way). */
 const LIVE = new Set(['UPLOADED', 'PARSED', 'MAPPED', 'PREVIEWED', 'APPLYING', 'FAILED']);
 
@@ -51,24 +45,21 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const qs = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
-  if (sp.bankId) qs.set('bankId', sp.bankId);
   if (sp.q?.trim()) qs.set('q', sp.q.trim());
   if (sp.stage) qs.set('stage', sp.stage);
   if (sp.decision) qs.set('decision', sp.decision);
   if (sp.activation) qs.set('activation', sp.activation);
-  const [summary, applications, batches, banks] = await Promise.all([
+  const [summary, applications, batches] = await Promise.all([
     apiFetch<Summary>('/mis/applications/summary').then((r) => r.data),
     apiFetch<MisApplication[]>(`/mis/applications?${qs.toString()}`),
     apiFetch<Batch[]>('/mis/batches?pageSize=50'),
-    apiFetch<Bank[]>('/catalogue/banks').then((r) => r.data),
   ]);
-  const uploadBanks = banks.map((b) => ({ id: b.id, label: b.displayName }));
   const total = Number(applications.meta.total ?? applications.data.length);
   const pending = batches.data.filter((b) => LIVE.has(b.stage));
-  const filtered = Boolean(sp.bankId || sp.q || sp.stage || sp.decision || sp.activation);
+  const filtered = Boolean(sp.q || sp.stage || sp.decision || sp.activation);
   const link = (over: Record<string, string | undefined>) => {
     const q = new URLSearchParams();
-    for (const [k, v] of Object.entries({ q: sp.q, bankId: sp.bankId, stage: sp.stage, decision: sp.decision, activation: sp.activation, ...over })) if (v) q.set(k, v);
+    for (const [k, v] of Object.entries({ q: sp.q, stage: sp.stage, decision: sp.decision, activation: sp.activation, ...over })) if (v) q.set(k, v);
     const s = q.toString();
     return `/admin/mis${s ? `?${s}` : ''}`;
   };
@@ -81,7 +72,7 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
           <TriangleAlert className="size-3.5 shrink-0 text-amber-700" aria-hidden="true" />
           {pending.map((b) => (
             <Link key={b.id} href={`/admin/mis/batches/${b.id}`} className="font-medium underline-offset-2 hover:underline">
-              {b.bank.code} upload <span className="font-mono">{b.publicRef}</span>: {b.stage === 'APPLYING' ? 'updating leads…' : 'leads not updated yet — open to finish'}
+              MIS upload <span className="font-mono">{b.publicRef}</span>: {b.stage === 'APPLYING' ? 'updating leads…' : 'leads not updated yet — open to finish'}
             </Link>
           ))}
         </div>
@@ -101,14 +92,6 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
           <>
             <Form action="/admin/mis" className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
               <input aria-label="Search" name="q" className={cn(selectClass, 'h-9 min-w-44 flex-[2_1_12rem]')} defaultValue={sp.q ?? ''} placeholder="Application / ref / customer / code" />
-              <select aria-label="Bank" name="bankId" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} defaultValue={sp.bankId ?? ''}>
-                <option value="">All banks</option>
-                {banks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.displayName}
-                  </option>
-                ))}
-              </select>
               <select aria-label="Stage" name="stage" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} defaultValue={sp.stage ?? ''}>
                 <option value="">Any stage</option>
                 {summary.values.stages.map((s) => (
@@ -143,7 +126,7 @@ export default async function MisPage({ searchParams }: { searchParams: Promise<
                 </Button>
               ) : null}
             </Form>
-            <UploadMisButton banks={uploadBanks} />
+            <UploadMisButton />
           </>
         }
         footer={

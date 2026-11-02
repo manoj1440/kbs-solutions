@@ -23,7 +23,7 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { fileUrl, money } from '@/lib/cards';
+import { bankName, fileUrl, money } from '@/lib/cards';
 import { colors, gradients } from '@/lib/theme';
 
 /** S12 card detail (F-405) with sourcing-availability check and the Create Lead CTA (F-406). */
@@ -112,9 +112,11 @@ export default function AdvisorCardDetail() {
             }
           />
           <View className="flex-1">
-            <RNText numberOfLines={1} className="font-medium text-[12px] text-white/70">
-              {card.bank.displayName}
-            </RNText>
+            {bankName(card.bank) ? (
+              <RNText numberOfLines={1} className="font-medium text-[12px] text-white/70">
+                {bankName(card.bank)}
+              </RNText>
+            ) : null}
             <RNText
               accessibilityRole="header"
               numberOfLines={1}
@@ -133,7 +135,7 @@ export default function AdvisorCardDetail() {
               resizeMode="contain"
             />
           ) : (
-            <CreditCardArt bank={card.bank.displayName} name={card.name} width={300} />
+            <CreditCardArt bank={bankName(card.bank)} name={card.name} width={300} />
           )}
         </Appear>
         {card.categories.length ? (

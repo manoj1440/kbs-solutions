@@ -99,7 +99,7 @@ export const UpdateMisProfileBody = z
 export type UpdateMisProfileBody = z.infer<typeof UpdateMisProfileBody>;
 
 /** F-809: profileId optional — all banks share one MIS layout, so the server resolves the bank's latest APPROVED profile. */
-export const CreateMisBatchBody = z.object({ bankId: z.string().uuid(), profileId: z.string().uuid().optional(), fileId: z.string().uuid(), sheetName: z.string().max(100).optional() }).strict();
+export const CreateMisBatchBody = z.object({ bankId: z.string().uuid().optional(), profileId: z.string().uuid().optional(), fileId: z.string().uuid(), sheetName: z.string().max(100).optional() }).strict();
 export type CreateMisBatchBody = z.infer<typeof CreateMisBatchBody>;
 
 export const MisBatchListQuery = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(100).default(50), bankId: z.string().uuid().optional(), stage: z.string().optional() });

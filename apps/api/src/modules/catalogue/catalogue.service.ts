@@ -17,6 +17,8 @@ import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
 
+import { defaultBankId } from './default-bank';
+
 type Channel = 'TELECALLER' | 'ADVISOR' | 'BOTH';
 
 /** F-403: banks, categories, credit cards (DRAFT → PUBLISHED → RETIRED), verbatim application links, MIS product-code crosswalk. */
@@ -188,7 +190,8 @@ export class CatalogueService {
       throw new AppError('VALIDATION_FAILED', `File must be uploaded with purpose ${purpose}.`);
   }
 
-  async createCard(actor: Actor, body: CardBody) {
+  async createCard(actor: Actor, input: CardBody) {
+    const body = { ...input, bankId: input.bankId ?? (await defaultBankId(this.prisma.client)) };
     const bank = await this.prisma.client.bank.findUnique({ where: { id: body.bankId } });
     if (!bank) throw AppError.notFound('Bank');
     await Promise.all([

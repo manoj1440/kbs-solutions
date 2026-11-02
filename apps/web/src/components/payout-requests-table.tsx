@@ -16,7 +16,8 @@ export interface PayoutRequestRow {
   state: string;
   advisor: { id: string; fullName: string };
   itemCount: number;
-  totalAmountInr: number;
+  /** Set by Admin's approval (rate-free payouts); null before. */
+  totalAmountInr: number | null;
   submittedAt: string;
   approvals: { role: string; decision: string; at: string }[];
   outstanding: string[];
@@ -26,7 +27,10 @@ export interface PayoutRequestRow {
   correctionPending: boolean;
 }
 
-const STEP: Record<'approved' | 'rejected' | 'pending' | 'none', { icon: LucideIcon; cls: string; text: string }> = {
+const STEP: Record<
+  'approved' | 'rejected' | 'pending' | 'none',
+  { icon: LucideIcon; cls: string; text: string }
+> = {
   approved: { icon: Check, cls: 'bg-teal-500 text-white', text: 'approved' },
   rejected: { icon: X, cls: 'bg-rose-500 text-white', text: 'rejected' },
   pending: {
@@ -41,7 +45,13 @@ const STEP: Record<'approved' | 'rejected' | 'pending' | 'none', { icon: LucideI
 function ApprovalSteps({ row }: { row: PayoutRequestRow }) {
   const steps = (['MANAGER', 'ADMIN'] as const).map((role) => {
     const a = row.approvals.find((x) => x.role === role);
-    const status: keyof typeof STEP = a ? (a.decision === 'APPROVED' ? 'approved' : 'rejected') : row.outstanding.includes(role) ? 'pending' : 'none';
+    const status: keyof typeof STEP = a
+      ? a.decision === 'APPROVED'
+        ? 'approved'
+        : 'rejected'
+      : row.outstanding.includes(role)
+        ? 'pending'
+        : 'none';
     return { role, status };
   });
   return (
@@ -50,8 +60,22 @@ function ApprovalSteps({ row }: { row: PayoutRequestRow }) {
         const s = STEP[status];
         return (
           <li key={role} className="flex items-center gap-1.5">
-            {i > 0 ? <span className={cn('h-px w-3 sm:w-4', steps[0].status === 'approved' ? 'bg-teal-300' : 'bg-surface-strong')} aria-hidden="true" /> : null}
-            <span className={cn('inline-flex size-5 shrink-0 items-center justify-center rounded-full', s.cls)} aria-hidden="true">
+            {i > 0 ? (
+              <span
+                className={cn(
+                  'h-px w-3 sm:w-4',
+                  steps[0].status === 'approved' ? 'bg-teal-300' : 'bg-surface-strong',
+                )}
+                aria-hidden="true"
+              />
+            ) : null}
+            <span
+              className={cn(
+                'inline-flex size-5 shrink-0 items-center justify-center rounded-full',
+                s.cls,
+              )}
+              aria-hidden="true"
+            >
               <s.icon className="size-3" strokeWidth={3} />
             </span>
             <span className="leading-tight">
@@ -68,7 +92,15 @@ function ApprovalSteps({ row }: { row: PayoutRequestRow }) {
 const c = columnHelper<PayoutRequestRow>();
 
 /** F-603/F-604 → F-813 — payout requests with outstanding approvals; "awaiting me" shows the viewer's own queue. */
-export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequestRow[]; basePath: string; mode: 'approvals' | 'accounts' }) {
+export function PayoutRequestsTable({
+  rows,
+  basePath,
+  mode,
+}: {
+  rows: PayoutRequestRow[];
+  basePath: string;
+  mode: 'approvals' | 'accounts';
+}) {
   const columns = c.columns([
     c.accessor('publicRef', {
       header: 'Request',
@@ -77,7 +109,9 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
           <Link className="font-mono text-xs font-semibold" href={`${basePath}/${row.original.id}`}>
             {row.original.publicRef}
           </Link>
-          <div className="mt-0.5 text-2xs text-muted-foreground">{row.original.itemCount} card event(s)</div>
+          <div className="mt-0.5 text-2xs text-muted-foreground">
+            {row.original.itemCount} card event(s)
+          </div>
         </>
       ),
     }),
@@ -93,7 +127,16 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
     }),
     c.accessor('totalAmountInr', {
       header: 'Amount',
-            cell: ({ getValue }) => <span className="text-[15px] font-semibold whitespace-nowrap text-foreground tabular-nums">{formatInr(getValue())}</span>,
+      cell: ({ getValue }) => {
+        const v = getValue();
+        return v == null ? (
+          <span className="text-xs text-fg-3">Set by Admin</span>
+        ) : (
+          <span className="text-[15px] font-semibold whitespace-nowrap text-foreground tabular-nums">
+            {formatInr(v)}
+          </span>
+        );
+      },
     }),
     c.accessor('state', {
       header: 'State',
@@ -110,7 +153,8 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
               <>
                 {x.payment ? (
                   <span className="text-fg-2">
-                    {humanize(x.payment.state)} · <span className="tabular-nums">{formatInr(x.payment.amountInr)}</span>
+                    {humanize(x.payment.state)} ·{' '}
+                    <span className="tabular-nums">{formatInr(x.payment.amountInr)}</span>
                   </span>
                 ) : x.state === 'APPROVED' ? (
                   <span className="text-muted-foreground">Not yet recorded</span>
@@ -122,7 +166,9 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
                     correction awaiting Admin
                   </Badge>
                 ) : null}
-                {x.holdReason ? <div className="text-destructive mt-1 whitespace-normal">{x.holdReason}</div> : null}
+                {x.holdReason ? (
+                  <div className="text-destructive mt-1 whitespace-normal">{x.holdReason}</div>
+                ) : null}
               </>
             );
           },
@@ -136,7 +182,11 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
             return (
               <>
                 <ApprovalSteps row={x} />
-                {x.payment ? <div className="mt-1.5 text-2xs text-muted-foreground">Payment {humanize(x.payment.state).toLowerCase()}</div> : null}
+                {x.payment ? (
+                  <div className="mt-1.5 text-2xs text-muted-foreground">
+                    Payment {humanize(x.payment.state).toLowerCase()}
+                  </div>
+                ) : null}
                 {x.correctionPending ? (
                   <Badge variant="warning" className="mt-1.5">
                     correction awaiting Admin
@@ -160,7 +210,14 @@ export function PayoutRequestsTable({ rows, basePath, mode }: { rows: PayoutRequ
       data={rows}
       getRowId={(r) => r.id}
       pagedOnServer
-      empty={<EmptyState icon={Inbox} className="m-3" title="No requests." description="Nothing matches this queue right now." />}
+      empty={
+        <EmptyState
+          icon={Inbox}
+          className="m-3"
+          title="No requests."
+          description="Nothing matches this queue right now."
+        />
+      }
     />
   );
 }

@@ -16,11 +16,9 @@ const PAGES = [
 
   '/admin/catalogue',
   '/admin/mis',
-  '/admin/payouts/liability',
   '/admin/payouts/requests',
   '/admin/payouts/requests?queue=exceptions',
   '/admin/payouts/entitlements',
-  '/admin/payouts/rules',
   '/admin/dashboards',
   '/admin/dashboards/telecallers',
   '/admin/dashboards/managers',
@@ -72,11 +70,11 @@ test.describe('Admin workspace smoke', () => {
   });
 
   test('F-807/F-817: the left sidebar lists every page once; icons only, labels and sections when expanded', async () => {
-    test.skip((page.viewportSize()?.width ?? 0) < 768, 'top-bar theme toggle (phones use the menu drawer)');
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'desktop sidebar');
     await page.goto('/admin');
     const nav = page.getByRole('navigation', { name: 'Admin navigation' });
     const hrefs = await nav.getByRole('link').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
-    expect(hrefs.length).toBeGreaterThan(20);
+    expect(hrefs.length).toBeGreaterThan(15); // bank coverage + rate-based payout pages removed
     expect(new Set(hrefs).size).toBe(hrefs.length);
     expect(hrefs).not.toContain('/admin/dashboards');
     expect(hrefs).not.toContain('/admin/account');

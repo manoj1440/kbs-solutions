@@ -38,6 +38,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { withBank } from '@/lib/cards';
 
 interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   customerPanMasked: string | null;
@@ -91,7 +92,8 @@ interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   payouts: {
     entitlementId: string;
     position: string;
-    amountInr: number;
+    /** Set once the payout request is paid (Admin decides the amount). */
+    amountInr: number | null;
     request: { publicRef: string; paidAt: string | null } | null;
   }[];
 }
@@ -279,7 +281,7 @@ export default function LeadScreen() {
               <View className="mt-0.5 flex-row items-center gap-1.5">
                 <Icon name="card-outline" size={13} color="rgba(255,255,255,0.7)" />
                 <RNText numberOfLines={1} className="flex-1 font-medium text-[13px] text-white/75">
-                  {l.bank.displayName} · {l.card.name}
+                  {withBank(l.bank, l.card.name, ' · ')}
                 </RNText>
               </View>
             </View>
@@ -357,17 +359,23 @@ export default function LeadScreen() {
             icon="wallet-outline"
             tone="success"
             title="Your earning"
-            subtitle="From the bank MIS and the KBS payout rule"
+            subtitle="Card activated per the bank MIS; the amount shows once paid"
           >
             {l.payouts.map((p) => (
               <KeyValue
                 key={p.entitlementId}
-                label={formatInr(p.amountInr)}
+                label={p.amountInr != null ? formatInr(p.amountInr) : 'Card activated'}
                 value={
                   <View className="items-end gap-1">
                     <Badge
                       label={p.position}
-                      variant={p.position === 'Paid' ? 'success' : p.position === 'Available for claim' ? 'info' : 'warning'}
+                      variant={
+                        p.position === 'Paid'
+                          ? 'success'
+                          : p.position === 'Available for claim'
+                            ? 'info'
+                            : 'warning'
+                      }
                     />
                     {p.request ? (
                       <Muted>

@@ -22,7 +22,7 @@ import {
   SectionHeader,
   Text,
 } from '@/components/ui';
-import { fileUrl, money } from '@/lib/cards';
+import { bankName, fileUrl, money, withBank } from '@/lib/cards';
 import { colors } from '@/lib/theme';
 
 /** F-308 §4: Card Detail in Call — image, bank, name, categories, benefits, fees, charges, PDF, link version, provenance. */
@@ -45,7 +45,7 @@ export default function CardDetailScreen() {
     <Screen
       scroll
       header={
-        <AppBar title={card.name} subtitle={`${card.bank.displayName} · share during the call`} />
+        <AppBar title={card.name} subtitle={withBank(card.bank, 'share during the call', ' · ')} />
       }
     >
       <Appear className="items-center gap-4 pt-1">
@@ -57,12 +57,14 @@ export default function CardDetailScreen() {
             resizeMode="contain"
           />
         ) : (
-          <CreditCardArt bank={card.bank.displayName} name={card.name} width={300} />
+          <CreditCardArt bank={bankName(card.bank)} name={card.name} width={300} />
         )}
         <View className="w-full items-center gap-1">
-          <Muted className="font-semibold uppercase tracking-[1.2px] text-[11px]">
-            {card.bank.displayName}
-          </Muted>
+          {bankName(card.bank) ? (
+            <Muted className="font-semibold uppercase tracking-[1.2px] text-[11px]">
+              {bankName(card.bank)}
+            </Muted>
+          ) : null}
           <RNText
             accessibilityRole="header"
             className="text-center font-extrabold text-[22px] tracking-tight text-ink"

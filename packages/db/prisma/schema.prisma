@@ -1620,10 +1620,11 @@ model PayoutEntitlement {
   bankId                  String
   cardId                  String
   eventKey                String                 @unique
-  ruleId                  String
-  ruleVersion             Int
-  rateId                  String
-  amountInr               Decimal                @db.Decimal(12, 2)
+  /// null since payouts became rate-free: activation makes it claimable, Admin prices the request
+  ruleId                  String?
+  ruleVersion             Int?
+  rateId                  String?
+  amountInr               Decimal                @default(0) @db.Decimal(12, 2)
   evidenceBatchId         String
   evidenceMisRowId        String?
   triggerFieldValue       String
@@ -1638,8 +1639,8 @@ model PayoutEntitlement {
   advisor       User                     @relation(fields: [advisorUserId], references: [id])
   bank          Bank                     @relation(fields: [bankId], references: [id])
   card          CreditCard               @relation(fields: [cardId], references: [id])
-  rule          PayoutRule               @relation(fields: [ruleId], references: [id])
-  rate          PayoutRate               @relation(fields: [rateId], references: [id])
+  rule          PayoutRule?              @relation(fields: [ruleId], references: [id])
+  rate          PayoutRate?              @relation(fields: [rateId], references: [id])
   evidenceBatch MisImportBatch           @relation(fields: [evidenceBatchId], references: [id])
   evidenceRow   MisRow?                  @relation(fields: [evidenceMisRowId], references: [id])
   events        PayoutEntitlementEvent[]

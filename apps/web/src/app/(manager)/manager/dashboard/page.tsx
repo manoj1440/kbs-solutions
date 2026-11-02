@@ -68,7 +68,7 @@ export default async function ManagerDashboardPage({ searchParams }: { searchPar
               tone="violet"
               count={Number(awaiting.meta.total ?? awaiting.data.length)}
               empty="No payout request is waiting for your approval."
-              items={awaiting.data.map((r) => ({ key: r.id, href: `/manager/payouts/requests/${r.id}`, title: r.advisor.fullName, meta: r.publicRef, aside: formatInr(r.totalAmountInr) }))}
+              items={awaiting.data.map((r) => ({ key: r.id, href: `/manager/payouts/requests/${r.id}`, title: r.advisor.fullName, meta: r.publicRef, aside: (r.totalAmountInr == null ? 'amount set by Admin' : formatInr(r.totalAmountInr)) }))}
               footer={awaiting.data.length ? { href: '/manager/payouts/requests?awaitingMe=true', label: 'All awaiting my approval' } : undefined}
             />
           ) : (

@@ -1,5 +1,5 @@
-import { isBlankBankValue } from '@kbs/shared';
-import { Injectable, Logger } from '@nestjs/common';
+import { activationBucket, isBlankBankValue } from '@kbs/shared';
+import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
@@ -9,7 +9,6 @@ import { ConfigService } from '../config/config.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { HierarchyService } from '../users/hierarchy.service';
 
-import { PayoutRulesService } from './payout-rules.service';
 
 export interface EntitlementListQuery {
   page: number;
@@ -23,15 +22,13 @@ export interface EntitlementListQuery {
 const OPEN_STATES = ['PENDING_HOLD', 'ELIGIBLE_AVAILABLE', 'RESERVED'] as const;
 
 /**
- * F-602 — the ONLY creator of `PayoutEntitlement` (ADR-008, INV-05/INV-06).
- * An entitlement exists iff an APPROVED rule in force at the batch upload time names the exact snapshot value the
- * bank reported for a Lead-backed application, and an approved rate prices it. `eventKey` is unique per bank event,
- * so re-imports and later rule versions never duplicate it. Corrections put open entitlements UNDER_REVIEW; PAID
- * entitlements are never altered — an exception is raised instead (F-606).
+ * F-602 — the ONLY creator of `PayoutEntitlement` (ADR-008, INV-05/INV-06). Rate-free since the payout redesign (user
+ * decision): when the bank MIS reports the card **activated** for a Lead-backed application, the lead becomes claimable
+ * once (no amount, no rule). Admin prices the payout request; the Advisor never sees a per-card rate. A later MIS row that
+ * no longer reports it active puts an open entitlement UNDER_REVIEW; PAID ones only raise an exception (F-606).
  */
 @Injectable()
 export class PayoutEligibilityService {
-  private readonly log = new Logger(PayoutEligibilityService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -43,74 +40,44 @@ export class PayoutEligibilityService {
     return this.config.getJson<string[]>('mis.blankValueTokens') ?? [];
   }
 
-  /** Evaluate one lead against its bank's rules after batch `batchId` was applied. Idempotent. */
-  async evaluateLead(leadId: string, batchId: string): Promise<{ created: string[]; reviewed: string[] }> {
-    const lead = await this.prisma.client.lead.findUnique({ where: { id: leadId }, include: { statusSnapshot: true, linkages: { where: { supersededAt: null }, take: 1 } } });
-    const batch = await this.prisma.client.misImportBatch.findUnique({ where: { id: batchId }, select: { uploadedAt: true, bankId: true } });
-    if (!lead?.statusSnapshot || !batch) return { created: [], reviewed: [] };
-    const snap = lead.statusSnapshot as unknown as Record<string, unknown>;
-    const tokens = this.blankTokens();
-    const at = batch.uploadedAt;
-    const rules = await this.prisma.client.payoutRule.findMany({ where: { bankId: lead.bankId, status: 'APPROVED', effectiveFrom: { lte: at }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }] }, include: { rates: true } });
-    const created: string[] = [];
-    const reviewed = await this.reviewLead(leadId, batchId, snap, tokens);
-    if (!rules.length) return { created, reviewed };
-    const primaryReference = lead.linkages[0] ? `${lead.linkages[0].referenceKind}=${lead.linkages[0].referenceValue}` : null;
-    if (!primaryReference) return { created, reviewed }; // no uniquely identified bank application → no entitlement (REQ-28 P0)
-    const misRow = await this.prisma.client.misRow.findFirst({ where: { batchId, matchedLeadId: leadId }, select: { id: true } });
-    for (const rule of rules) {
-      const raw = snap[rule.triggerField];
-      if (typeof raw !== 'string' || isBlankBankValue(raw, tokens)) continue;
-      const value = raw.trim();
-      if (!((rule.triggerValues as string[]) ?? []).includes(value)) continue;
-      if (rule.productCodePattern) {
-        const pc = typeof snap.productCode === 'string' ? snap.productCode.trim() : '';
-        let ok = false;
-        try {
-          ok = new RegExp(rule.productCodePattern, 'i').test(pc);
-        } catch {
-          ok = false;
-        }
-        if (!ok) continue;
-      }
-      const eventKey = `${lead.bankId}|${primaryReference}|${rule.triggerField}|${value}`;
-      // a rule's trigger values are alternatives of ONE card event (e.g. "V + ACTIVE" → "TXN ACTIVE - Rs 100"):
-      // any live entitlement of the same rule on this lead already pays it (INV-06)
-      const existing = await this.prisma.client.payoutEntitlement.findFirst({ where: { leadId, state: { not: 'VOID' }, rule: { bankId: rule.bankId, name: rule.name, triggerField: rule.triggerField } }, orderBy: { createdAt: 'asc' } });
-      if (!existing && (await this.prisma.client.payoutEntitlement.findUnique({ where: { eventKey }, select: { id: true } }))) continue; // voided event stays voided
-      if (existing) {
-        // a correction that restores the trigger value re-opens a reviewed entitlement
-        if (existing.state === 'UNDER_REVIEW') await this.transition(existing.id, existing.state, existing.eligibleAt <= new Date() ? 'ELIGIBLE_AVAILABLE' : 'PENDING_HOLD', { batchId, reason: `MIS ${batchId} again reports ${rule.triggerField} = ${value}` });
-        continue;
-      }
-      const eligibleAt = new Date(lead.statusSnapshot.lastMatchedAt.getTime() + rule.holdDays * 86_400_000);
-      const rate = PayoutRulesService.rateAt(rule.rates, eligibleAt) ?? PayoutRulesService.rateAt(rule.rates, at);
-      if (!rate) {
-        this.log.warn({ leadId, ruleId: rule.id }, 'rule matched but no approved rate in force; entitlement not created');
-        continue;
-      }
-      const parent = (await this.hierarchy.currentParentId(lead.advisorUserId)) ?? (await this.hierarchy.adminUserId());
-      const state = eligibleAt <= new Date() ? 'ELIGIBLE_AVAILABLE' : 'PENDING_HOLD';
-      const ent = await this.prisma.client.payoutEntitlement.create({
-        data: { leadId, advisorUserId: lead.advisorUserId, reportingParentSnapshot: parent, bankId: lead.bankId, cardId: lead.cardId, eventKey, ruleId: rule.id, ruleVersion: rule.version, rateId: rate.id, amountInr: rate.amountInr, evidenceBatchId: batchId, evidenceMisRowId: misRow?.id ?? null, triggerFieldValue: value, eligibleAt, state },
-      });
-      await this.prisma.client.payoutEntitlementEvent.create({ data: { entitlementId: ent.id, fromState: null, toState: state, batchId, reason: `${rule.name} v${rule.version}: ${rule.triggerField} = "${value}" (rate ₹${Number(rate.amountInr)})` } });
-      created.push(ent.id);
-      await this.notifications.notify({ recipientUserId: lead.advisorUserId, kind: 'PAYOUT_ELIGIBLE', title: 'Card event eligible for payout', body: `${lead.publicRef}: bank reported ${rule.triggerField} = ${value}. ${state === 'PENDING_HOLD' ? `Available from ${eligibleAt.toISOString().slice(0, 10)}.` : 'Available to request now.'}`, deepLink: { entityType: 'Lead', entityId: leadId }, dedupeKey: `payout:eligible:${ent.id}` });
-    }
-    return { created, reviewed };
+  private activation(snap: Record<string, unknown>, tokens: string[]): string | null {
+    const raw = snap.cardActivationStatus;
+    return typeof raw === 'string' && !isBlankBankValue(raw, tokens) ? raw.trim() : null;
   }
 
-  /** Correction handling: open entitlements whose trigger value the bank no longer reports go UNDER_REVIEW; PAID ones raise an exception event. */
+  /** Evaluate one lead after batch `batchId` was applied. Idempotent: one entitlement per lead activation. */
+  async evaluateLead(leadId: string, batchId: string): Promise<{ created: string[]; reviewed: string[] }> {
+    const lead = await this.prisma.client.lead.findUnique({ where: { id: leadId }, include: { statusSnapshot: true, linkages: { where: { supersededAt: null }, take: 1 } } });
+    if (!lead?.statusSnapshot) return { created: [], reviewed: [] };
+    const snap = lead.statusSnapshot as unknown as Record<string, unknown>;
+    const tokens = this.blankTokens();
+    const reviewed = await this.reviewLead(leadId, batchId, snap, tokens);
+    const value = this.activation(snap, tokens);
+    if (!value || activationBucket(value) !== 'active' || !lead.linkages[0]) return { created: [], reviewed }; // no uniquely identified application → nothing (REQ-28 P0)
+    const existing = await this.prisma.client.payoutEntitlement.findFirst({ where: { leadId }, orderBy: { createdAt: 'asc' } });
+    if (existing) {
+      // a correction that reports it active again re-opens a reviewed entitlement; any other state stays as it is
+      if (existing.state === 'UNDER_REVIEW') await this.transition(existing.id, existing.state, 'ELIGIBLE_AVAILABLE', { batchId, reason: `MIS again reports card activation "${value}"` });
+      return { created: [], reviewed };
+    }
+    const misRow = await this.prisma.client.misRow.findFirst({ where: { batchId, matchedLeadId: leadId }, select: { id: true } });
+    const parent = (await this.hierarchy.currentParentId(lead.advisorUserId)) ?? (await this.hierarchy.adminUserId());
+    const ent = await this.prisma.client.payoutEntitlement.create({
+      data: { leadId, advisorUserId: lead.advisorUserId, reportingParentSnapshot: parent, bankId: lead.bankId, cardId: lead.cardId, eventKey: `lead:${leadId}:activation`, evidenceBatchId: batchId, evidenceMisRowId: misRow?.id ?? null, triggerFieldValue: value, eligibleAt: new Date(), state: 'ELIGIBLE_AVAILABLE' },
+    });
+    await this.prisma.client.payoutEntitlementEvent.create({ data: { entitlementId: ent.id, fromState: null, toState: 'ELIGIBLE_AVAILABLE', batchId, reason: `Card activated: cardActivationStatus = "${value}"` } });
+    await this.notifications.notify({ recipientUserId: lead.advisorUserId, kind: 'PAYOUT_ELIGIBLE', title: 'Card activated — request your payout', body: `${lead.publicRef}: the bank reports the card as activated. You can request the payout now.`, deepLink: { entityType: 'Lead', entityId: leadId }, dedupeKey: `payout:eligible:${ent.id}` });
+    return { created: [ent.id], reviewed };
+  }
+
+  /** Correction handling: the bank no longer reports the card active → open entitlements go UNDER_REVIEW; PAID ones raise an exception event. */
   private async reviewLead(leadId: string, batchId: string, snap: Record<string, unknown>, tokens: string[]): Promise<string[]> {
-    const ents = await this.prisma.client.payoutEntitlement.findMany({ where: { leadId, state: { in: [...OPEN_STATES, 'PAID'] } }, include: { rule: { select: { triggerField: true, triggerValues: true } } } });
+    const ents = await this.prisma.client.payoutEntitlement.findMany({ where: { leadId, state: { in: [...OPEN_STATES, 'PAID'] } } });
+    const current = this.activation(snap, tokens);
+    if (current && activationBucket(current) === 'active') return [];
     const reviewed: string[] = [];
     for (const e of ents) {
-      const raw = snap[e.rule.triggerField];
-      const current = typeof raw === 'string' && !isBlankBankValue(raw, tokens) ? raw.trim() : null;
-      // still one of the rule's trigger values (e.g. activation moved up a level) → same event, not a correction
-      if (current === e.triggerFieldValue || (current !== null && ((e.rule.triggerValues as string[]) ?? []).includes(current))) continue;
-      const reason = `MIS now reports ${e.rule.triggerField} = ${current === null ? '(blank)' : `"${current}"`} (was "${e.triggerFieldValue}")`;
+      const reason = `MIS now reports cardActivationStatus = ${current === null ? '(blank)' : `"${current}"`} (was "${e.triggerFieldValue}")`;
       if (e.state === 'PAID') {
         const last = await this.prisma.client.payoutEntitlementEvent.findFirst({ where: { entitlementId: e.id }, orderBy: { at: 'desc' } });
         if (last?.reason?.includes(reason)) {
@@ -181,9 +148,9 @@ export class PayoutEligibilityService {
         state: e.state,
         amountInr: Number(e.amountInr),
         eligibleAt: e.eligibleAt.toISOString(),
-        triggerField: e.rule.triggerField,
+        triggerField: e.rule?.triggerField ?? 'cardActivationStatus',
         triggerFieldValue: e.triggerFieldValue,
-        rule: { id: e.ruleId, name: e.rule.name, version: e.ruleVersion },
+        rule: e.rule ? { id: e.ruleId, name: e.rule.name, version: e.ruleVersion } : null,
         lead: e.lead,
         advisor: e.advisor,
         bank: e.bank,

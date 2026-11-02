@@ -38,6 +38,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { colors, gradientStyle, shadow } from '@/lib/theme';
+import { withBank } from '@/lib/cards';
 
 interface Draft {
   id: string;
@@ -255,7 +256,7 @@ export default function Leads() {
                 {d.customer ?? 'Customer not entered'}
               </RNText>
               <RNText numberOfLines={1} className="font-medium text-[13px] text-[#7C2D12]">
-                {d.card?.bank.displayName} {d.card?.name}
+                {withBank(d.card?.bank, d.card?.name ?? '')}
               </RNText>
               <View className="mt-3 flex-row items-center gap-1.5">
                 <Icon name="time-outline" size={12} color="#9A3412" />
