@@ -72,7 +72,7 @@ test.describe('Admin workspace smoke', () => {
   });
 
   test('F-807/F-817: the left sidebar lists every page once; icons only, labels and sections when expanded', async () => {
-    test.skip((page.viewportSize()?.width ?? 0) < 768, 'desktop sidebar');
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'top-bar theme toggle (phones use the menu drawer)');
     await page.goto('/admin');
     const nav = page.getByRole('navigation', { name: 'Admin navigation' });
     const hrefs = await nav.getByRole('link').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
@@ -94,7 +94,7 @@ test.describe('Admin workspace smoke', () => {
   });
 
   test('F-817: theme toggle switches to dark, survives a reload, and System follows the OS', async () => {
-    test.skip((page.viewportSize()?.width ?? 0) < 768, 'desktop sidebar');
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'top-bar theme toggle (phones use the menu drawer)');
     await page.goto('/admin');
     const html = page.locator('html');
     await page.getByRole('radio', { name: 'Dark' }).first().click();

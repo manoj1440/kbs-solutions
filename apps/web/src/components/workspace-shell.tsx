@@ -361,9 +361,6 @@ export function WorkspaceShell({
               {expanded ? <PanelLeftClose className="size-[18px]" /> : <PanelLeftOpen className="size-[18px]" />}
             </button>
           </div>
-          <div className={cn('shrink-0 px-2.5 pb-3', expanded ? '' : 'flex justify-center')}>
-            <ThemeToggle initial={theme} vertical={!expanded} />
-          </div>
           <nav aria-label={`${humanize(area)} navigation`} className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-3" onScroll={() => setTip(null)}>
             {GROUPS.map((group, gi) => (
               <div key={group.label} className={cn(gi > 0 && (expanded ? 'mt-4' : 'mt-2 border-t border-border-subtle pt-2'))}>
@@ -447,6 +444,8 @@ export function WorkspaceShell({
               </span>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
+              {/* phones keep the labelled toggle in the menu drawer: the bar has no room for three more icons */}
+              <ThemeToggle initial={theme} compact className={cn(pill, 'hidden h-11 px-1.5 sm:flex')} />
               <div className={cn(pill, 'flex h-11 items-center gap-0.5 px-0.5')}>
                 <button type="button" className={iconButton} aria-label="Search workspace" title="Search (⌘K)" onClick={() => search.current?.showModal()}>
                   <Search className="size-[18px]" />

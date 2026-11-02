@@ -28,8 +28,8 @@ const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'system', label: 'System', icon: Monitor },
 ];
 
-/** Light / Dark / System. `vertical` = icons stacked (collapsed sidebar); otherwise a labelled segmented control. */
-export function ThemeToggle({ initial, vertical = false, className }: { initial: Theme; vertical?: boolean; className?: string }) {
+/** Light / Dark / System. `compact` = icons only (top bar); otherwise a labelled segmented control (phone menu). */
+export function ThemeToggle({ initial, compact = false, className }: { initial: Theme; compact?: boolean; className?: string }) {
   const [theme, setTheme] = useState<Theme>(initial);
   // follow the OS while on "System"
   useEffect(() => {
@@ -44,7 +44,7 @@ export function ThemeToggle({ initial, vertical = false, className }: { initial:
     persist(next);
   }
   return (
-    <div role="radiogroup" aria-label="Theme" className={cn('glass-tile flex gap-0.5 rounded-full p-1', vertical ? 'flex-col items-center' : 'w-full', className)}>
+    <div role="radiogroup" aria-label="Theme" className={cn('glass-tile flex gap-0.5 rounded-full p-1', compact ? 'items-center' : 'w-full', className)}>
       {OPTIONS.map(({ value, label, icon: Icon }) => {
         const on = theme === value;
         return (
@@ -58,12 +58,12 @@ export function ThemeToggle({ initial, vertical = false, className }: { initial:
             onClick={() => choose(value)}
             className={cn(
               'inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring',
-              vertical ? 'size-8' : 'h-8 flex-1',
+              compact ? 'size-8' : 'h-8 flex-1',
               on ? 'bg-foreground text-background' : 'text-fg-3 hover:text-foreground',
             )}
           >
             <Icon className="size-4" aria-hidden="true" />
-            {vertical ? null : label}
+            {compact ? null : label}
           </button>
         );
       })}
