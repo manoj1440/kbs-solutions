@@ -9,6 +9,7 @@ const PAGES = [
   '/admin',
   '/admin/leads',
   '/admin/onboarding',
+  '/admin/agent-codes',
   '/admin/users',
   '/admin/calling-list',
   '/admin/calling-list?status=UNTOUCHED&pincode=3',

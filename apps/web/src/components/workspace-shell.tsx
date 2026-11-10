@@ -34,6 +34,7 @@ import {
   Search,
   Settings2,
   ShieldCheck,
+  Ticket,
   UserPlus,
   UserRound,
   Users,
@@ -87,6 +88,7 @@ const ADMIN_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/users', label: 'Users & teams', icon: Users },
       { href: '/admin/onboarding', label: 'Advisor approvals', icon: ClipboardCheck },
+      { href: '/admin/agent-codes', label: 'Agent codes', icon: Ticket },
       { href: '/admin/training', label: 'Training content', icon: GraduationCap },
       { href: '/admin/training/team', label: 'Training progress', icon: BookOpenCheck },
     ],

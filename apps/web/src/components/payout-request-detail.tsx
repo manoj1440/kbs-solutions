@@ -128,7 +128,10 @@ export async function PayoutRequestDetail({
         subtitle={
           <>
             Submitted {formatDateTime(r.submittedAt)} by {r.advisor.fullName} · Manager approver{' '}
-            {r.managerApprover?.fullName ?? '—'} · order {r.approvals.order}
+            {r.managerApprover?.fullName ?? '—'} ·{' '}
+            {r.approvals.order === 'MANAGER_FIRST'
+              ? 'Manager approves first, then Admin'
+              : 'either approver first'}
           </>
         }
       >

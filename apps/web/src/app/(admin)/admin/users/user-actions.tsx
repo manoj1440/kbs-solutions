@@ -7,7 +7,7 @@ import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Callout, Field, IconTile, selectClass } from '@/components/ui/kit';
+import { Callout, Field, humanize, IconTile, selectClass } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 
 /** F-105: Admin creates Manager / Accounts users (Telecallers are created by Managers, Advisors self-register). */
@@ -212,6 +212,106 @@ export function LifecycleAction({
               setMsg({ ok: true, text: 'Done.' });
               setOpen(false);
               setReason('');
+              router.refresh();
+            } catch (e) {
+              setMsg({
+                ok: false,
+                text: e instanceof ApiClientError ? e.message : 'Request failed.',
+              });
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Confirm
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+      {msg && !msg.ok ? <span className="text-destructive text-xs">{msg.text}</span> : null}
+    </div>
+  );
+}
+
+/** F-106: Admin moves a Telecaller or Advisor to another reporting person (an active Manager or the Admin). */
+export function ChangeReportingAction({
+  userId,
+  parents,
+}: {
+  userId: string;
+  /** Valid new parents only: active Managers and the Admin, without the current reporting person. */
+  parents: { id: string; fullName: string; role: string }[];
+}) {
+  const router = useRouter();
+  const label = 'Change reporting person';
+  const [open, setOpen] = useState(false);
+  const [parentId, setParentId] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const disabledReason = parents.length ? undefined : 'No other active Manager to report to.';
+  if (!open)
+    return (
+      <div className="grid gap-1">
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full"
+          disabled={Boolean(disabledReason)}
+          title={disabledReason}
+          onClick={() => setOpen(true)}
+        >
+          {label}
+        </Button>
+        {disabledReason ? (
+          <span className="text-2xs leading-relaxed text-muted-foreground">{disabledReason}</span>
+        ) : null}
+        {msg ? (
+          <span className={`text-xs ${msg.ok ? 'text-success' : 'text-destructive'}`}>
+            {msg.text}
+          </span>
+        ) : null}
+      </div>
+    );
+  return (
+    <div className="grid min-w-0 gap-2 rounded-xl border border-border bg-surface-muted p-3">
+      <p className="text-xs font-semibold text-fg-2">{label}</p>
+      <select
+        aria-label="New reporting person"
+        className={selectClass}
+        value={parentId}
+        onChange={(e) => setParentId(e.target.value)}
+      >
+        <option value="">Choose…</option>
+        {parents.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.fullName} ({humanize(p.role)})
+          </option>
+        ))}
+      </select>
+      <Input
+        aria-label="Reason to change reporting person"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason (required)"
+        maxLength={500}
+      />
+      <div className="flex flex-wrap gap-1.5">
+        <Button
+          size="sm"
+          disabled={busy || !parentId || reason.trim().length < 3}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await clientApi.post(`/users/${userId}/reporting`, {
+                parentUserId: parentId,
+                reason: reason.trim(),
+              });
+              setMsg({ ok: true, text: 'Done.' });
+              setOpen(false);
+              setReason('');
+              setParentId('');
               router.refresh();
             } catch (e) {
               setMsg({

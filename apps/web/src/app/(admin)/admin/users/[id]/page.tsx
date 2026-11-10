@@ -31,7 +31,7 @@ import {
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-import { LifecycleAction } from '../user-actions';
+import { ChangeReportingAction, LifecycleAction } from '../user-actions';
 import { roleChipClass, statusVariant } from '../user-status';
 
 interface UserDetail {
@@ -82,6 +82,20 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   ]);
   const recoveryEnabled = cfg.find((c) => c.key === 'auth.recoveryEnabled')?.value === true;
   const isAdmin = u.role === 'ADMIN';
+  // F-106: only a Telecaller or Advisor can be moved; the new parent is an active Manager or the Admin
+  const canReassign = u.role === 'TELECALLER' || u.role === 'ADVISOR';
+  type ParentOption = { id: string; fullName: string; role: string };
+  const parents: ParentOption[] = canReassign
+    ? (
+        await Promise.all([
+          apiFetch<ParentOption[]>('/users?role=MANAGER&status=ACTIVE&pageSize=200'),
+          apiFetch<ParentOption[]>('/users?role=ADMIN&status=ACTIVE&pageSize=5'),
+        ])
+      )
+        .flatMap((r) => r.data)
+        .filter((p) => p.id !== u.reportingParent?.id)
+        .map((p) => ({ id: p.id, fullName: p.fullName, role: p.role }))
+    : [];
   return (
     <div className="grid gap-6">
       <Link
@@ -225,6 +239,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
               ) : u.status === 'DEACTIVATED' || u.status === 'BLOCKED' ? (
                 <LifecycleAction userId={u.id} action="reactivate" label="Reactivate" />
               ) : null}
+              {canReassign ? <ChangeReportingAction userId={u.id} parents={parents} /> : null}
               <LifecycleAction
                 userId={u.id}
                 action="sessions/revoke"
