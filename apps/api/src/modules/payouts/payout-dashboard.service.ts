@@ -95,7 +95,7 @@ export class PayoutDashboardService {
       else if (age <= 30) aging.d15_30 += 1;
       else aging.d31plus += 1;
       if (!r.approvals.some((a) => a.approverRole === 'MANAGER' && a.decision === 'APPROVED')) awaitingManager += 1;
-      if (!r.approvals.some((a) => a.approverRole === 'ADMIN' && a.decision === 'APPROVED')) awaitingAdmin += 1;
+      else if (!r.approvals.some((a) => a.approverRole === 'ADMIN' && a.decision === 'APPROVED')) awaitingAdmin += 1; // Manager-first: Admin's turn only after the Manager approved
     }
     const missingProof = await this.prisma.client.payoutRequest.count({ where: { state: 'PAYMENT_RECORDED_PENDING_PROOF', ...reqWhere } });
     const exceptions = await this.exceptionItems(advisors, q.bankId);
@@ -117,7 +117,9 @@ export class PayoutDashboardService {
 
   async exceptions(actor: Actor, q: Pick<PayoutDashboardQuery, 'managerId' | 'advisorId' | 'bankId'>) {
     const advisors = await this.advisorScope(actor, q);
-    return this.exceptionItems(advisors, q.bankId);
+    const items = await this.exceptionItems(advisors, q.bankId);
+    // RBAC-01: requests still awaiting approval are not Accounts' to see
+    return actor.role === 'ACCOUNTS' ? items.filter((i) => i.kind !== 'STALE_REQUEST' && i.kind !== 'UNDER_REVIEW_IN_REQUEST') : items;
   }
 
   private async exceptionItems(advisors: string[] | null, bankId?: string): Promise<PayoutExceptionItem[]> {

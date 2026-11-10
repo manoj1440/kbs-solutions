@@ -118,7 +118,15 @@ export class PaymentsService {
       await this.notifications.notify({ recipientUserId: r.managerApproverUserId, kind: 'PAYOUT_PAID', title: 'Payout paid', body, deepLink: link, dedupeKey: `payout:paid:${r.id}:mgr` });
     } else if (outcome === 'ON_HOLD') {
       await this.notifications.notify({ recipientUserId: await this.hierarchy.adminUserId(), kind: 'PAYOUT_EXCEPTION', title: 'Payout payment exception', body: `${r.publicRef}: ${reason ?? 'payment held for review'}`, deepLink: link, dedupeKey: `payout:exception:${r.id}:${Date.now()}` });
+      // REQ-19 §19.1 Accounts: "request/payment exception and pending proof"
+      for (const acct of await this.accountsUserIds()) await this.notifications.notify({ recipientUserId: acct, kind: 'PAYOUT_EXCEPTION', title: 'Payout payment on hold', body: `${r.publicRef}: ${reason ?? 'payment held for Admin review'}`, deepLink: link, dedupeKey: `payout:exception:${r.id}:acct:${acct}:${Date.now()}` });
+    } else if (outcome === 'PAYMENT_RECORDED_PENDING_PROOF') {
+      for (const acct of await this.accountsUserIds()) await this.notifications.notify({ recipientUserId: acct, kind: 'PAYOUT_EXCEPTION', title: 'Payment proof pending', body: `${r.publicRef}: payment recorded without proof. Attach the proof to mark it Paid.`, deepLink: link, dedupeKey: `payout:proof-pending:${r.id}:${acct}` });
     }
+  }
+
+  private async accountsUserIds() {
+    return (await this.prisma.client.user.findMany({ where: { role: 'ACCOUNTS', status: 'ACTIVE' }, select: { id: true } })).map((u) => u.id);
   }
 
   // ── record ──

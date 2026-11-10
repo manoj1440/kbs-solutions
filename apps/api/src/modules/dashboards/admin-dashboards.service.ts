@@ -205,7 +205,8 @@ export class AdminDashboardsService {
     const now = new Date();
     const startToday = istStart(istDay(now));
     const due = { doneAt: null, dueAt: { lt: new Date(startToday.getTime() + DAY) } };
-    const awaitingAdmin = { state: 'PENDING_APPROVALS' as const, approvals: { none: { approverRole: 'ADMIN' as const } } };
+    // Manager-first: a request waits for Admin only once the Manager approved it
+    const awaitingAdmin = { state: 'PENDING_APPROVALS' as const, AND: [{ approvals: { none: { approverRole: 'ADMIN' as const } } }, { approvals: { some: { approverRole: 'MANAGER' as const, decision: 'APPROVED' as const } } }] };
     const [fuCount, fuOverdue, fu, onbCount, onb, payCount, pay, unmatched, conflicts] = await Promise.all([
       this.prisma.client.followUpTask.count({ where: due }),
       this.prisma.client.followUpTask.count({ where: { doneAt: null, dueAt: { lt: startToday } } }),

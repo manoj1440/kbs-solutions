@@ -87,7 +87,7 @@ export class PayoutRequestsService {
         requestItems: { where: { active: true }, take: 1, include: { request: { select: { id: true, publicRef: true, state: true, submittedAt: true, approvals: { select: { approverRole: true, decision: true } } } } } },
       },
     });
-    const rows = ents.map((e) => {
+    const all = ents.map((e) => {
       const req = e.requestItems[0]?.request ?? null;
       const position = PayoutRequestsService.position(e.state, req);
       return {
@@ -104,20 +104,22 @@ export class PayoutRequestsService {
         rawActivation: e.triggerFieldValue,
         triggerField: e.rule?.triggerField ?? 'cardActivationStatus',
         payableUnderRule: e.rule ? { name: e.rule.name, version: e.ruleVersion } : null,
-        amountInr: Number(e.amountInr),
+        amountInr: actor.role === 'ADVISOR' ? 0 : Number(e.amountInr), // the Advisor sees totals only, never a per-card amount
         eligibleAt: e.eligibleAt.toISOString(),
         evidence: { batchRef: e.evidenceBatch.publicRef, uploadedAt: e.evidenceBatch.uploadedAt.toISOString() },
         request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, submittedAt: req.submittedAt.toISOString() } : null,
         reviewReason: e.reviewReason,
       };
     });
+    // RBAC-01 / REQ-17 §17.4: Accounts sees payout data only once both approvals are in
+    const visible = actor.role === 'ACCOUNTS' ? all.filter((r) => r.request !== null && (['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'] as string[]).includes(r.request.state)) : all;
     // F-606: same classifier as the payout dashboard so every role's totals reconcile
-    const t = totalsOf(rows.map((r) => ({ bucket: bucketOf(r.state, r.request?.state), amountInr: r.amountInr })));
+    const t = totalsOf(visible.map((r) => ({ bucket: bucketOf(r.state, r.request?.state), amountInr: r.amountInr })));
     // rate-free payouts: money exists only once Admin priced a request; earnings = what was actually paid
     const paid = await this.prisma.client.payoutRequest.aggregate({ where: { advisorUserId, state: 'PAID' }, _sum: { totalAmountInr: true } });
     const earned = Number(paid._sum.totalAmountInr ?? 0);
     const totals = { eligible: t.eligible, available: t.available, requested: t.requested, approvedUnpaid: t.approvedUnpaid, onHold: t.onHold, paid: { count: t.paid.count, amountInr: earned }, underReview: t.underReview, pendingHold: t.pendingHold };
-    return { advisorUserId, rows, totals, earnings: { totalPaidInr: earned }, asOf: new Date().toISOString() };
+    return { advisorUserId, rows: visible, totals, earnings: { totalPaidInr: earned }, asOf: new Date().toISOString() };
   }
 
   // ── F-603 request creation (atomic reservation) ──
@@ -161,10 +163,9 @@ export class PayoutRequestsService {
       return req;
     });
     RequestContextStore.audit({ entityId: created.id, after: { publicRef: created.publicRef, itemCount: created.itemCount, totalAmountInr: Number(created.totalAmountInr), managerApproverUserId } });
-    const adminId = await this.hierarchy.adminUserId();
     const body_ = `${created.publicRef}: ${created.itemCount} activated card(s). Awaiting Manager approval, then Admin sets the amount.`;
     await this.notifications.notify({ recipientUserId: managerApproverUserId, kind: 'PAYOUT_APPROVAL_REQUIRED', title: 'Payout request needs your approval', body: body_, deepLink: { entityType: 'PayoutRequest', entityId: created.id }, dedupeKey: `payout:approval:${created.id}:manager` });
-    await this.notifications.notify({ recipientUserId: adminId, kind: 'PAYOUT_APPROVAL_REQUIRED', title: 'Payout request needs Admin approval', body: body_, deepLink: { entityType: 'PayoutRequest', entityId: created.id }, dedupeKey: `payout:approval:${created.id}:admin` });
+    // Admin is notified when the Manager approves (Manager-first): only then can Admin act on it
     await this.notifications.notify({ recipientUserId: actor.userId, kind: 'PAYOUT_SUBMITTED', title: 'Payout request submitted', body: `${body_} A submitted request is not yet an approval.`, deepLink: { entityType: 'PayoutRequest', entityId: created.id }, dedupeKey: `payout:submitted:${created.id}` });
     return this.get(actor, created.id);
   }
@@ -209,7 +210,7 @@ export class PayoutRequestsService {
       items: r.items.map((i) => ({
         id: i.id,
         entitlementId: i.entitlementId,
-        amountSnapshotInr: Number(i.amountSnapshotInr),
+        amountSnapshotInr: actor.role === 'ADVISOR' ? 0 : Number(i.amountSnapshotInr),
         entitlementState: i.entitlement.state,
         warnings: [...(i.entitlement.state === 'UNDER_REVIEW' ? ['Entitlement is under review after an MIS correction'] : []), ...(i.entitlement.reviewReason ? [i.entitlement.reviewReason] : [])],
         lead: i.entitlement.lead,
@@ -266,8 +267,8 @@ export class PayoutRequestsService {
       payee = p ? { accountHolderName: p.accountHolderName, bankName: p.bankName, ifsc: p.ifsc, accountMasked: p.bankAccountLast4 ? `••••••${p.bankAccountLast4}` : null, verified: p.reviewOutcome === 'APPROVED' && p.onboardingStep === 'COMPLETE', canReveal: actor.permissions.includes('SENSITIVE_REVEAL_BANK') } : null;
     }
     return {
-      /** Advisor-safe confirmation (every viewer gets it). */
-      receipt: live ? { state: live.state, paidAt: live.paidAt.toISOString(), amountInr: Number(live.amountInr), transferReferenceMasked: maskTransferReference(live.transferReference), method: live.method } : null,
+      /** Advisor-safe confirmation. The Advisor gets it only once the request is Paid — never an unverified or held amount. */
+      receipt: live && (privileged || (r.state === 'PAID' && live.state === 'VERIFIED')) ? { state: live.state, paidAt: live.paidAt.toISOString(), amountInr: Number(live.amountInr), transferReferenceMasked: maskTransferReference(live.transferReference), method: live.method } : null,
       payment: privileged && live ? toView(live) : null,
       pendingCorrection: privileged && pending ? toView(pending) : null,
       paymentHistory: privileged ? r.payments.map(toView) : [],
@@ -289,7 +290,7 @@ export class PayoutRequestsService {
   async list(actor: Actor, q: PayoutRequestListQuery) {
     const scope =
       actor.role === 'ADVISOR' ? { advisorUserId: actor.userId } : actor.role === 'MANAGER' ? { OR: [{ managerApproverUserId: actor.userId }, { advisorUserId: { in: actor.teamUserIds } }] } : actor.role === 'ACCOUNTS' ? { state: { in: ['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'] as never[] } } : {};
-    const awaiting = q.awaitingMe ? (actor.role === 'ADMIN' ? { state: 'PENDING_APPROVALS' as const, approvals: { none: { approverRole: 'ADMIN' as const } } } : { state: 'PENDING_APPROVALS' as const, managerApproverUserId: actor.userId, approvals: { none: { approverRole: 'MANAGER' as const } } }) : {};
+    const awaiting = q.awaitingMe ? (actor.role === 'ADMIN' ? { state: 'PENDING_APPROVALS' as const, AND: [{ approvals: { none: { approverRole: 'ADMIN' as const } } }, { approvals: { some: { approverRole: 'MANAGER' as const, decision: 'APPROVED' as const } } }] } : { state: 'PENDING_APPROVALS' as const, managerApproverUserId: actor.userId, approvals: { none: { approverRole: 'MANAGER' as const } } }) : {};
     const queue = q.queue ? PAYMENT_QUEUE_WHERE[q.queue] : {};
     const where = { AND: [scope, awaiting, queue, q.state ? { state: q.state } : {}, q.advisorId ? { advisorUserId: q.advisorId } : {}] };
     const [rows, total] = await Promise.all([
@@ -324,7 +325,19 @@ export class PayoutRequestsService {
     }
     const outcome = await this.prisma.client.$transaction(async (tx) => {
       await tx.payoutApproval.create({ data: { requestId: id, approverRole: role, approverUserId: actor.userId, decision: body.decision, reason: body.reason ?? null } });
-      if (role === 'ADMIN' && body.decision === 'APPROVED') await tx.payoutRequest.update({ where: { id }, data: { totalAmountInr: body.amountInr } });
+      if (role === 'ADMIN' && body.decision === 'APPROVED') {
+        await tx.payoutRequest.update({ where: { id }, data: { totalAmountInr: body.amountInr } });
+        // rate-free payouts: split the approved amount across the request's cards (paise-exact) so every per-card total —
+        // dashboards, ledgers, bank/card mix — adds up to what Admin approved. Advisor-facing views never show the split.
+        const paise = Math.round((body.amountInr as number) * 100);
+        const base = Math.floor(paise / entitlementIds.length);
+        const extra = paise - base * entitlementIds.length;
+        for (const [i, entitlementId] of [...entitlementIds].sort().entries()) {
+          const share = (base + (i < extra ? 1 : 0)) / 100;
+          await tx.payoutEntitlement.update({ where: { id: entitlementId }, data: { amountInr: share } });
+          await tx.payoutRequestItem.updateMany({ where: { requestId: id, entitlementId, active: true }, data: { amountSnapshotInr: share } });
+        }
+      }
       if (body.decision === 'REJECTED') {
         await tx.payoutRequest.update({ where: { id }, data: { state: 'REJECTED' } });
         await tx.payoutRequestItem.updateMany({ where: { requestId: id, active: true }, data: { active: false } });
@@ -353,6 +366,12 @@ export class PayoutRequestsService {
         await this.notifications.notify({ recipientUserId: acct.id, kind: 'PAYOUT_READY_FOR_PAYMENT', title: 'Payout ready for payment', body: `${r.publicRef} (${amount ?? '—'}) has both approvals.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:ready:${id}:${acct.id}` });
       }
     } else {
+      // Manager-first: this is the moment the request becomes actionable for Admin
+      if (role === 'MANAGER') {
+        for (const adm of await this.prisma.client.user.findMany({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true } })) {
+          await this.notifications.notify({ recipientUserId: adm.id, kind: 'PAYOUT_APPROVAL_REQUIRED', title: 'Payout request ready for your approval', body: `${r.publicRef}: the Manager approved. Enter the amount to approve it.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:approval:${id}:admin-ready:${adm.id}` });
+        }
+      }
       await this.notifications.notify({ recipientUserId: r.advisorUserId, kind: 'PAYOUT_DECISION', title: `${role === 'MANAGER' ? 'Manager' : 'Admin'} approved`, body: `${r.publicRef}: ${role.toLowerCase()} approval recorded; ${role === 'MANAGER' ? 'Admin approval (with the amount)' : 'Manager approval'} still outstanding.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:decision:${id}:${role}` });
     }
     return this.get(actor, id);
@@ -375,8 +394,8 @@ export class PayoutRequestsService {
     await this.prisma.client.$transaction([
       this.prisma.client.payoutRequest.update({ where: { id }, data: { state: 'CANCELLED', cancelledAt: new Date(), cancelledByUserId: actor.userId, cancelReason: reason } }),
       this.prisma.client.payoutRequestItem.updateMany({ where: { requestId: id, active: true }, data: { active: false } }),
-      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: released } }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null } }),
-      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, currentRequestId: id }, data: { currentRequestId: null } }),
+      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: released } }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null, amountInr: 0 } }),
+      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, currentRequestId: id }, data: { currentRequestId: null, amountInr: 0 } }),
       this.prisma.client.payoutEntitlementEvent.createMany({ data: released.map((e) => ({ entitlementId: e, fromState: 'RESERVED' as const, toState: 'ELIGIBLE_AVAILABLE' as const, requestId: id, actorUserId: actor.userId, reason: `released: ${r.publicRef} cancelled — ${reason}` })) }),
     ]);
     RequestContextStore.audit({ entityId: id, before: { state: r.state }, after: { state: 'CANCELLED' }, reason });

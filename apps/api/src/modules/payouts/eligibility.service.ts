@@ -57,7 +57,11 @@ export class PayoutEligibilityService {
     const existing = await this.prisma.client.payoutEntitlement.findFirst({ where: { leadId }, orderBy: { createdAt: 'asc' } });
     if (existing) {
       // a correction that reports it active again re-opens a reviewed entitlement; any other state stays as it is
-      if (existing.state === 'UNDER_REVIEW') await this.transition(existing.id, existing.state, 'ELIGIBLE_AVAILABLE', { batchId, reason: `MIS again reports card activation "${value}"` });
+      if (existing.state === 'UNDER_REVIEW') {
+        // still an active item of a request → back to RESERVED, or that request could never be approved or paid
+        const inRequest = await this.prisma.client.payoutRequestItem.findFirst({ where: { entitlementId: existing.id, active: true }, select: { id: true } });
+        await this.transition(existing.id, existing.state, inRequest ? 'RESERVED' : 'ELIGIBLE_AVAILABLE', { batchId, reason: `MIS again reports card activation "${value}"` });
+      }
       return { created: [], reviewed };
     }
     const misRow = await this.prisma.client.misRow.findFirst({ where: { batchId, matchedLeadId: leadId }, select: { id: true } });
@@ -125,6 +129,8 @@ export class PayoutEligibilityService {
   private scope(actor: Actor, advisorId?: string) {
     if (actor.role === 'ADVISOR') return { advisorUserId: actor.userId };
     if (actor.role === 'MANAGER') return { advisorUserId: advisorId ? (actor.teamUserIds.includes(advisorId) ? advisorId : '__none__') : { in: actor.teamUserIds } };
+    // RBAC-01: Accounts sees only card events whose request has both approvals
+    if (actor.role === 'ACCOUNTS') return { ...(advisorId ? { advisorUserId: advisorId } : {}), requestItems: { some: { active: true, request: { state: { in: ['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'] as never[] } } } } };
     return advisorId ? { advisorUserId: advisorId } : {};
   }
 
@@ -138,7 +144,7 @@ export class PayoutEligibilityService {
       this.prisma.client.payoutEntitlement.groupBy({ by: ['state'], where: { ...scope, ...(q.bankId ? { bankId: q.bankId } : {}) }, _count: { _all: true }, _sum: { amountInr: true } }),
     ]);
     const n = (s: string) => groups.find((g) => g.state === s)?._count._all ?? 0;
-    const amt = (s: string) => Number(groups.find((g) => g.state === s)?._sum.amountInr ?? 0);
+    const amt = (s: string) => (actor.role === 'ADVISOR' ? 0 : Number(groups.find((g) => g.state === s)?._sum.amountInr ?? 0)); // Advisor: totals only come from paid requests
     const counts = { pendingHold: n('PENDING_HOLD'), available: n('ELIGIBLE_AVAILABLE'), reserved: n('RESERVED'), paid: n('PAID'), underReview: n('UNDER_REVIEW'), void: n('VOID') };
     const amounts = { available: amt('ELIGIBLE_AVAILABLE'), reserved: amt('RESERVED'), paid: amt('PAID'), pendingHold: amt('PENDING_HOLD'), underReview: amt('UNDER_REVIEW') };
     const eligible = counts.pendingHold + counts.available + counts.reserved + counts.paid;
@@ -146,7 +152,7 @@ export class PayoutEligibilityService {
       rows.map((e) => ({
         id: e.id,
         state: e.state,
-        amountInr: Number(e.amountInr),
+        amountInr: actor.role === 'ADVISOR' ? 0 : Number(e.amountInr),
         eligibleAt: e.eligibleAt.toISOString(),
         triggerField: e.rule?.triggerField ?? 'cardActivationStatus',
         triggerFieldValue: e.triggerFieldValue,

@@ -94,12 +94,18 @@ describe('F-606 payout reconciliation + exceptions (DASH-02 payout population, P
 
   it('Advisor ledger == Manager dashboard == Admin == Accounts for the same population; team sums reconcile', async () => {
     const ledgers = [];
-    for (const a of adv) ledgers.push(pick((await get('/payouts/me/ledger', a.token)).totals));
+    const counts = (t: Record<string, Tot>) => Object.fromEntries(BUCKETS.map((b) => [b, t[b].count]));
     for (const [i, a] of adv.entries()) {
       const team = i < 2 ? mgr[0] : mgr[1];
-      expect(pick((await get(`/dashboards/payouts?advisorId=${a.id}`, team.token)).totals)).toEqual(ledgers[i]);
-      expect(pick((await get(`/dashboards/payouts?advisorId=${a.id}`, admin)).totals)).toEqual(ledgers[i]);
-      expect(pick((await get(`/dashboards/payouts?advisorId=${a.id}`, accounts)).totals)).toEqual(ledgers[i]);
+      const adminView = pick((await get(`/dashboards/payouts?advisorId=${a.id}`, admin)).totals);
+      ledgers.push(adminView);
+      expect(pick((await get(`/dashboards/payouts?advisorId=${a.id}`, team.token)).totals)).toEqual(adminView);
+      expect(pick((await get(`/dashboards/payouts?advisorId=${a.id}`, accounts)).totals)).toEqual(adminView);
+      // the Advisor's own ledger: the same cards in the same buckets, but never a per-card amount — only what was paid
+      const own = pick((await get('/payouts/me/ledger', a.token)).totals);
+      expect(counts(own)).toEqual(counts(adminView));
+      for (const b of BUCKETS) if (b !== 'paid') expect(own[b].amountInr).toBe(0);
+      expect(own.paid.amountInr).toBe(adminView.paid.amountInr);
     }
     const team0 = pick((await get('/dashboards/payouts', mgr[0].token)).totals);
     expect(team0).toEqual(add(ledgers[0], ledgers[1]));
@@ -111,7 +117,7 @@ describe('F-606 payout reconciliation + exceptions (DASH-02 payout population, P
     expect(all.totals).toMatchObject({ available: { count: 1, amountInr: 1500 }, requested: { count: 2, amountInr: 3500 }, approvedUnpaid: { count: 1, amountInr: 700 }, onHold: { count: 1, amountInr: 400 }, paid: { count: 1, amountInr: 1500 }, pendingHold: { count: 1, amountInr: 300 }, eligible: { count: 7, amountInr: 7900 } });
     // paid = confirmed transfers, not approved totals; backlog + meta
     expect(all.confirmedTransfers).toEqual({ count: 1, amountInr: 1500 });
-    expect(all.approvals).toMatchObject({ pendingCount: 2, awaitingManager: 1, awaitingAdmin: 2, aging: { d0_7: 2 } });
+    expect(all.approvals).toMatchObject({ pendingCount: 2, awaitingManager: 1, awaitingAdmin: 1, aging: { d0_7: 2 } }); // Manager-first: it is Admin's turn only on the request the Manager already approved
     expect(all.meta).toMatchObject({ dateBasis: 'eligibleAt', staleDays: 30, scope: 'ALL' });
     const paidBasis = await get('/dashboards/payouts?dateBasis=paidAt&from=2026-01-01&to=2099-12-31', admin);
     expect(paidBasis.meta.dateBasis).toBe('paidAt');

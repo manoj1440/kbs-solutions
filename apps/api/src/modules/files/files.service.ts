@@ -178,8 +178,12 @@ export class FilesService {
       case 'CARD_IMAGE':
       case 'BENEFIT_PDF':
         return true;
-      case 'CHEQUE':
-        return actor.role === 'ACCOUNTS';
+      case 'CHEQUE': {
+        // REQ-18 §18.1: Accounts reads a cancelled cheque only for an Advisor it has a dual-approved request to pay
+        if (actor.role !== 'ACCOUNTS') return false;
+        const payable = await this.prisma.client.payoutRequest.findFirst({ where: { advisorUserId: file.uploadedByUserId, state: { in: ['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'] } }, select: { id: true } });
+        return Boolean(payable);
+      }
       case 'PAYMENT_PROOF': {
         // F-605 / REQ-18 §18.2: Accounts; the relevant Manager (approver or team) for proofs linked to a request. Advisors get a receipt summary, never the proof.
         if (actor.role === 'ACCOUNTS') return true;

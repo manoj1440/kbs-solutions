@@ -68,7 +68,9 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     const held = await entitlement(adv1Id, 'APP-603', 1500, 'PENDING_HOLD');
     await prisma.payoutEntitlement.update({ where: { id: held.id }, data: { eligibleAt: new Date(Date.now() + 86_400_000) } });
     const ledger = (await api().get('/api/v1/payouts/me/ledger').set(auth(adv1Token)).expect(200)).body.data;
-    expect(ledger.totals).toMatchObject({ eligible: { count: 3, amountInr: 4500 }, available: { count: 2, amountInr: 3000 }, pendingHold: { count: 1 } });
+    // the Advisor's ledger carries counts only — a per-card amount is never shown to them (amounts appear once a request is Paid)
+    expect(ledger.totals).toMatchObject({ eligible: { count: 3, amountInr: 0 }, available: { count: 2, amountInr: 0 }, pendingHold: { count: 1 } });
+    expect(ledger.rows.every((r: { amountInr: number }) => r.amountInr === 0)).toBe(true);
     expect(ledger.rows.find((r: { entitlementId: string }) => r.entitlementId === e1.id)).toMatchObject({ position: 'Available for claim', rawActivation: 'V + ACTIVE', payableUnderRule: { name: 'HDFC activation', version: 1 }, bankReference: { value: 'APP-601' } });
     // held entitlement not selectable
     const bad = await api().post('/api/v1/payouts/requests').set(auth(adv1Token)).set('idempotency-key', idem()).send({ entitlementIds: [e1.id, held.id] }).expect(409);
@@ -125,7 +127,13 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     expect(acct.body.data.map((r: { id: string }) => r.id)).toEqual([req.id]);
     expect(await prisma.auditLog.count({ where: { action: 'payoutRequest.decide', entityId: req.id } })).toBe(2);
     expect(await prisma.notification.count({ where: { kind: 'PAYOUT_READY_FOR_PAYMENT' } })).toBe(1);
-    expect((await api().get('/api/v1/payouts/me/ledger').set(auth(adv1Token)).expect(200)).body.data.totals.approvedUnpaid).toMatchObject({ count: 1, amountInr: 1500 });
+    expect((await api().get('/api/v1/payouts/me/ledger').set(auth(adv1Token)).expect(200)).body.data.totals.approvedUnpaid).toMatchObject({ count: 1, amountInr: 0 }); // Advisor: no amount before Paid
+    // Admin's amount is split across the request's cards, so every per-card total (dashboards, ledgers) adds up to it
+    const priced = await prisma.payoutEntitlement.aggregate({ where: { requestItems: { some: { requestId: req.id, active: true } } }, _sum: { amountInr: true } });
+    expect(Number(priced._sum.amountInr)).toBe(1750);
+    expect((await api().get('/api/v1/dashboards/payouts').set(auth(adminToken)).expect(200)).body.data.totals.approvedUnpaid).toMatchObject({ count: 1, amountInr: 1750 });
+    // Manager-first: Admin was told only when the Manager approved, and the request left Admin's queue once Admin decided
+    expect(await prisma.notification.count({ where: { kind: 'PAYOUT_APPROVAL_REQUIRED', title: 'Payout request ready for your approval' } })).toBe(1);
     await api().put('/api/v1/config/payouts.approvalOrder').set(auth(adminToken)).send({ value: 'ANY', reason: 'reset' }).expect(200);
   });
 
