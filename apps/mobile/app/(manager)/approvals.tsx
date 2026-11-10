@@ -46,36 +46,33 @@ function RequestCard({ item, index, mine }: { item: Row; index: number; mine: bo
         <View className="flex-row items-center gap-3">
           <Avatar name={item.advisor.fullName} size={40} />
           <View className="flex-1">
-            <Text numberOfLines={1} className="font-bold text-[15px]">
+            <Text numberOfLines={1} className="font-medium text-base">
               {item.advisor.fullName}
             </Text>
-            <Muted numberOfLines={1} className="text-[12px]">
+            <Muted numberOfLines={1} className="text-xs">
               {item.publicRef}
             </Muted>
           </View>
           <PayoutStateBadge state={item.state} />
         </View>
-        <View className="rounded-2xl bg-[#FEF4EE] px-4 py-3">
-          <RNText className="font-semibold text-[11px] uppercase tracking-[1px] text-[#9A3412]">
-            Requested amount
-          </RNText>
+        <View className="rounded-lg bg-raised px-4 py-3">
+          <RNText className="font-normal text-xs text-[#525252]">Requested amount</RNText>
           <View className="mt-0.5 flex-row items-end justify-between gap-2">
             <RNText
               numberOfLines={1}
               adjustsFontSizeToFit
-              className="flex-1 font-extrabold text-[28px] tracking-tight text-ink"
+              className="flex-1 font-medium text-xl text-ink tabular-nums"
             >
               {formatInr(item.totalAmountInr)}
             </RNText>
             <View className="mb-1 flex-row items-center gap-1">
-              <Icon name="card-outline" size={13} color={colors.muted} />
-              <Muted className="text-[12px]">{item.itemCount} card event(s)</Muted>
+              <Muted className="text-xs tabular-nums">{item.itemCount} card event(s)</Muted>
             </View>
           </View>
         </View>
         <View className="flex-row items-center gap-1.5">
-          <Icon name="time-outline" size={13} color={colors.subtle} />
-          <Muted className="flex-1 text-[12px]">submitted {formatDateTime(item.submittedAt)}</Muted>
+          <Icon name="time-outline" size={16} color={colors.subtle} />
+          <Muted className="flex-1 text-xs">submitted {formatDateTime(item.submittedAt)}</Muted>
         </View>
         {item.outstanding.length ? (
           <Badge
@@ -85,10 +82,10 @@ function RequestCard({ item, index, mine }: { item: Row; index: number; mine: bo
           />
         ) : null}
         <View className="flex-row items-center justify-between border-t border-line pt-3">
-          <RNText className="font-semibold text-[13px] text-brand">
+          <RNText className="font-medium text-sm text-ink">
             {mine ? 'Review & decide' : 'View request'}
           </RNText>
-          <Icon name="arrow-forward" size={16} color={colors.brand} />
+          <Icon name="chevron-forward" size={16} color={colors.subtle} />
         </View>
       </Card>
     </Appear>

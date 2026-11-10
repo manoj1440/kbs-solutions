@@ -8,26 +8,18 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Appear, Icon, IconButton, type IconName, Screen } from '@/components/ui';
-import { colors, gradients, gradientStyle, shadow, type Tone, toneColors } from '@/lib/theme';
+import { colors, type Tone, toneColors } from '@/lib/theme';
 
 /**
- * F-805 auth + gate building blocks (local to the (auth) / (gates) screens): brand mark, gradient-top + white-sheet shell,
- * floating motion wrapper and the full-screen "state" layout used by deactivated / network-blocked.
+ * F-805 auth + gate building blocks (local to the (auth) / (gates) screens): brand mark, the canvas-top + white-sheet
+ * shell and the full-screen "state" layout used by deactivated / network-blocked. Unslop pass: no gradients, orbs or
+ * looping motion — the KBS mark is a flat orange tile, the shell is the graphite page canvas.
  */
 
-/** "KBS" wordmark in a rounded badge — gold (default) or white. */
+/** "KBS" wordmark on a flat tile — brand orange (default) or white. */
 export function LogoMark({ size = 56, tone = 'gold' }: { size?: number; tone?: 'gold' | 'white' }) {
   const gold = tone === 'gold';
   return (
@@ -35,44 +27,33 @@ export function LogoMark({ size = 56, tone = 'gold' }: { size?: number; tone?: '
       accessibilityRole="image"
       accessibilityLabel="KBS"
       className="items-center justify-center"
-      style={[
-        { width: size, height: size, borderRadius: size * 0.3 },
-        gold ? gradientStyle(gradients.gold, 135) : { backgroundColor: '#fff' },
-        gold ? shadow.gold : shadow.md,
-      ]}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.22),
+        backgroundColor: gold ? colors.orange : '#fff',
+        borderWidth: gold ? 0 : 1,
+        borderColor: 'rgba(23, 23, 23, 0.08)',
+      }}
     >
-      <RNText
-        className="font-extrabold text-ink"
-        style={{ fontSize: size * 0.32, letterSpacing: size * 0.02 }}
-      >
+      <RNText className="font-medium text-ink" style={{ fontSize: Math.round(size * 0.32) }}>
         KBS
       </RNText>
     </View>
   );
 }
 
-/** Soft decorative orbs for gradient backgrounds (no business meaning). */
+/** Was decorative orbs behind gradient backgrounds; kept as a no-op so older call sites compile. */
 export function Orbs() {
-  return (
-    <>
-      <View
-        pointerEvents="none"
-        className="absolute -right-20 -top-16 h-64 w-64 rounded-full bg-white/[0.05]"
-      />
-      <View
-        pointerEvents="none"
-        className="absolute -left-24 top-40 h-52 w-52 rounded-full bg-white/[0.03]"
-      />
-    </>
-  );
+  return null;
 }
 
-/** Gently bobbing wrapper (Reanimated withRepeat) for hero artwork. */
+/**
+ * Was a looping bob for hero artwork. Looping motion that is not live status is gone — this is a plain wrapper now;
+ * `delay` / `distance` / `duration` are accepted for older call sites and ignored.
+ */
 export function Floating({
   children,
-  delay = 0,
-  distance = 8,
-  duration = 2200,
   style,
 }: PropsWithChildren<{
   delay?: number;
@@ -80,27 +61,11 @@ export function Floating({
   duration?: number;
   style?: StyleProp<ViewStyle>;
 }>) {
-  const y = useSharedValue(0);
-  useEffect(() => {
-    y.set(
-      withDelay(
-        delay,
-        withRepeat(
-          withSequence(
-            withTiming(-distance, { duration, easing: Easing.inOut(Easing.sin) }),
-            withTiming(0, { duration, easing: Easing.inOut(Easing.sin) }),
-          ),
-          -1,
-        ),
-      ),
-    );
-  }, [y, delay, distance, duration]);
-  const anim = useAnimatedStyle(() => ({ transform: [{ translateY: y.get() }] }));
-  return <Animated.View style={[style, anim]}>{children}</Animated.View>;
+  return <View style={style}>{children}</View>;
 }
 
 /**
- * Navy gradient top (~35% of the screen) with brand mark + title, then a white rounded-top sheet for the form.
+ * Brand mark + title on the page canvas, then a white sheet with a hairline for the form.
  * Used by the mobile-number and OTP screens.
  */
 export function AuthShell({
@@ -122,52 +87,31 @@ export function AuthShell({
     };
   }, []);
   return (
-    <Screen inset="none" statusBar="light" padded={false}>
-      <View
-        pointerEvents="none"
-        className="absolute inset-0"
-        style={gradientStyle(gradients.heroDeep, 160)}
-      />
-      <View
-        className="overflow-hidden"
-        style={{ paddingTop: insets.top + 4, minHeight: keyboard ? undefined : '34%' }}
-      >
-        <Orbs />
+    <Screen inset="none" statusBar="dark" padded={false}>
+      <View style={{ paddingTop: insets.top + 4, minHeight: keyboard ? undefined : '30%' }}>
         <View className="h-12 flex-row items-center px-4">
           {back && router.canGoBack() ? (
-            <IconButton
-              icon="chevron-back"
-              label="Back"
-              tone="light"
-              onPress={() => router.back()}
-            />
+            <IconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
           ) : null}
         </View>
-        <Appear className={keyboard ? 'px-6 pb-6' : 'px-6 pb-10 pt-2'}>
-          {keyboard ? null : <LogoMark size={52} />}
+        <Appear className={keyboard ? 'px-6 pb-6' : 'px-6 pb-8 pt-2'}>
+          {keyboard ? null : <LogoMark size={44} />}
           <RNText
             accessibilityRole="header"
             className={
-              keyboard
-                ? 'font-extrabold text-[22px] leading-[28px] tracking-tight text-white'
-                : 'mt-5 font-extrabold text-[30px] leading-[36px] tracking-tight text-white'
+              keyboard ? 'font-medium text-xl text-ink' : 'mt-5 font-medium text-2xl text-ink'
             }
           >
             {title}
           </RNText>
           {keyboard ? null : typeof subtitle === 'string' ? (
-            <RNText className="mt-1.5 font-medium text-[15px] leading-[22px] text-white/70">
-              {subtitle}
-            </RNText>
+            <RNText className="mt-1.5 font-normal text-base text-[#525252]">{subtitle}</RNText>
           ) : (
             subtitle
           )}
         </Appear>
       </View>
-      <View
-        className="-mt-2 flex-1 rounded-t-[32px] bg-white"
-        style={{ boxShadow: '0px -10px 30px rgba(5, 15, 38, 0.25)' }}
-      >
+      <View className="flex-1 rounded-t-3xl border-t border-line bg-white">
         <ScrollView
           className="flex-1"
           keyboardShouldPersistTaps="handled"
@@ -183,33 +127,23 @@ export function AuthShell({
   );
 }
 
-/** Concentric-ring icon badge for full-screen states and results. */
+/** Quiet icon tile for full-screen states and results (tone colour carries the meaning). */
 export function StateIcon({
   icon,
   tone = 'default',
-  size = 96,
+  size = 56,
 }: {
   icon: IconName;
   tone?: Tone | 'gold';
   size?: number;
 }) {
-  const t = tone === 'gold' ? { fg: '#9A3412', bg: colors.goldSoft } : toneColors[tone];
+  const t = tone === 'gold' ? { fg: colors.gold, bg: colors.goldSoft } : toneColors[tone];
   return (
     <View
-      className="items-center justify-center rounded-full"
-      style={{ width: size * 1.45, height: size * 1.45, backgroundColor: `${t.bg}99` }}
+      className="items-center justify-center rounded-xl"
+      style={{ width: size, height: size, backgroundColor: t.bg }}
     >
-      <View
-        className="items-center justify-center rounded-full"
-        style={{ width: size, height: size, backgroundColor: t.bg }}
-      >
-        <View
-          className="items-center justify-center rounded-full"
-          style={[{ width: size * 0.62, height: size * 0.62, backgroundColor: t.fg }, shadow.md]}
-        >
-          <Icon name={icon} size={size * 0.3} color="#fff" />
-        </View>
-      </View>
+      <Icon name={icon} size={18} color={t.fg} />
     </View>
   );
 }
@@ -245,10 +179,7 @@ export function GateState({
           style={{ alignSelf: 'stretch' }}
         >
           {badge ? <View className="flex-row justify-center">{badge}</View> : null}
-          <RNText
-            accessibilityRole="header"
-            className="text-center font-extrabold text-[26px] leading-[32px] tracking-tight text-ink"
-          >
+          <RNText accessibilityRole="header" className="text-center font-medium text-2xl text-ink">
             {title}
           </RNText>
         </Appear>

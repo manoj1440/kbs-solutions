@@ -23,9 +23,7 @@ import {
   ErrorState,
   ErrorText,
   HeroHeader,
-  Icon,
   IconCircle,
-  type IconName,
   Muted,
   PressableScale,
   Screen,
@@ -35,7 +33,6 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { colors, gradientStyle, shadow, type Tone } from '@/lib/theme';
 import { withBank } from '@/lib/cards';
 
 interface LedgerRow {
@@ -164,19 +161,18 @@ export default function Payouts() {
   };
   const t = ledger?.totals;
   // rate-free payouts: card counts per stage; money appears only as what was paid
-  const tiles: [string, Tot | undefined, IconName, Tone | 'gold'][] = [
-    ['Activated cards', t?.eligible, 'ribbon-outline', 'default'],
-    ['Ready to claim', t?.available, 'wallet-outline', 'gold'],
-    ['Requested', t?.requested, 'paper-plane-outline', 'info'],
-    ['Approved, unpaid', t?.approvedUnpaid, 'hourglass-outline', 'warning'],
-    ['Paid', t?.paid, 'checkmark-done-outline', 'success'],
-    ['Under review', t?.underReview, 'alert-circle-outline', 'destructive'],
+  const tiles: [string, Tot | undefined][] = [
+    ['Activated cards', t?.eligible],
+    ['Ready to claim', t?.available],
+    ['Requested', t?.requested],
+    ['Approved, unpaid', t?.approvedUnpaid],
+    ['Paid', t?.paid],
+    ['Under review', t?.underReview],
   ];
 
   return (
     <Screen
       inset="none"
-      statusBar="light"
       scroll
       padded={false}
       contentClassName="pt-0"
@@ -204,93 +200,74 @@ export default function Payouts() {
         ) : null
       }
     >
-      <HeroHeader className="pb-16">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <RNText className="font-medium text-[13px] text-white/70">Payouts</RNText>
-            <RNText accessibilityRole="header" className="font-bold text-[22px] text-white">
-              Earnings
-            </RNText>
-          </View>
-          <View
-            className="h-11 w-11 items-center justify-center rounded-full"
-            style={[gradientStyle(['#F8A27A', '#E2461C'], 135), shadow.gold]}
-          >
-            <Icon name="wallet" size={22} color={colors.ink} />
-          </View>
-        </View>
-        <View className="mt-6">
-          <RNText className="font-semibold text-[12px] uppercase tracking-[1.4px] text-white/60">
-            Total earnings
-          </RNText>
-          {t ? (
-            <Appear>
+      <HeroHeader>
+        <RNText className="font-normal text-sm text-[#737373]">Payouts</RNText>
+        <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
+          Earnings
+        </RNText>
+      </HeroHeader>
+
+      <View className="gap-4 px-4 pt-4">
+        <Appear index={1}>
+          <View className="rounded-xl border border-line bg-white p-4">
+            <RNText className="font-normal text-sm text-[#525252]">Total earnings</RNText>
+            {t ? (
               <RNText
                 accessibilityLabel={`Total earnings ${formatInr(t.paid.amountInr)}`}
-                className="mt-1 font-extrabold text-[40px] tracking-tight text-gold"
+                className="mt-1 font-medium text-3xl text-gold tabular-nums"
               >
                 {formatInr(t.paid.amountInr)}
               </RNText>
-            </Appear>
-          ) : (
-            <Skeleton className="mt-2 h-10 w-40 bg-white/20" />
-          )}
-          {t ? (
-            <View className="mt-2 flex-row flex-wrap gap-2">
-              <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
-                <View className="h-1.5 w-1.5 rounded-full bg-gold" />
-                <RNText className="font-semibold text-[12px] text-white">
-                  {t.available.count} to claim
-                </RNText>
+            ) : (
+              <Skeleton className="mt-2 h-9 w-40" />
+            )}
+            {t ? (
+              <View className="mt-2 flex-row flex-wrap gap-4">
+                <View className="flex-row items-center gap-1.5">
+                  <View className="h-1.5 w-1.5 rounded-full bg-orange" />
+                  <RNText className="font-normal text-sm text-[#525252] tabular-nums">
+                    {t.available.count} to claim
+                  </RNText>
+                </View>
+                <View className="flex-row items-center gap-1.5">
+                  <View className="h-1.5 w-1.5 rounded-full bg-teal" />
+                  <RNText className="font-normal text-sm text-[#525252] tabular-nums">
+                    {t.paid.count} paid
+                  </RNText>
+                </View>
               </View>
-              <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
-                <View className="h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
-                <RNText className="font-semibold text-[12px] text-white">
-                  {t.paid.count} paid
-                </RNText>
-              </View>
-            </View>
-          ) : null}
-        </View>
-      </HeroHeader>
-
-      <View className="-mt-12 gap-4 px-4">
-        <Appear index={1}>
-          <View className="rounded-3xl bg-white p-3" style={shadow.lg}>
-            <View className="flex-row flex-wrap">
-              {tiles.map(([label, v, icon, tone]) => (
-                <View key={label} className="w-1/2 p-1">
-                  <View className="gap-2.5 rounded-2xl bg-[#F7F4EF] p-3">
-                    <IconCircle icon={icon} tone={tone} size={30} />
-                    {v ? (
-                      <View>
-                        <RNText
-                          numberOfLines={1}
-                          adjustsFontSizeToFit
-                          className="font-extrabold text-[19px] tracking-tight text-ink"
-                        >
-                          {label === 'Paid' ? formatInr(v.amountInr) : v.count}
-                        </RNText>
-                        <RNText
-                          numberOfLines={1}
-                          className="font-semibold text-[12px] text-[#44403C]"
-                        >
-                          {label}
-                        </RNText>
-                        <Muted className="text-[11px]">
-                          {v.count} card{v.count === 1 ? '' : 's'}
-                        </Muted>
-                      </View>
-                    ) : (
-                      <Skeleton className="h-5 w-20" />
-                    )}
-                  </View>
+            ) : null}
+            <View className="mt-4 flex-row flex-wrap border-t border-line pt-1">
+              {tiles.map(([label, v], i) => (
+                <View
+                  key={label}
+                  className={`w-1/2 py-3 ${i % 2 ? 'border-l border-line pl-3' : 'pr-3'} ${i > 1 ? 'border-t border-line' : ''}`}
+                >
+                  {v ? (
+                    <View>
+                      <RNText numberOfLines={1} className="font-normal text-xs text-[#525252]">
+                        {label}
+                      </RNText>
+                      <RNText
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        className="mt-0.5 font-medium text-lg text-ink tabular-nums"
+                      >
+                        {label === 'Paid' ? formatInr(v.amountInr) : v.count}
+                      </RNText>
+                      <Muted className="text-xs tabular-nums">
+                        {v.count} card{v.count === 1 ? '' : 's'}
+                      </Muted>
+                    </View>
+                  ) : (
+                    <Skeleton className="h-5 w-20" />
+                  )}
                 </View>
               ))}
             </View>
-            <View className="px-1 pb-1 pt-2">
+            <View className="border-t border-line pt-3">
               <MetaLine icon="git-branch-outline">
-                Activated cards include the ones already requested or paid.
+                Activated cards include the ones already requested or paid
               </MetaLine>
               {ledger ? (
                 <MetaLine icon="business-outline">
@@ -336,11 +313,11 @@ export default function Payouts() {
               </View>
             </View>
           ) : null}
-          {!ledger ? <Skeleton className="h-28 w-full rounded-2xl" /> : null}
+          {!ledger ? <Skeleton className="h-28 w-full rounded-xl" /> : null}
           {ledger?.rows.length === 0 ? (
             <EmptyState
               icon="wallet-outline"
-              title="No payout entitlements yet."
+              title="No payout entitlements yet"
               body="They appear when a bank MIS reports the configured activation value for one of your leads."
             />
           ) : null}
@@ -359,10 +336,7 @@ export default function Payouts() {
                       ? toggle(row.entitlementId)
                       : router.push({ pathname: '/(advisor)/lead', params: { id: row.leadId } })
                   }
-                  className={`gap-2.5 rounded-2xl bg-white p-4 ${isSel ? 'border-[1.5px] border-brand' : 'border border-line'}`}
-                  style={
-                    isSel ? { boxShadow: '0px 0px 0px 4px rgba(22, 50, 158, 0.10)' } : shadow.sm
-                  }
+                  className={`gap-2.5 rounded-xl p-4 ${isSel ? 'border border-gold bg-[#FDF1EC]' : 'border border-line bg-white'}`}
                 >
                   <View className="flex-row items-center gap-3">
                     {selectable ? (
@@ -371,10 +345,10 @@ export default function Payouts() {
                       <IconCircle icon="card-outline" tone="secondary" size={32} />
                     )}
                     <View className="flex-1">
-                      <Text numberOfLines={1} className="font-bold text-[15px]">
+                      <Text numberOfLines={1} className="font-medium text-base">
                         {row.customer}
                       </Text>
-                      <Muted numberOfLines={1} className="text-[12px]">
+                      <Muted numberOfLines={1} className="text-xs">
                         {row.kbsRef} · {withBank(row.bank, row.card)}
                       </Muted>
                     </View>
@@ -386,13 +360,13 @@ export default function Payouts() {
                       dot
                       size="sm"
                     />
-                    <View className="rounded-full bg-[#F1ECFB] px-2 py-[2px]">
-                      <RNText className="font-semibold text-[11px] text-[#5B2BA8]">
+                    <View className="rounded-md bg-[#F1ECFB] px-2 py-0.5">
+                      <RNText className="font-medium text-xs text-[#5B2BA8]">
                         {row.triggerField} = “{row.rawActivation}”
                       </RNText>
                     </View>
                   </View>
-                  <Muted className="text-[12px]">
+                  <Muted className="text-xs">
                     application no. {row.bankReference?.value ?? '—'} · MIS {row.evidence.batchRef}
                     {row.lastMatchedAt
                       ? ` · last matched ${formatDateTime(row.lastMatchedAt)}`
@@ -413,7 +387,7 @@ export default function Payouts() {
         <Appear index={4} className="gap-3">
           <SectionHeader title="My requests" />
           {ledger && requests.length === 0 ? (
-            <EmptyState compact icon="paper-plane-outline" title="No payout requests yet." />
+            <EmptyState compact icon="paper-plane-outline" title="No payout requests yet" />
           ) : null}
           {requests.map((r) => (
             <Card
@@ -425,18 +399,17 @@ export default function Payouts() {
               className="gap-2"
             >
               <View className="flex-row items-center gap-3">
-                <IconCircle icon="receipt-outline" tone="gold" size={40} />
                 <View className="flex-1">
-                  <Text className="font-bold text-[15px]">
+                  <Text className="font-medium text-base tabular-nums">
                     {r.totalAmountInr != null
                       ? formatInr(r.totalAmountInr)
                       : `${r.itemCount} card${r.itemCount === 1 ? '' : 's'}`}
                   </Text>
-                  <Muted className="text-[12px]">{r.publicRef}</Muted>
+                  <Muted className="text-xs">{r.publicRef}</Muted>
                 </View>
                 <PayoutStateBadge state={r.state} />
               </View>
-              <Muted className="text-[12px]">
+              <Muted className="text-xs">
                 {r.itemCount} card event(s) · {formatDateTime(r.submittedAt)}
                 {r.outstanding.length
                   ? ` · outstanding: ${r.outstanding.join(' + ').toLowerCase()}`
@@ -471,15 +444,15 @@ export default function Payouts() {
           </>
         }
       >
-        <View className="rounded-2xl bg-[#F7F4EF] px-4 py-1">
+        <View className="rounded-xl bg-raised px-4 py-1">
           {chosen.map((c, i) => (
             <View
               key={c.entitlementId}
               className={`flex-row items-center gap-3 py-3 ${i < chosen.length - 1 ? 'border-b border-line' : ''}`}
             >
               <View className="flex-1">
-                <Text className="font-semibold text-[14px]">{c.customer}</Text>
-                <Muted className="text-[12px]">{c.kbsRef}</Muted>
+                <Text className="font-medium text-md">{c.customer}</Text>
+                <Muted className="text-xs">{c.kbsRef}</Muted>
               </View>
             </View>
           ))}

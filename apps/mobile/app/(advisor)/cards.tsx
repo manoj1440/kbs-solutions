@@ -75,10 +75,7 @@ export default function CardCatalogue() {
   const header = (
     <View className="gap-3 pb-1">
       <View>
-        <RNText
-          accessibilityRole="header"
-          className="font-extrabold text-[28px] tracking-tight text-ink"
-        >
+        <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
           Card Catalogue
         </RNText>
         <Muted>
@@ -156,7 +153,7 @@ export default function CardCatalogue() {
           ) : loading ? null : (
             <EmptyState
               icon="card-outline"
-              title={pin ? `No cards for pincode ${pin}.` : 'No cards match.'}
+              title={pin ? `No cards for pincode ${pin}` : 'No cards match'}
               body={
                 pin
                   ? 'No published card is available at this pincode. Check the pincode with the customer, or clear the search.'
@@ -177,28 +174,27 @@ export default function CardCatalogue() {
               >
                 <CreditCardArt bank={bankName(item.bank)} name={item.name} width={120} compact />
                 <View className="flex-1 justify-center gap-1">
-                  <RNText
-                    numberOfLines={2}
-                    className="font-bold text-[16px] leading-[20px] text-ink"
-                  >
+                  <RNText numberOfLines={2} className="font-medium text-base text-ink">
                     {item.name}
                   </RNText>
-                  {bankName(item.bank) ? <Muted numberOfLines={1}>{bankName(item.bank)}</Muted> : null}
+                  {bankName(item.bank) ? (
+                    <Muted numberOfLines={1}>{bankName(item.bank)}</Muted>
+                  ) : null}
                   {pin ? <Badge size="sm" dot label="Available here" variant="success" /> : null}
                 </View>
               </PressableScale>
               <View className="flex-row items-center gap-3 border-t border-line pt-3">
                 <View className="flex-1 gap-1">
                   <View className="flex-row items-center gap-1.5">
-                    <Icon name="pricetag-outline" size={13} color={colors.subtle} />
-                    <RNText numberOfLines={1} className="font-semibold text-[13px] text-ink">
+                    <Icon name="pricetag-outline" size={16} color={colors.subtle} />
+                    <RNText numberOfLines={1} className="font-medium text-sm text-ink">
                       {money(item.joiningFee)} Joining Fee
                     </RNText>
                   </View>
                   {item.benefits[0] ? (
                     <View className="flex-row items-center gap-1.5">
-                      <Icon name="sparkles-outline" size={13} color="#C2410C" />
-                      <Muted numberOfLines={1} className="flex-1 text-[12px]">
+                      <Icon name="gift-outline" size={16} color={colors.subtle} />
+                      <Muted numberOfLines={1} className="flex-1 text-xs">
                         {item.benefits[0]}
                       </Muted>
                     </View>

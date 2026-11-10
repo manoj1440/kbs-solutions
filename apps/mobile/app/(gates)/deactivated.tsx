@@ -8,7 +8,7 @@ export default function Deactivated() {
   const { signOut, user } = useSession();
   return (
     <GateState
-      icon="lock-closed"
+      icon="lock-closed-outline"
       tone="destructive"
       title="Account not active"
       actions={
@@ -22,7 +22,7 @@ export default function Deactivated() {
       }
     >
       <Card className="flex-row items-center gap-3 p-4">
-        <RNText className="flex-1 text-center font-normal text-[15px] leading-[22px] text-[#44403C]">
+        <RNText className="flex-1 text-center font-normal text-base text-[#525252]">
           {user?.role === 'TELECALLER'
             ? 'Contact your Manager to reactivate your account.'
             : 'Contact the KBS Admin.'}

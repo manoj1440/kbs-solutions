@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass, PressableScale, type IconName } from '@/components/ui';
-import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 type BarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 export interface TabSpec {
@@ -16,7 +16,8 @@ export interface TabSpec {
 }
 
 /**
- * F-805 / F-818 custom tab bar: frosted glass pill, vector icons + labels, animated active pill, optional raised centre action.
+ * F-805 / F-818 custom tab bar: frosted glass pill, icons + labels; the selected tab is the accent. The optional centre
+ * action is the one filled accent button in the bar.
  * Hidden while a detail route (not in `tabs`) is focused, so detail screens get the full height and their own AppBar.
  */
 export function TabBar({
@@ -51,25 +52,21 @@ export function TabBar({
           });
           if (!active && !e.defaultPrevented) navigation.navigate(x.route!.name as never);
         }}
-        className="flex-1 items-center justify-center gap-1 py-1.5"
+        className="min-h-12 flex-1 items-center justify-center gap-1 py-1.5"
       >
-        <View className="h-8 w-14 items-center justify-center">
-          {active ? (
-            <View
-              style={[StyleSheet.absoluteFill, { borderRadius: 999, backgroundColor: colors.ink }]}
-            />
-          ) : null}
+        <View className="h-6 items-center justify-center">
           <Ionicons
             name={active ? x.spec.iconActive : x.spec.icon}
-            size={21}
-            color={active ? '#fff' : colors.subtle}
+            size={18}
+            color={active ? colors.gold : colors.subtle}
           />
         </View>
         <Text
           style={{
-            fontFamily: active ? 'Inter_700Bold' : 'Inter_500Medium',
-            fontSize: 11,
-            color: active ? colors.brand : colors.subtle,
+            fontFamily: 'Inter_500Medium',
+            fontSize: 12,
+            lineHeight: 16,
+            color: active ? colors.gold : colors.subtle,
           }}
         >
           {x.spec.label}
@@ -79,28 +76,26 @@ export function TabBar({
   };
   return (
     <View className="px-3 pt-1.5" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
-      {/* F-818: frosted pill; the glass is a background layer so the raised centre action is not clipped */}
-      <View className="rounded-[28px]" style={{ boxShadow: '0px 8px 24px rgba(28, 25, 23, 0.10)' }}>
-        <Glass strong className="rounded-[28px]" style={StyleSheet.absoluteFill} />
+      {/* F-818: frosted pill; the glass is a background layer so the centre action is not clipped */}
+      <View className="rounded-[24px]" style={{ boxShadow: '0px 8px 24px rgba(28, 25, 23, 0.10)' }}>
+        <Glass strong className="rounded-[24px]" style={StyleSheet.absoluteFill} />
         <View className="flex-row items-end px-1 py-1">
           {center ? items.slice(0, half).map(render) : items.map(render)}
           {center ? (
-            <View className="flex-1 items-center">
+            <View className="flex-1 items-center gap-1 py-1.5">
               <PressableScale
                 accessibilityLabel={center.label}
                 onPress={center.onPress}
-                className="-mt-7 h-[58px] w-[58px] items-center justify-center rounded-full border-4 border-canvas"
-                style={[gradientStyle(gradients.gold, 135), shadow.gold]}
+                className="h-8 w-12 items-center justify-center rounded-lg bg-gold"
               >
-                <Ionicons name={center.icon} size={28} color="#fff" />
+                <Ionicons name={center.icon} size={18} color="#fff" />
               </PressableScale>
               <Text
                 style={{
-                  fontFamily: 'Inter_600SemiBold',
-                  fontSize: 11,
-                  color: colors.brand,
-                  marginTop: 3,
-                  marginBottom: 6,
+                  fontFamily: 'Inter_500Medium',
+                  fontSize: 12,
+                  lineHeight: 16,
+                  color: colors.ink,
                 }}
               >
                 {center.label}

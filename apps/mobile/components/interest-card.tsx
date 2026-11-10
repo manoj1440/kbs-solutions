@@ -87,7 +87,7 @@ export function InterestCard({
     <Card className="gap-3">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Text className="font-semibold">
+          <Text className="font-medium">
             {showCustomer
               ? interest.customer.fullName
               : withBank(interest.bank, interest.card.name)}

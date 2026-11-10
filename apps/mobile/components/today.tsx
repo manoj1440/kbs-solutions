@@ -1,7 +1,15 @@
 import { DEFAULT_TZ } from '@kbs/shared';
 import { Pressable, Text as RNText, View } from 'react-native';
 
-import { Card, IconCircle, type IconName, ListItem, Muted, SectionHeader, Skeleton } from '@/components/ui';
+import {
+  Card,
+  Icon,
+  type IconName,
+  ListItem,
+  Muted,
+  SectionHeader,
+  Skeleton,
+} from '@/components/ui';
 import { colors, type Tone } from '@/lib/theme';
 
 /**
@@ -11,7 +19,12 @@ import { colors, type Tone } from '@/lib/theme';
 
 /** "Saturday, 17 October" in IST — same wording as the web greeting line. */
 export function todayLabel(now = new Date()) {
-  return new Intl.DateTimeFormat('en-IN', { timeZone: DEFAULT_TZ, weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: DEFAULT_TZ,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(now);
 }
 
 /** "19d ago" — coarse relative time for list meta. */
@@ -52,7 +65,7 @@ export function TodayCard({
   sections: TodaySection[];
   loaded: boolean;
   caughtUp: string;
-  /** Header sits on the hero gradient. */
+  /** Header sits on a dark surface (no longer used by the light page headers). */
   light?: boolean;
 }) {
   const shown = loaded ? sections.filter((s) => s.count !== 0 || s.rows.length) : sections;
@@ -71,27 +84,27 @@ export function TodayCard({
         ) : null}
         {shown.map((s, i) => (
           <View key={s.key} className={i ? 'border-t border-line pt-1' : ''}>
-            <View className="flex-row items-center gap-3 pb-1 pt-3">
-              <IconCircle icon={s.icon} tone={s.tone} size={30} />
-              <RNText accessibilityRole="header" className="flex-1 font-semibold text-[14px] text-ink">
+            <View className="flex-row items-center gap-2 pb-1 pt-3">
+              <Icon name={s.icon} size={16} color={colors.subtle} />
+              <RNText accessibilityRole="header" className="flex-1 font-medium text-md text-ink">
                 {s.title}
               </RNText>
               {!loaded ? (
-                <Skeleton className="h-5 w-7 rounded-full" />
+                <Skeleton className="h-4 w-6" />
               ) : s.count ? (
-                <View className="min-w-[26px] items-center rounded-full bg-[#EFE9E1] px-2 py-0.5">
-                  <RNText className="font-bold text-[12px] text-brand">{s.count}</RNText>
-                </View>
+                <RNText className="font-normal text-sm text-[#737373] tabular-nums">
+                  {s.count}
+                </RNText>
               ) : null}
             </View>
             {!loaded ? (
-              <Skeleton className="mb-3 ml-[42px] mt-1 h-3 w-1/2" />
+              <Skeleton className="mb-3 ml-6 mt-1 h-3 w-1/2" />
             ) : s.count === null ? (
-              <Muted className="pb-3 pl-[42px] text-[13px]">Could not load — pull down to refresh.</Muted>
+              <Muted className="pb-3 pl-6 text-sm">Could not load — pull down to refresh</Muted>
             ) : s.rows.length === 0 ? (
-              <Muted className="pb-3 pl-[42px] text-[13px]">{s.empty}</Muted>
+              <Muted className="pb-3 pl-6 text-sm">{s.empty}</Muted>
             ) : (
-              <View className="pl-[42px]">
+              <View className="pl-6">
                 {s.rows.map((r, j) => (
                   <ListItem
                     key={r.key}
@@ -99,14 +112,18 @@ export function TodayCard({
                     subtitle={r.subtitle}
                     onPress={r.onPress}
                     last={j === s.rows.length - 1 && !s.seeAll}
-                    right={r.right ? <RNText className="font-semibold text-[13px] text-ink">{r.right}</RNText> : undefined}
+                    right={
+                      r.right ? (
+                        <RNText className="font-medium text-sm text-ink tabular-nums">
+                          {r.right}
+                        </RNText>
+                      ) : undefined
+                    }
                   />
                 ))}
                 {s.seeAll ? (
                   <Pressable accessibilityRole="link" onPress={s.seeAll.onPress} className="py-3">
-                    <RNText className="font-semibold text-[13px]" style={{ color: colors.brand }}>
-                      {s.seeAll.label}
-                    </RNText>
+                    <RNText className="font-medium text-sm text-[#525252]">{s.seeAll.label}</RNText>
                   </Pressable>
                 ) : null}
               </View>

@@ -157,8 +157,8 @@ export default function LeadNew() {
         ) : (
           <View accessibilityLabel="Loading" className="gap-4">
             <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-52 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-52 w-full rounded-xl" />
           </View>
         )}
       </Screen>
@@ -254,7 +254,7 @@ export default function LeadNew() {
                 maxLength={10}
                 onChangeText={(t) => setF({ ...f, pan: panInput(t) })}
                 placeholder="ABCDE1234F"
-                inputClassName="tracking-[2px]"
+                inputClassName=""
               />
               {d.data.panVerification ? (
                 <Badge
@@ -452,18 +452,18 @@ export default function LeadNew() {
                 {rows.map(([s, label, value]) => (
                   <View key={s} className="flex-row items-center gap-3 border-b border-line py-3">
                     <View className="flex-1">
-                      <Muted className="text-[12px]">{label}</Muted>
-                      <RNText className="font-semibold text-[15px] text-ink">{value}</RNText>
+                      <Muted className="text-xs">{label}</Muted>
+                      <RNText className="font-medium text-base text-ink">{value}</RNText>
                     </View>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Edit ${TITLES[s].toLowerCase()}`}
                       hitSlop={8}
                       onPress={() => setEditing(s)}
-                      className="h-9 flex-row items-center gap-1 rounded-full bg-[#EFE9E1] px-3"
+                      className="h-9 flex-row items-center gap-1 rounded-lg bg-raised px-3"
                     >
-                      <Icon name="create-outline" size={14} color={colors.brand} />
-                      <RNText className="font-semibold text-[13px] text-brand">Edit</RNText>
+                      <Icon name="create-outline" size={16} color={colors.subtle} />
+                      <RNText className="font-medium text-sm text-brand">Edit</RNText>
                     </Pressable>
                   </View>
                 ))}
@@ -537,11 +537,13 @@ export default function LeadNew() {
         <Card className="flex-row items-center gap-3.5 p-3">
           <CreditCardArt bank={bankName(d.card.bank)} name={d.card.name} width={96} compact />
           <View className="flex-1">
-            <Muted className="text-[12px]">Applying for</Muted>
-            <RNText numberOfLines={1} className="font-bold text-[16px] text-ink">
+            <Muted className="text-xs">Applying for</Muted>
+            <RNText numberOfLines={1} className="font-medium text-base text-ink">
               {d.card.name}
             </RNText>
-            {bankName(d.card.bank) ? <Muted numberOfLines={1}>{bankName(d.card.bank)}</Muted> : null}
+            {bankName(d.card.bank) ? (
+              <Muted numberOfLines={1}>{bankName(d.card.bank)}</Muted>
+            ) : null}
           </View>
         </Card>
       </Appear>
@@ -549,10 +551,7 @@ export default function LeadNew() {
       <Appear index={1} key={step}>
         <Card className="gap-4 p-5">
           <View>
-            <RNText
-              accessibilityRole="header"
-              className="font-extrabold text-[22px] tracking-tight text-ink"
-            >
+            <RNText accessibilityRole="header" className="font-medium text-xl text-ink">
               {TITLES[step]}
             </RNText>
           </View>
@@ -562,8 +561,8 @@ export default function LeadNew() {
       </Appear>
 
       <View className="flex-row items-center justify-center gap-1.5">
-        <Icon name="cloud-done-outline" size={14} color={colors.subtle} />
-        <Muted className="text-[12px]">Save and exit anytime — the draft is kept 7 days.</Muted>
+        <Icon name="cloud-done-outline" size={16} color={colors.subtle} />
+        <Muted className="text-xs">Save and exit anytime — the draft is kept 7 days.</Muted>
       </View>
     </Screen>
   );

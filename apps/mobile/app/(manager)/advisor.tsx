@@ -32,7 +32,7 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 interface RequestRow {
   id: string;
@@ -91,24 +91,17 @@ export default function ManagerAdvisorScreen() {
       {row ? (
         <>
           <Appear>
-            <View
-              className="overflow-hidden rounded-3xl p-5"
-              style={[gradientStyle(gradients.hero, 140), shadow.lg]}
-            >
-              <View
-                pointerEvents="none"
-                className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/[0.07]"
-              />
+            <View className="overflow-hidden rounded-xl border border-line bg-white p-5">
               <View className="flex-row items-center gap-4">
-                <Avatar name={row.user.fullName || '?'} size={60} light />
+                <Avatar name={row.user.fullName || '?'} size={48} />
                 <View className="flex-1 gap-1">
-                  <RNText numberOfLines={1} className="font-extrabold text-[20px] text-white">
+                  <RNText numberOfLines={1} className="font-medium text-lg text-ink">
                     {row.user.fullName || '(onboarding)'}
                   </RNText>
-                  <RNText numberOfLines={1} className="font-medium text-[12px] text-white/70">
+                  <RNText numberOfLines={1} className="font-medium text-xs text-[#737373]">
                     {row.user.publicRef} · {row.user.mobileMasked ?? ''}
                   </RNText>
-                  <View className="mt-1 self-start rounded-full bg-white px-0.5">
+                  <View className="mt-1 self-start">
                     <Badge
                       label={humanize(row.user.status)}
                       variant={userStatusTone(row.user.status)}
@@ -118,18 +111,18 @@ export default function ManagerAdvisorScreen() {
                   </View>
                 </View>
               </View>
-              <View className="mt-4 gap-2 rounded-2xl bg-white/10 p-3">
+              <View className="mt-4 gap-2 rounded-lg bg-raised p-3">
                 <View className="flex-row items-center gap-2">
-                  <Icon name="git-network-outline" size={14} color="rgba(255,255,255,0.75)" />
-                  <RNText className="flex-1 font-medium text-[12px] text-white/85">
+                  <Icon name="git-network-outline" size={16} color={colors.subtle} />
+                  <RNText className="flex-1 font-medium text-xs text-[#525252]">
                     {row.reporting
                       ? `${REPORTING_SOURCE_LABELS[row.reporting.source] ?? row.reporting.source}${row.reporting.agentCode ? ` ${row.reporting.agentCode}` : ''} since ${formatDate(row.reporting.since)}`
                       : 'No active reporting line'}
                   </RNText>
                 </View>
                 <View className="flex-row items-center gap-2">
-                  <Icon name="calendar-outline" size={14} color="rgba(255,255,255,0.75)" />
-                  <RNText className="font-medium text-[12px] text-white/85">
+                  <Icon name="calendar-outline" size={16} color={colors.subtle} />
+                  <RNText className="font-medium text-xs text-[#525252]">
                     joined {formatDate(row.user.joinedAt)}
                   </RNText>
                 </View>
@@ -140,19 +133,8 @@ export default function ManagerAdvisorScreen() {
           <Appear index={1} className="gap-3">
             <SectionHeader title="Leads & payouts" />
             <View className="flex-row gap-3">
-              <MetricTile
-                className="flex-1"
-                label="Leads created"
-                m={row.leads.created}
-                icon="document-text"
-              />
-              <MetricTile
-                className="flex-1"
-                label="Matched in MIS"
-                m={row.leads.misMatched}
-                icon="git-compare"
-                tone="info"
-              />
+              <MetricTile className="flex-1" label="Leads created" m={row.leads.created} />
+              <MetricTile className="flex-1" label="Matched in MIS" m={row.leads.misMatched} />
             </View>
             <View className="flex-row gap-3">
               <MetricTile
@@ -160,15 +142,12 @@ export default function ManagerAdvisorScreen() {
                 label="Eligible events"
                 m={row.payouts.eligible}
                 money
-                icon="ribbon"
-                tone="gold"
               />
               <MetricTile
                 className="flex-1"
                 label="Available to claim"
                 m={row.payouts.available}
                 money
-                icon="wallet"
                 tone="gold"
               />
             </View>
@@ -178,17 +157,8 @@ export default function ManagerAdvisorScreen() {
                 label="Approved, unpaid"
                 m={row.payouts.approvedUnpaid}
                 money
-                icon="hourglass"
-                tone="warning"
               />
-              <MetricTile
-                className="flex-1"
-                label="Paid events"
-                m={row.payouts.paid}
-                money
-                icon="checkmark-done"
-                tone="success"
-              />
+              <MetricTile className="flex-1" label="Paid events" m={row.payouts.paid} money />
             </View>
           </Appear>
 
@@ -202,16 +172,16 @@ export default function ManagerAdvisorScreen() {
             <DistributionCard title="Card activation" icon="card-outline" d={row.activation} />
             {row.bankReasons.top.length ? (
               <Card className="gap-2">
-                <Text className="font-bold text-[15px]">Bank reasons</Text>
+                <Text className="font-medium text-base">Bank reasons</Text>
                 {row.bankReasons.top.map((r, i) => (
                   <View
                     key={r.value}
                     className={`flex-row items-start justify-between gap-3 py-1.5 ${i ? 'border-t border-line' : ''}`}
                   >
-                    <Text className="flex-1 text-[13px] leading-[19px]">{r.value}</Text>
-                    <View className="min-w-[26px] items-center rounded-full bg-[#EFEAE4] px-2 py-0.5">
-                      <RNText className="font-bold text-[12px] text-ink">{r.count}</RNText>
-                    </View>
+                    <Text className="flex-1 text-sm">{r.value}</Text>
+                    <RNText className="font-normal text-sm text-[#737373] tabular-nums">
+                      {r.count}
+                    </RNText>
                   </View>
                 ))}
               </Card>
@@ -228,7 +198,7 @@ export default function ManagerAdvisorScreen() {
               />
             ))}
             {leads.length === 0 ? (
-              <EmptyState compact icon="document-text-outline" title="No leads yet." />
+              <EmptyState compact icon="document-text-outline" title="No leads yet" />
             ) : null}
           </Appear>
 
@@ -244,12 +214,12 @@ export default function ManagerAdvisorScreen() {
                 className="gap-2"
               >
                 <View className="flex-row items-center justify-between gap-2">
-                  <RNText className="font-extrabold text-[22px] tracking-tight text-ink">
+                  <RNText className="font-medium text-xl text-ink">
                     {formatInr(r.totalAmountInr, { decimals: 0 })}
                   </RNText>
                   <PayoutStateBadge state={r.state} />
                 </View>
-                <Muted className="text-[12px]">
+                <Muted className="text-xs">
                   {r.publicRef} · {r.itemCount} card event(s) · submitted{' '}
                   {formatDateTime(r.submittedAt)}
                 </Muted>
@@ -263,7 +233,7 @@ export default function ManagerAdvisorScreen() {
               </Card>
             ))}
             {requests.length === 0 ? (
-              <EmptyState compact icon="wallet-outline" title="No payout requests yet." />
+              <EmptyState compact icon="wallet-outline" title="No payout requests yet" />
             ) : null}
           </Appear>
         </>

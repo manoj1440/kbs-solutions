@@ -1,6 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Text as RNText, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { CopyValue, SectionCard } from '@/components/advisor/parts';
 import { CreditCardArt } from '@/components/brand/credit-card-art';
@@ -17,7 +16,7 @@ import {
   StickyFooter,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 const NEXT: { icon: IconName; title: string; body: string }[] = [
   {
@@ -76,44 +75,20 @@ export default function LeadCreated() {
       }
     >
       <View className="items-center">
-        <Animated.View
-          entering={ZoomIn.springify().damping(12).stiffness(160)}
-          style={{
-            height: 112,
-            width: 112,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 56,
-            backgroundColor: '#E3F4F1',
-          }}
-        >
-          <View
-            className="h-20 w-20 items-center justify-center rounded-full"
-            style={[
-              gradientStyle(gradients.success, 135),
-              { boxShadow: '0px 10px 24px rgba(31, 122, 77, 0.35)' },
-            ]}
-          >
-            <Icon name="checkmark" size={44} color={colors.white} />
+        <Appear>
+          <View className="h-14 w-14 items-center justify-center rounded-xl bg-[#E6F4F2]">
+            <Icon name="checkmark" size={18} color={colors.success} />
           </View>
-        </Animated.View>
+        </Appear>
         <Appear index={2} className="mt-5 items-center">
-          <RNText
-            accessibilityRole="header"
-            className="font-extrabold text-[26px] tracking-tight text-ink"
-          >
+          <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
             Lead created
           </RNText>
           <Muted className="mt-1 text-center">
             {customer ? `${customer}'s lead is saved in KBS.` : 'The lead is saved in KBS.'}
           </Muted>
-          <View
-            className="mt-3 flex-row items-center gap-2 rounded-full border border-line bg-white px-4 py-2"
-            style={shadow.sm}
-          >
-            <RNText className="font-semibold text-[11px] uppercase tracking-[1px] text-[#78716C]">
-              KBS ref
-            </RNText>
+          <View className="mt-3 flex-row items-center gap-2 rounded-lg border border-line bg-white px-3 py-2">
+            <RNText className="font-normal text-xs text-[#737373]">KBS ref</RNText>
             <CopyValue value={publicRef} />
           </View>
         </Appear>
@@ -123,7 +98,7 @@ export default function LeadCreated() {
         <Card className="flex-row items-center gap-3.5 p-3">
           <CreditCardArt bank={bankName ?? ''} name={cardName} width={96} compact />
           <View className="flex-1">
-            <RNText numberOfLines={1} className="font-bold text-[16px] text-ink">
+            <RNText numberOfLines={1} className="font-medium text-base text-ink">
               {customer}
             </RNText>
             <Muted numberOfLines={2}>
@@ -160,17 +135,17 @@ export default function LeadCreated() {
 
       <Appear index={6}>
         <Card className="gap-1 px-4 py-3">
-          <RNText accessibilityRole="header" className="mb-1 font-bold text-[15px] text-ink">
+          <RNText accessibilityRole="header" className="mb-1 font-medium text-base text-ink">
             What happens next
           </RNText>
           {NEXT.map((n) => (
             <View key={n.title} className="flex-row gap-3 py-2">
-              <View className="h-8 w-8 items-center justify-center rounded-full bg-[#EFE9E1]">
-                <Icon name={n.icon} size={16} color={colors.brand} />
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-raised">
+                <Icon name={n.icon} size={16} color={colors.subtle} />
               </View>
               <View className="flex-1">
-                <RNText className="font-semibold text-[14px] text-ink">{n.title}</RNText>
-                <Muted className="text-[12px]">{n.body}</Muted>
+                <RNText className="font-medium text-md text-ink">{n.title}</RNText>
+                <Muted className="text-xs">{n.body}</Muted>
               </View>
             </View>
           ))}

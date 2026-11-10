@@ -37,7 +37,7 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 import { withBank } from '@/lib/cards';
 
 interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
@@ -232,10 +232,10 @@ export default function LeadScreen() {
           />
         ) : (
           <View accessibilityLabel="Loading" className="gap-4">
-            <Skeleton className="h-48 w-full rounded-3xl" />
-            <Skeleton className="h-32 w-full rounded-2xl" />
-            <Skeleton className="h-10 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+            <Skeleton className="h-40 w-full rounded-xl" />
           </View>
         )}
       </Screen>
@@ -259,71 +259,55 @@ export default function LeadScreen() {
 
       {/* Hero summary */}
       <Appear>
-        <View
-          className="overflow-hidden rounded-3xl p-5"
-          style={[gradientStyle(gradients.hero, 135), shadow.lg]}
-        >
-          <View
-            pointerEvents="none"
-            className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-white/[0.07]"
-          />
-          <View
-            pointerEvents="none"
-            className="absolute -bottom-16 left-10 h-32 w-32 rounded-full"
-            style={{ backgroundColor: 'rgba(245, 185, 66, 0.10)' }}
-          />
+        <View className="rounded-xl border border-line bg-white p-4">
           <View className="flex-row items-center gap-3">
-            <Avatar name={l.customer.name} size={52} light />
+            <Avatar name={l.customer.name} size={44} />
             <View className="flex-1">
-              <RNText numberOfLines={1} className="font-bold text-[20px] text-white">
+              <RNText numberOfLines={1} className="font-medium text-lg text-ink">
                 {l.customer.name}
               </RNText>
               <View className="mt-0.5 flex-row items-center gap-1.5">
-                <Icon name="card-outline" size={13} color="rgba(255,255,255,0.7)" />
-                <RNText numberOfLines={1} className="flex-1 font-medium text-[13px] text-white/75">
+                <Icon name="card-outline" size={16} color={colors.subtle} />
+                <RNText numberOfLines={1} className="flex-1 font-normal text-sm text-[#525252]">
                   {withBank(l.bank, l.card.name, ' · ')}
                 </RNText>
               </View>
             </View>
           </View>
-          <View className="mt-5 rounded-2xl bg-white/10 px-3.5">
-            <View className="min-h-[48px] flex-row items-center justify-between gap-3 border-b border-white/10 py-2">
-              <RNText className="font-semibold text-[10px] uppercase tracking-[1px] text-white/60">
-                KBS reference
-              </RNText>
-              <CopyValue value={l.kbsRef} light />
+          <View className="mt-4 rounded-lg bg-raised px-3">
+            <View className="min-h-12 flex-row items-center justify-between gap-3 border-b border-line py-2">
+              <RNText className="font-normal text-xs text-[#737373]">KBS reference</RNText>
+              <CopyValue value={l.kbsRef} />
             </View>
-            <View className="min-h-[48px] flex-row items-center justify-between gap-3 py-2">
-              <RNText className="font-semibold text-[10px] uppercase tracking-[1px] text-white/60">
-                Bank reference
-              </RNText>
+            <View className="min-h-12 flex-row items-center justify-between gap-3 py-2">
+              <RNText className="font-normal text-xs text-[#737373]">Bank reference</RNText>
               {l.bankReference.value ? (
                 <View className="items-end gap-0.5">
-                  <CopyValue value={l.bankReference.value} light />
+                  <CopyValue value={l.bankReference.value} />
                   <View className="flex-row items-center gap-1">
                     <Icon
-                      name={verified ? 'shield-checkmark' : 'alert-circle-outline'}
-                      size={12}
-                      color={verified ? '#99F6E4' : colors.gold}
+                      name={verified ? 'shield-checkmark-outline' : 'alert-circle-outline'}
+                      size={16}
+                      color={verified ? colors.success : colors.warning}
                     />
                     <RNText
-                      className="font-semibold text-[11px]"
-                      style={{ color: verified ? '#99F6E4' : colors.gold }}
+                      className="font-normal text-xs"
+                      style={{ color: verified ? colors.success : colors.warning }}
                     >
                       {verified ? 'Verified by MIS match' : 'Unverified'}
                     </RNText>
                   </View>
                 </View>
               ) : (
-                <RNText className="flex-1 text-right font-medium text-[12px] leading-[16px] text-white/70">
+                <RNText className="flex-1 text-right font-normal text-xs text-[#737373]">
                   {l.bankReference.label ?? 'Bank application reference not yet available'}
                 </RNText>
               )}
             </View>
           </View>
           <View className="mt-4 flex-row items-center gap-1.5">
-            <Icon name="time-outline" size={12} color="rgba(255,255,255,0.6)" />
-            <RNText className="font-medium text-[12px] text-white/60">
+            <Icon name="time-outline" size={16} color={colors.subtle} />
+            <RNText className="font-normal text-xs text-[#737373]">
               Created {formatDateTime(l.leadCreatedAt)} (KBS activity)
             </RNText>
           </View>
@@ -346,8 +330,8 @@ export default function LeadScreen() {
               : 'No MIS row has matched this lead yet.'}
           </MetaLine>
           {l.remarksPreview ? (
-            <View className="rounded-xl bg-[#F2EEE8] px-3 py-2.5">
-              <Muted className="italic">“{l.remarksPreview}”</Muted>
+            <View className="rounded-lg bg-raised px-3 py-2.5">
+              <Muted className="text-[#737373]">“{l.remarksPreview}”</Muted>
             </View>
           ) : null}
         </SectionCard>
@@ -417,10 +401,7 @@ export default function LeadScreen() {
                   label="PAN"
                   value={
                     <View className="items-end gap-1">
-                      <RNText
-                        selectable
-                        className="font-semibold text-[14px] tracking-wide text-ink"
-                      >
+                      <RNText selectable className="font-medium text-md text-ink">
                         {l.customerPanMasked ?? '—'}
                       </RNText>
                       <Badge
@@ -472,7 +453,7 @@ export default function LeadScreen() {
                 }
               />
               {l.linkActivity.length ? (
-                <View className="gap-2 rounded-xl bg-[#F2EEE8] p-3">
+                <View className="gap-2 rounded-lg bg-raised p-3">
                   {l.linkActivity.map((a) => (
                     <MetaLine key={a.id} icon="radio-button-on-outline">
                       {formatDateTime(a.at)} · {a.label} (v{a.linkVersion})
@@ -490,7 +471,7 @@ export default function LeadScreen() {
               title="Bank application reference"
             >
               {l.bankReference.value ? (
-                <View className="flex-row flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F2EEE8] px-3 py-2.5">
+                <View className="flex-row flex-wrap items-center justify-between gap-2 rounded-lg bg-raised px-3 py-2.5">
                   <CopyValue value={l.bankReference.value} />
                   <Badge
                     label={verified ? 'Verified by MIS match' : 'Unverified'}
@@ -607,8 +588,8 @@ export default function LeadScreen() {
                   <View key={g.batchId} className="gap-2">
                     {gi ? <Divider /> : null}
                     <View className="flex-row items-center gap-2">
-                      <Icon name="cloud-upload-outline" size={15} color={colors.info} />
-                      <Text className="flex-1 font-semibold text-[13px]">
+                      <Icon name="cloud-upload-outline" size={16} color={colors.info} />
+                      <Text className="flex-1 font-medium text-sm">
                         {g.publicRef} · imported {formatDateTime(g.importedAt)} by{' '}
                         {g.uploaderRole.toLowerCase()}
                       </Text>
@@ -619,10 +600,10 @@ export default function LeadScreen() {
                     {changed.map((c) => (
                       <View
                         key={`${g.batchId}-${c.field}`}
-                        className="gap-1 rounded-xl bg-[#F2EEE8] px-3 py-2.5"
+                        className="gap-1 rounded-lg bg-raised px-3 py-2.5"
                       >
                         <View className="flex-row items-center justify-between gap-2">
-                          <Text className="flex-1 font-semibold text-[13px]">
+                          <Text className="flex-1 font-medium text-sm">
                             {c.field === '*' ? '(whole row)' : c.field}
                           </Text>
                           <Badge
@@ -631,7 +612,7 @@ export default function LeadScreen() {
                             size="sm"
                           />
                         </View>
-                        <Muted className="text-[12px]">
+                        <Muted className="text-xs">
                           {c.oldValue ?? 'blank'} → {c.newValue ?? 'blank'}
                           {c.reportedEventDate
                             ? ` · bank date ${formatDateTime(c.reportedEventDate)}`
@@ -640,7 +621,7 @@ export default function LeadScreen() {
                       </View>
                     ))}
                     {quiet ? (
-                      <Muted className="text-[12px]">
+                      <Muted className="text-xs">
                         {quiet} field(s) confirmed unchanged or reported blank
                       </Muted>
                     ) : null}
@@ -676,14 +657,14 @@ export default function LeadScreen() {
                       accessibilityRole="button"
                       accessibilityState={{ expanded: rawAll }}
                       onPress={() => setRawAll(!rawAll)}
-                      className="mt-2 h-11 flex-row items-center justify-center gap-1 rounded-xl bg-[#F5EEE7]"
+                      className="mt-2 h-11 flex-row items-center justify-center gap-1 rounded-lg bg-raised"
                     >
-                      <RNText className="font-semibold text-[13px] text-brand">
+                      <RNText className="font-medium text-sm text-brand">
                         {rawAll ? 'Show fewer fields' : `Show all ${rawEntries.length} fields`}
                       </RNText>
                       <Icon
                         name={rawAll ? 'chevron-up' : 'chevron-down'}
-                        size={14}
+                        size={16}
                         color={colors.brand}
                       />
                     </Pressable>
@@ -734,10 +715,10 @@ export default function LeadScreen() {
               }
             >
               {l.followUps.map((t) => (
-                <View key={t.id} className="flex-row items-start gap-3 rounded-xl bg-[#F2EEE8] p-3">
+                <View key={t.id} className="flex-row items-start gap-3 rounded-lg bg-raised p-3">
                   <Icon
                     name={t.doneAt ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
+                    size={18}
                     color={t.doneAt ? colors.success : colors.warning}
                   />
                   <View className="flex-1 gap-0.5">
@@ -748,14 +729,10 @@ export default function LeadScreen() {
                         size="sm"
                       />
                     </View>
-                    <Text
-                      className={
-                        t.doneAt ? 'text-[14px] text-[#57534E] line-through' : 'text-[14px]'
-                      }
-                    >
+                    <Text className={t.doneAt ? 'text-md text-[#525252] line-through' : 'text-md'}>
                       {t.text}
                     </Text>
-                    <Muted className="text-[12px]">
+                    <Muted className="text-xs">
                       {t.owner.fullName} · due {formatDateTime(t.dueAt)}
                       {t.doneAt ? ` · done` : ''}
                     </Muted>
@@ -807,9 +784,9 @@ export default function LeadScreen() {
               {l.remarks.map((r) => (
                 <View key={r.id} className="flex-row gap-3">
                   <Avatar name={r.author.fullName} size={32} />
-                  <View className="flex-1 rounded-2xl rounded-tl-md bg-[#F2EEE8] px-3 py-2.5">
-                    <Text className="text-[14px]">{r.text}</Text>
-                    <Muted className="mt-1 text-[12px]">
+                  <View className="flex-1 rounded-xl rounded-tl-md bg-raised px-3 py-2.5">
+                    <Text className="text-md">{r.text}</Text>
+                    <Muted className="mt-1 text-xs">
                       {r.author.fullName} · {formatDateTime(r.at)}
                     </Muted>
                   </View>
@@ -847,10 +824,10 @@ export default function LeadScreen() {
                     >
                       <Icon name="paper-plane-outline" size={18} color={colors.brand} />
                       <View className="flex-1">
-                        <Text className="font-semibold text-[14px]">
+                        <Text className="font-medium text-md">
                           {SHARE_KIND[s.kind] ?? s.kind.toLowerCase().replace(/_/g, ' ')}
                         </Text>
-                        <Muted className="text-[12px]">{formatDateTime(s.at)}</Muted>
+                        <Muted className="text-xs">{formatDateTime(s.at)}</Muted>
                       </View>
                       <Badge
                         label={shareStatusLabel({

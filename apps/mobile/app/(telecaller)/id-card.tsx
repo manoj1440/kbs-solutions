@@ -12,13 +12,12 @@ import {
   Card,
   ErrorState,
   Icon,
-  IconCircle,
   Muted,
   Screen,
   Skeleton,
   Text,
 } from '@/components/ui';
-import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors, shadow } from '@/lib/theme';
 import { api } from '@/lib/api';
 
 interface IdCard {
@@ -39,16 +38,11 @@ interface IdCard {
   svg?: string;
 }
 
-function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function Field({ label, value }: { label: string; value: string; mono?: boolean }) {
   return (
     <View className="gap-0.5">
-      <RNText className="font-semibold text-[9px] uppercase tracking-[1.2px] text-white/55">
-        {label}
-      </RNText>
-      <RNText
-        numberOfLines={1}
-        className={`font-bold text-[13px] text-white ${mono ? 'tracking-[1px]' : ''}`}
-      >
+      <RNText className="font-normal text-xs text-[#737373]">{label}</RNText>
+      <RNText numberOfLines={1} className="font-medium text-sm text-ink tabular-nums">
         {value}
       </RNText>
     </View>
@@ -86,71 +80,61 @@ export default function IdCardScreen() {
       }
     >
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
-      {!card && !error ? <Skeleton className="h-[440px] w-full rounded-[28px]" /> : null}
+      {!card && !error ? <Skeleton className="h-96 w-full rounded-2xl" /> : null}
       {card ? (
         <>
           <Appear>
+            {/* the ID badge: a flat white card with a hairline and a thin KBS-orange band */}
             <View
-              className="overflow-hidden rounded-[28px]"
-              style={[
-                gradientStyle(active ? gradients.heroDeep : ['#3A3A3C', '#1C1C1E'], 150),
-                shadow.lg,
-              ]}
+              className="overflow-hidden rounded-2xl border border-line bg-white"
+              style={shadow.lg}
             >
               <View
-                pointerEvents="none"
-                className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/[0.06]"
+                className="h-1 w-full"
+                style={{ backgroundColor: active ? colors.orange : colors.subtle }}
               />
-              <View
-                pointerEvents="none"
-                className="absolute -bottom-20 -left-12 h-48 w-48 rounded-full"
-                style={{ backgroundColor: 'rgba(245, 185, 66, 0.10)' }}
-              />
-              <View className="h-1.5 w-full" style={gradientStyle(gradients.gold, 90)} />
               <View className="p-5">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-2">
                     <View
                       className="h-8 w-8 items-center justify-center rounded-lg"
-                      style={gradientStyle(gradients.gold, 135)}
+                      style={{ backgroundColor: colors.orange }}
                     >
-                      <Icon name="shield-checkmark" size={16} color={colors.ink} />
+                      <Icon name="shield-checkmark-outline" size={16} color={colors.ink} />
                     </View>
                     <View>
-                      <RNText className="font-extrabold text-[15px] tracking-tight text-white">
-                        KBS Solutions
-                      </RNText>
-                      <RNText className="font-medium text-[10px] uppercase tracking-[1.4px] text-white/60">
-                        Official ID
-                      </RNText>
+                      <RNText className="font-medium text-base text-ink">KBS Solutions</RNText>
+                      <RNText className="font-normal text-xs text-[#737373]">Official ID</RNText>
                     </View>
                   </View>
-                  <View
-                    className={`flex-row items-center gap-1.5 rounded-full px-2.5 py-1 ${active ? 'bg-[#0F766E]' : 'bg-[#B42318]'}`}
-                  >
-                    <View className="h-1.5 w-1.5 rounded-full bg-white" />
-                    <RNText className="font-bold text-[11px] text-white">
+                  <View className="flex-row items-center gap-1.5">
+                    <View
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: active ? colors.success : colors.danger }}
+                    />
+                    <RNText
+                      className="font-medium text-xs tabular-nums"
+                      style={{ color: active ? colors.success : colors.danger }}
+                    >
                       {active ? `Active · v${card.version}` : 'Revoked'}
                     </RNText>
                   </View>
                 </View>
 
                 <View className="mt-6 items-center">
-                  <View className="rounded-full p-1" style={gradientStyle(gradients.gold, 135)}>
-                    <Avatar name={card.fields.fullName ?? 'KBS'} size={84} />
-                  </View>
+                  <Avatar name={card.fields.fullName ?? 'KBS'} size={72} />
                   <RNText
                     numberOfLines={2}
-                    className="mt-3 text-center font-extrabold text-[24px] tracking-tight text-white"
+                    className="mt-3 text-center font-medium text-xl text-ink"
                   >
                     {card.fields.fullName}
                   </RNText>
-                  <RNText className="mt-0.5 font-semibold text-[14px] text-gold">
+                  <RNText className="mt-0.5 font-normal text-md text-[#525252]">
                     {card.fields.role ?? 'Telecaller'}
                   </RNText>
                 </View>
 
-                <View className="mt-5 flex-row items-end gap-4 rounded-2xl bg-white/[0.08] p-3.5">
+                <View className="mt-5 flex-row items-end gap-4 rounded-xl bg-raised p-3">
                   <View className="flex-1 gap-2.5">
                     {card.fields.employeeCode ? (
                       <Field label="Employee code" value={card.fields.employeeCode} mono />
@@ -165,12 +149,10 @@ export default function IdCardScreen() {
                   </View>
                   {card.svg ? (
                     <View className="items-center gap-1">
-                      <View className="rounded-xl bg-white p-1.5">
+                      <View className="rounded-lg border border-line bg-white p-1.5">
                         <QrFromSvg svg={card.svg} size={92} />
                       </View>
-                      <RNText className="font-medium text-[9px] uppercase tracking-[1px] text-white/60">
-                        Scan to verify
-                      </RNText>
+                      <RNText className="font-normal text-xs text-[#737373]">Scan to verify</RNText>
                     </View>
                   ) : null}
                 </View>
@@ -180,11 +162,10 @@ export default function IdCardScreen() {
 
           {card.verifyUrl ? (
             <Appear index={1}>
-              <Card className="flex-row items-start gap-3">
-                <IconCircle icon="shield-checkmark-outline" tone="success" size={40} />
-                <View className="flex-1 gap-0.5">
-                  <Text className="font-bold text-[15px]">Verify</Text>
-                  <Muted selectable className="text-[12px] leading-[18px]">
+              <Card>
+                <View className="gap-0.5">
+                  <Text className="font-medium text-base">Verify</Text>
+                  <Muted selectable className="text-xs">
                     Customers can verify at {card.verifyUrl}
                   </Muted>
                 </View>
@@ -193,7 +174,7 @@ export default function IdCardScreen() {
           ) : null}
 
           <Appear index={2}>
-            <Callout kind="neutral" icon="lock-closed">
+            <Callout kind="neutral" icon="lock-closed-outline">
               This card carries no customer, PAN or payout data. Share it from a customer record so
               the share is logged.
             </Callout>

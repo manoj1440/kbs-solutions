@@ -29,7 +29,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/session';
-import { gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 /** F-410 Advisor profile: identity summary (status/date only), reporting + Agent Code (F-402), bank last4/IFSC, support. No files or full numbers. */
 export default function Profile() {
@@ -55,50 +55,43 @@ export default function Profile() {
   return (
     <Screen scroll header={<AppBar title="Profile" />}>
       <Appear>
-        <View
-          className="overflow-hidden rounded-3xl p-5"
-          style={[gradientStyle(gradients.hero, 135), shadow.lg]}
-        >
-          <View
-            pointerEvents="none"
-            className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-white/[0.07]"
-          />
+        <View className="rounded-xl border border-line bg-white p-4">
           <View className="flex-row items-center gap-4">
-            <Avatar name={name} size={60} light />
+            <Avatar name={name} size={48} />
             <View className="flex-1 gap-0.5">
-              <RNText numberOfLines={1} className="font-bold text-[20px] text-white">
+              <RNText numberOfLines={1} className="font-medium text-lg text-ink">
                 {name}
               </RNText>
-              <RNText className="font-medium text-[13px] text-white/75">
+              <RNText className="font-normal text-sm text-[#525252] tabular-nums">
                 {p?.mobileMasked ?? user?.mobileMasked}
               </RNText>
               {p?.email ? (
-                <RNText numberOfLines={1} className="font-medium text-[13px] text-white/75">
+                <RNText numberOfLines={1} className="font-normal text-sm text-[#525252]">
                   {p.email}
                 </RNText>
               ) : null}
             </View>
           </View>
           <View className="mt-4 flex-row flex-wrap gap-2">
-            <View className="flex-row items-center gap-1.5 rounded-full bg-gold px-3 py-1">
-              <Icon name="briefcase" size={12} color="#1C1917" />
-              <RNText className="font-bold text-[12px] text-ink">{user?.role ?? ''}</RNText>
+            <View className="flex-row items-center gap-1.5 rounded-md bg-raised px-2 py-1">
+              <Icon name="briefcase-outline" size={16} color={colors.subtle} />
+              <RNText className="font-medium text-xs text-ink">{user?.role ?? ''}</RNText>
             </View>
             {user ? (
               <View
                 accessibilityLabel={`My link code ${shareCodeOf(user.publicRef)}, added to every apply link you share`}
-                className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1"
+                className="flex-row items-center gap-1.5 rounded-md bg-raised px-2 py-1"
               >
-                <Icon name="link-outline" size={12} color="#fff" />
-                <RNText className="font-semibold text-[12px] text-white">
+                <Icon name="link-outline" size={16} color={colors.subtle} />
+                <RNText className="font-normal text-xs text-[#525252]">
                   My link code {shareCodeOf(user.publicRef)}
                 </RNText>
               </View>
             ) : null}
             {p?.reporting.agentCode ? (
-              <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1">
-                <Icon name="key-outline" size={12} color="#fff" />
-                <RNText className="font-semibold text-[12px] text-white">
+              <View className="flex-row items-center gap-1.5 rounded-md bg-raised px-2 py-1">
+                <Icon name="key-outline" size={16} color={colors.subtle} />
+                <RNText className="font-normal text-xs text-[#525252]">
                   Agent Code {p.reporting.agentCode}
                 </RNText>
               </View>
@@ -109,7 +102,7 @@ export default function Profile() {
 
       {!p && !error ? (
         <View accessibilityLabel="Loading" className="gap-3">
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-xl" />
         </View>
       ) : null}
 
@@ -130,7 +123,7 @@ export default function Profile() {
               subtitle={
                 p.identity.verifiedAt
                   ? `verified ${formatDateTime(p.identity.verifiedAt)}`
-                  : 'Only the outcome and date are kept here.'
+                  : 'Only the outcome and date are kept here'
               }
               right={
                 <Badge
@@ -162,7 +155,7 @@ export default function Profile() {
               subtitle={
                 p.bank
                   ? `${p.bank.bankName} · ••••${p.bank.accountLast4} · ${p.bank.ifsc}`
-                  : 'Not added yet.'
+                  : 'Not added yet'
               }
             />
             {p.idCard ? (
@@ -177,7 +170,7 @@ export default function Profile() {
               icon="headset-outline"
               iconTone="secondary"
               title="Support"
-              subtitle={p.support.contact ?? 'Contact your reporting Manager or KBS office.'}
+              subtitle={p.support.contact ?? 'Contact your reporting Manager or KBS office'}
               onPress={
                 p.support.contact
                   ? () =>
@@ -192,7 +185,7 @@ export default function Profile() {
             />
           </Card>
           {p.identity.verifiedAt ? (
-            <RNText className="ml-1 font-normal text-[12px] text-[#78716C]">
+            <RNText className="ml-1 font-normal text-xs text-[#737373]">
               Identity: only the outcome and date are kept here.
             </RNText>
           ) : null}
@@ -209,7 +202,7 @@ export default function Profile() {
         <SectionCard
           icon="swap-horizontal-outline"
           title="Change Agent Code"
-          subtitle="Applies from today under KBS policy; if you already have leads the change waits for Admin approval. Earlier leads and payouts keep their original attribution."
+          subtitle="Applies from today under KBS policy; if you already have leads the change waits for Admin approval. Earlier leads and payouts keep their original attribution"
         >
           <Input
             label="Agent Code"

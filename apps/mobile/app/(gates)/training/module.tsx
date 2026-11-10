@@ -12,7 +12,6 @@ import {
   Card,
   ErrorText,
   Icon,
-  IconCircle,
   Muted,
   Screen,
   Skeleton,
@@ -105,10 +104,7 @@ export default function ModuleScreen() {
     >
       <Appear>
         {mod ? (
-          <RNText
-            accessibilityRole="header"
-            className="font-extrabold text-[24px] leading-[30px] tracking-tight text-ink"
-          >
+          <RNText accessibilityRole="header" className="font-medium text-xl text-ink">
             {mod.title}
           </RNText>
         ) : !error ? (
@@ -119,7 +115,7 @@ export default function ModuleScreen() {
 
       {videoUrl ? (
         <Appear index={1}>
-          <View className="overflow-hidden rounded-3xl bg-ink">
+          <View className="overflow-hidden rounded-xl border border-line bg-white">
             <VideoView
               player={player}
               style={{ width: '100%', aspectRatio: 16 / 9 }}
@@ -127,12 +123,12 @@ export default function ModuleScreen() {
             />
             <View className="flex-row items-center gap-2 px-4 py-3">
               <Icon
-                name={videoDone ? 'checkmark-circle' : 'play-circle-outline'}
+                name={videoDone ? 'checkmark-circle-outline' : 'play-circle-outline'}
                 size={18}
-                color={videoDone ? '#2DD4BF' : colors.gold}
+                color={videoDone ? colors.success : colors.subtle}
               />
-              <RNText className="flex-1 font-medium text-[13px] text-white/85">
-                {videoDone ? 'Video completed.' : 'Watch the whole video to unlock the assessment.'}
+              <RNText className="flex-1 font-normal text-sm text-[#525252]">
+                {videoDone ? 'Video completed' : 'Watch the whole video to unlock the assessment'}
               </RNText>
             </View>
           </View>
@@ -140,22 +136,19 @@ export default function ModuleScreen() {
       ) : mod && !mod.videoFileId ? (
         <Appear index={1}>
           <Card variant="tinted" className="flex-row items-center gap-3">
-            <IconCircle icon="videocam-off-outline" tone="secondary" size={36} />
-            <Muted className="flex-1">No video for this module.</Muted>
+            <Icon name="videocam-off-outline" size={18} color={colors.subtle} />
+            <Muted className="flex-1">No video for this module</Muted>
           </Card>
         </Appear>
       ) : !mod && !error ? (
-        <Skeleton className="h-48 w-full rounded-3xl" />
+        <Skeleton className="h-48 w-full rounded-xl" />
       ) : null}
 
       {mod?.materialText ? (
         <Appear index={2}>
           <Card className="gap-3 p-5">
-            <View className="flex-row items-center gap-2.5">
-              <IconCircle icon="book-outline" size={34} />
-              <RNText className="font-bold text-[16px] text-ink">Study material</RNText>
-            </View>
-            <Text className="leading-[24px] text-[#44403C]">{mod.materialText}</Text>
+            <RNText className="font-medium text-base text-ink">Study material</RNText>
+            <Text className="text-[#525252]">{mod.materialText}</Text>
           </Card>
         </Appear>
       ) : null}
@@ -163,28 +156,27 @@ export default function ModuleScreen() {
       <Appear index={3}>
         <Card className="gap-3 p-5">
           <View className="flex-row items-center gap-3">
-            <IconCircle icon="clipboard" tone="gold" size={40} />
             <View className="flex-1">
-              <RNText className="font-bold text-[16px] text-ink">Assessment</RNText>
-              <Muted className="text-[12px]">Multiple-choice questions</Muted>
+              <RNText className="font-medium text-base text-ink">Assessment</RNText>
+              <Muted className="text-xs">Multiple-choice questions</Muted>
             </View>
             {canStart ? (
               <Badge label="Ready" variant="success" dot size="sm" />
             ) : (
-              <Badge label="Locked" variant="unknown" icon="lock-closed" size="sm" />
+              <Badge label="Locked" variant="unknown" icon="lock-closed-outline" size="sm" />
             )}
           </View>
           <View className="flex-row gap-2">
-            <View className="flex-1 rounded-2xl bg-canvas px-3 py-2.5">
-              <Muted className="text-[11px]">Pass mark</Muted>
-              <RNText className="font-extrabold text-[18px] text-ink">
+            <View className="flex-1 rounded-lg bg-raised px-3 py-2.5">
+              <Muted className="text-xs">Pass mark</Muted>
+              <RNText className="font-medium text-lg text-ink tabular-nums">
                 {mod?.passThresholdPct ?? '—'}%
               </RNText>
             </View>
             {mod?.attemptsRemaining !== null && mod ? (
-              <View className="flex-1 rounded-2xl bg-canvas px-3 py-2.5">
-                <Muted className="text-[11px]">Attempts left</Muted>
-                <RNText className="font-extrabold text-[18px] text-ink">
+              <View className="flex-1 rounded-lg bg-raised px-3 py-2.5">
+                <Muted className="text-xs">Attempts left</Muted>
+                <RNText className="font-medium text-lg text-ink tabular-nums">
                   {mod.attemptsRemaining}
                 </RNText>
               </View>

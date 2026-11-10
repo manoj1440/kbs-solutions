@@ -98,7 +98,7 @@ export default function PendingActions() {
             loading ? null : (
               <EmptyState
                 icon="checkmark-done-outline"
-                title="Nothing pending."
+                title="Nothing pending"
                 body="Bank statuses alone do not create tasks; add a follow-up from a lead when you have something to do."
               />
             )
@@ -121,10 +121,10 @@ export default function PendingActions() {
                       size={40}
                     />
                     <View className="flex-1">
-                      <Text numberOfLines={1} className="font-bold text-[15px]">
+                      <Text numberOfLines={1} className="font-medium text-base">
                         {item.customer}
                       </Text>
-                      <Muted numberOfLines={1} className="text-[12px]">
+                      <Muted numberOfLines={1} className="text-xs">
                         {item.leadRef} · {item.issuer} {item.card}
                       </Muted>
                     </View>
@@ -134,10 +134,8 @@ export default function PendingActions() {
                       size="sm"
                     />
                   </View>
-                  <View className="rounded-xl bg-[#F2EEE8] px-3 py-2.5">
-                    <RNText className="font-semibold text-[14px] leading-[20px] text-ink">
-                      {item.whatToDo}
-                    </RNText>
+                  <View className="rounded-lg bg-raised px-3 py-2.5">
+                    <RNText className="font-medium text-md text-ink">{item.whatToDo}</RNText>
                   </View>
                   <MetaLine
                     icon={item.owner.role === 'BANK' ? 'business-outline' : 'person-outline'}

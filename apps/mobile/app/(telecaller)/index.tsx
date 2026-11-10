@@ -1,9 +1,16 @@
-import { ApiClientError, type CallingQueueRow, type CallOutcome, formatDateTime, OUTCOME_LABELS, type QueueTab } from '@kbs/shared';
+import {
+  ApiClientError,
+  type CallingQueueRow,
+  type CallOutcome,
+  formatDateTime,
+  OUTCOME_LABELS,
+  type QueueTab,
+} from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, Text as RNText, View } from 'react-native';
 
-import { greeting, HeroTile, humanize } from '@/components/team';
+import { HeroTile, humanize } from '@/components/team';
 import {
   Appear,
   Avatar,
@@ -51,17 +58,17 @@ const STATUS_VARIANT: Record<
 const EMPTY: Record<QueueTab, { icon: IconName; title: string; body: string }> = {
   active: {
     icon: 'call-outline',
-    title: 'No customers in your queue.',
+    title: 'No customers in your queue',
     body: 'New customers appear here when the Admin allocates a calling list to you.',
   },
   followups: {
     icon: 'alarm-outline',
-    title: 'No follow-ups scheduled.',
+    title: 'No follow-ups scheduled',
     body: 'Outcomes marked "follow-up" show here with their due time.',
   },
   hidden: {
     icon: 'archive-outline',
-    title: 'No history yet.',
+    title: 'No history yet',
     body: 'Declined, completed and suppressed customers move here — read-only, with the full trail.',
   },
 };
@@ -74,26 +81,26 @@ function RecordCard({ item, now, index }: { item: CallingQueueRow; now: number; 
       <Card
         accessibilityLabel={`Open ${item.fullName}${dueNow ? ', follow-up due now' : ''}`}
         onPress={() => router.push({ pathname: '/(telecaller)/record', params: { id: item.id } })}
-        className={`gap-3 ${dueNow ? 'border-[#F5C2BE] bg-[#FFFBFA]' : ''}`}
+        className={`gap-3 ${dueNow ? 'border-[#F5C2BE]' : ''}`}
       >
         {dueNow ? (
-          <View className="absolute bottom-3 left-0 top-3 w-1 rounded-r-full bg-[#E5484D]" />
+          <View className="absolute bottom-3 left-0 top-3 w-1 rounded-r-sm bg-[#B42318]" />
         ) : null}
         <View className="flex-row items-center gap-3">
-          <Avatar name={item.fullName} size={46} />
+          <Avatar name={item.fullName} size={40} />
           <View className="flex-1">
-            <Text numberOfLines={1} className="font-bold text-[15px]">
+            <Text numberOfLines={1} className="font-medium text-base">
               {item.fullName}
             </Text>
-            <Muted numberOfLines={1} className="text-[12px]">
+            <Muted numberOfLines={1} className="text-xs">
               {item.mobileMasked}
             </Muted>
           </View>
           <View
-            className={`h-10 w-10 items-center justify-center rounded-full ${item.suppressed || item.hiddenAt ? 'bg-[#EFEAE4]' : 'bg-[#E3F4F1]'}`}
+            className={`h-10 w-10 items-center justify-center rounded-lg ${item.suppressed || item.hiddenAt ? 'bg-raised' : 'bg-[#E6F4F2]'}`}
           >
             <Icon
-              name={item.suppressed ? 'call-outline' : 'call'}
+              name="call-outline"
               size={18}
               color={item.suppressed || item.hiddenAt ? colors.subtle : colors.success}
             />
@@ -107,8 +114,8 @@ function RecordCard({ item, now, index }: { item: CallingQueueRow; now: number; 
             size="sm"
           />
           <View className="flex-row items-center gap-1">
-            <Icon name="location-outline" size={12} color={colors.subtle} />
-            <Muted numberOfLines={1} className="text-[12px]">
+            <Icon name="location-outline" size={16} color={colors.subtle} />
+            <Muted numberOfLines={1} className="text-xs">
               {item.pincode} · {item.location}
             </Muted>
           </View>
@@ -117,29 +124,25 @@ function RecordCard({ item, now, index }: { item: CallingQueueRow; now: number; 
           <Badge
             label={`${dueNow ? 'Due now' : 'Follow up'} · ${formatDateTime(item.nextFollowUpAt)}`}
             variant={dueNow ? 'destructive' : 'warning'}
-            icon={dueNow ? 'alarm' : 'alarm-outline'}
+            icon="alarm-outline"
             solid={dueNow}
           />
         ) : null}
         {item.lastOutcome ? (
-          <View className="flex-row items-start gap-1.5 rounded-xl bg-[#F7F4EF] px-3 py-2">
-            <Icon
-              name="chatbubble-ellipses-outline"
-              size={13}
-              color={colors.subtle}
-              style={{ marginTop: 2 }}
-            />
-            <Muted numberOfLines={2} className="flex-1 text-[12px]">
-              Last: {OUTCOME_LABELS[item.lastOutcome.outcome as CallOutcome] ?? item.lastOutcome.outcome}
+          <View className="flex-row items-start gap-2 rounded-lg bg-raised px-3 py-2">
+            <Icon name="chatbubble-ellipses-outline" size={16} color={colors.subtle} />
+            <Muted numberOfLines={2} className="flex-1 text-xs">
+              Last:{' '}
+              {OUTCOME_LABELS[item.lastOutcome.outcome as CallOutcome] ?? item.lastOutcome.outcome}
               {item.lastOutcome.remarks ? ` — ${item.lastOutcome.remarks}` : ''}
             </Muted>
           </View>
         ) : null}
         {item.suppressed ? (
-          <Badge label="Do not contact" variant="destructive" icon="hand-left" />
+          <Badge label="Do not contact" variant="destructive" icon="hand-left-outline" />
         ) : null}
         {item.hiddenAt ? (
-          <Muted className="text-[12px]">
+          <Muted className="text-xs">
             Hidden {formatDateTime(item.hiddenAt)} · {item.hiddenReason ?? ''}
           </Muted>
         ) : null}
@@ -190,11 +193,10 @@ export default function TelecallerHome() {
   );
 
   const ready = loadedTab === tab;
-  const first = (user?.fullName ?? '').split(' ')[0] || 'there';
   const empty = EMPTY[tab];
 
   return (
-    <Screen inset="none" statusBar="light" padded={false} className="pt-0">
+    <Screen inset="none" statusBar="dark" padded={false} className="pt-0">
       <FlatList
         data={ready ? rows : []}
         keyExtractor={(r) => r.id}
@@ -211,37 +213,33 @@ export default function TelecallerHome() {
         }
         ListHeaderComponent={
           <View className="gap-4">
-            <HeroHeader className="pb-6">
+            <HeroHeader className="pb-5">
               <View className="flex-row items-center justify-between">
                 <PressableScale
                   accessibilityLabel="Open profile"
                   onPress={() => router.push('/(telecaller)/profile' as never)}
                   className="flex-1 flex-row items-center gap-3"
                 >
-                  <Avatar name={user?.fullName || 'Telecaller'} size={46} light />
+                  <Avatar name={user?.fullName || 'Telecaller'} size={40} />
                   <View className="flex-1">
-                    <RNText className="font-medium text-[13px] text-white/70">{greeting()},</RNText>
-                    <RNText numberOfLines={1} className="font-bold text-[20px] text-white">
-                      {first}
+                    <RNText numberOfLines={1} className="font-medium text-xl text-ink">
+                      Calling queue
                     </RNText>
-                    <RNText className="font-medium text-[12px] text-white/60">{todayLabel()}</RNText>
+                    <RNText className="font-normal text-sm text-[#737373]">{todayLabel()}</RNText>
                   </View>
                 </PressableScale>
                 <IconButton
                   icon="notifications-outline"
                   label="Notifications"
-                  tone="light"
                   onPress={() => router.push('/(telecaller)/notifications' as never)}
                 />
               </View>
               <View className="mt-6 flex-row items-end justify-between">
                 <View>
-                  <RNText className="font-semibold text-[12px] uppercase tracking-[1.4px] text-white/60">
-                    Due now
-                  </RNText>
+                  <RNText className="font-normal text-sm text-[#525252]">Due now</RNText>
                   <RNText
                     accessibilityLabel={`${counts?.dueNow ?? 0} follow-ups due now`}
-                    className="font-extrabold text-[44px] leading-[50px] tracking-tight text-white"
+                    className={`mt-1 font-medium text-3xl tabular-nums ${counts?.dueNow ? 'text-gold' : 'text-ink'}`}
                   >
                     {counts ? counts.dueNow : '–'}
                   </RNText>
@@ -250,17 +248,15 @@ export default function TelecallerHome() {
                   <PressableScale
                     accessibilityLabel="Show follow-ups"
                     onPress={() => setTab('followups')}
-                    className="mb-2 flex-row items-center gap-1.5 rounded-full bg-[#E5484D] px-3.5 py-2"
+                    className="mb-1 h-10 flex-row items-center gap-2 rounded-lg bg-gold px-4"
                   >
-                    <Icon name="alarm" size={14} color="#fff" />
-                    <RNText className="font-bold text-[12px] text-white">Call back now</RNText>
+                    <Icon name="alarm-outline" size={16} color="#fff" />
+                    <RNText className="font-medium text-md text-white">Call back now</RNText>
                   </PressableScale>
                 ) : (
-                  <View className="mb-2 flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
-                    <View className="h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
-                    <RNText className="font-semibold text-[12px] text-white">
-                      Nothing overdue
-                    </RNText>
+                  <View className="mb-2 flex-row items-center gap-1.5">
+                    <View className="h-1.5 w-1.5 rounded-full bg-[#0F766E]" />
+                    <RNText className="font-normal text-sm text-[#525252]">Nothing overdue</RNText>
                   </View>
                 )}
               </View>

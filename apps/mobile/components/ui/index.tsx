@@ -41,27 +41,23 @@ import Animated, {
   SlideOutDown,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  avatarColor,
-  colors,
-  gradients,
-  gradientStyle,
-  shadow,
-  type Tone,
-  toneColors,
-} from '@/lib/theme';
+import { colors, shadow, type Tone, toneColors } from '@/lib/theme';
 
 import { Glass, GlassScope } from './glass';
 
 /**
- * F-805 design system — premium fintech primitives on NativeWind + shared tokens (ADR-003: in-house, no UI kit).
- * Every component keeps text labels visible (REQ-20 §20.2) and ≥44pt touch targets (REQ-20 §20.5).
+ * F-805 design system on NativeWind + shared tokens (ADR-003: in-house, no UI kit). Unslop pass: a back-office
+ * ledger — graphite surfaces, hairlines, one type scale (tailwind.config.js `fontSize`), weights 400/500 (600 rarely),
+ * KBS orange only for the primary action, the selection and one key figure. Every component keeps text labels visible
+ * (REQ-20 §20.2) and ≥44pt touch targets (REQ-20 §20.5).
  */
+
+/** Shared easing + durations (one curve everywhere). */
+export const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 
 cssInterop(Animated.View, { className: 'style' });
 
@@ -70,65 +66,45 @@ const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boo
 /* ───────────────────────── Typography ───────────────────────── */
 
 export function Text({ className, ...props }: TextProps & { className?: string }) {
-  return (
-    <RNText
-      className={cx('font-normal text-[15px] leading-[22px] text-ink', className)}
-      {...props}
-    />
-  );
+  return <RNText className={cx('font-normal text-base text-ink', className)} {...props} />;
 }
 export function Heading({ className, ...props }: TextProps & { className?: string }) {
   return (
     <RNText
       accessibilityRole="header"
-      className={cx('font-bold text-[22px] leading-[28px] tracking-tight text-ink', className)}
+      className={cx('font-medium text-xl text-ink', className)}
       {...props}
     />
   );
 }
 export function Display({ className, ...props }: TextProps & { className?: string }) {
   return (
-    <RNText
-      className={cx('font-extrabold text-[32px] leading-[38px] tracking-tight text-ink', className)}
-      {...props}
-    />
+    <RNText className={cx('font-medium text-3xl text-ink tabular-nums', className)} {...props} />
   );
 }
 export function Muted({ className, ...props }: TextProps & { className?: string }) {
-  return (
-    <RNText
-      className={cx('font-normal text-[13px] leading-[19px] text-[#57534E]', className)}
-      {...props}
-    />
-  );
+  return <RNText className={cx('font-normal text-sm text-[#525252]', className)} {...props} />;
 }
 export function Overline({ className, ...props }: TextProps & { className?: string }) {
-  return (
-    <RNText
-      className={cx(
-        'font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]',
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <RNText className={cx('font-medium text-xs text-[#737373]', className)} {...props} />;
 }
 export function Label({ className, ...props }: TextProps & { className?: string }) {
-  return (
-    <RNText className={cx('mb-1.5 font-semibold text-[13px] text-ink', className)} {...props} />
-  );
+  return <RNText className={cx('mb-1.5 font-medium text-sm text-ink', className)} {...props} />;
 }
 export function ErrorText({ children }: PropsWithChildren) {
   if (!children) return null;
   return (
     <View
       accessibilityRole="alert"
-      className="flex-row items-start gap-2 rounded-xl bg-[#FDECEA] px-3 py-2.5"
+      className="flex-row items-start gap-2 rounded-lg bg-[#FDEDEC] px-3 py-2.5"
     >
-      <Ionicons name="alert-circle" size={16} color={colors.danger} style={{ marginTop: 2 }} />
-      <RNText className="flex-1 font-medium text-[13px] leading-[19px] text-[#B42318]">
-        {children}
-      </RNText>
+      <Ionicons
+        name="alert-circle-outline"
+        size={16}
+        color={colors.danger}
+        style={{ marginTop: 1 }}
+      />
+      <RNText className="flex-1 font-normal text-sm text-[#B42318]">{children}</RNText>
     </View>
   );
 }
@@ -138,8 +114,8 @@ export function ErrorText({ children }: PropsWithChildren) {
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 export function Icon({
   name,
-  size = 20,
-  color = colors.text,
+  size = 18,
+  color = colors.muted,
   style,
 }: {
   name: IconName;
@@ -150,16 +126,25 @@ export function Icon({
   return <Ionicons name={name} size={size} color={color} style={style} />;
 }
 
+/**
+ * Kept for older call sites: draws a solid surface (the last stop, or the raised graphite step). Hue gradients are
+ * not used on surfaces any more — only the credit-card art keeps a material gradient.
+ */
 export function Gradient({
-  colors: stops = gradients.hero,
-  angle = 135,
+  colors: stops,
+  angle,
   style,
   className,
   children,
   ...props
 }: ViewProps & { colors?: readonly string[]; angle?: number; className?: string }) {
+  void angle;
   return (
-    <View {...props} className={className} style={[gradientStyle(stops, angle), style]}>
+    <View
+      {...props}
+      className={className}
+      style={[{ backgroundColor: stops?.[stops.length - 1] ?? colors.raised }, style]}
+    >
       {children}
     </View>
   );
@@ -221,9 +206,9 @@ export function Appear({
   return (
     // F-818: classes go on a plain View — className on Reanimated views is not applied on Android
     <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 10) * 45)
-        .duration(380)
-        .easing(Easing.out(Easing.cubic))}
+      entering={FadeInDown.delay(Math.min(index, 6) * 40)
+        .duration(320)
+        .easing(EASE)}
       style={style}
     >
       <View className={className}>{children}</View>
@@ -235,22 +220,24 @@ export { Glass, GlassScope } from './glass';
 
 /* ───────────────────────── Buttons ───────────────────────── */
 
-const buttonVariants = cva('flex-row items-center justify-center gap-2 rounded-full px-5', {
+const buttonVariants = cva('flex-row items-center justify-center gap-2 rounded-lg px-5', {
   variants: {
     variant: {
-      default: '',
-      gold: '',
-      secondary: 'bg-[#EFE9E1]',
-      outline: 'border-[1.5px] border-line bg-white',
+      /** graphite fill, white text */
+      default: 'bg-ink',
+      /** the accent — the one primary money action on a screen (#C2410C passes 4.5:1 with white) */
+      gold: 'bg-gold',
+      secondary: 'border border-line bg-raised',
+      outline: 'border border-[#D4D4D4] bg-white',
       destructive: 'bg-[#B42318]',
       ghost: 'px-3',
-      light: 'bg-white/15 border border-white/25',
+      light: 'border border-white/25 bg-white/10',
     },
-    size: { sm: 'h-10 px-4', md: 'h-12', lg: 'h-14' },
+    size: { sm: 'h-10 px-4', md: 'h-12', lg: 'h-12' },
   },
   defaultVariants: { variant: 'default', size: 'md' },
 });
-const buttonText = cva('font-semibold', {
+const buttonText = cva('font-medium', {
   variants: {
     variant: {
       default: 'text-white',
@@ -261,7 +248,7 @@ const buttonText = cva('font-semibold', {
       ghost: 'text-brand',
       light: 'text-white',
     },
-    size: { sm: 'text-[14px]', md: 'text-[15px]', lg: 'text-[16px]' },
+    size: { sm: 'text-md', md: 'text-base', lg: 'text-base' },
   },
   defaultVariants: { variant: 'default', size: 'md' },
 });
@@ -299,9 +286,9 @@ export function Button({
   const fg = BUTTON_FG[v] ?? '#fff';
   const fill: StyleProp<ViewStyle> =
     v === 'default'
-      ? [{ backgroundColor: colors.brand }, disabled ? null : shadow.glow]
+      ? { backgroundColor: colors.brand }
       : v === 'gold'
-        ? [gradientStyle(gradients.gold, 120), disabled ? null : shadow.gold]
+        ? { backgroundColor: colors.gold }
         : null;
   return (
     <PressableScale
@@ -346,23 +333,25 @@ export function IconButton({
 }) {
   const bg =
     tone === 'light'
-      ? 'bg-white/15 border border-white/20'
+      ? 'bg-white/10 border border-white/20'
       : tone === 'soft'
-        ? 'bg-[#EFE9E1]'
-        : 'bg-white/75 border border-white';
-  const fg = color ?? (tone === 'light' ? '#fff' : tone === 'soft' ? colors.brand : colors.ink);
+        ? 'bg-raised'
+        : 'bg-white border border-line';
+  const fg = color ?? (tone === 'light' ? '#fff' : colors.ink);
   return (
     <PressableScale
       accessibilityLabel={badge ? `${label}, ${badge} unread` : label}
       onPress={onPress}
       hitSlop={6}
-      className={cx('items-center justify-center rounded-full', bg)}
+      className={cx('items-center justify-center rounded-lg', bg)}
       style={{ width: size, height: size }}
     >
-      <Ionicons name={icon} size={20} color={fg} />
+      <Ionicons name={icon} size={18} color={fg} />
       {badge ? (
-        <View className="absolute -right-0.5 -top-0.5 h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-[#E5484D] px-1">
-          <RNText className="font-bold text-[10px] text-white">{badge > 99 ? '99+' : badge}</RNText>
+        <View className="absolute -right-1 -top-1 h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-gold px-1">
+          <RNText className="font-medium text-xs text-white tabular-nums">
+            {badge > 99 ? '99+' : badge}
+          </RNText>
         </View>
       ) : null}
     </PressableScale>
@@ -406,27 +395,25 @@ export const Input = forwardRef<
       {label ? <Label>{label}</Label> : null}
       <View
         className={cx(
-          'flex-row items-center gap-2.5 rounded-2xl border-[1.5px] bg-white px-4',
-          multiline ? 'min-h-[96px] items-start py-3' : 'h-[52px]',
-          error ? 'border-[#E5484D]' : focused ? 'border-brand' : 'border-line',
+          'flex-row items-center gap-2.5 rounded-lg border bg-white px-4',
+          multiline ? 'min-h-24 items-start py-3' : 'h-12',
+          error ? 'border-[#B42318]' : focused ? 'border-ink' : 'border-[#D4D4D4]',
           className,
         )}
         style={
-          focused && !error ? { boxShadow: '0px 0px 0px 4px rgba(22, 50, 158, 0.10)' } : undefined
+          focused && !error ? { boxShadow: '0px 0px 0px 3px rgba(23, 23, 23, 0.08)' } : undefined
         }
       >
-        {icon ? (
-          <Ionicons name={icon} size={18} color={focused ? colors.brand : colors.subtle} />
-        ) : null}
+        {icon ? <Ionicons name={icon} size={18} color={colors.subtle} /> : null}
         {prefix ? (
           <View className="flex-row items-center gap-2">
-            <RNText className="font-semibold text-[15px] text-ink">{prefix}</RNText>
+            <RNText className="font-medium text-base text-ink tabular-nums">{prefix}</RNText>
             <View className="h-5 w-px bg-line" />
           </View>
         ) : null}
         <TextInput
           ref={ref}
-          placeholderTextColor="#8A8178"
+          placeholderTextColor="#8A8A8A"
           multiline={multiline}
           onFocus={(e) => {
             setFocused(true);
@@ -437,8 +424,8 @@ export const Input = forwardRef<
             onBlur?.(e);
           }}
           className={cx(
-            'flex-1 font-normal text-[15px] text-ink',
-            multiline ? 'min-h-[72px]' : 'h-full',
+            'flex-1 font-normal text-base text-ink',
+            multiline ? 'min-h-16' : 'h-full',
             inputClassName,
           )}
           style={[
@@ -450,9 +437,9 @@ export const Input = forwardRef<
         {right}
       </View>
       {error ? (
-        <RNText className="mt-1.5 font-medium text-[12px] text-[#B42318]">{error}</RNText>
+        <RNText className="mt-1.5 font-normal text-xs text-[#B42318]">{error}</RNText>
       ) : hint ? (
-        <RNText className="mt-1.5 font-normal text-[12px] text-[#78716C]">{hint}</RNText>
+        <RNText className="mt-1.5 font-normal text-xs text-[#737373]">{hint}</RNText>
       ) : null}
     </View>
   );
@@ -460,14 +447,14 @@ export const Input = forwardRef<
 
 /* ───────────────────────── Containers ───────────────────────── */
 
-const cardVariants = cva('rounded-2xl', {
+const cardVariants = cva('rounded-xl', {
   variants: {
     variant: {
       elevated: 'border border-line bg-white p-4',
-      outline: 'border-[1.5px] border-line bg-white p-4',
-      tinted: 'bg-[#F5EEE7] p-4',
+      outline: 'border border-line bg-white p-4',
+      tinted: 'bg-raised p-4',
       flat: 'bg-white p-4',
-      /** F-818 frosted card — KPI tiles and chrome only, not lists/forms */
+      /** F-818 frosted card (`Glass`) — KPI tiles and chrome only, not lists/forms */
       glass: 'p-4',
     },
   },
@@ -498,7 +485,7 @@ export function Card({
       <PressableScale
         onPress={onPress}
         accessibilityLabel={accessibilityLabel}
-        className="rounded-2xl"
+        className="rounded-xl"
         scaleTo={0.985}
       >
         {body}
@@ -552,8 +539,8 @@ export function Badge({
   return (
     <View
       className={cx(
-        'flex-row items-center gap-1 self-start rounded-full',
-        size === 'sm' ? 'px-2 py-[2px]' : 'px-2.5 py-1',
+        'flex-row items-center gap-1.5 self-start rounded-md',
+        size === 'sm' ? 'px-1.5 py-0.5' : 'px-2 py-1',
       )}
       style={{ backgroundColor: solid ? t.fg : t.bg }}
     >
@@ -564,10 +551,7 @@ export function Badge({
         />
       ) : null}
       {icon ? <Ionicons name={icon} size={12} color={solid ? '#fff' : t.fg} /> : null}
-      <RNText
-        className={cx('font-semibold', size === 'sm' ? 'text-[11px]' : 'text-[12px]')}
-        style={{ color: solid ? '#fff' : t.fg }}
-      >
+      <RNText className="font-medium text-xs" style={{ color: solid ? '#fff' : t.fg }}>
         {label}
       </RNText>
     </View>
@@ -597,18 +581,18 @@ export function Chip({
         active ? 'bg-ink' : 'border border-line bg-white',
       )}
     >
-      {icon ? <Ionicons name={icon} size={15} color={active ? '#fff' : colors.muted} /> : null}
-      <RNText className={cx('font-semibold text-[13px]', active ? 'text-white' : 'text-[#44403C]')}>
+      {icon ? <Ionicons name={icon} size={16} color={active ? '#fff' : colors.subtle} /> : null}
+      <RNText className={cx('font-medium text-sm', active ? 'text-white' : 'text-[#525252]')}>
         {label}
       </RNText>
       {count !== undefined ? (
-        <View
-          className={cx(
-            'min-w-[20px] items-center rounded-full px-1.5',
-            active ? 'bg-white/20' : 'bg-[#EFEAE4]',
-          )}
-        >
-          <RNText className={cx('font-bold text-[11px]', active ? 'text-white' : 'text-[#44403C]')}>
+        <View className={cx('min-w-5 items-center px-1')}>
+          <RNText
+            className={cx(
+              'font-normal text-xs tabular-nums',
+              active ? 'text-white/70' : 'text-[#737373]',
+            )}
+          >
             {count}
           </RNText>
         </View>
@@ -632,7 +616,7 @@ export function Segmented<K extends string>({
   return (
     <View
       accessibilityRole="tablist"
-      className={cx('flex-row rounded-full p-1', dark ? 'bg-white/15' : 'bg-[#ECE7E0]')}
+      className={cx('flex-row rounded-lg p-1', dark ? 'bg-white/10' : 'bg-[#EDEDEE]')}
     >
       {options.map((o) => {
         const active = o.key === value;
@@ -642,13 +626,13 @@ export function Segmented<K extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onChange(o.key)}
-            className="h-10 flex-1 items-center justify-center rounded-full"
+            className="h-10 flex-1 items-center justify-center rounded-md"
           >
             {active ? (
               <View
                 style={[
                   StyleSheet.absoluteFill,
-                  { borderRadius: 999, backgroundColor: '#fff' },
+                  { borderRadius: 6, backgroundColor: '#fff' },
                   shadow.sm,
                 ]}
               />
@@ -656,28 +640,21 @@ export function Segmented<K extends string>({
             <View className="flex-row items-center gap-1.5">
               <RNText
                 className={cx(
-                  'font-semibold text-[13px]',
-                  active ? 'text-ink' : dark ? 'text-white/80' : 'text-[#57534E]',
+                  'font-medium text-sm',
+                  active ? 'text-ink' : dark ? 'text-white/80' : 'text-[#525252]',
                 )}
               >
                 {o.label}
               </RNText>
               {o.count ? (
-                <View
+                <RNText
                   className={cx(
-                    'min-w-[18px] items-center rounded-full px-1.5',
-                    active ? 'bg-brand' : dark ? 'bg-white/20' : 'bg-[#DDD6CC]',
+                    'font-normal text-xs tabular-nums',
+                    active ? 'text-gold' : dark ? 'text-white/70' : 'text-[#737373]',
                   )}
                 >
-                  <RNText
-                    className={cx(
-                      'font-bold text-[10px]',
-                      active ? 'text-white' : dark ? 'text-white' : 'text-ink',
-                    )}
-                  >
-                    {o.count}
-                  </RNText>
-                </View>
+                  {o.count}
+                </RNText>
               ) : null}
             </View>
           </Pressable>
@@ -704,7 +681,6 @@ export function Avatar({
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase())
       .join('') || '•';
-  const c = avatarColor(name || '?');
   return (
     <View
       className="items-center justify-center rounded-full"
@@ -712,14 +688,17 @@ export function Avatar({
         { width: size, height: size },
         light
           ? {
-              backgroundColor: 'rgba(255,255,255,0.18)',
-              borderWidth: 1.5,
-              borderColor: 'rgba(255,255,255,0.35)',
+              backgroundColor: 'rgba(255,255,255,0.12)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.24)',
             }
-          : gradientStyle([c, `${c}CC`], 135),
+          : { backgroundColor: '#EAE4DC', borderWidth: 1, borderColor: 'rgba(28, 25, 23, 0.06)' },
       ]}
     >
-      <RNText className="font-bold text-white" style={{ fontSize: size * 0.36 }}>
+      <RNText
+        className={cx('font-medium', light ? 'text-white' : 'text-[#525252]')}
+        style={{ fontSize: Math.round(size * 0.36) }}
+      >
         {initials}
       </RNText>
     </View>
@@ -737,13 +716,13 @@ export function IconCircle({
   size?: number;
   solid?: boolean;
 }) {
-  const t = tone === 'gold' ? { fg: '#9A3412', bg: colors.goldSoft } : toneColors[tone];
+  const t = tone === 'gold' ? { fg: colors.gold, bg: colors.goldSoft } : toneColors[tone];
   return (
     <View
-      className="items-center justify-center rounded-2xl"
+      className="items-center justify-center rounded-lg"
       style={{ width: size, height: size, backgroundColor: solid ? t.fg : t.bg }}
     >
-      <Ionicons name={icon} size={size * 0.46} color={solid ? '#fff' : t.fg} />
+      <Ionicons name={icon} size={size >= 40 ? 18 : 16} color={solid ? '#fff' : t.fg} />
     </View>
   );
 }
@@ -752,7 +731,7 @@ export function ProgressBar({
   value,
   tone = 'default',
   light,
-  height = 8,
+  height = 6,
 }: {
   value: number;
   tone?: Tone | 'gold';
@@ -762,25 +741,25 @@ export function ProgressBar({
   const pct = Math.max(0, Math.min(1, value));
   const w = useSharedValue(0);
   useEffect(() => {
-    w.set(withTiming(pct, { duration: 700, easing: Easing.out(Easing.cubic) }));
+    w.set(withTiming(pct, { duration: 400, easing: EASE }));
   }, [pct, w]);
   const anim = useAnimatedStyle(() => ({ width: `${w.get() * 100}%` }));
   const fill =
     tone === 'gold'
-      ? gradients.gold
+      ? colors.orange
       : tone === 'success'
-        ? gradients.success
-        : ['#1C1917', '#F05A28'];
+        ? colors.success
+        : light
+          ? '#FFFFFF'
+          : colors.ink;
   return (
     <View
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: Math.round(pct * 100) }}
-      className={cx('w-full overflow-hidden rounded-full', light ? 'bg-white/20' : 'bg-[#E7E1D8]')}
+      className={cx('w-full overflow-hidden rounded-full', light ? 'bg-white/20' : 'bg-[#EBEBEB]')}
       style={{ height }}
     >
-      <Animated.View
-        style={[{ height: '100%', borderRadius: 999 }, gradientStyle(fill, 90), anim]}
-      />
+      <Animated.View style={[{ height: '100%', borderRadius: 999, backgroundColor: fill }, anim]} />
     </View>
   );
 }
@@ -796,15 +775,9 @@ export function Skeleton({
   className?: string;
   style?: StyleProp<ViewStyle>;
 }) {
-  const o = useSharedValue(0.5);
-  useEffect(() => {
-    o.set(withRepeat(withTiming(1, { duration: 800 }), -1, true));
-  }, [o]);
-  const anim = useAnimatedStyle(() => ({ opacity: o.get() }));
+  // static placeholder — no looping shimmer
   return (
-    <View className={cx('overflow-hidden rounded-xl bg-[#E5DFD6]', className)} style={style}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#EFE9E1' }, anim]} />
-    </View>
+    <View className={cx('overflow-hidden rounded-md bg-[#EDEDEE]', className)} style={style} />
   );
 }
 
@@ -815,9 +788,9 @@ export function SkeletonList({ rows = 4, className }: { rows?: number; className
       {Array.from({ length: rows }, (_, i) => (
         <View
           key={i}
-          className="flex-row items-center gap-3 rounded-2xl border border-line bg-white p-4"
+          className="flex-row items-center gap-3 rounded-xl border border-line bg-white p-4"
         >
-          <Skeleton className="h-11 w-11 rounded-2xl" />
+          <Skeleton className="h-10 w-10 rounded-lg" />
           <View className="flex-1 gap-2">
             <Skeleton className="h-3.5 w-2/3" />
             <Skeleton className="h-3 w-1/2" />
@@ -846,13 +819,13 @@ export function KeyValue({
         !last && 'border-b border-line',
       )}
     >
-      <RNText className="font-normal text-[13px] text-[#57534E]">{label}</RNText>
+      <RNText className="font-normal text-sm text-[#525252]">{label}</RNText>
       {typeof value === 'string' || typeof value === 'number' ? (
         <RNText
           selectable
           className={cx(
-            'flex-1 text-right font-semibold text-[14px] text-ink',
-            mono && 'tracking-wide',
+            'flex-1 text-right font-medium text-md text-ink tabular-nums',
+            mono && 'font-normal',
           )}
         >
           {value}
@@ -868,11 +841,11 @@ const CALLOUT: Record<
   'info' | 'warning' | 'danger' | 'success' | 'neutral',
   { icon: IconName; tone: Tone }
 > = {
-  info: { icon: 'information-circle', tone: 'info' },
-  warning: { icon: 'warning', tone: 'warning' },
-  danger: { icon: 'alert-circle', tone: 'destructive' },
-  success: { icon: 'checkmark-circle', tone: 'success' },
-  neutral: { icon: 'shield-checkmark', tone: 'secondary' },
+  info: { icon: 'information-circle-outline', tone: 'info' },
+  warning: { icon: 'warning-outline', tone: 'warning' },
+  danger: { icon: 'alert-circle-outline', tone: 'destructive' },
+  success: { icon: 'checkmark-circle-outline', tone: 'success' },
+  neutral: { icon: 'shield-checkmark-outline', tone: 'secondary' },
 };
 export function Callout({
   kind = 'info',
@@ -883,18 +856,16 @@ export function Callout({
   const c = CALLOUT[kind];
   const t = toneColors[c.tone];
   return (
-    <View className="flex-row gap-3 rounded-2xl p-3.5" style={{ backgroundColor: t.bg }}>
+    <View className="flex-row gap-2.5 rounded-xl p-3" style={{ backgroundColor: t.bg }}>
       <Ionicons name={icon ?? c.icon} size={18} color={t.fg} style={{ marginTop: 1 }} />
       <View className="flex-1 gap-0.5">
         {title ? (
-          <RNText className="font-semibold text-[14px]" style={{ color: t.fg }}>
+          <RNText className="font-medium text-md" style={{ color: t.fg }}>
             {title}
           </RNText>
         ) : null}
         {typeof children === 'string' ? (
-          <RNText className="font-normal text-[13px] leading-[19px] text-[#44403C]">
-            {children}
-          </RNText>
+          <RNText className="font-normal text-sm text-[#525252]">{children}</RNText>
         ) : (
           children
         )}
@@ -920,7 +891,7 @@ export function SectionHeader({
     <View className={cx('flex-row items-center justify-between', className)}>
       <RNText
         accessibilityRole="header"
-        className={cx('font-bold text-[17px]', light ? 'text-white' : 'text-ink')}
+        className={cx('font-medium text-lg', light ? 'text-white' : 'text-ink')}
       >
         {title}
       </RNText>
@@ -931,8 +902,8 @@ export function SectionHeader({
           hitSlop={10}
           className="flex-row items-center gap-0.5"
         >
-          <RNText className="font-semibold text-[13px] text-brand">{action}</RNText>
-          <Ionicons name="chevron-forward" size={14} color={colors.brand} />
+          <RNText className="font-medium text-sm text-[#525252]">{action}</RNText>
+          <Ionicons name="chevron-forward" size={16} color={colors.subtle} />
         </Pressable>
       ) : null}
     </View>
@@ -964,30 +935,27 @@ export function ListItem({
 }) {
   const body = (
     <View
-      className={cx(
-        'min-h-[60px] flex-row items-center gap-3 py-3',
-        !last && 'border-b border-line',
-      )}
+      className={cx('min-h-14 flex-row items-center gap-3 py-3', !last && 'border-b border-line')}
     >
       {leading ??
         (icon ? (
-          <IconCircle icon={icon} tone={destructive ? 'destructive' : iconTone} size={40} />
+          <IconCircle icon={icon} tone={destructive ? 'destructive' : iconTone} size={36} />
         ) : null)}
       <View className="flex-1">
         <RNText
           numberOfLines={1}
-          className={cx('font-semibold text-[15px]', destructive ? 'text-[#B42318]' : 'text-ink')}
+          className={cx('font-medium text-base', destructive ? 'text-[#B42318]' : 'text-ink')}
         >
           {title}
         </RNText>
         {subtitle ? (
-          <RNText numberOfLines={2} className="mt-0.5 font-normal text-[13px] text-[#57534E]">
+          <RNText numberOfLines={2} className="mt-0.5 font-normal text-sm text-[#525252]">
             {subtitle}
           </RNText>
         ) : null}
       </View>
       {right}
-      {chevron ? <Ionicons name="chevron-forward" size={18} color={colors.subtle} /> : null}
+      {chevron ? <Ionicons name="chevron-forward" size={16} color={colors.subtle} /> : null}
     </View>
   );
   if (!onPress) return body;
@@ -999,7 +967,7 @@ export function ListItem({
 }
 
 export function EmptyState({
-  icon = 'sparkles-outline',
+  icon = 'file-tray-outline',
   title,
   body,
   action,
@@ -1014,23 +982,19 @@ export function EmptyState({
   compact?: boolean;
 }) {
   return (
-    <Animated.View entering={FadeIn.duration(300)}>
+    <Animated.View entering={FadeIn.duration(200).easing(EASE)}>
       <View
         className={cx(
-          'items-center rounded-3xl border border-dashed border-[#D6CEC3] bg-white px-6',
+          'items-center rounded-xl border border-line bg-white px-6',
           compact ? 'py-6' : 'py-10',
         )}
       >
-        <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-[#F5EEE7]">
-          <View className="h-11 w-11 items-center justify-center rounded-full bg-[#F3E2D8]">
-            <Ionicons name={icon} size={22} color={colors.brand} />
-          </View>
+        <View className="mb-3 h-10 w-10 items-center justify-center rounded-lg bg-raised">
+          <Ionicons name={icon} size={18} color={colors.subtle} />
         </View>
-        <RNText className="text-center font-bold text-[16px] text-ink">{title}</RNText>
+        <RNText className="text-center font-medium text-base text-ink">{title}</RNText>
         {body ? (
-          <RNText className="mt-1.5 text-center font-normal text-[13px] leading-[19px] text-[#57534E]">
-            {body}
-          </RNText>
+          <RNText className="mt-1 text-center font-normal text-sm text-[#525252]">{body}</RNText>
         ) : null}
         {action && onAction ? (
           <Button
@@ -1050,14 +1014,13 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   return (
     <View
       accessibilityRole="alert"
-      className="items-center rounded-3xl bg-white px-6 py-8"
-      style={shadow.sm}
+      className="items-center rounded-xl border border-line bg-white px-6 py-8"
     >
-      <IconCircle icon="cloud-offline-outline" tone="destructive" size={52} />
-      <RNText className="mt-3 text-center font-bold text-[16px] text-ink">
+      <IconCircle icon="cloud-offline-outline" tone="destructive" size={40} />
+      <RNText className="mt-3 text-center font-medium text-base text-ink">
         Something went wrong
       </RNText>
-      <RNText className="mt-1 text-center font-normal text-[13px] text-[#57534E]">{message}</RNText>
+      <RNText className="mt-1 text-center font-normal text-sm text-[#525252]">{message}</RNText>
       {onRetry ? (
         <Button
           title="Try again"
@@ -1089,31 +1052,36 @@ export function StatTile({
   onPress?: () => void;
   className?: string;
 }) {
+  // stat tiles are numbers: label, figure, hint. `icon` / `tone` are accepted for older call sites and not drawn —
+  // they only decorated the tile. `tone="gold"` marks the one key figure on a screen in the accent.
+  void icon;
   const inner = (
     <>
-      <View className="flex-row items-center justify-between">
-        {icon ? <IconCircle icon={icon} tone={tone} size={36} /> : <View />}
-        {onPress ? <Ionicons name="arrow-forward" size={16} color={colors.subtle} /> : null}
+      <View className="flex-row items-center justify-between gap-2">
+        <RNText numberOfLines={1} className="flex-1 font-normal text-sm text-[#525252]">
+          {label}
+        </RNText>
+        {onPress ? <Ionicons name="chevron-forward" size={16} color={colors.subtle} /> : null}
       </View>
       <RNText
         numberOfLines={1}
         adjustsFontSizeToFit
-        className="mt-3 font-extrabold text-[24px] tracking-tight text-ink"
+        className={cx(
+          'mt-2 font-medium text-xl tabular-nums',
+          tone === 'gold' ? 'text-gold' : 'text-ink',
+        )}
       >
         {value}
       </RNText>
-      <RNText numberOfLines={1} className="font-medium text-[12px] text-[#57534E]">
-        {label}
-      </RNText>
       {hint ? (
-        <RNText numberOfLines={1} className="mt-0.5 font-normal text-[11px] text-[#78716C]">
+        <RNText numberOfLines={1} className="mt-0.5 font-normal text-xs text-[#737373]">
           {hint}
         </RNText>
       ) : null}
     </>
   );
   return (
-    <Card variant="glass" onPress={onPress} className={cx('flex-1 p-3.5', className)}>
+    <Card variant="elevated" onPress={onPress} className={cx('flex-1 p-4', className)}>
       {inner}
     </Card>
   );
@@ -1224,7 +1192,7 @@ export function AppBar({
   return (
     <View className="px-4 pb-2 pt-1">
       {back || right || !large ? (
-        <View className="min-h-[48px] flex-row items-center gap-3">
+        <View className="min-h-12 flex-row items-center gap-3">
           {back ? (
             <IconButton
               icon="chevron-back"
@@ -1242,7 +1210,7 @@ export function AppBar({
                 <RNText
                   accessibilityRole="header"
                   numberOfLines={1}
-                  className={cx('font-bold text-[18px]', light ? 'text-white' : 'text-ink')}
+                  className={cx('font-medium text-lg', light ? 'text-white' : 'text-ink')}
                 >
                   {title}
                 </RNText>
@@ -1250,10 +1218,7 @@ export function AppBar({
               {subtitle ? (
                 <RNText
                   numberOfLines={1}
-                  className={cx(
-                    'font-normal text-[12px]',
-                    light ? 'text-white/70' : 'text-[#57534E]',
-                  )}
+                  className={cx('font-normal text-xs', light ? 'text-white/70' : 'text-[#737373]')}
                 >
                   {subtitle}
                 </RNText>
@@ -1269,18 +1234,15 @@ export function AppBar({
         <View className="mt-2">
           <RNText
             accessibilityRole="header"
-            className={cx(
-              'font-extrabold text-[28px] tracking-tight',
-              light ? 'text-white' : 'text-ink',
-            )}
+            className={cx('font-medium text-2xl', light ? 'text-white' : 'text-ink')}
           >
             {title}
           </RNText>
           {subtitle ? (
             <RNText
               className={cx(
-                'mt-0.5 font-normal text-[14px]',
-                light ? 'text-white/70' : 'text-[#57534E]',
+                'mt-0.5 font-normal text-md',
+                light ? 'text-white/70' : 'text-[#525252]',
               )}
             >
               {subtitle}
@@ -1292,12 +1254,16 @@ export function AppBar({
   );
 }
 
-/** Charcoal → orange gradient header (F-818; was navy → indigo) with soft orbs; draws under the status bar (use with `Screen inset="none" statusBar="light"`). */
+/**
+ * Page header for home-style screens. Unslop pass: the charcoal → orange gradient with orbs is gone — it is the page
+ * canvas with a hairline under it, and children use the normal text roles (ink / secondary / muted). It still draws
+ * under the status bar (`Screen inset="none"`). `colors` / `rounded` are accepted for older call sites and ignored.
+ */
 export function HeroHeader({
   children,
   className,
-  colors: stops = gradients.hero,
-  rounded = true,
+  colors: stops,
+  rounded,
   style,
 }: PropsWithChildren<{
   className?: string;
@@ -1305,26 +1271,15 @@ export function HeroHeader({
   rounded?: boolean;
   style?: StyleProp<ViewStyle>;
 }>) {
+  void stops;
+  void rounded;
   const insets = useSafeAreaInsets();
   return (
     <View
-      className={cx('overflow-hidden', rounded && 'rounded-b-[32px]')}
-      style={[gradientStyle(stops, 150), { paddingTop: insets.top + 8 }, style]}
+      className="border-b border-line bg-canvas"
+      style={[{ paddingTop: insets.top + 8 }, style]}
     >
-      <View
-        pointerEvents="none"
-        className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-white/[0.07]"
-      />
-      <View
-        pointerEvents="none"
-        className="absolute -left-20 top-24 h-44 w-44 rounded-full bg-white/[0.05]"
-      />
-      <View
-        pointerEvents="none"
-        className="absolute right-10 top-40 h-24 w-24 rounded-full"
-        style={{ backgroundColor: 'rgba(240, 90, 40, 0.16)' }}
-      />
-      <View className={cx('px-4', !/\bpb-/.test(className ?? '') && 'pb-6', className)}>
+      <View className={cx('px-4', !/\bpb-/.test(className ?? '') && 'pb-5', className)}>
         {children}
       </View>
     </View>
@@ -1337,10 +1292,10 @@ export function StickyFooter({ children, className }: PropsWithChildren<{ classN
   return (
     <Glass
       strong
-      className={cx('gap-2 rounded-t-[28px] px-4 pt-3', className)}
+      className={cx('gap-2 px-4 pt-3', className)}
       style={[
         { paddingBottom: Math.max(insets.bottom, 12) + 4 },
-        { boxShadow: '0px -6px 20px rgba(28, 25, 23, 0.06)' },
+        { borderWidth: 0, borderTopWidth: StyleSheet.hairlineWidth, boxShadow: 'none' },
       ]}
     >
       {children}
@@ -1369,7 +1324,7 @@ export function BottomSheet({
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
-          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(28, 25, 23, 0.5)' }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.4)' }]}
         >
           <Pressable
             accessibilityRole="button"
@@ -1379,28 +1334,24 @@ export function BottomSheet({
           />
         </Animated.View>
         <Animated.View
-          entering={SlideInDown.springify().damping(22).stiffness(220)}
-          exiting={SlideOutDown.duration(200)}
+          entering={SlideInDown.duration(320).easing(EASE)}
+          exiting={SlideOutDown.duration(200).easing(EASE)}
           style={{
             maxHeight: '88%',
             overflow: 'hidden',
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
             paddingBottom: Math.max(insets.bottom, 12),
           }}
         >
-          <Glass
-            strong
-            intensity={70}
-            className="rounded-t-[28px]"
-            style={StyleSheet.absoluteFill}
-          />
+          {/* F-818 frosted sheet: blur of what is behind + warm-white tint */}
+          <Glass strong intensity={70} className="rounded-t-[20px]" style={StyleSheet.absoluteFill} />
           <View className="items-center pb-1 pt-3">
-            <View className="h-1.5 w-10 rounded-full bg-[#DDD6CC]" />
+            <View className="h-1 w-9 rounded-full bg-[#DDD6CC]" />
           </View>
           {title ? (
             <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
-              <RNText accessibilityRole="header" className="font-bold text-[18px] text-ink">
+              <RNText accessibilityRole="header" className="font-medium text-lg text-ink">
                 {title}
               </RNText>
               <IconButton icon="close" label="Close" size={36} onPress={onClose} />
@@ -1427,21 +1378,21 @@ export function Stepper({ steps, current }: { steps: string[]; current: number }
     <View className="gap-2">
       <View className="flex-row items-center gap-1.5">
         {steps.map((s, i) => (
-          <View key={s} className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#E7E1D8]">
+          <View key={s} className="h-1 flex-1 overflow-hidden rounded-full bg-[#EBEBEB]">
             {i <= current ? (
               <View
                 className="h-full w-full rounded-full"
-                style={gradientStyle(i < current ? gradients.success : ['#1C1917', '#F05A28'], 90)}
+                style={{ backgroundColor: i < current ? colors.ink : colors.orange }}
               />
             ) : null}
           </View>
         ))}
       </View>
       <View className="flex-row items-center justify-between">
-        <RNText className="font-semibold text-[12px] text-brand">
+        <RNText className="font-medium text-xs text-ink tabular-nums">
           Step {Math.min(current + 1, steps.length)} of {steps.length}
         </RNText>
-        <RNText className="font-semibold text-[12px] text-[#57534E]">{steps[current] ?? ''}</RNText>
+        <RNText className="font-normal text-xs text-[#737373]">{steps[current] ?? ''}</RNText>
       </View>
     </View>
   );
@@ -1471,8 +1422,8 @@ export function ChoiceRow({
       onPress={onPress}
       scaleTo={0.985}
       className={cx(
-        'min-h-[52px] flex-row items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3',
-        selected ? 'border-brand bg-[#F5EEE7]' : 'border-line bg-white',
+        'min-h-12 flex-row items-center gap-3 rounded-lg border px-4 py-3',
+        selected ? 'border-ink bg-raised' : 'border-[#D4D4D4] bg-white',
         disabled && 'opacity-50',
       )}
     >
@@ -1486,19 +1437,14 @@ export function ChoiceRow({
               ? 'radio-button-on'
               : 'radio-button-off'
         }
-        size={22}
-        color={selected ? colors.brand : colors.subtle}
+        size={18}
+        color={selected ? colors.ink : colors.subtle}
       />
       <View className="flex-1">
-        <RNText
-          className={cx(
-            'text-[15px]',
-            selected ? 'font-semibold text-ink' : 'font-medium text-ink',
-          )}
-        >
+        <RNText className={cx('font-normal text-base text-ink', selected && 'font-medium')}>
           {label}
         </RNText>
-        {sub ? <RNText className="font-normal text-[12px] text-[#57534E]">{sub}</RNText> : null}
+        {sub ? <RNText className="font-normal text-xs text-[#737373]">{sub}</RNText> : null}
       </View>
     </PressableScale>
   );

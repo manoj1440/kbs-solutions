@@ -21,7 +21,6 @@ import {
   useDeferredFocus,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { gradients, gradientStyle, shadow } from '@/lib/theme';
 
 /** F-201: Manager creates a Telecaller with name + mobile (REQ-05 §5.1). */
 export default function CreateTelecaller() {
@@ -76,22 +75,11 @@ export default function CreateTelecaller() {
         }
       >
         <Appear>
-          <View
-            className="items-center overflow-hidden rounded-3xl px-5 py-7"
-            style={[gradientStyle(gradients.success, 140), shadow.lg]}
-          >
-            <View
-              pointerEvents="none"
-              className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10"
-            />
-            <View className="h-16 w-16 items-center justify-center rounded-full bg-white/20">
-              <IconCircle icon="checkmark" tone="success" size={48} solid />
-            </View>
-            <RNText className="mt-4 font-extrabold text-[22px] text-white">
-              Telecaller created
-            </RNText>
-            <RNText className="mt-1 text-center font-medium text-[13px] text-white/80">
-              They report to you from now on.
+          <View className="items-center rounded-xl border border-line bg-white px-5 py-7">
+            <IconCircle icon="checkmark" tone="success" size={40} />
+            <RNText className="mt-4 font-medium text-xl text-ink">Telecaller created</RNText>
+            <RNText className="mt-1 text-center font-normal text-sm text-[#525252]">
+              They report to you from now on
             </RNText>
           </View>
         </Appear>
@@ -99,7 +87,7 @@ export default function CreateTelecaller() {
           <Card className="gap-2">
             <View className="flex-row items-center gap-3 pb-2">
               <Avatar name={created.fullName} size={48} />
-              <Text numberOfLines={1} className="flex-1 font-bold text-[17px]">
+              <Text numberOfLines={1} className="flex-1 font-medium text-lg">
                 {created.fullName}
               </Text>
             </View>
@@ -135,9 +123,8 @@ export default function CreateTelecaller() {
       }
     >
       <Appear>
-        <View className="flex-row items-center gap-3 rounded-2xl bg-[#EFE9E1] p-4">
-          <IconCircle icon="person-add" tone="default" size={44} solid />
-          <Muted className="flex-1 text-[13px] leading-[19px] text-[#44403C]">
+        <View className="rounded-xl bg-raised p-4">
+          <Muted className="text-sm text-[#525252]">
             Only a name and mobile number are needed. The Telecaller reports to you.
           </Muted>
         </View>

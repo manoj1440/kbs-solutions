@@ -5,7 +5,8 @@ import { cardArt, gradientStyle, shadow } from '@/lib/theme';
 
 /**
  * F-805: generic credit-card artwork drawn with Views (no bank logos or brand marks — the bank name is plain text).
- * Palette is deterministic per bank so the same issuer always looks the same across the app.
+ * Palette is deterministic per bank so the same issuer always looks the same across the app. This is the app's one
+ * material moment: a real object, so it keeps a soft gradient, a metal chip and a neutral shadow.
  */
 export function CreditCardArt({
   bank,
@@ -64,7 +65,7 @@ export function CreditCardArt({
         <Text
           numberOfLines={1}
           style={{
-            fontFamily: 'Inter_800ExtraBold',
+            fontFamily: 'Inter_600SemiBold',
             fontSize: 13 * s,
             letterSpacing: 1.2 * s,
             color: '#fff',
@@ -86,7 +87,7 @@ export function CreditCardArt({
           width: 38 * s,
           height: 28 * s,
           borderRadius: 6 * s,
-          ...gradientStyle(['#F8A27A', '#EB6A3A', '#F69467'], 120),
+          ...gradientStyle(['#EADBB8', '#C8B07A', '#E3CF9E'], 120),
         }}
       >
         <View

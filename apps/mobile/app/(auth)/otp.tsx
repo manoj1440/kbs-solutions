@@ -3,14 +3,6 @@ import * as Device from 'expo-device';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text as RNText, TextInput, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-  ZoomIn,
-} from 'react-native-reanimated';
 
 import { AuthShell } from '@/components/auth';
 import { Appear, Button, ErrorText, Icon, Muted, useDeferredFocus } from '@/components/ui';
@@ -20,37 +12,20 @@ import { colors } from '@/lib/theme';
 
 const BOXES = 6;
 
+/** Static caret marking the next box (no blinking loop). */
 function Caret() {
-  const o = useSharedValue(1);
-  useEffect(() => {
-    o.set(
-      withRepeat(
-        withSequence(withTiming(0, { duration: 450 }), withTiming(1, { duration: 450 })),
-        -1,
-      ),
-    );
-  }, [o]);
-  const anim = useAnimatedStyle(() => ({ opacity: o.get() }));
-  return (
-    <Animated.View
-      style={[{ height: 24, width: 2, borderRadius: 1, backgroundColor: colors.brand }, anim]}
-    />
-  );
+  return <View style={{ height: 24, width: 2, borderRadius: 1, backgroundColor: colors.ink }} />;
 }
 
 function OtpBox({ digit, active, error }: { digit?: string; active: boolean; error: boolean }) {
   const filled = !!digit;
   return (
     <View
-      className={`h-[58px] flex-1 items-center justify-center rounded-2xl border-[1.5px] ${error ? 'border-[#E5484D] bg-[#FDECEA]' : active ? 'border-brand bg-white' : filled ? 'border-ink bg-white' : 'border-line bg-canvas'}`}
-      style={
-        active && !error ? { boxShadow: '0px 0px 0px 4px rgba(22, 50, 158, 0.12)' } : undefined
-      }
+      className={`h-14 flex-1 items-center justify-center rounded-lg border ${error ? 'border-[#B42318] bg-[#FDEDEC]' : active ? 'border-ink bg-white' : filled ? 'border-[#D4D4D4] bg-white' : 'border-[#D4D4D4] bg-canvas'}`}
+      style={active && !error ? { boxShadow: '0px 0px 0px 3px rgba(23, 23, 23, 0.08)' } : undefined}
     >
       {filled ? (
-        <Animated.View key={digit} entering={ZoomIn.duration(160)}>
-          <RNText className="font-extrabold text-[24px] text-ink">{digit}</RNText>
-        </Animated.View>
+        <RNText className="font-medium text-xl text-ink tabular-nums">{digit}</RNText>
       ) : active ? (
         <Caret />
       ) : null}
@@ -124,23 +99,23 @@ export default function OtpScreen() {
   const ss = String(secondsLeft % 60).padStart(2, '0');
   return (
     <AuthShell
-      title="OTP Verification"
+      title="OTP verification"
       subtitle={
         <View className="mt-1.5 flex-row flex-wrap items-center gap-x-2 gap-y-1">
-          <RNText className="font-medium text-[15px] leading-[22px] text-white/70">
+          <RNText className="font-normal text-base text-[#525252]">
             Enter the 6-digit OTP sent to
           </RNText>
           <View className="flex-row items-center gap-2">
-            <RNText className="font-bold text-[15px] tracking-[0.5px] text-white">{masked}</RNText>
+            <RNText className="font-medium text-base text-ink tabular-nums">{masked}</RNText>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Edit mobile number"
               onPress={() => router.back()}
               hitSlop={10}
-              className="flex-row items-center gap-1 rounded-full bg-white/15 px-2.5 py-1"
+              className="flex-row items-center gap-1 rounded-md bg-raised px-2 py-1"
             >
-              <Icon name="create-outline" size={13} color={colors.gold} />
-              <RNText className="font-bold text-[12px] text-gold">Edit</RNText>
+              <Icon name="create-outline" size={16} color={colors.subtle} />
+              <RNText className="font-medium text-xs text-ink">Edit</RNText>
             </Pressable>
           </View>
         </View>
@@ -178,11 +153,11 @@ export default function OtpScreen() {
       </Appear>
       <View className="items-center">
         {secondsLeft > 0 ? (
-          <View className="flex-row items-center gap-1.5 rounded-full bg-canvas px-3.5 py-2">
-            <Icon name="time-outline" size={15} color={colors.muted} />
-            <Muted className="font-medium">
+          <View className="flex-row items-center gap-1.5 px-3 py-2">
+            <Icon name="time-outline" size={16} color={colors.subtle} />
+            <Muted>
               Resend OTP in{' '}
-              <RNText className="font-bold text-ink">
+              <RNText className="font-medium text-ink tabular-nums">
                 {mm}:{ss}
               </RNText>
             </Muted>
@@ -191,10 +166,10 @@ export default function OtpScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={resend}
-            className="min-h-[44px] flex-row items-center gap-1.5 rounded-full bg-[#EFE9E1] px-4"
+            className="min-h-11 flex-row items-center gap-1.5 rounded-lg bg-raised px-4"
           >
-            <Icon name="refresh" size={16} color={colors.brand} />
-            <RNText className="font-bold text-[14px] text-brand">Resend OTP</RNText>
+            <Icon name="refresh" size={16} color={colors.ink} />
+            <RNText className="font-medium text-md text-brand">Resend OTP</RNText>
           </Pressable>
         )}
       </View>
@@ -203,7 +178,7 @@ export default function OtpScreen() {
         <Button
           title={busy ? 'Verifying…' : 'Verify OTP'}
           size="lg"
-          icon={busy ? undefined : 'shield-checkmark'}
+          icon={busy ? undefined : 'shield-checkmark-outline'}
           loading={busy}
           disabled={busy || code.length !== BOXES}
           onPress={verify}

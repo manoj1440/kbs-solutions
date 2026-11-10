@@ -1,5 +1,5 @@
 import { Link, router } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import {
   FlatList,
   Pressable,
@@ -9,94 +9,60 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import Animated, {
-  Easing,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Floating, LogoMark, Orbs } from '@/components/auth';
+import { LogoMark } from '@/components/auth';
 import { CreditCardArt } from '@/components/brand/credit-card-art';
 import { Appear, Button, Icon, type IconName, Screen } from '@/components/ui';
-import { cardArt, colors, gradients, gradientStyle } from '@/lib/theme';
+import { cardArt, colors, gradientStyle } from '@/lib/theme';
 
-/* ───────── slide building blocks (white-on-navy) ───────── */
+/* ───────── slide building blocks (graphite on the page canvas) ───────── */
 
-function Glass({ children, className }: { children: ReactNode; className?: string }) {
+function Panel({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <View
-      className={`rounded-2xl border border-white/10 bg-white/[0.07] ${className ?? ''}`}
-      style={{ boxShadow: 'inset 0px 1px 0px rgba(255,255,255,0.08)' }}
-    >
-      {children}
-    </View>
+    <View className={`rounded-xl border border-line bg-white ${className ?? ''}`}>{children}</View>
   );
 }
 
 function FeatureRow({ icon, title, sub }: { icon: IconName; title: string; sub: string }) {
   return (
-    <Glass className="flex-row items-center gap-3.5 px-4 py-3">
-      <View className="h-11 w-11 items-center justify-center rounded-xl bg-white/10">
-        <Icon name={icon} size={22} color={colors.gold} />
+    <Panel className="flex-row items-center gap-3 px-4 py-3">
+      <View className="h-9 w-9 items-center justify-center rounded-lg bg-raised">
+        <Icon name={icon} size={18} color={colors.subtle} />
       </View>
       <View className="flex-1">
-        <RNText className="font-bold text-[15px] text-white">{title}</RNText>
-        <RNText className="mt-0.5 font-normal text-[13px] text-white/60">{sub}</RNText>
+        <RNText className="font-medium text-base text-ink">{title}</RNText>
+        <RNText className="mt-0.5 font-normal text-sm text-[#525252]">{sub}</RNText>
       </View>
-      <Icon name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
-    </Glass>
+    </Panel>
   );
 }
 
 function CheckRow({ icon, label, sub }: { icon: IconName; label: string; sub: string }) {
   return (
-    <View className="flex-row items-center gap-3.5">
-      <View
-        className="h-11 w-11 items-center justify-center rounded-full"
-        style={gradientStyle(gradients.gold, 135)}
-      >
-        <Icon name={icon} size={20} color={colors.ink} />
+    <View className="flex-row items-center gap-3">
+      <View className="h-9 w-9 items-center justify-center rounded-lg bg-raised">
+        <Icon name={icon} size={18} color={colors.subtle} />
       </View>
       <View className="flex-1">
-        <RNText className="font-bold text-[15px] text-white">{label}</RNText>
-        <RNText className="mt-0.5 font-normal text-[13px] text-white/60">{sub}</RNText>
+        <RNText className="font-medium text-base text-ink">{label}</RNText>
+        <RNText className="mt-0.5 font-normal text-sm text-[#525252]">{sub}</RNText>
       </View>
-      <Icon name="checkmark-circle" size={20} color="#2DD4BF" />
     </View>
   );
 }
 
-function Headline({
-  lines,
-  accent,
-  sub,
-  center,
-}: {
-  lines: string[];
-  accent?: number;
-  sub: string;
-  center?: boolean;
-}) {
+function Headline({ lines, sub, center }: { lines: string[]; sub: string; center?: boolean }) {
   return (
     <View className={center ? 'items-center' : undefined}>
       <RNText
         accessibilityRole="header"
-        className={`font-extrabold text-[30px] leading-[37px] tracking-tight text-white ${center ? 'text-center' : ''}`}
+        className={`font-medium text-2xl text-ink ${center ? 'text-center' : ''}`}
       >
-        {lines.map((l, i) => (
-          <RNText key={l} style={i === accent ? { color: colors.gold } : undefined}>
-            {l}
-            {i < lines.length - 1 ? '\n' : ''}
-          </RNText>
-        ))}
+        {lines.join('\n')}
       </RNText>
       <RNText
-        className={`mt-2 font-medium text-[15px] leading-[22px] text-white/65 ${center ? 'text-center' : ''}`}
+        className={`mt-2 font-normal text-base text-[#525252] ${center ? 'text-center' : ''}`}
       >
         {sub}
       </RNText>
@@ -108,43 +74,33 @@ function Headline({
 
 function CardStack() {
   const cards = [
-    { bank: 'ICICI Bank', seed: 'rose-1', rotate: '-14deg', x: -64, y: 18, delay: 400 },
-    { bank: 'SBI Card', seed: 'teal-a', rotate: '12deg', x: 64, y: 22, delay: 800 },
-    { bank: 'HDFC Bank', seed: 'kbs-navy', rotate: '-2deg', x: 0, y: 0, delay: 0 },
+    { bank: 'ICICI Bank', seed: 'rose-1', rotate: '-14deg', x: -64, y: 18 },
+    { bank: 'SBI Card', seed: 'teal-a', rotate: '12deg', x: 64, y: 22 },
+    { bank: 'HDFC Bank', seed: 'kbs-navy', rotate: '-2deg', x: 0, y: 0 },
   ];
   return (
-    <View className="h-[250px] w-full items-center justify-center">
-      <View
-        pointerEvents="none"
-        className="absolute h-56 w-56 rounded-full"
-        style={{ backgroundColor: 'rgba(61, 90, 254, 0.28)' }}
-      />
+    <View className="h-64 w-full items-center justify-center">
       {cards.map((c) => (
         <View
           key={c.bank}
           className="absolute"
           style={{ transform: [{ translateX: c.x }, { translateY: c.y }, { rotate: c.rotate }] }}
         >
-          <Floating delay={c.delay} distance={7}>
-            <CreditCardArt bank={c.bank} seed={c.seed} width={210} name="Card Holder" compact />
-          </Floating>
+          <CreditCardArt bank={c.bank} seed={c.seed} width={210} name="Card Holder" compact />
         </View>
       ))}
     </View>
   );
 }
 
+/** A small card object (keeps its material gradient and a metal chip). */
 function MiniCard({ seed }: { seed: string }) {
   return (
     <View
-      className="h-10 w-16 overflow-hidden rounded-lg p-1.5"
+      className="h-10 w-16 overflow-hidden rounded-md p-1.5"
       style={gradientStyle(cardArt(seed), 135)}
     >
-      <View className="h-2 w-3 rounded-[3px]" style={gradientStyle(gradients.gold, 120)} />
-      <View
-        pointerEvents="none"
-        className="absolute -right-4 -top-4 h-10 w-10 rounded-full bg-white/10"
-      />
+      <View className="h-2 w-3 rounded-sm" style={{ backgroundColor: '#D9C38F' }} />
     </View>
   );
 }
@@ -157,40 +113,36 @@ function DiscoverHero() {
     ['ICICI Coral', 'Travel benefits', 'amber'],
   ];
   return (
-    <View className="w-full gap-2.5">
-      <Glass className="h-12 flex-row items-center gap-2.5 px-4">
-        <Icon name="search" size={18} color="rgba(255,255,255,0.6)" />
-        <RNText className="font-medium text-[14px] text-white/55">Search cards, banks…</RNText>
-      </Glass>
+    <View className="w-full gap-2">
+      <Panel className="h-12 flex-row items-center gap-2.5 px-4">
+        <Icon name="search" size={18} color={colors.subtle} />
+        <RNText className="font-normal text-md text-[#8A8A8A]">Search cards, banks</RNText>
+      </Panel>
       <View className="flex-row gap-2">
         {['All', 'Travel', 'Shopping', 'Premium'].map((t, i) => (
           <View
             key={t}
-            className={`rounded-full px-3.5 py-1.5 ${i === 0 ? 'bg-gold' : 'border border-white/15 bg-white/[0.06]'}`}
+            className={`rounded-full px-3.5 py-1.5 ${i === 0 ? 'bg-ink' : 'border border-line bg-white'}`}
           >
-            <RNText
-              className={`font-semibold text-[12px] ${i === 0 ? 'text-ink' : 'text-white/80'}`}
-            >
+            <RNText className={`font-medium text-xs ${i === 0 ? 'text-white' : 'text-[#525252]'}`}>
               {t}
             </RNText>
           </View>
         ))}
       </View>
-      {rows.map(([n, s, seed], i) => (
-        <Floating key={n} delay={i * 250} distance={2} duration={2600}>
-          <Glass className="flex-row items-center gap-3 p-2.5">
-            <MiniCard seed={seed} />
-            <View className="flex-1">
-              <RNText numberOfLines={1} className="font-bold text-[14px] text-white">
-                {n}
-              </RNText>
-              <RNText numberOfLines={1} className="font-normal text-[12px] text-white/55">
-                {s}
-              </RNText>
-            </View>
-            <Icon name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
-          </Glass>
-        </Floating>
+      {rows.map(([n, s, seed]) => (
+        <Panel key={n} className="flex-row items-center gap-3 p-2.5">
+          <MiniCard seed={seed} />
+          <View className="flex-1">
+            <RNText numberOfLines={1} className="font-medium text-md text-ink">
+              {n}
+            </RNText>
+            <RNText numberOfLines={1} className="font-normal text-xs text-[#737373]">
+              {s}
+            </RNText>
+          </View>
+          <Icon name="chevron-forward" size={16} color={colors.subtle} />
+        </Panel>
       ))}
     </View>
   );
@@ -198,124 +150,65 @@ function DiscoverHero() {
 
 function PhoneHero() {
   return (
-    <View className="h-[210px] w-full items-center justify-center">
+    <View className="h-52 w-full items-center justify-center">
       <View
-        pointerEvents="none"
-        className="absolute h-48 w-48 rounded-full"
-        style={{ backgroundColor: 'rgba(61, 90, 254, 0.3)' }}
-      />
-      <Floating distance={6}>
-        <View
-          className="h-[200px] w-[118px] rounded-[26px] border-[5px] border-white/20 bg-white p-3"
-          style={{ boxShadow: '0px 18px 40px rgba(0,0,0,0.35)' }}
-        >
-          <View className="mb-2 h-1.5 w-10 self-center rounded-full bg-[#E7E1D8]" />
-          <View className="mb-2 h-12 rounded-lg" style={gradientStyle(cardArt('kbs-navy'), 135)} />
-          <View className="mb-1.5 h-1.5 w-16 rounded bg-[#E7E1D8]" />
-          <View className="mb-3 h-1.5 w-12 rounded bg-[#E7E1D8]" />
-          <View className="mb-1.5 flex-row items-center gap-1.5">
-            <Icon name="checkmark-circle" size={11} color={colors.success} />
-            <View className="h-1.5 flex-1 rounded bg-[#E7E1D8]" />
-          </View>
-          <View className="mb-3 flex-row items-center gap-1.5">
-            <Icon name="checkmark-circle" size={11} color={colors.success} />
-            <View className="h-1.5 flex-1 rounded bg-[#E7E1D8]" />
-          </View>
-          <View
-            className="h-6 items-center justify-center rounded-md"
-            style={gradientStyle(['#1C1917', '#F05A28'], 120)}
-          >
-            <View className="h-1.5 w-10 rounded bg-white/70" />
-          </View>
+        className="h-48 w-28 rounded-3xl border-4 border-[#E5E5E5] bg-white p-3"
+        style={{ boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.06)' }}
+      >
+        <View className="mb-2 h-1 w-9 self-center rounded-full bg-[#EBEBEB]" />
+        <View className="mb-2 h-12 rounded-md" style={gradientStyle(cardArt('kbs-navy'), 135)} />
+        <View className="mb-1.5 h-1.5 w-16 rounded bg-[#EBEBEB]" />
+        <View className="mb-3 h-1.5 w-12 rounded bg-[#EBEBEB]" />
+        <View className="mb-1.5 flex-row items-center gap-1.5">
+          <Icon name="checkmark-circle-outline" size={16} color={colors.success} />
+          <View className="h-1.5 flex-1 rounded bg-[#EBEBEB]" />
         </View>
-      </Floating>
-      <Floating delay={500} distance={5} style={{ position: 'absolute', right: 40, top: 30 }}>
-        <View
-          className="flex-row items-center gap-1.5 rounded-full bg-white px-3 py-1.5"
-          style={{ boxShadow: '0px 8px 20px rgba(0,0,0,0.25)' }}
-        >
-          <Icon name="flash" size={12} color={colors.warning} />
-          <RNText className="font-bold text-[11px] text-ink">Instant link</RNText>
+        <View className="mb-3 flex-row items-center gap-1.5">
+          <Icon name="checkmark-circle-outline" size={16} color={colors.success} />
+          <View className="h-1.5 flex-1 rounded bg-[#EBEBEB]" />
         </View>
-      </Floating>
-      <Floating delay={1100} distance={5} style={{ position: 'absolute', left: 36, bottom: 34 }}>
-        <View
-          className="flex-row items-center gap-1.5 rounded-full bg-white px-3 py-1.5"
-          style={{ boxShadow: '0px 8px 20px rgba(0,0,0,0.25)' }}
-        >
-          <Icon name="document-text" size={12} color={colors.brand} />
-          <RNText className="font-bold text-[11px] text-ink">Zero paperwork</RNText>
+        <View className="h-6 items-center justify-center rounded-md bg-gold">
+          <View className="h-1.5 w-10 rounded bg-white/70" />
         </View>
-      </Floating>
+      </View>
+      <View
+        className="absolute right-10 top-8 flex-row items-center gap-1.5 rounded-md border border-line bg-white px-2.5 py-1.5"
+        style={{ boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }}
+      >
+        <Icon name="link-outline" size={16} color={colors.subtle} />
+        <RNText className="font-medium text-xs text-ink">Instant link</RNText>
+      </View>
+      <View
+        className="absolute bottom-8 left-9 flex-row items-center gap-1.5 rounded-md border border-line bg-white px-2.5 py-1.5"
+        style={{ boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }}
+      >
+        <Icon name="document-text-outline" size={16} color={colors.subtle} />
+        <RNText className="font-medium text-xs text-ink">Zero paperwork</RNText>
+      </View>
     </View>
   );
 }
 
-function Bar({ h, i, active }: { h: number; i: number; active: boolean }) {
-  const v = useSharedValue(0);
-  useEffect(() => {
-    v.set(
-      active
-        ? withDelay(
-            150 + i * 120,
-            withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) }),
-          )
-        : 0,
-    );
-  }, [active, i, v]);
-  const anim = useAnimatedStyle(() => ({ height: `${h * v.get()}%` }));
+/** Static bars: neutral steps, the latest one in the accent. */
+function EarnHero() {
   return (
-    <Animated.View
-      style={[
-        { width: 44, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
-        gradientStyle(
-          i === 3 ? gradients.gold : ['rgba(255,255,255,0.35)', 'rgba(255,255,255,0.12)'],
-          180,
-        ),
-        anim,
-      ]}
-    />
-  );
-}
-
-function EarnHero({ active }: { active: boolean }) {
-  return (
-    <View className="h-[200px] w-full items-center justify-end">
-      <Floating distance={6} style={{ position: 'absolute', top: 0, right: 34 }}>
-        <View
-          className="h-14 w-14 items-center justify-center rounded-2xl"
-          style={[
-            gradientStyle(gradients.gold, 135),
-            { boxShadow: '0px 10px 24px rgba(227,155,27,0.4)' },
-          ]}
-        >
-          <Icon name="trophy" size={28} color={colors.ink} />
-        </View>
-      </Floating>
-      <View className="h-[150px] flex-row items-end gap-3.5">
+    <View className="h-48 w-full items-center justify-end">
+      <View className="h-36 flex-row items-end gap-3.5">
         {[30, 52, 74, 100].map((h, i) => (
-          <Bar key={h} h={h} i={i} active={active} />
+          <View
+            key={h}
+            style={{
+              width: 44,
+              height: `${h}%`,
+              borderTopLeftRadius: 6,
+              borderTopRightRadius: 6,
+              backgroundColor: i === 3 ? colors.orange : i === 2 ? '#D4D4D4' : '#E5E5E5',
+            }}
+          />
         ))}
       </View>
-      <View className="h-px w-64 bg-white/20" />
-      <View className="absolute left-8 top-6 flex-row items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
-        <Icon name="trending-up" size={14} color="#2DD4BF" />
-        <RNText className="font-bold text-[12px] text-white">Growing every month</RNText>
-      </View>
+      <View className="h-px w-64 bg-[#D4D4D4]" />
     </View>
-  );
-}
-
-/* ───────── pagination ───────── */
-
-function Dot({ i, x, width }: { i: number; x: SharedValue<number>; width: number }) {
-  const anim = useAnimatedStyle(() => {
-    const p = x.get() / width;
-    const t = interpolate(p, [i - 1, i, i + 1], [0, 1, 0], 'clamp');
-    return { width: 8 + t * 20, opacity: 0.35 + t * 0.65 };
-  });
-  return (
-    <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: colors.gold }, anim]} />
   );
 }
 
@@ -326,7 +219,6 @@ export default function Welcome() {
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState(0);
   const list = useRef<FlatList<Slide>>(null);
-  const x = useSharedValue(0);
 
   const slides: Slide[] = [
     {
@@ -337,29 +229,28 @@ export default function Welcome() {
           <CardStack />
           <View className="mt-8">
             <Headline
-              lines={['More Leads', 'More Opportunities', 'A Brighter Tomorrow']}
-              accent={2}
-              sub="Credit Card DSA Platform"
+              lines={['More leads,', 'more opportunities']}
+              sub="Credit card DSA platform"
             />
           </View>
           <View className="mt-7 flex-row gap-2">
             {(
               [
-                ['business', 'Top Banks'],
-                ['pricetags', 'Best Offers'],
-                ['trending-up', 'Higher Earnings'],
+                ['business-outline', 'Top banks'],
+                ['pricetags-outline', 'Best offers'],
+                ['wallet-outline', 'Higher earnings'],
               ] as [IconName, string][]
             ).map(([icon, t]) => (
-              <Glass key={t} className="flex-1 items-center gap-1.5 px-1 py-3">
-                <Icon name={icon} size={20} color={colors.gold} />
+              <Panel key={t} className="flex-1 items-center gap-1.5 px-1 py-3">
+                <Icon name={icon} size={18} color={colors.subtle} />
                 <RNText
                   numberOfLines={1}
                   adjustsFontSizeToFit
-                  className="font-semibold text-[12px] tracking-tight text-white/85"
+                  className="font-medium text-xs text-[#525252]"
                 >
                   {t}
                 </RNText>
-              </Glass>
+              </Panel>
             ))}
           </View>
         </>
@@ -371,8 +262,7 @@ export default function Welcome() {
       render: () => (
         <>
           <Headline
-            lines={['Discover Top', 'Credit Cards']}
-            accent={1}
+            lines={['Discover top', 'credit cards']}
             sub="Wide range of cards for every lifestyle"
           />
           <View className="mt-6">
@@ -389,22 +279,22 @@ export default function Welcome() {
           <PhoneHero />
           <View className="mt-5">
             <Headline
-              lines={['100% Digital Selling']}
+              lines={['100% digital selling']}
               sub={'Help customers get credit cards\nin just a few steps'}
             />
           </View>
           <View className="mt-6 gap-4">
             <CheckRow
-              icon="document-text"
-              label="Digital Application Process"
+              icon="document-text-outline"
+              label="Digital application process"
               sub="No paperwork, fully online"
             />
-            <CheckRow icon="pulse" label="Track Status Easily" sub="Real-time status updates" />
             <CheckRow
-              icon="cash"
-              label="Earn Attractive Incentives"
-              sub="Higher payouts on activations"
+              icon="pulse-outline"
+              label="Track status"
+              sub="Status updates from the bank MIS"
             />
+            <CheckRow icon="cash-outline" label="Incentives" sub="Payouts on activated cards" />
           </View>
         </>
       ),
@@ -415,16 +305,19 @@ export default function Welcome() {
       render: () => (
         <>
           <Headline
-            lines={['A Card for', 'Every Need']}
-            accent={1}
+            lines={['A card for', 'every need']}
             sub="Offer the right card to the right customer"
           />
           <View className="mt-6 gap-2.5">
-            <FeatureRow icon="bag-handle" title="Shopping" sub="Best deals & cashback" />
-            <FeatureRow icon="airplane" title="Travel" sub="Lounge access & travel benefits" />
-            <FeatureRow icon="diamond" title="Premium" sub="Exclusive lifestyle privileges" />
-            <FeatureRow icon="car-sport" title="Fuel" sub="Savings on every ride" />
-            <FeatureRow icon="briefcase" title="Business" sub="Designed for business owners" />
+            <FeatureRow icon="bag-handle-outline" title="Shopping" sub="Deals & cashback" />
+            <FeatureRow
+              icon="airplane-outline"
+              title="Travel"
+              sub="Lounge access & travel benefits"
+            />
+            <FeatureRow icon="diamond-outline" title="Premium" sub="Lifestyle privileges" />
+            <FeatureRow icon="car-sport-outline" title="Fuel" sub="Savings on fuel" />
+            <FeatureRow icon="briefcase-outline" title="Business" sub="For business owners" />
           </View>
         </>
       ),
@@ -432,20 +325,27 @@ export default function Welcome() {
     {
       key: 'earn',
       cta: "Let's Login",
-      render: (active) => (
+      render: () => (
         <>
-          <EarnHero active={active} />
+          <EarnHero />
           <View className="mt-6">
-            <Headline lines={['Grow Your Earnings']} sub="The more you help, the more you earn" />
+            <Headline
+              lines={['Grow your earnings']}
+              sub="The more customers you help, the more you earn"
+            />
           </View>
           <View className="mt-6 gap-4">
-            <CheckRow icon="wallet" label="Handsome Payouts" sub="On every activated card" />
+            <CheckRow icon="wallet-outline" label="Payouts" sub="On every activated card" />
             <CheckRow
-              icon="shield-checkmark"
-              label="Trusted Bank Partnerships"
+              icon="shield-checkmark-outline"
+              label="Bank partnerships"
               sub="Work with leading banks"
             />
-            <CheckRow icon="school" label="Support & Training" sub="We're with you at every step" />
+            <CheckRow
+              icon="school-outline"
+              label="Support & training"
+              sub="Training before you start, support after"
+            />
           </View>
         </>
       ),
@@ -461,28 +361,19 @@ export default function Welcome() {
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const ox = e.nativeEvent.contentOffset.x;
-    x.set(ox);
     const p = Math.round(ox / width);
     if (p !== page && p >= 0 && p < slides.length) setPage(p);
   };
 
   return (
-    <Screen inset="none" statusBar="light" padded={false}>
-      <View
-        pointerEvents="none"
-        className="absolute inset-0"
-        style={gradientStyle(gradients.heroDeep, 165)}
-      />
-      <Orbs />
+    <Screen inset="none" statusBar="dark" padded={false}>
       <View
         style={{ paddingTop: insets.top + 6 }}
         className="h-auto flex-row items-center justify-between px-5"
       >
         <View className="flex-row items-center gap-2.5">
-          <LogoMark size={36} />
-          <RNText className="font-bold text-[15px] tracking-[0.5px] text-white">
-            KBS Solutions
-          </RNText>
+          <LogoMark size={32} />
+          <RNText className="font-medium text-base text-ink">KBS Solutions</RNText>
         </View>
         {!last ? (
           <Pressable
@@ -490,10 +381,10 @@ export default function Welcome() {
             accessibilityLabel="Skip introduction"
             onPress={skip}
             hitSlop={10}
-            className="h-11 flex-row items-center gap-1 rounded-full border border-white/15 bg-white/10 px-4"
+            className="h-11 flex-row items-center gap-1 rounded-lg px-3"
           >
-            <RNText className="font-semibold text-[13px] text-white">Skip</RNText>
-            <Icon name="chevron-forward" size={14} color="#fff" />
+            <RNText className="font-medium text-sm text-[#525252]">Skip</RNText>
+            <Icon name="chevron-forward" size={16} color={colors.subtle} />
           </Pressable>
         ) : (
           <View className="h-11" />
@@ -525,7 +416,10 @@ export default function Welcome() {
           className="flex-row items-center justify-center gap-1.5"
         >
           {slides.map((s, i) => (
-            <Dot key={s.key} i={i} x={x} width={width} />
+            <View
+              key={s.key}
+              className={`h-1.5 rounded-full ${i === page ? 'w-5 bg-ink' : 'w-1.5 bg-[#D4D4D4]'}`}
+            />
           ))}
         </View>
         <Button
@@ -537,18 +431,15 @@ export default function Welcome() {
         />
         {last ? (
           <Link href="/(auth)/mobile?purpose=ADVISOR_SIGNUP" asChild>
-            <Pressable
-              accessibilityRole="button"
-              className="min-h-[44px] items-center justify-center"
-            >
-              <RNText className="font-medium text-[14px] text-white/70">
-                New here? <RNText className="font-bold text-gold">Create Account</RNText>
+            <Pressable accessibilityRole="button" className="min-h-11 items-center justify-center">
+              <RNText className="font-normal text-md text-[#525252]">
+                New here? <RNText className="font-medium text-gold">Create account</RNText>
               </RNText>
             </Pressable>
           </Link>
         ) : (
-          <View className="min-h-[44px] items-center justify-center">
-            <RNText className="font-medium text-[12px] text-white/45">Swipe to explore</RNText>
+          <View className="min-h-11 items-center justify-center">
+            <RNText className="font-normal text-xs text-[#737373]">Swipe to explore</RNText>
           </View>
         )}
       </View>

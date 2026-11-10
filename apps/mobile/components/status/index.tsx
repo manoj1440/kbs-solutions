@@ -10,7 +10,7 @@ import {
 } from '@kbs/shared';
 import { Text as RNText, View } from 'react-native';
 
-import { Badge, type IconName } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import { toneColors } from '@/lib/theme';
 
 /**
@@ -28,7 +28,7 @@ function StatusBadge({
 }) {
   return (
     <View className="flex-row items-center gap-1.5">
-      <RNText className="font-medium text-[11px] text-[#78716C]">{label}</RNText>
+      <RNText className="font-medium text-xs text-[#737373]">{label}</RNText>
       <Badge label={field.display} variant={statusTone(kind, field)} dot size="sm" />
     </View>
   );
@@ -66,23 +66,12 @@ export function StatusTrio({
           <View
             key={label}
             accessibilityLabel={`${label}: ${f.display}`}
-            className="flex-1 gap-1 rounded-xl px-2.5 py-2"
-            style={{ backgroundColor: t.bg }}
+            className="flex-1 gap-1 rounded-lg border border-line bg-white px-2.5 py-2"
           >
-            <RNText className="font-semibold text-[10px] uppercase tracking-[0.8px] text-[#57534E]">
-              {label}
-            </RNText>
+            <RNText className="font-normal text-xs text-[#737373]">{label}</RNText>
             <View className="flex-row items-start gap-1.5">
-              <View
-                className="mt-[5px] h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: t.fg }}
-              />
-              <RNText
-                className="flex-1 font-semibold text-[12px] leading-[16px]"
-                style={{ color: t.fg }}
-              >
-                {f.display}
-              </RNText>
+              <View className="mt-1.5 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.fg }} />
+              <RNText className="flex-1 font-medium text-xs text-ink">{f.display}</RNText>
             </View>
           </View>
         );
@@ -91,10 +80,14 @@ export function StatusTrio({
   );
 }
 
-const PROV: Record<Provenance, { bg: string; fg: string; icon: IconName }> = {
-  BANK_MIS: { bg: '#F1ECFB', fg: '#5B2BA8', icon: 'business' },
-  KBS_OPERATIONAL: { bg: '#E6F3F1', fg: '#0B5E82', icon: 'pulse' },
-  KBS_PAYMENT: { bg: '#E3F4F1', fg: '#115E59', icon: 'cash' },
+/**
+ * The app's signature: where a fact comes from. Provenance colours from @kbs/ui-tokens (REQ-20 §20.3) — used only as
+ * the dot; the label stays quiet muted text so the source reads like a stamp in the margin of a ledger.
+ */
+export const PROVENANCE_DOT: Record<Provenance, string> = {
+  BANK_MIS: '#5B2BA3',
+  KBS_OPERATIONAL: '#215F7A',
+  KBS_PAYMENT: '#246B47',
 };
 
 export function ProvenanceChip({
@@ -104,13 +97,13 @@ export function ProvenanceChip({
   provenance: Provenance;
   asOf?: string | null;
 }) {
-  const p = PROV[provenance];
   return (
-    <View
-      className="flex-row items-center gap-1 self-start rounded-full px-2.5 py-1"
-      style={{ backgroundColor: p.bg }}
-    >
-      <RNText className="font-semibold text-[11px]" style={{ color: p.fg }}>
+    <View className="flex-row items-center gap-1.5 self-start">
+      <View
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: PROVENANCE_DOT[provenance] }}
+      />
+      <RNText className="font-normal text-xs text-[#737373] tabular-nums">
         {PROVENANCE_LABEL[provenance]}
         {asOf ? ` · as of ${formatDateTime(asOf)}` : ''}
       </RNText>

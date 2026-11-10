@@ -20,6 +20,7 @@ import {
   Card,
   ErrorState,
   ErrorText,
+  Icon,
   IconCircle,
   type IconName,
   Input,
@@ -34,6 +35,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { routeFor, useSession } from '@/lib/session';
+import { colors } from '@/lib/theme';
 
 const STEP_TITLES: Record<string, string> = {
   PERSONAL: 'Your details',
@@ -149,7 +151,7 @@ export default function OnboardingGate() {
         ) : (
           <View className="gap-4">
             <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-56 w-full rounded-3xl" />
+            <Skeleton className="h-56 w-full rounded-xl" />
           </View>
         )}
       </Screen>
@@ -211,7 +213,7 @@ export default function OnboardingGate() {
         return {
           body: (
             <>
-              <Text className="text-[15px] leading-[23px]">
+              <Text className="text-base">
                 KBS Solutions will verify your identity through an authorised provider and keep only
                 the verification result — never your identity number, documents or images.
               </Text>
@@ -381,22 +383,22 @@ export default function OnboardingGate() {
         return {
           body: (
             <>
-              <Text className="text-[15px] leading-[23px]">
+              <Text className="text-base">
                 Upload a photo of a cancelled cheque for the account above.
               </Text>
               {v.cheque ? (
-                <View className="flex-row items-center gap-3 rounded-2xl bg-canvas p-3">
-                  <IconCircle icon="image" tone="success" size={40} />
+                <View className="flex-row items-center gap-3 rounded-lg bg-raised p-3">
+                  <IconCircle icon="image-outline" tone="success" size={36} />
                   <View className="flex-1">
-                    <Muted className="text-[12px]">Uploaded</Muted>
-                    <RNText numberOfLines={1} className="font-semibold text-[14px] text-ink">
+                    <Muted className="text-xs">Uploaded</Muted>
+                    <RNText numberOfLines={1} className="font-medium text-md text-ink">
                       {v.cheque.originalName}
                     </RNText>
                   </View>
                 </View>
               ) : (
-                <View className="items-center gap-2 rounded-2xl border-[1.5px] border-dashed border-[#D6CEC3] bg-canvas px-4 py-7">
-                  <IconCircle icon="camera-outline" size={48} />
+                <View className="items-center gap-2 rounded-lg border border-line bg-raised px-4 py-7">
+                  <Icon name="camera-outline" size={18} color={colors.subtle} />
                   <Muted className="text-center">No cheque image yet</Muted>
                 </View>
               )}
@@ -438,7 +440,7 @@ export default function OnboardingGate() {
         return {
           body: (
             <>
-              <Text className="text-[15px] leading-[23px]">
+              <Text className="text-base">
                 If a KBS Manager gave you an Agent Code, enter it to report to them. Leave blank to
                 report to KBS directly. Earlier leads always keep their original attribution.
               </Text>
@@ -495,7 +497,7 @@ export default function OnboardingGate() {
                   {v.review.reason ?? ''}
                 </Callout>
               ) : null}
-              <View className="rounded-2xl bg-canvas px-4 py-1">
+              <View className="rounded-lg bg-raised px-4 py-1">
                 <KeyValue label="Name" value={v.personal.fullName} />
                 <KeyValue label="Email" value={v.personal.email ?? ''} />
                 <KeyValue label="Identity" value={v.identity.status.toLowerCase()} />
@@ -507,9 +509,7 @@ export default function OnboardingGate() {
                 <KeyValue label="Reporting to" value={v.reportingParent?.fullName ?? 'KBS'} last />
               </View>
               <View>
-                <RNText className="mb-1 font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
-                  Make changes
-                </RNText>
+                <RNText className="mb-1 font-medium text-sm text-[#525252]">Make changes</RNText>
                 {['PERSONAL', 'BANK', 'CHEQUE', 'AGENT_CODE'].map((s, i, arr) => (
                   <ListItem
                     key={s}
@@ -520,7 +520,7 @@ export default function OnboardingGate() {
                   />
                 ))}
               </View>
-              <Muted className="text-center text-[12px]">
+              <Muted className="text-center text-xs">
                 {v.requiresAdminReview
                   ? 'KBS reviews every new Advisor before activation.'
                   : 'Your account activates immediately after submission.'}
@@ -545,7 +545,7 @@ export default function OnboardingGate() {
               <View className="flex-row justify-center">
                 <Badge label="Awaiting KBS review" variant="info" icon="time-outline" />
               </View>
-              <Text className="text-center text-[15px] leading-[23px]">
+              <Text className="text-center text-base">
                 Submitted {v.submittedAt ? formatDateTime(v.submittedAt) : ''}. You will be notified
                 when your account is ready.
               </Text>
@@ -591,12 +591,11 @@ export default function OnboardingGate() {
       <Appear key={step}>
         <Card className="gap-4 p-5">
           <View className="flex-row items-center gap-3">
-            <IconCircle icon={STEP_ICONS[step] ?? 'ellipse'} size={44} />
             <View className="flex-1">
-              <RNText accessibilityRole="header" className="font-bold text-[18px] text-ink">
+              <RNText accessibilityRole="header" className="font-medium text-lg text-ink">
                 {STEP_TITLES[step]}
               </RNText>
-              {editing ? <Muted className="text-[12px]">Editing an earlier step</Muted> : null}
+              {editing ? <Muted className="text-xs">Editing an earlier step</Muted> : null}
             </View>
           </View>
           {editing ? (

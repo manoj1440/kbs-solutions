@@ -101,29 +101,21 @@ export default function PerformanceScreen() {
                 className="flex-1"
                 label="Calls"
                 value={String(p.today.attempts)}
-                icon="call"
                 hint={`${p.today.connected} connected`}
               />
-              <StatTile
-                className="flex-1"
-                label="Talk time"
-                value={minutes(p.today.talkTimeSec)}
-                icon="time"
-              />
+              <StatTile className="flex-1" label="Talk time" value={minutes(p.today.talkTimeSec)} />
             </View>
             <View className="flex-row gap-3">
               <StatTile
                 className="flex-1"
                 label="Interested"
                 value={String(p.today.interests)}
-                icon="heart"
                 tone="gold"
               />
               <StatTile
                 className="flex-1"
                 label="In queue"
                 value={String(p.queueSize)}
-                icon="list"
                 hint={p.followUpsDue ? `${p.followUpsDue} follow-ups due` : undefined}
               />
             </View>
@@ -136,14 +128,12 @@ export default function PerformanceScreen() {
                 className="flex-1"
                 label="Calls"
                 value={String(p.period.attempts)}
-                icon="call-outline"
                 hint={`${p.period.connected} connected`}
               />
               <StatTile
                 className="flex-1"
                 label="Links sent"
                 value={String(p.period.shares.APPLICATION_LINK ?? 0)}
-                icon="link"
                 hint={`${p.period.shares.BENEFIT_PDF ?? 0} PDFs`}
               />
             </View>
@@ -156,16 +146,12 @@ export default function PerformanceScreen() {
                 className="flex-1"
                 label="Approved"
                 value={String(a.APPROVED)}
-                icon="checkmark-circle"
-                tone="success"
                 hint={a.activated ? `${a.activated} activated` : undefined}
               />
               <StatTile
                 className="flex-1"
                 label="In process"
                 value={String(a.IN_PROCESS + a.AWAITING_BANK_UPDATE)}
-                icon="hourglass"
-                tone="info"
               />
             </View>
             <View className="flex-row gap-3">
@@ -173,15 +159,12 @@ export default function PerformanceScreen() {
                 className="flex-1"
                 label="Declined"
                 value={String(a.DECLINED)}
-                icon="close-circle"
                 tone="destructive"
               />
               <StatTile
                 className="flex-1"
                 label="Need app no."
                 value={String(a.AWAITING_REFERENCE)}
-                icon="create"
-                tone="warning"
               />
             </View>
             <Muted>

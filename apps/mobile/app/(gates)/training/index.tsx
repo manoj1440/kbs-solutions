@@ -11,7 +11,6 @@ import {
   ErrorState,
   HeroHeader,
   Icon,
-  type IconName,
   Muted,
   ProgressBar,
   Screen,
@@ -21,39 +20,28 @@ import {
   Text,
 } from '@/components/ui';
 import { useSession } from '@/lib/session';
-import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 import { countdown, training, type TrainingMe, type TrainingModuleState } from '@/lib/training';
 
-const ICONS: IconName[] = ['card', 'business', 'document-text', 'people', 'create'];
-
+/** Timeline node: a status dot with the module number — done (check), current (ink ring) or locked. */
 function TimelineNode({ state, index }: { state: 'done' | 'current' | 'locked'; index: number }) {
   if (state === 'done') {
     return (
-      <View
-        className="h-10 w-10 items-center justify-center rounded-full"
-        style={gradientStyle(gradients.success, 135)}
-      >
-        <Icon name="checkmark" size={20} color="#fff" />
+      <View className="h-8 w-8 items-center justify-center rounded-full bg-[#E6F4F2]">
+        <Icon name="checkmark" size={16} color={colors.success} />
       </View>
     );
   }
   if (state === 'current') {
     return (
-      <View
-        className="h-10 w-10 items-center justify-center rounded-full"
-        style={[
-          gradientStyle(['#1C1917', '#F05A28'], 135),
-          shadow.glow,
-          { boxShadow: '0px 0px 0px 5px rgba(22, 50, 158, 0.14)' },
-        ]}
-      >
-        <Icon name={ICONS[index % ICONS.length]!} size={18} color="#fff" />
+      <View className="h-8 w-8 items-center justify-center rounded-full border-2 border-ink bg-white">
+        <RNText className="font-medium text-sm text-ink tabular-nums">{index + 1}</RNText>
       </View>
     );
   }
   return (
-    <View className="h-10 w-10 items-center justify-center rounded-full border-[1.5px] border-line bg-[#EFEAE4]">
-      <Icon name="lock-closed" size={16} color={colors.subtle} />
+    <View className="h-8 w-8 items-center justify-center rounded-full border border-line bg-raised">
+      <Icon name="lock-closed-outline" size={16} color={colors.subtle} />
     </View>
   );
 }
@@ -78,7 +66,7 @@ function ModuleRow({
         <TimelineNode state={state} index={i} />
         {!last ? (
           <View
-            className={`w-[2px] flex-1 ${passed ? 'bg-[#14B8A6]' : 'bg-line'}`}
+            className={`w-0.5 flex-1 ${passed ? 'bg-[#0F766E]' : 'bg-[#EBEBEB]'}`}
             style={{ minHeight: 18 }}
           />
         ) : null}
@@ -87,10 +75,10 @@ function ModuleRow({
         <Card
           variant={state === 'current' ? 'outline' : 'elevated'}
           className={`gap-2 p-4 ${locked ? 'opacity-70' : ''}`}
-          style={state === 'current' ? [shadow.md, { borderColor: colors.brand }] : undefined}
+          style={state === 'current' ? { borderColor: colors.ink } : undefined}
         >
           <View className="flex-row items-center justify-between gap-2">
-            <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
+            <RNText className="font-normal text-xs text-[#737373] tabular-nums">
               Module {m.sequence}
             </RNText>
             <Badge
@@ -100,32 +88,32 @@ function ModuleRow({
               dot
             />
           </View>
-          <Text className="font-bold text-[16px] leading-[21px]" numberOfLines={2}>
+          <Text className="font-medium text-base" numberOfLines={2}>
             {m.title}
           </Text>
           <View className="flex-row flex-wrap gap-x-3 gap-y-1">
             <View className="flex-row items-center gap-1">
-              <Icon name="flag-outline" size={13} color={colors.subtle} />
-              <Muted className="text-[12px]">pass {m.passThresholdPct}%</Muted>
+              <Icon name="flag-outline" size={16} color={colors.subtle} />
+              <Muted className="text-xs">pass {m.passThresholdPct}%</Muted>
             </View>
             {m.bestScorePct !== null ? (
               <View className="flex-row items-center gap-1">
-                <Icon name="stats-chart-outline" size={13} color={colors.subtle} />
-                <Muted className="text-[12px]">best {m.bestScorePct}%</Muted>
+                <Icon name="stats-chart-outline" size={16} color={colors.subtle} />
+                <Muted className="text-xs">best {m.bestScorePct}%</Muted>
               </View>
             ) : null}
             {m.attemptsRemaining !== null ? (
               <View className="flex-row items-center gap-1">
-                <Icon name="repeat-outline" size={13} color={colors.subtle} />
-                <Muted className="text-[12px]">{m.attemptsRemaining} left</Muted>
+                <Icon name="repeat-outline" size={16} color={colors.subtle} />
+                <Muted className="text-xs">{m.attemptsRemaining} left</Muted>
               </View>
             ) : null}
           </View>
           {!m.published ? (
-            <View className="flex-row items-center gap-1.5 rounded-xl bg-[#FFF3DC] px-2.5 py-1.5">
-              <Icon name="information-circle" size={14} color={colors.warning} />
-              <RNText className="flex-1 font-medium text-[12px] text-[#7A4A05]">
-                Not published yet — contact the Admin.
+            <View className="flex-row items-center gap-1.5 rounded-lg bg-[#FDF4E3] px-2.5 py-1.5">
+              <Icon name="information-circle-outline" size={16} color={colors.warning} />
+              <RNText className="flex-1 font-normal text-xs text-[#92580A]">
+                Not published yet — contact the Admin
               </RNText>
             </View>
           ) : null}
@@ -180,7 +168,7 @@ export default function TrainingLanding() {
   return (
     <Screen
       inset="none"
-      statusBar="light"
+      statusBar="dark"
       scroll
       padded={false}
       contentClassName="pt-0"
@@ -194,73 +182,58 @@ export default function TrainingLanding() {
               }}
               asChild
             >
-              <Button title="Continue Learning" size="lg" icon="play" />
+              <Button title="Continue learning" size="lg" icon="play-outline" />
             </Link>
           </StickyFooter>
         ) : null
       }
     >
-      <HeroHeader className="pb-16">
-        <View className="flex-row items-center gap-2">
-          <View className="h-8 w-8 items-center justify-center rounded-xl bg-white/15">
-            <Icon name="school" size={17} color={colors.gold} />
-          </View>
-          <RNText className="font-semibold text-[12px] uppercase tracking-[1.4px] text-white/70">
-            Training
-          </RNText>
-        </View>
-        <RNText
-          accessibilityRole="header"
-          className="mt-4 font-extrabold text-[28px] leading-[34px] tracking-tight text-white"
-        >
-          Complete Your Training
+      <HeroHeader className="pb-5">
+        <RNText accessibilityRole="header" className="mt-2 font-medium text-2xl text-ink">
+          Training
         </RNText>
-        <RNText className="mt-1 font-medium text-[14px] text-white/70">
-          Learn · Understand · Start Earning
+        <RNText className="mt-1 font-normal text-md text-[#525252]">
+          Pass every module to start calling
         </RNText>
         {me?.deadlineAt ? (
           <View className="mt-3 flex-row flex-wrap items-center gap-2">
-            <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5">
-              <Icon name="time-outline" size={14} color={colors.gold} />
-              <RNText className="font-bold text-[12px] text-white">
+            <View className="flex-row items-center gap-1.5">
+              <Icon name="time-outline" size={16} color={colors.gold} />
+              <RNText className="font-medium text-sm text-gold tabular-nums">
                 {countdown(me.deadlineAt)}
               </RNText>
             </View>
-            <RNText className="font-medium text-[12px] text-white/60">
+            <RNText className="font-normal text-xs text-[#737373] tabular-nums">
               Deadline {formatDateTime(me.deadlineAt)}
             </RNText>
           </View>
         ) : null}
       </HeroHeader>
 
-      <View className="-mt-10 gap-5 px-4">
+      <View className="mt-5 gap-6 px-4">
         <Appear>
-          <View className="rounded-3xl bg-white p-4" style={shadow.lg}>
+          <View className="rounded-xl border border-line bg-white p-4">
             {me ? (
               <>
                 <View className="flex-row items-end justify-between">
                   <View>
-                    <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
-                      Overall progress
-                    </RNText>
-                    <RNText className="mt-1 font-bold text-[15px] text-ink">
+                    <RNText className="font-normal text-sm text-[#525252]">Overall progress</RNText>
+                    <RNText className="mt-1 font-medium text-base text-ink tabular-nums">
                       {done}/{modules.length} modules completed
                     </RNText>
                   </View>
-                  <RNText className="font-extrabold text-[28px] tracking-tight text-brand">
-                    {pct}%
-                  </RNText>
+                  <RNText className="font-medium text-2xl text-ink tabular-nums">{pct}%</RNText>
                 </View>
                 <View className="mt-3">
                   <ProgressBar
                     value={pct / 100}
                     tone={pct === 100 ? 'success' : 'default'}
-                    height={10}
+                    height={6}
                   />
                 </View>
               </>
             ) : error ? (
-              <Muted>Progress unavailable.</Muted>
+              <Muted>Progress unavailable</Muted>
             ) : (
               <View className="gap-3">
                 <Skeleton className="h-4 w-1/2" />
@@ -275,8 +248,12 @@ export default function TrainingLanding() {
         {blocked ? (
           <Appear index={1}>
             <Card className="gap-2">
-              <Badge label="Training window ended" variant="destructive" icon="alert-circle" />
-              <Text className="text-[14px] leading-[21px]">
+              <Badge
+                label="Training window ended"
+                variant="destructive"
+                icon="alert-circle-outline"
+              />
+              <Text className="text-md">
                 Your 72-hour window has ended. Ask your Manager to reactivate your training — you
                 will resume at the first module you have not passed.
               </Text>
@@ -287,7 +264,7 @@ export default function TrainingLanding() {
           <Appear index={1}>
             <Card className="gap-2">
               <Badge label="Waiting for Admin" variant="warning" icon="hourglass-outline" />
-              <Text className="text-[14px] leading-[21px]">
+              <Text className="text-md">
                 Training was reactivated but the new window is not configured yet. Contact the
                 Admin.
               </Text>
@@ -297,17 +274,9 @@ export default function TrainingLanding() {
         {me?.status === 'PASSED' ? (
           <Appear index={1}>
             <Card className="gap-3">
-              <View className="flex-row items-center gap-3">
-                <View
-                  className="h-11 w-11 items-center justify-center rounded-2xl"
-                  style={gradientStyle(gradients.success, 135)}
-                >
-                  <Icon name="trophy" size={22} color="#fff" />
-                </View>
-                <View className="flex-1 gap-1">
-                  <Badge label="All modules passed" variant="success" />
-                  <Text className="text-[14px]">Your calling queue is available.</Text>
-                </View>
+              <View className="gap-1">
+                <Badge label="All modules passed" variant="success" />
+                <Text className="text-md">Your calling queue is available</Text>
               </View>
               <Button
                 title="Go to my queue"
@@ -325,8 +294,8 @@ export default function TrainingLanding() {
               <View className="gap-4">
                 {[0, 1, 2].map((i) => (
                   <View key={i} className="flex-row gap-3.5">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <Skeleton className="h-24 flex-1 rounded-2xl" />
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <Skeleton className="h-24 flex-1 rounded-xl" />
                   </View>
                 ))}
               </View>

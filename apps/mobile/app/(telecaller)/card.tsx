@@ -15,7 +15,6 @@ import {
   Card,
   ErrorText,
   Icon,
-  IconCircle,
   KeyValue,
   Muted,
   Screen,
@@ -53,22 +52,15 @@ export default function CardDetailScreen() {
           <Image
             accessibilityLabel={`${card.name} card`}
             source={{ uri: imageUrl }}
-            className="h-48 w-full rounded-2xl"
+            className="h-48 w-full rounded-xl"
             resizeMode="contain"
           />
         ) : (
           <CreditCardArt bank={bankName(card.bank)} name={card.name} width={300} />
         )}
         <View className="w-full items-center gap-1">
-          {bankName(card.bank) ? (
-            <Muted className="font-semibold uppercase tracking-[1.2px] text-[11px]">
-              {bankName(card.bank)}
-            </Muted>
-          ) : null}
-          <RNText
-            accessibilityRole="header"
-            className="text-center font-extrabold text-[22px] tracking-tight text-ink"
-          >
+          {bankName(card.bank) ? <Muted className="text-xs">{bankName(card.bank)}</Muted> : null}
+          <RNText accessibilityRole="header" className="text-center font-medium text-xl text-ink">
             {card.name}
           </RNText>
           <View className="mt-1 flex-row flex-wrap justify-center gap-2">
@@ -82,25 +74,26 @@ export default function CardDetailScreen() {
       <Appear index={1}>
         <View className="flex-row gap-3">
           <Card className="flex-1 items-center py-3">
-            <Muted className="text-[12px]">Joining fee</Muted>
-            <RNText className="font-extrabold text-[18px] text-ink">
+            <Muted className="text-xs">Joining fee</Muted>
+            <RNText className="font-medium text-lg text-ink tabular-nums">
               {money(card.joiningFee)}
             </RNText>
           </Card>
           <Card className="flex-1 items-center py-3">
-            <Muted className="text-[12px]">Annual fee</Muted>
-            <RNText className="font-extrabold text-[18px] text-ink">{money(card.annualFee)}</RNText>
+            <Muted className="text-xs">Annual fee</Muted>
+            <RNText className="font-medium text-lg text-ink tabular-nums">
+              {money(card.annualFee)}
+            </RNText>
           </Card>
         </View>
       </Appear>
 
       <Appear index={2}>
-        <Card className="gap-3 border-[#EBCDBD]">
+        <Card className="gap-3">
           <View className="flex-row items-center gap-3">
-            <IconCircle icon="logo-whatsapp" tone="success" size={40} />
             <View className="flex-1">
-              <Text className="font-bold text-[16px]">Share with customer</Text>
-              <Muted className="text-[12px]">
+              <Text className="font-medium text-base">Share with customer</Text>
+              <Muted className="text-xs">
                 Every share is logged on this customer&apos;s record
               </Muted>
             </View>
@@ -119,7 +112,7 @@ export default function CardDetailScreen() {
               }}
             />
           ) : (
-            <Muted className="text-[13px]">No benefit PDF uploaded for this card.</Muted>
+            <Muted className="text-sm">No benefit PDF uploaded for this card.</Muted>
           )}
           {recordId ? (
             <ShareButtons
@@ -133,7 +126,7 @@ export default function CardDetailScreen() {
             />
           ) : null}
           <ErrorText>{error}</ErrorText>
-          <Muted className="text-[12px] leading-[18px]">
+          <Muted className="text-xs">
             Opens WhatsApp with the approved content (link v{card.link?.version ?? '—'}, sent
             exactly as configured). “Share sheet opened” is not a delivery confirmation.
           </Muted>
@@ -142,7 +135,7 @@ export default function CardDetailScreen() {
 
       {card.description ? (
         <Appear index={3}>
-          <Text className="text-[14px] leading-[21px] text-[#44403C]">{card.description}</Text>
+          <Text className="text-md text-[#525252]">{card.description}</Text>
         </Appear>
       ) : null}
 
@@ -154,10 +147,8 @@ export default function CardDetailScreen() {
           ) : (
             card.benefits.map((b, i) => (
               <View key={i} className="flex-row items-start gap-2.5">
-                <View className="mt-0.5 h-5 w-5 items-center justify-center rounded-full bg-[#E3F4F1]">
-                  <Icon name="checkmark" size={13} color={colors.success} />
-                </View>
-                <Text className="flex-1 text-[14px] leading-[20px]">{b}</Text>
+                <Icon name="checkmark" size={16} color={colors.success} style={{ marginTop: 2 }} />
+                <Text className="flex-1 text-md">{b}</Text>
               </View>
             ))
           )}
@@ -188,7 +179,7 @@ export default function CardDetailScreen() {
         <Appear index={6} className="gap-3">
           <SectionHeader title="Eligibility highlights" />
           <Card className="gap-3">
-            <Text className="text-[14px] leading-[20px]">{card.eligibilityHighlights}</Text>
+            <Text className="text-md">{card.eligibilityHighlights}</Text>
             <Callout kind="warning" icon="information-circle">
               Indicative only — the bank decides every application.
             </Callout>
@@ -200,7 +191,7 @@ export default function CardDetailScreen() {
         <Appear index={7} className="gap-3">
           <SectionHeader title="Disclosures" />
           <Card>
-            <Muted className="leading-[19px]">{card.disclosures}</Muted>
+            <Muted className="">{card.disclosures}</Muted>
           </Card>
         </Appear>
       ) : null}
@@ -209,8 +200,13 @@ export default function CardDetailScreen() {
         <SectionHeader title="Why this card is offered" />
         <Card className="gap-2">
           <View className="flex-row items-start gap-2">
-            <Icon name="business-outline" size={15} color={colors.muted} style={{ marginTop: 2 }} />
-            <Muted className="flex-1 leading-[19px]">
+            <Icon
+              name="business-outline"
+              size={16}
+              color={colors.subtle}
+              style={{ marginTop: 2 }}
+            />
+            <Muted className="flex-1">
               {card.provenance.publication.scope === 'GLOBAL'
                 ? 'KBS offers this card all over India'
                 : card.provenance.publication.scope === 'STATE'
@@ -219,7 +215,7 @@ export default function CardDetailScreen() {
               ; link v{card.link?.version ?? '—'} for {card.link?.channel ?? '—'}.
             </Muted>
           </View>
-          <Muted className="text-[12px]">
+          <Muted className="text-xs">
             Offered is not a promise of approval. Record {recordId?.slice(0, 8)}
           </Muted>
         </Card>

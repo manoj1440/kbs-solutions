@@ -37,7 +37,7 @@ import {
   SkeletonList,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { colors, gradientStyle, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 import { withBank } from '@/lib/cards';
 
 interface Draft {
@@ -133,12 +133,9 @@ export default function Leads() {
 
   const header = (
     <View className="gap-3 px-4 pb-3 pt-1">
-      <View className="min-h-[48px] flex-row items-center justify-between gap-3">
+      <View className="min-h-12 flex-row items-center justify-between gap-3">
         <View className="flex-1">
-          <RNText
-            accessibilityRole="header"
-            className="font-extrabold text-[28px] tracking-tight text-ink"
-          >
+          <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
             My leads
           </RNText>
           <Muted>
@@ -211,10 +208,10 @@ export default function Leads() {
   const draftsBlock = drafts.length ? (
     <View className="mb-1 gap-2.5">
       <View className="flex-row items-center justify-between">
-        <RNText accessibilityRole="header" className="font-bold text-[15px] text-ink">
+        <RNText accessibilityRole="header" className="font-medium text-base text-ink">
           Continue where you left off
         </RNText>
-        <Muted className="text-[12px]">
+        <Muted className="text-xs">
           {drafts.length} draft{drafts.length === 1 ? '' : 's'}
         </Muted>
       </View>
@@ -232,35 +229,26 @@ export default function Leads() {
               onPress={() =>
                 router.push({ pathname: '/(advisor)/lead-new', params: { draftId: d.id } })
               }
-              className="w-[260px] overflow-hidden rounded-3xl p-4"
-              style={[
-                gradientStyle(['#FEF4EE', '#FCE3D6'], 135),
-                shadow.sm,
-                { borderWidth: 1, borderColor: '#F8C9B0' },
-              ]}
+              className="w-64 rounded-xl border border-line bg-white p-4"
             >
-              <View
-                pointerEvents="none"
-                className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-white/50"
-              />
               <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1">
-                  <Icon name="create-outline" size={12} color="#9A3412" />
-                  <RNText className="font-semibold text-[11px] text-[#9A3412]">
+                <View className="flex-row items-center gap-1.5 rounded-md bg-raised px-2 py-1">
+                  <Icon name="create-outline" size={16} color={colors.subtle} />
+                  <RNText className="font-normal text-xs text-[#525252]">
                     Draft · {d.step.toLowerCase()}
                   </RNText>
                 </View>
-                <Icon name="arrow-forward-circle" size={24} color="#C2410C" />
+                <Icon name="chevron-forward" size={16} color={colors.subtle} />
               </View>
-              <RNText numberOfLines={1} className="mt-3 font-bold text-[16px] text-ink">
+              <RNText numberOfLines={1} className="mt-3 font-medium text-base text-ink">
                 {d.customer ?? 'Customer not entered'}
               </RNText>
-              <RNText numberOfLines={1} className="font-medium text-[13px] text-[#7C2D12]">
+              <RNText numberOfLines={1} className="font-normal text-sm text-[#525252]">
                 {withBank(d.card?.bank, d.card?.name ?? '')}
               </RNText>
               <View className="mt-3 flex-row items-center gap-1.5">
-                <Icon name="time-outline" size={12} color="#9A3412" />
-                <RNText className="font-medium text-[12px] text-[#9A3412]">
+                <Icon name="time-outline" size={16} color={colors.subtle} />
+                <RNText className="font-normal text-xs text-[#737373] tabular-nums">
                   Resume · expires {formatDateTime(d.expiresAt)}
                 </RNText>
               </View>
@@ -268,7 +256,7 @@ export default function Leads() {
           </Appear>
         ))}
       </ScrollView>
-      <RNText accessibilityRole="header" className="mt-2 font-bold text-[15px] text-ink">
+      <RNText accessibilityRole="header" className="mt-2 font-medium text-base text-ink">
         Submitted leads
       </RNText>
     </View>
@@ -313,7 +301,7 @@ export default function Leads() {
             loading ? null : activeCount || q ? (
               <EmptyState
                 icon="funnel-outline"
-                title="No leads match these filters."
+                title="No leads match these filters"
                 body="Clear the search or filters to see all your leads."
                 action="Clear search & filters"
                 onAction={() => {
@@ -324,7 +312,7 @@ export default function Leads() {
             ) : (
               <EmptyState
                 icon="document-text-outline"
-                title="No leads yet."
+                title="No leads yet"
                 body="Pick a card on Home and create a lead for your customer."
                 action="Browse cards"
                 onAction={() => router.push('/(advisor)/cards' as never)}
@@ -455,9 +443,9 @@ export default function Leads() {
               ))}
             </>
           ) : null}
-          <View className="flex-row items-start gap-2 rounded-2xl bg-[#F1ECFB] p-3">
-            <Icon name="business-outline" size={15} color="#5B2BA8" style={{ marginTop: 1 }} />
-            <Muted className="flex-1 text-[12px] text-[#4A3A6B]">
+          <View className="flex-row items-start gap-2 rounded-lg bg-[#F1ECFB] p-3">
+            <Icon name="business-outline" size={16} color="#5B2BA8" style={{ marginTop: 1 }} />
+            <Muted className="flex-1 text-xs text-[#4A3A6B]">
               Status values are exactly what the bank reported; there is no fixed list.
             </Muted>
           </View>

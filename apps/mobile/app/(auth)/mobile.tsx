@@ -52,11 +52,11 @@ export default function MobileScreen() {
   const valid = isValidE164India(mobile);
   return (
     <AuthShell
-      title={signup ? 'Create Account' : 'Welcome Back'}
-      subtitle={signup ? 'Register as an Advisor to continue' : 'Sign in to continue'}
+      title={signup ? 'Create account' : 'Sign in'}
+      subtitle={signup ? 'Register as an Advisor to continue' : 'Use your registered mobile number'}
     >
       <Appear index={1} className="gap-1">
-        <RNText className="font-bold text-[18px] text-ink">
+        <RNText className="font-medium text-lg text-ink">
           {signup ? 'Enter your mobile number' : 'Login with your mobile'}
         </RNText>
         <Muted>We&apos;ll text a 6-digit code to verify it&apos;s you.</Muted>
@@ -64,7 +64,7 @@ export default function MobileScreen() {
       <Appear index={2}>
         <Input
           ref={field}
-          label="Mobile Number"
+          label="Mobile number"
           icon="call-outline"
           prefix="+91"
           keyboardType="phone-pad"
@@ -73,7 +73,9 @@ export default function MobileScreen() {
           value={mobile}
           onChangeText={(t) => setMobile(mobileInput(t))}
           inputClassName="min-w-0"
-          right={valid ? <Icon name="checkmark-circle" size={20} color={colors.success} /> : null}
+          right={
+            valid ? <Icon name="checkmark-circle-outline" size={18} color={colors.success} /> : null
+          }
         />
       </Appear>
       <ErrorText>{error}</ErrorText>
@@ -86,9 +88,9 @@ export default function MobileScreen() {
           disabled={busy || !valid}
           onPress={submit}
         />
-        <View className="flex-row items-center gap-2.5 rounded-2xl bg-canvas px-3.5 py-3">
-          <Icon name="shield-checkmark" size={18} color={colors.success} />
-          <Muted className="flex-1 text-[12px] leading-[17px]">
+        <View className="flex-row items-center gap-2.5 rounded-lg bg-raised px-3 py-3">
+          <Icon name="shield-checkmark-outline" size={18} color={colors.subtle} />
+          <Muted className="flex-1 text-xs">
             We will send a one-time code — passwords are never used.
           </Muted>
         </View>
@@ -96,24 +98,24 @@ export default function MobileScreen() {
       <View className="mt-2 items-center">
         {signup ? (
           <Link href="/(auth)/mobile?purpose=LOGIN" asChild>
-            <Pressable accessibilityRole="button" className="min-h-[44px] justify-center px-2">
-              <Muted className="text-[14px]">
-                Already registered? <RNText className="font-bold text-brand">Sign in</RNText>
+            <Pressable accessibilityRole="button" className="min-h-11 justify-center px-2">
+              <Muted className="text-md">
+                Already registered? <RNText className="font-medium text-brand">Sign in</RNText>
               </Muted>
             </Pressable>
           </Link>
         ) : (
           <Link href="/(auth)/mobile?purpose=ADVISOR_SIGNUP" asChild>
-            <Pressable accessibilityRole="button" className="min-h-[44px] justify-center px-2">
-              <Muted className="text-[14px]">
-                New here? <RNText className="font-bold text-brand">Create Account</RNText>
+            <Pressable accessibilityRole="button" className="min-h-11 justify-center px-2">
+              <Muted className="text-md">
+                New here? <RNText className="font-medium text-brand">Create account</RNText>
               </Muted>
             </Pressable>
           </Link>
         )}
       </View>
       {/* F-818: which code is running — the APK's own bundle or an over-the-air update */}
-      <Muted className="text-center text-[11px]">
+      <Muted className="text-center text-xs">
         v{Constants.expoConfig?.version ?? '?'} ·{' '}
         {Updates.isEmbeddedLaunch ? 'built-in' : `update ${(Updates.updateId ?? '').slice(0, 8)}`}
       </Muted>

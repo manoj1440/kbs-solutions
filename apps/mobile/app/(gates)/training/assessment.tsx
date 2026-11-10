@@ -128,13 +128,12 @@ export default function AssessmentScreen() {
       >
         <Appear className="items-center pt-6">
           <StateIcon
-            icon={result.passed ? 'trophy' : 'close'}
+            icon={result.passed ? 'checkmark' : 'close'}
             tone={result.passed ? 'success' : 'destructive'}
-            size={104}
           />
           <RNText
             accessibilityRole="header"
-            className="mt-5 text-center font-extrabold text-[28px] tracking-tight text-ink"
+            className="mt-5 text-center font-medium text-2xl text-ink"
           >
             {result.passed ? 'Passed' : 'Not passed'}
           </RNText>
@@ -142,7 +141,7 @@ export default function AssessmentScreen() {
         <Appear index={1}>
           <Card className="items-center gap-3 p-5">
             <RNText
-              className={`font-extrabold text-[48px] leading-[54px] tracking-tight ${result.passed ? 'text-[#0F766E]' : 'text-[#B42318]'}`}
+              className={`font-medium text-3xl tabular-nums ${result.passed ? 'text-[#0F766E]' : 'text-[#B42318]'}`}
             >
               {result.scorePct}%
             </RNText>
@@ -153,15 +152,15 @@ export default function AssessmentScreen() {
               <ProgressBar
                 value={result.scorePct / 100}
                 tone={result.passed ? 'success' : 'default'}
-                height={10}
+                height={8}
               />
               <View
                 pointerEvents="none"
-                className="absolute top-0 h-[18px] w-[3px] rounded-full bg-ink"
-                style={{ left: `${result.passThresholdPct}%`, marginLeft: -1.5 }}
+                className="absolute top-0 h-4 w-0.5 bg-ink"
+                style={{ left: `${result.passThresholdPct}%`, marginLeft: -1 }}
               />
             </View>
-            <Muted className="text-center">
+            <Muted className="text-center tabular-nums">
               {result.correct} of {result.total} correct · pass mark {result.passThresholdPct}%
             </Muted>
           </Card>
@@ -169,7 +168,7 @@ export default function AssessmentScreen() {
         {note ? (
           <Appear index={2}>
             <Card variant={result.allModulesPassed ? 'tinted' : 'flat'} className="p-4">
-              <Text className="text-center text-[14px] leading-[21px]">{note}</Text>
+              <Text className="text-center text-md">{note}</Text>
             </Card>
           </Appear>
         ) : null}
@@ -200,7 +199,7 @@ export default function AssessmentScreen() {
                 {answered} of {attempt.questions.length} answered
               </Muted>
               {answered < total ? (
-                <Muted className="text-[12px]">Unanswered count as wrong</Muted>
+                <Muted className="text-xs">Unanswered count as wrong</Muted>
               ) : null}
             </View>
             <Button
@@ -219,11 +218,11 @@ export default function AssessmentScreen() {
       {!attempt && !error ? (
         <View className="gap-4">
           {[0, 1].map((i) => (
-            <View key={i} className="gap-3 rounded-2xl bg-white p-4">
+            <View key={i} className="gap-3 rounded-xl border border-line bg-white p-4">
               <Skeleton className="h-3 w-1/4" />
               <Skeleton className="h-4 w-5/6" />
-              <Skeleton className="h-12 w-full rounded-2xl" />
-              <Skeleton className="h-12 w-full rounded-2xl" />
+              <Skeleton className="h-12 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
             </View>
           ))}
         </View>
@@ -232,14 +231,14 @@ export default function AssessmentScreen() {
         <Appear key={q.id} index={i}>
           <Card className="gap-3 p-4">
             <View className="flex-row items-center justify-between">
-              <RNText className="font-semibold text-[11px] uppercase tracking-[1.2px] text-[#78716C]">
+              <RNText className="font-normal text-xs text-[#737373] tabular-nums">
                 Question {i + 1} of {attempt.questions.length}
               </RNText>
               {answers[q.id] ? (
-                <RNText className="font-semibold text-[11px] text-[#0F766E]">Answered</RNText>
+                <RNText className="font-medium text-xs text-[#0F766E]">Answered</RNText>
               ) : null}
             </View>
-            <Text className="font-bold text-[16px] leading-[23px]">
+            <Text className="font-medium text-base">
               {i + 1}. {q.text}
             </Text>
             <View className="gap-2">

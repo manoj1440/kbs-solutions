@@ -20,7 +20,6 @@ import {
   ChoiceRow,
   ErrorText,
   Icon,
-  IconCircle,
   Input,
   Muted,
   Text,
@@ -190,14 +189,9 @@ export function CallDesk({
     <View className="gap-4">
       <Card className="gap-3">
         <View className="flex-row items-center gap-3">
-          <IconCircle
-            icon={live ? 'radio' : 'call'}
-            tone={call ? stateTone : 'default'}
-            size={40}
-          />
           <View className="flex-1">
-            <Text className="font-bold text-[16px]">Call</Text>
-            <Muted className="text-[12px]" numberOfLines={1}>
+            <Text className="font-medium text-base">Call</Text>
+            <Muted className="text-xs" numberOfLines={1}>
               {call ? `To ${call.targetMobileMasked}` : 'No call started yet'}
             </Muted>
           </View>
@@ -210,17 +204,15 @@ export function CallDesk({
           </Callout>
         ) : null}
         {call ? (
-          <View className="flex-row items-center justify-between rounded-2xl bg-[#F7F4EF] px-4 py-3">
+          <View className="flex-row items-center justify-between rounded-lg bg-raised px-4 py-3">
             <View className="flex-1">
-              <Muted className="text-[12px]">started {formatDateTime(call.initiatedAt)}</Muted>
+              <Muted className="text-xs">started {formatDateTime(call.initiatedAt)}</Muted>
               {call.failureReason ? (
-                <Muted className="text-[12px]">Reason: {call.failureReason}</Muted>
+                <Muted className="text-xs">Reason: {call.failureReason}</Muted>
               ) : null}
             </View>
             {timer ? (
-              <RNText className="font-extrabold text-[26px] tracking-tight text-ink">
-                {timer}
-              </RNText>
+              <RNText className="font-medium text-2xl text-ink tabular-nums">{timer}</RNText>
             ) : null}
           </View>
         ) : null}
@@ -237,9 +229,9 @@ export function CallDesk({
             Calling is not available for this customer.
           </Callout>
         ) : live ? (
-          <View className="flex-row items-center gap-3 rounded-2xl bg-[#E3F4F1] px-4 py-3">
-            <View className="h-2.5 w-2.5 rounded-full bg-[#0F766E]" />
-            <RNText className="flex-1 font-medium text-[13px] text-[#115E59]">
+          <View className="flex-row items-center gap-3 rounded-lg bg-[#E6F4F2] px-4 py-3">
+            <View className="h-2 w-2 rounded-full bg-[#0F766E]" />
+            <RNText className="flex-1 font-normal text-sm text-[#115E59]">
               {call?.providerState === 'REQUESTED' || call?.providerState === 'RINGING'
                 ? 'Your phone will ring from the KBS number — answer it and the customer is connected.'
                 : 'Call in progress on your phone. Record the outcome once it ends.'}
@@ -265,16 +257,15 @@ export function CallDesk({
 
       <Card className="gap-4">
         <View className="flex-row items-center gap-3">
-          <IconCircle icon="create-outline" tone="info" size={40} />
           <View className="flex-1">
-            <Text className="font-bold text-[16px]">Outcome</Text>
-            <Muted className="text-[12px]">What happened on this call?</Muted>
+            <Text className="font-medium text-base">Outcome</Text>
+            <Muted className="text-xs">What happened on this call?</Muted>
           </View>
         </View>
         {saved ? (
-          <View className="flex-row items-center gap-2 rounded-xl bg-[#E3F4F1] px-3 py-2.5">
-            <Icon name="checkmark-circle" size={16} color={colors.success} />
-            <RNText className="flex-1 font-medium text-[13px] text-[#115E59]">{saved}</RNText>
+          <View className="flex-row items-center gap-2 rounded-lg bg-[#E6F4F2] px-3 py-2.5">
+            <Icon name="checkmark-circle-outline" size={16} color={colors.success} />
+            <RNText className="flex-1 font-normal text-sm text-[#115E59]">{saved}</RNText>
           </View>
         ) : null}
         <View accessibilityRole="radiogroup" className="gap-2">
@@ -299,7 +290,7 @@ export function CallDesk({
         {(outcome === 'CONNECTED_INTERESTED' || outcome === 'CONNECTED_LINK_OR_PDF_SHARED') &&
         cards.length ? (
           <View className="gap-2">
-            <RNText className="font-semibold text-[13px] text-ink">Card discussed</RNText>
+            <RNText className="font-medium text-sm text-ink">Card discussed</RNText>
             <View className="flex-row flex-wrap gap-2">
               {cards.map((c) => (
                 <Chip
@@ -321,15 +312,15 @@ export function CallDesk({
           multiline
         />
         <View
-          className={`flex-row items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3 ${dnc ? 'border-[#F5C2BE] bg-[#FDECEA]' : 'border-line bg-white'}`}
+          className={`flex-row items-center gap-3 rounded-lg border px-4 py-3 ${dnc ? 'border-[#F5C2BE] bg-[#FDEDEC]' : 'border-line bg-white'}`}
         >
           <Icon name="hand-left-outline" size={18} color={dnc ? colors.danger : colors.subtle} />
-          <Text className="flex-1 text-[14px]">Customer asked not to be contacted again</Text>
+          <Text className="flex-1 text-md">Customer asked not to be contacted again</Text>
           <Switch
             value={dnc}
             onValueChange={setDnc}
             accessibilityLabel="do not contact"
-            trackColor={{ true: colors.danger, false: '#DDD6CC' }}
+            trackColor={{ true: colors.danger, false: '#D4D4D4' }}
           />
         </View>
         <Button
@@ -345,13 +336,8 @@ export function CallDesk({
           onPress={() => void submit()}
         />
         <View className="flex-row items-start gap-2">
-          <Icon
-            name="shield-checkmark-outline"
-            size={14}
-            color={colors.subtle}
-            style={{ marginTop: 2 }}
-          />
-          <Muted className="flex-1 text-[12px]">
+          <Icon name="shield-checkmark-outline" size={16} color={colors.subtle} />
+          <Muted className="flex-1 text-xs">
             Outcomes are operational only — bank status comes from the MIS, never from here.
           </Muted>
         </View>

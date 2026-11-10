@@ -1,4 +1,10 @@
-import { ApiClientError, formatInr, type MisFreshness, type PendingAction, type UserSummary } from '@kbs/shared';
+import {
+  ApiClientError,
+  formatInr,
+  type MisFreshness,
+  type PendingAction,
+  type UserSummary,
+} from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, Text as RNText, View } from 'react-native';
@@ -10,7 +16,6 @@ import {
   MetricTile,
   SourceTag,
   userStatusTone,
-  greeting,
 } from '@/components/team';
 import {
   Appear,
@@ -62,9 +67,9 @@ const MIS_STALE_DAYS = 7;
 function HeroMeta({ m }: { m: M }) {
   return (
     <View className="flex-row items-center gap-1">
-      <SourceTag source={m.source} light />
+      <SourceTag source={m.source} />
       {m.denominator ? (
-        <RNText className="font-medium text-[11px] text-white/60">
+        <RNText className="font-normal text-xs text-[#737373] tabular-nums">
           · of {m.denominator.value}
         </RNText>
       ) : null}
@@ -78,21 +83,28 @@ function MisFreshnessLine({ mis }: { mis: MisFreshness }) {
   const none = mis.banks.length - applied.length;
   return (
     <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1 px-1">
-      <Icon name="time-outline" size={14} color={colors.muted} />
+      <Icon name="time-outline" size={16} color={colors.subtle} />
       {applied.map((b) => {
-        const stale = new Date(mis.asOf).getTime() - new Date(b.lastAppliedAt!).getTime() > MIS_STALE_DAYS * 86_400_000;
+        const stale =
+          new Date(mis.asOf).getTime() - new Date(b.lastAppliedAt!).getTime() >
+          MIS_STALE_DAYS * 86_400_000;
         return (
           <View key={b.bankCode} className="flex-row items-center gap-1.5">
-            <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: stale ? colors.warning : colors.success }} />
-            <Muted className="text-[12px]">
+            <View
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: stale ? colors.warning : colors.success }}
+            />
+            <Muted className="text-xs">
               {b.bankName} MIS · {ago(b.lastAppliedAt!)}
             </Muted>
           </View>
         );
       })}
       {none ? (
-        <Muted className="text-[12px]">
-          {applied.length ? `+${none} bank${none === 1 ? '' : 's'} with no MIS yet` : 'No bank MIS applied yet'}
+        <Muted className="text-xs">
+          {applied.length
+            ? `+${none} bank${none === 1 ? '' : 's'} with no MIS yet`
+            : 'No bank MIS applied yet'}
         </Muted>
       ) : null}
     </View>
@@ -115,19 +127,14 @@ function TeamRow({ item, index }: { item: TeamUser; index: number }) {
         }
         className="flex-row items-center gap-3"
       >
-        <Avatar name={item.fullName || '?'} size={46} />
+        <Avatar name={item.fullName || '?'} size={40} />
         <View className="flex-1 gap-1">
-          <Text numberOfLines={1} className="font-bold text-[15px]">
+          <Text numberOfLines={1} className="font-medium text-base">
             {name}
           </Text>
           <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
-            <Badge
-              label={humanize(item.role)}
-              variant={tele ? 'info' : 'default'}
-              icon={tele ? 'headset' : 'briefcase'}
-              size="sm"
-            />
-            <Muted numberOfLines={1} className="text-[12px]">
+            <Badge label={humanize(item.role)} variant={tele ? 'info' : 'default'} size="sm" />
+            <Muted numberOfLines={1} className="text-xs">
               {item.mobileMasked}
               {item.employeeCode ? ` · ${item.employeeCode}` : ''}
             </Muted>
@@ -183,13 +190,18 @@ export default function ManagerHome() {
     const [aw, pa, ov, mf] = await extra;
     setAwaiting(
       aw.status === 'fulfilled'
-        ? { rows: aw.value.data, total: Number((aw.value.meta as { total?: number }).total ?? aw.value.data.length) }
+        ? {
+            rows: aw.value.data,
+            total: Number((aw.value.meta as { total?: number }).total ?? aw.value.data.length),
+          }
         : null,
     );
     setPending(pa.status === 'fulfilled' ? pa.value.data.filter((a) => !a.doneAt) : null);
     setCallers(
       ov.status === 'fulfilled'
-        ? ov.value.data.telecallers.filter((t) => t.followUpsDue > 0).sort((a, b) => b.followUpsDue - a.followUpsDue)
+        ? ov.value.data.telecallers
+            .filter((t) => t.followUpsDue > 0)
+            .sort((a, b) => b.followUpsDue - a.followUpsDue)
         : null,
     );
     setMis(mf.status === 'fulfilled' ? mf.value.data : null);
@@ -207,7 +219,6 @@ export default function ManagerHome() {
   const advisors = rows.filter((u) => u.role === 'ADVISOR');
   const team = [...telecallers, ...advisors];
   const name = user?.fullName ?? '';
-  const first = name.split(' ')[0] || 'Manager';
   const s = summary;
   const heroTiles: [string, M | undefined, 'call' | 'call-outline' | 'alarm' | 'share-social'][] = [
     ['Call attempts', s?.calling.calls.attempts, 'call-outline'],
@@ -217,7 +228,7 @@ export default function ManagerHome() {
   ];
 
   return (
-    <Screen inset="none" statusBar="light" padded={false} className="pt-0">
+    <Screen inset="none" statusBar="dark" padded={false} className="pt-0">
       <FlatList
         data={loaded ? team : []}
         keyExtractor={(u) => u.id}
@@ -238,68 +249,57 @@ export default function ManagerHome() {
         )}
         ListHeaderComponent={
           <>
-            <HeroHeader className="pb-16">
+            <HeroHeader className="pb-5">
               <View className="flex-row items-center justify-between">
                 <PressableScale
                   accessibilityLabel="Open profile"
                   onPress={() => router.push('/(manager)/profile')}
                   className="flex-1 flex-row items-center gap-3"
                 >
-                  <Avatar name={name || 'Manager'} size={46} light />
+                  <Avatar name={name || 'Manager'} size={40} />
                   <View className="flex-1">
-                    <RNText className="font-medium text-[13px] text-white/70">{greeting()},</RNText>
-                    <RNText numberOfLines={1} className="font-bold text-[20px] text-white">
-                      {first}
+                    <RNText numberOfLines={1} className="font-medium text-xl text-ink">
+                      Team overview
                     </RNText>
-                    <RNText className="font-medium text-[12px] text-white/60">{todayLabel()}</RNText>
+                    <RNText className="font-normal text-sm text-[#737373]">{todayLabel()}</RNText>
                   </View>
                 </PressableScale>
                 <IconButton
                   icon="notifications-outline"
                   label="Notifications"
-                  tone="light"
                   onPress={() => router.push('/(manager)/notifications' as never)}
                 />
               </View>
 
               <View className="mt-6 flex-row items-center justify-between">
-                <RNText className="font-semibold text-[12px] uppercase tracking-[1.4px] text-white/60">
+                <RNText className="font-medium text-sm text-[#525252]">
                   Team calling activity
                 </RNText>
-                <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1">
-                  <Icon name="people" size={12} color={colors.gold} />
-                  <RNText className="font-semibold text-[11px] text-white">
-                    {telecallers.length} Telecallers · {advisors.length} Advisors
-                  </RNText>
-                </View>
+                <RNText className="font-normal text-xs text-[#737373] tabular-nums">
+                  {telecallers.length} Telecallers · {advisors.length} Advisors
+                </RNText>
               </View>
               <View className="mt-3 gap-2">
                 {[0, 2].map((start) => (
                   <View key={start} className="flex-row gap-2">
-                    {heroTiles.slice(start, start + 2).map(([label, m, icon]) =>
+                    {heroTiles.slice(start, start + 2).map(([label, m]) =>
                       m ? (
                         <HeroTile
                           key={label}
                           label={label}
-                          icon={icon}
-                          accent={colors.gold}
                           value={m.value}
                           meta={<HeroMeta m={m} />}
                         />
                       ) : (
                         <View
                           key={label}
-                          className="flex-1 rounded-2xl border border-white/15 bg-white/10 p-3"
+                          className="flex-1 rounded-xl border border-line bg-white p-3"
                         >
-                          <RNText className="font-semibold text-[11px] uppercase tracking-[0.8px] text-white/70">
-                            {label}
-                          </RNText>
+                          <RNText className="font-normal text-sm text-[#525252]">{label}</RNText>
                           {loaded ? (
-                            <RNText className="mt-1.5 font-extrabold text-[26px] text-white/50">
-                              —
-                            </RNText>
+                            <RNText className="mt-1.5 font-medium text-xl text-[#737373]">—</RNText>
                           ) : (
-                            <Skeleton className="mt-2 h-7 w-12 bg-white/20" />
+                            <Skeleton className="mt-2 h-7 w-12" />
                           )}
                         </View>
                       ),
@@ -309,10 +309,9 @@ export default function ManagerHome() {
               </View>
             </HeroHeader>
 
-            <View className="-mt-10 gap-5 px-4">
+            <View className="mt-5 gap-6 px-4">
               <Appear index={1}>
                 <TodayCard
-                  light
                   loaded={loaded}
                   caughtUp="No payout approvals, pending actions or callbacks waiting on you."
                   sections={[
@@ -322,16 +321,23 @@ export default function ManagerHome() {
                       icon: 'checkmark-done-circle',
                       tone: 'gold',
                       count: awaiting?.total ?? null,
-                      empty: 'No payout request is waiting for your approval.',
+                      empty: 'No payout request is waiting for your approval',
                       rows: (awaiting?.rows ?? []).map((r) => ({
                         key: r.id,
                         title: r.advisor.fullName,
                         subtitle: r.publicRef,
                         right: formatInr(r.totalAmountInr, { decimals: 0 }),
-                        onPress: () => router.push({ pathname: '/(manager)/payout-request', params: { id: r.id } }),
+                        onPress: () =>
+                          router.push({
+                            pathname: '/(manager)/payout-request',
+                            params: { id: r.id },
+                          }),
                       })),
                       seeAll: awaiting?.total
-                        ? { label: 'All approvals', onPress: () => router.push('/(manager)/approvals') }
+                        ? {
+                            label: 'All approvals',
+                            onPress: () => router.push('/(manager)/approvals'),
+                          }
                         : undefined,
                     },
                     {
@@ -340,12 +346,13 @@ export default function ManagerHome() {
                       icon: 'alarm',
                       tone: 'warning',
                       count: pending?.length ?? null,
-                      empty: "Nothing pending on your team's leads.",
+                      empty: "Nothing pending on your team's leads",
                       rows: (pending ?? []).slice(0, 3).map((a) => ({
                         key: a.id,
                         title: a.whatToDo,
                         subtitle: [a.customer, a.owner.name].filter(Boolean).join(' · '),
-                        onPress: () => router.push({ pathname: '/(manager)/lead', params: { id: a.leadId } }),
+                        onPress: () =>
+                          router.push({ pathname: '/(manager)/lead', params: { id: a.leadId } }),
                       })),
                     },
                     {
@@ -354,13 +361,14 @@ export default function ManagerHome() {
                       icon: 'call',
                       tone: 'info',
                       count: callers ? callers.reduce((n, t) => n + t.followUpsDue, 0) : null,
-                      empty: 'No callbacks due for your team.',
+                      empty: 'No callbacks due for your team',
                       rows: (callers ?? []).slice(0, 3).map((t) => ({
                         key: t.id,
                         title: t.fullName,
                         subtitle: `${t.queueSize} records held`,
                         right: `${t.followUpsDue} due`,
-                        onPress: () => router.push({ pathname: '/(manager)/telecaller', params: { id: t.id } }),
+                        onPress: () =>
+                          router.push({ pathname: '/(manager)/telecaller', params: { id: t.id } }),
                       })),
                     },
                   ]}
@@ -381,14 +389,11 @@ export default function ManagerHome() {
                       className="flex-1"
                       label="Leads created"
                       m={s.advisors.leads.created}
-                      icon="document-text"
                     />
                     <MetricTile
                       className="flex-1"
                       label="MIS matched"
                       m={s.advisors.leads.misMatched}
-                      icon="git-compare"
-                      tone="info"
                     />
                   </View>
                   <View className="flex-row gap-3">
@@ -397,16 +402,12 @@ export default function ManagerHome() {
                       label="Approved, unpaid"
                       m={s.advisors.payouts.approvedUnpaid}
                       money
-                      icon="hourglass"
-                      tone="gold"
                     />
                     <MetricTile
                       className="flex-1"
                       label="Paid events"
                       m={s.advisors.payouts.paid}
                       money
-                      icon="wallet"
-                      tone="success"
                     />
                   </View>
                   {mis ? <MisFreshnessLine mis={mis} /> : null}
@@ -424,7 +425,7 @@ export default function ManagerHome() {
                 ) : team.length === 0 && !error ? (
                   <EmptyState
                     icon="people-outline"
-                    title="No team members yet."
+                    title="No team members yet"
                     body="Create a Telecaller with a name and mobile number. Advisors join when they apply your Agent Code."
                     action="Create Telecaller"
                     onAction={() => router.push('/(manager)/create-telecaller')}

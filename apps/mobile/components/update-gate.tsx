@@ -185,16 +185,13 @@ function UpdateScreen({
 }: PropsWithChildren<{ title: string; body?: string }>) {
   return (
     <View className="flex-1 items-center justify-center gap-5 bg-canvas px-8">
-      <LogoMark size={64} />
-      <RNText
-        accessibilityRole="header"
-        className="text-center font-extrabold text-[22px] text-ink"
-      >
+      <LogoMark size={48} />
+      <RNText accessibilityRole="header" className="text-center font-medium text-xl text-ink">
         {title}
       </RNText>
-      {body ? <Muted className="text-center text-[14px] leading-[20px]">{body}</Muted> : null}
+      {body ? <Muted className="text-center text-md">{body}</Muted> : null}
       <View className="w-full gap-2">{children}</View>
-      <Muted className="text-[11px]">v{currentVersion}</Muted>
+      <Muted className="text-xs">v{currentVersion}</Muted>
     </View>
   );
 }
@@ -202,11 +199,11 @@ function UpdateScreen({
 function Prompt({ title, body, children }: PropsWithChildren<{ title: string; body: string }>) {
   return (
     <View className="flex-1 justify-end bg-black/40">
-      <View className="gap-3 rounded-t-[28px] bg-white px-6 pb-10 pt-6">
-        <RNText accessibilityRole="header" className="font-extrabold text-[20px] text-ink">
+      <View className="gap-3 rounded-t-3xl bg-white px-6 pb-10 pt-6">
+        <RNText accessibilityRole="header" className="font-medium text-lg text-ink">
           {title}
         </RNText>
-        <Muted className="text-[14px] leading-[20px]">{body}</Muted>
+        <Muted className="text-md">{body}</Muted>
         <View className="mt-2 gap-2">{children}</View>
       </View>
     </View>

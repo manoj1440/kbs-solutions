@@ -10,7 +10,6 @@ import {
   EmptyState,
   ErrorState,
   ErrorText,
-  Icon,
   IconCircle,
   type IconName,
   Muted,
@@ -20,7 +19,7 @@ import {
   SkeletonList,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { colors, shadow, type Tone } from '@/lib/theme';
+import { type Tone } from '@/lib/theme';
 
 interface Row {
   id: string;
@@ -116,29 +115,24 @@ export function NotificationsScreen({ area }: { area: Area }) {
           accessibilityLabel={`${n.readAt ? '' : 'Unread. '}${n.title}`}
           onPress={() => void open(n)}
           scaleTo={0.985}
-          className={`flex-row gap-3 rounded-2xl p-4 ${n.readAt ? 'border border-line bg-white' : 'border border-[#F0DACD] bg-[#F7F2EC]'}`}
-          style={n.readAt ? undefined : shadow.sm}
+          className="flex-row gap-3 rounded-xl border border-line bg-white p-4"
         >
-          <IconCircle icon={v.icon} tone={v.tone} size={42} />
+          <IconCircle icon={v.icon} tone={v.tone} size={36} />
           <View className="flex-1 gap-0.5">
             <View className="flex-row items-start gap-2">
               <RNText
                 numberOfLines={2}
-                className={`flex-1 text-[15px] leading-[20px] text-ink ${n.readAt ? 'font-semibold' : 'font-bold'}`}
+                className={`flex-1 text-base text-ink ${n.readAt ? 'font-normal' : 'font-medium'}`}
               >
                 {n.title}
               </RNText>
               {n.readAt ? null : (
-                <View
-                  accessibilityElementsHidden
-                  className="mt-1.5 h-2.5 w-2.5 rounded-full bg-brand"
-                />
+                <View accessibilityElementsHidden className="mt-2 h-2 w-2 rounded-full bg-orange" />
               )}
             </View>
             <Muted numberOfLines={3}>{n.body}</Muted>
             <View className="mt-1 flex-row items-center gap-1">
-              <Icon name="time-outline" size={12} color={colors.subtle} />
-              <RNText className="font-medium text-[12px] text-[#78716C]">
+              <RNText className="font-normal text-xs text-[#737373] tabular-nums">
                 {formatDateTime(n.createdAt)}
               </RNText>
             </View>
@@ -189,7 +183,7 @@ export function NotificationsScreen({ area }: { area: Area }) {
       {rows?.length === 0 ? (
         <EmptyState
           icon="notifications-outline"
-          title="No notifications yet."
+          title="No notifications yet"
           body="Updates about your work will appear here."
         />
       ) : null}

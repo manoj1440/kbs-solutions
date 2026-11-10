@@ -27,7 +27,7 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 interface Detail {
   telecaller: { id: string; fullName: string; employeeCode: string | null; status: string };
@@ -135,18 +135,16 @@ function WfhCard({ telecallerId }: { telecallerId: string }) {
     <Card className="gap-4">
       <View className="flex-row items-center gap-3">
         <IconCircle
-          icon={open ? 'home' : 'business'}
+          icon={open ? 'home-outline' : 'business-outline'}
           tone={open ? 'info' : 'secondary'}
-          size={40}
+          size={36}
         />
         <View className="flex-1">
-          <Text className="font-bold text-[15px]">Work from home</Text>
+          <Text className="font-medium text-base">Work from home</Text>
           {rows === null && !error ? (
             <Skeleton className="mt-1 h-3 w-32" />
           ) : (
-            <Muted className="text-[12px]">
-              {open ? 'Exception active' : 'Office network only'}
-            </Muted>
+            <Muted className="text-xs">{open ? 'Exception active' : 'Office network only'}</Muted>
           )}
         </View>
       </View>
@@ -157,8 +155,8 @@ function WfhCard({ telecallerId }: { telecallerId: string }) {
             variant="info"
             icon="home-outline"
           />
-          <View className="rounded-xl bg-[#F7F4EF] px-3 py-2.5">
-            <Muted className="text-[13px]">{open.reason}</Muted>
+          <View className="rounded-xl bg-raised px-3 py-2.5">
+            <Muted className="text-sm">{open.reason}</Muted>
           </View>
           <Input
             label="Reason to revoke"
@@ -222,11 +220,11 @@ function WfhCard({ telecallerId }: { telecallerId: string }) {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
-    <View className="w-[31%] items-center rounded-2xl bg-[#F7F4EF] py-3">
-      <RNText className="font-extrabold text-[20px]" style={{ color: tone ?? colors.ink }}>
+    <View className="w-[31%] items-center rounded-lg bg-raised py-3">
+      <RNText className="font-medium text-lg tabular-nums" style={{ color: tone ?? colors.ink }}>
         {value}
       </RNText>
-      <RNText numberOfLines={1} className="font-medium text-[11px] text-[#57534E]">
+      <RNText numberOfLines={1} className="font-normal text-xs text-[#525252]">
         {label}
       </RNText>
     </View>
@@ -298,33 +296,26 @@ export default function TelecallerDetail() {
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
       {!d && !error ? (
         <View className="gap-3">
-          <Skeleton className="h-40 w-full rounded-3xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
           <SkeletonList rows={3} />
         </View>
       ) : null}
       {d ? (
         <>
           <Appear>
-            <View
-              className="overflow-hidden rounded-3xl p-5"
-              style={[gradientStyle(gradients.hero, 140), shadow.lg]}
-            >
-              <View
-                pointerEvents="none"
-                className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/[0.07]"
-              />
+            <View className="overflow-hidden rounded-xl border border-line bg-white p-5">
               <View className="flex-row items-center gap-4">
-                <Avatar name={d.telecaller.fullName} size={60} light />
+                <Avatar name={d.telecaller.fullName} size={48} />
                 <View className="flex-1 gap-1">
-                  <RNText numberOfLines={1} className="font-extrabold text-[20px] text-white">
+                  <RNText numberOfLines={1} className="font-medium text-lg text-ink">
                     {d.telecaller.fullName}
                   </RNText>
                   {d.telecaller.employeeCode ? (
-                    <RNText className="font-medium text-[12px] text-white/70">
+                    <RNText className="font-medium text-xs text-[#737373]">
                       {d.telecaller.employeeCode}
                     </RNText>
                   ) : null}
-                  <View className="mt-1 self-start rounded-full bg-white px-0.5">
+                  <View className="mt-1 self-start">
                     <Badge
                       label={LABEL[d.status] ?? d.status}
                       variant={trainingTone(d.status)}
@@ -334,24 +325,17 @@ export default function TelecallerDetail() {
                   </View>
                 </View>
               </View>
-              <View className="mt-4 gap-2 rounded-2xl bg-white/10 p-3">
+              <View className="mt-4 gap-2 rounded-lg bg-raised p-3">
                 <View className="flex-row items-center justify-between">
-                  <RNText className="font-semibold text-[12px] text-white/85">
-                    Training modules
-                  </RNText>
-                  <RNText className="font-bold text-[12px] text-white">
+                  <RNText className="font-medium text-xs text-[#525252]">Training modules</RNText>
+                  <RNText className="font-medium text-xs text-ink tabular-nums">
                     {passed} / {d.modules.length} passed
                   </RNText>
                 </View>
-                <ProgressBar
-                  value={d.modules.length ? passed / d.modules.length : 0}
-                  tone="gold"
-                  light
-                  height={6}
-                />
+                <ProgressBar value={d.modules.length ? passed / d.modules.length : 0} height={6} />
                 <View className="flex-row items-center gap-1.5">
-                  <Icon name="time-outline" size={13} color="rgba(255,255,255,0.7)" />
-                  <RNText className="font-medium text-[12px] text-white/70">
+                  <Icon name="time-outline" size={16} color={colors.subtle} />
+                  <RNText className="font-medium text-xs text-[#737373]">
                     {d.deadlineAt
                       ? `Deadline ${formatDateTime(d.deadlineAt)}`
                       : 'Window starts at first login'}
@@ -377,27 +361,29 @@ export default function TelecallerDetail() {
                 {d.modules.map((m, i) => (
                   <View
                     key={m.sequence}
-                    className={`min-h-[60px] flex-row items-center gap-3 py-3 ${i === d.modules.length - 1 ? '' : 'border-b border-line'}`}
+                    className={`min-h-14 flex-row items-center gap-3 py-3 ${i === d.modules.length - 1 ? '' : 'border-b border-line'}`}
                   >
                     <View
-                      className="h-9 w-9 items-center justify-center rounded-full"
+                      className="h-8 w-8 items-center justify-center rounded-lg"
                       style={{
-                        backgroundColor: m.status === 'PASSED' ? colors.successSoft : '#EFEAE4',
+                        backgroundColor: m.status === 'PASSED' ? colors.successSoft : colors.raised,
                       }}
                     >
                       {m.status === 'PASSED' ? (
-                        <Icon name="checkmark" size={18} color={colors.success} />
+                        <Icon name="checkmark" size={16} color={colors.success} />
                       ) : m.status === 'LOCKED' ? (
-                        <Icon name="lock-closed" size={15} color={colors.subtle} />
+                        <Icon name="lock-closed-outline" size={16} color={colors.subtle} />
                       ) : (
-                        <RNText className="font-bold text-[13px] text-ink">{m.sequence}</RNText>
+                        <RNText className="font-medium text-sm text-ink tabular-nums">
+                          {m.sequence}
+                        </RNText>
                       )}
                     </View>
                     <View className="flex-1">
-                      <Text numberOfLines={1} className="font-semibold text-[14px]">
+                      <Text numberOfLines={1} className="font-medium text-md">
                         {m.sequence}. {m.title}
                       </Text>
-                      <Muted className="text-[12px]">
+                      <Muted className="text-xs">
                         {m.attemptCount} attempts
                         {m.bestScorePct !== null ? ` · best ${m.bestScorePct}%` : ''}
                       </Muted>
@@ -408,14 +394,11 @@ export default function TelecallerDetail() {
               </Card>
               {d.canReactivate ? (
                 <Card className="gap-3">
-                  <View className="flex-row items-center gap-3">
-                    <IconCircle icon="refresh-circle" tone="warning" size={40} />
-                    <View className="flex-1">
-                      <Text className="font-bold text-[15px]">Reactivate training</Text>
-                      <Muted className="text-[12px]">
-                        Resumes at the first module not passed; earlier passes are kept.
-                      </Muted>
-                    </View>
+                  <View>
+                    <Text className="font-medium text-base">Reactivate training</Text>
+                    <Muted className="text-xs">
+                      Resumes at the first module not passed; earlier passes are kept.
+                    </Muted>
                   </View>
                   <Input
                     label="Reason"
@@ -459,7 +442,7 @@ export default function TelecallerDetail() {
                 <>
                   <Card className="gap-3">
                     <View className="flex-row items-center justify-between">
-                      <Text className="font-bold text-[15px]">Calling — last 7 days</Text>
+                      <Text className="font-medium text-base">Calling — last 7 days</Text>
                       {overdue ? (
                         <Badge
                           label={`${overdue} follow-ups overdue`}

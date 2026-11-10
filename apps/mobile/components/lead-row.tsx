@@ -27,30 +27,24 @@ export function LeadRow({ row, onPress }: { row: LeadStatusRow; onPress: () => v
       className="gap-3"
     >
       <View className="flex-row items-center gap-3">
-        <Avatar name={row.customer.name} size={42} />
+        <Avatar name={row.customer.name} size={40} />
         <View className="flex-1">
-          <Text className="font-bold text-[15px]" numberOfLines={1}>
+          <Text className="font-medium text-base" numberOfLines={1}>
             {row.customer.name}
           </Text>
-          <Muted numberOfLines={1}>
-            {withBank(row.bank, row.card.name, ' · ')}
-          </Muted>
+          <Muted numberOfLines={1}>{withBank(row.bank, row.card.name, ' · ')}</Muted>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
+        <Ionicons name="chevron-forward" size={16} color={colors.subtle} />
       </View>
       <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
-        <View className="flex-row items-center gap-1">
-          <Ionicons name="pricetag-outline" size={12} color={colors.subtle} />
-          <Muted className="text-[12px]">KBS {row.kbsRef}</Muted>
-        </View>
+        <Muted className="text-xs tabular-nums">KBS {row.kbsRef}</Muted>
         {ref ? (
-          <View className="flex-row items-center gap-1">
-            <Ionicons name="business-outline" size={12} color={colors.subtle} />
-            <Muted className="text-[12px]">Bank ref {ref}</Muted>
+          <View className="flex-row items-center gap-1.5">
+            <Muted className="text-xs tabular-nums">Bank ref {ref}</Muted>
             {!refVerified ? <Badge label="unverified" variant="warning" size="sm" /> : null}
           </View>
         ) : (
-          <Muted className="text-[12px]">Bank reference not yet available</Muted>
+          <Muted className="text-xs">Bank reference not yet available</Muted>
         )}
         {row.possibleCollision ? (
           <Badge label="possible duplicate" variant="warning" size="sm" icon="copy-outline" />
@@ -58,19 +52,16 @@ export function LeadRow({ row, onPress }: { row: LeadStatusRow; onPress: () => v
       </View>
       <StatusTrio stage={row.stage} decision={row.decision} activation={row.activation} />
       <View className="flex-row items-center gap-1.5">
-        <Ionicons
-          name={row.lastMatchedAt ? 'sync-outline' : 'time-outline'}
-          size={12}
-          color={colors.subtle}
-        />
-        <Muted className="flex-1 text-[12px]" numberOfLines={1}>
+        {/* provenance dot — Bank MIS */}
+        <View className="h-1.5 w-1.5 rounded-full bg-[#5B2BA3]" />
+        <Muted className="flex-1 text-xs text-[#737373]" numberOfLines={1}>
           {row.lastMatchedAt
             ? `Last matched MIS: ${formatDateTime(row.lastMatchedAt)}`
             : 'Never matched to a bank MIS row'}
         </Muted>
       </View>
       {row.remarksPreview ? (
-        <Muted numberOfLines={1} className="text-[12px] italic">
+        <Muted numberOfLines={1} className="text-xs text-[#737373]">
           “{row.remarksPreview}”
         </Muted>
       ) : null}

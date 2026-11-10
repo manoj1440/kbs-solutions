@@ -169,9 +169,9 @@ function Gallery() {
         <View className="flex-row items-center gap-3">
           <Avatar name="Asha Advisor" />
           <Avatar name="Demo Telecaller" size={36} />
-          <IconCircle icon="wallet" tone="gold" />
-          <IconCircle icon="checkmark" tone="success" solid />
-          <IconCircle icon="alert" tone="destructive" />
+          <IconCircle icon="wallet-outline" tone="gold" />
+          <IconCircle icon="checkmark" tone="success" />
+          <IconCircle icon="alert-outline" tone="destructive" />
         </View>
         <ProgressBar value={0.66} />
         <ProgressBar value={0.4} tone="gold" />
@@ -220,23 +220,20 @@ function Gallery() {
           <KeyValue label="Mobile" value="+91••••••0001" last />
         </Card>
         <View className="flex-row gap-3">
-          <StatTile label="Stat tile" value="42" icon="people" />
-          <StatTile label="Gold tone" value="₹3,000" icon="wallet" tone="gold" hint="hint" />
+          <StatTile label="Stat tile" value="42" />
+          <StatTile label="Gold tone" value="₹3,000" tone="gold" hint="hint" />
         </View>
         <View className="flex-row gap-3">
           <MetricTile
             className="flex-1"
             label="MIS matched"
             m={{ value: 6, denominator: { label: 'leads', value: 7 }, source: 'BANK_MIS' }}
-            icon="git-compare"
-            tone="info"
           />
           <MetricTile
             className="flex-1"
             label="Approved, unpaid"
             m={{ value: 1, amountInr: 1500, source: 'KBS_PAYOUT_LEDGER' }}
             money
-            icon="hourglass"
             tone="gold"
           />
         </View>
@@ -253,11 +250,11 @@ function Gallery() {
       </Section>
 
       <Section title="Hero">
-        <View className="overflow-hidden rounded-3xl">
-          <HeroHeader rounded={false} style={{ paddingTop: 16 }}>
+        <View className="overflow-hidden rounded-xl border border-line">
+          <HeroHeader style={{ paddingTop: 16 }}>
             <View className="flex-row gap-2">
               <HeroTile label="Active" value={4} meta="in your queue" />
-              <HeroTile label="Due" value={1} meta="call back now" icon="alarm" />
+              <HeroTile label="Due" value={1} meta="call back now" />
             </View>
           </HeroHeader>
         </View>
@@ -287,7 +284,7 @@ function Gallery() {
       <Section title="Bank status (text always shown, REQ-20 §20.2)">
         {SAMPLES.map((s) => (
           <Card key={s.label} className="gap-2">
-            <Text className="font-semibold">{s.label}</Text>
+            <Text className="font-medium">{s.label}</Text>
             <StageBadge field={s.field} />
             <DecisionBadge field={s.field} />
             <ActivationBadge field={s.field} />
@@ -299,13 +296,13 @@ function Gallery() {
           activation={SAMPLES[0]!.field}
         />
         <Card className="gap-2">
-          <Text className="font-semibold">Provenance</Text>
+          <Text className="font-medium">Provenance</Text>
           <ProvenanceChip provenance="BANK_MIS" asOf={AS_OF} />
           <ProvenanceChip provenance="KBS_OPERATIONAL" asOf={AS_OF} />
           <ProvenanceChip provenance="KBS_PAYMENT" asOf={AS_OF} />
         </Card>
         <Card className="gap-2">
-          <Text className="font-semibold">Payout states</Text>
+          <Text className="font-medium">Payout states</Text>
           <View className="flex-row flex-wrap gap-2">
             {PAYOUTS.map((p) => (
               <PayoutStateBadge key={p} state={p} />

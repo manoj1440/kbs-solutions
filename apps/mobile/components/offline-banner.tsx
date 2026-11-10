@@ -30,7 +30,7 @@ export function OfflineBanner() {
       style={{ paddingTop: insets.top + 6 }}
     >
       <Icon name="cloud-offline-outline" size={16} color="#fff" />
-      <RNText className="flex-1 font-medium text-[12px] leading-[17px] text-white">
+      <RNText className="flex-1 font-normal text-xs text-white">
         You are offline. Changes will not be saved until the connection is back.
       </RNText>
     </View>

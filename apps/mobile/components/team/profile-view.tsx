@@ -8,7 +8,6 @@ import {
   HeroHeader,
   type IconName,
   ListItem,
-  Muted,
   Screen,
   SectionHeader,
 } from '@/components/ui';
@@ -25,7 +24,10 @@ export interface ProfileAction {
 
 function Value({ children }: { children: ReactNode }) {
   return (
-    <RNText numberOfLines={1} className="max-w-[55%] text-right font-semibold text-[14px] text-ink">
+    <RNText
+      numberOfLines={1}
+      className="max-w-[55%] text-right font-normal text-md text-ink tabular-nums"
+    >
       {children}
     </RNText>
   );
@@ -51,34 +53,35 @@ export function ProfileView({ actions }: { actions: ProfileAction[] }) {
       : []),
   ];
   return (
-    <Screen inset="none" statusBar="light" scroll padded={false} contentClassName="pt-0">
-      <HeroHeader className="items-center pb-16">
-        <Muted className="self-start font-semibold text-[12px] uppercase tracking-[1.4px] text-white/60">
+    <Screen inset="none" scroll padded={false} contentClassName="pt-0">
+      <HeroHeader>
+        <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
           Profile
-        </Muted>
-        <View className="mt-4 items-center">
-          <Avatar name={user?.fullName || 'KBS'} size={84} light />
-          <RNText
-            numberOfLines={1}
-            className="mt-3 font-extrabold text-[22px] tracking-tight text-white"
-          >
-            {name}
-          </RNText>
-          <View className="mt-2 flex-row items-center gap-2">
-            <View className="flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 py-1">
-              <View className="h-1.5 w-1.5 rounded-full bg-gold" />
-              <RNText className="font-semibold text-[12px] text-white">
-                {user?.role ? humanize(user.role) : ''}
-              </RNText>
+        </RNText>
+        <View className="mt-5 flex-row items-center gap-4">
+          <Avatar name={user?.fullName || 'KBS'} size={56} />
+          <View className="flex-1">
+            <RNText numberOfLines={1} className="font-medium text-lg text-ink">
+              {name}
+            </RNText>
+            <View className="mt-1 flex-row items-center gap-2">
+              <View className="flex-row items-center gap-1.5">
+                <View className="h-1.5 w-1.5 rounded-full bg-orange" />
+                <RNText className="font-normal text-sm text-[#525252]">
+                  {user?.role ? humanize(user.role) : ''}
+                </RNText>
+              </View>
+              {user?.publicRef ? (
+                <RNText className="font-normal text-sm text-[#737373] tabular-nums">
+                  · {user.publicRef}
+                </RNText>
+              ) : null}
             </View>
-            {user?.publicRef ? (
-              <RNText className="font-medium text-[12px] text-white/60">{user.publicRef}</RNText>
-            ) : null}
           </View>
         </View>
       </HeroHeader>
 
-      <View className="-mt-10 gap-5 px-4">
+      <View className="mt-4 gap-5 px-4">
         <Appear index={1}>
           <Card className="px-4 py-1">
             {facts.map((f, i) => (

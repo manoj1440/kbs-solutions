@@ -26,7 +26,6 @@ import {
   Card,
   ErrorState,
   Icon,
-  IconCircle,
   KeyValue,
   Muted,
   Screen,
@@ -64,19 +63,16 @@ const CHANGE_LABEL: Record<string, string> = {
 
 function Fields({
   title,
-  icon,
   rows,
 }: {
   title: string;
-  icon: 'chatbox-ellipses-outline' | 'finger-print-outline';
+  /** accepted for older call sites; titles carry no decorative icon */
+  icon?: 'chatbox-ellipses-outline' | 'finger-print-outline';
   rows: RemarkField[];
 }) {
   return (
     <Card className="gap-1 pb-2">
-      <View className="mb-1 flex-row items-center gap-3">
-        <IconCircle icon={icon} tone="secondary" size={34} />
-        <Text className="flex-1 font-bold text-[15px]">{title}</Text>
-      </View>
+      <Text className="mb-1 font-medium text-base">{title}</Text>
       {rows.map((f, i) => (
         <KeyValue
           key={f.field}
@@ -84,7 +80,7 @@ function Fields({
           last={i === rows.length - 1}
           value={
             <RNText
-              className={`text-right text-[13px] ${f.raw === null ? 'font-normal italic text-[#78716C]' : 'font-semibold text-ink'}`}
+              className={`text-right text-sm tabular-nums ${f.raw === null ? 'font-normal text-[#737373]' : 'font-medium text-ink'}`}
             >
               {f.display}
             </RNText>
@@ -135,7 +131,7 @@ export default function ManagerLeadScreen() {
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
       {!l && !error ? (
         <View className="gap-3">
-          <Skeleton className="h-32 w-full rounded-3xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
           <SkeletonList rows={3} />
         </View>
       ) : null}
@@ -144,15 +140,15 @@ export default function ManagerLeadScreen() {
           <Appear>
             <Card className="gap-4">
               <View className="flex-row items-center gap-3">
-                <Avatar name={l.customer.name} size={52} />
+                <Avatar name={l.customer.name} size={44} />
                 <View className="flex-1">
-                  <Muted className="text-[12px]">KBS {l.kbsRef}</Muted>
-                  <Text numberOfLines={1} className="font-extrabold text-[19px]">
+                  <Muted className="text-xs">KBS {l.kbsRef}</Muted>
+                  <Text numberOfLines={1} className="font-medium text-lg">
                     {l.customer.name}
                   </Text>
-                  <Muted numberOfLines={2} className="text-[12px]">
-                    {withBank(l.bank, l.card.name)} · created {formatDateTime(l.leadCreatedAt)}{' '}
-                    (KBS activity)
+                  <Muted numberOfLines={2} className="text-xs">
+                    {withBank(l.bank, l.card.name)} · created {formatDateTime(l.leadCreatedAt)} (KBS
+                    activity)
                   </Muted>
                 </View>
               </View>
@@ -162,15 +158,12 @@ export default function ManagerLeadScreen() {
 
           <Appear index={1}>
             <Card className="gap-2.5">
-              <View className="flex-row items-center gap-3">
-                <IconCircle icon="business" tone="default" size={34} />
-                <Text className="flex-1 font-bold text-[15px]">Bank status (from MIS only)</Text>
-              </View>
+              <Text className="font-medium text-base">Bank status (from MIS only)</Text>
               <StageBadge field={l.stage} />
               <DecisionBadge field={l.decision} />
               <ActivationBadge field={l.activation} />
               <ProvenanceChip provenance="BANK_MIS" asOf={l.lastMatchedAt} />
-              <Muted className="text-[12px]">
+              <Muted className="text-xs">
                 {l.bankStatus.matched
                   ? `Exact values from bank MIS batch ${l.bankStatus.lastMatchedBatchRef ?? ''}.`
                   : 'No MIS row has matched this lead yet.'}
@@ -180,10 +173,7 @@ export default function ManagerLeadScreen() {
 
           <Appear index={2}>
             <Card className="gap-1 pb-2">
-              <View className="mb-1 flex-row items-center gap-3">
-                <IconCircle icon="person" tone="info" size={34} />
-                <Text className="flex-1 font-bold text-[15px]">Customer</Text>
-              </View>
+              <Text className="mb-1 font-medium text-base">Customer</Text>
               <KeyValue label="Mobile" value={l.customer.mobileMasked ?? '—'} />
               {l.customerPanMasked ? <KeyValue label="PAN" value={l.customerPanMasked} /> : null}
               <KeyValue
@@ -232,17 +222,17 @@ export default function ManagerLeadScreen() {
                     last={gi === history.length - 1}
                   >
                     {changed.length === 0 ? (
-                      <Muted className="mt-1 text-[12px]">
+                      <Muted className="mt-1 text-xs">
                         Identical repeat — no bank value changed.
                       </Muted>
                     ) : null}
                     {changed.map((c) => (
                       <View
                         key={`${g.batchId}-${c.field}`}
-                        className="mt-2 gap-1 rounded-xl bg-[#F7F4EF] px-3 py-2"
+                        className="mt-2 gap-1 rounded-xl bg-raised px-3 py-2"
                       >
                         <View className="flex-row flex-wrap items-center gap-2">
-                          <RNText className="font-semibold text-[12px] text-ink">
+                          <RNText className="font-medium text-xs text-ink">
                             {c.field === '*' ? '(whole row)' : c.field}
                           </RNText>
                           <Badge
@@ -252,9 +242,9 @@ export default function ManagerLeadScreen() {
                           />
                         </View>
                         <View className="flex-row flex-wrap items-center gap-1.5">
-                          <Muted className="text-[12px]">{c.oldValue ?? 'blank'}</Muted>
-                          <Icon name="arrow-forward" size={12} color={colors.subtle} />
-                          <RNText className="font-semibold text-[12px] text-ink">
+                          <Muted className="text-xs">{c.oldValue ?? 'blank'}</Muted>
+                          <Icon name="arrow-forward" size={16} color={colors.subtle} />
+                          <RNText className="font-medium text-xs text-ink">
                             {c.newValue ?? 'blank'}
                           </RNText>
                         </View>

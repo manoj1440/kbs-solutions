@@ -29,8 +29,14 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { type AvailableCardsResponse, bankName, fetchCardsForRecord, money, withBank } from '@/lib/cards';
-import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import {
+  type AvailableCardsResponse,
+  bankName,
+  fetchCardsForRecord,
+  money,
+  withBank,
+} from '@/lib/cards';
+import { colors } from '@/lib/theme';
 
 interface RecordDetail extends CallingQueueRow {
   panLast4: string | null;
@@ -85,12 +91,18 @@ function HeroChip({
   tone?: string;
 }) {
   return (
-    <View
-      className="flex-row items-center gap-1.5 rounded-full px-2.5 py-1"
-      style={{ backgroundColor: tone ?? 'rgba(255,255,255,0.15)' }}
-    >
-      <Icon name={icon} size={icon === 'ellipse' ? 7 : 12} color="#fff" />
-      <RNText className="font-semibold text-[12px] text-white">{label}</RNText>
+    <View className="flex-row items-center gap-1.5 rounded-md bg-raised px-2 py-1">
+      {icon === 'ellipse' ? (
+        <View
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ backgroundColor: tone ?? colors.subtle }}
+        />
+      ) : (
+        <Icon name={`${icon}-outline`} size={12} color={tone ?? colors.muted} />
+      )}
+      <RNText className="font-medium text-xs" style={{ color: tone ?? colors.muted }}>
+        {label}
+      </RNText>
     </View>
   );
 }
@@ -129,43 +141,36 @@ export default function RecordScreen() {
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
       {!rec && !error ? (
         <View className="gap-3">
-          <Skeleton className="h-40 w-full rounded-3xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
           <SkeletonList rows={2} />
         </View>
       ) : null}
       {rec ? (
         <>
           <Appear>
-            <View
-              className="overflow-hidden rounded-3xl p-5"
-              style={[gradientStyle(gradients.hero, 140), shadow.lg]}
-            >
-              <View
-                pointerEvents="none"
-                className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/[0.07]"
-              />
+            <View className="overflow-hidden rounded-xl border border-line bg-white p-5">
               <View className="flex-row items-center gap-4">
-                <Avatar name={rec.fullName} size={58} light />
+                <Avatar name={rec.fullName} size={48} />
                 <View className="flex-1">
-                  <RNText numberOfLines={1} className="font-extrabold text-[21px] text-white">
+                  <RNText numberOfLines={1} className="font-medium text-xl text-ink">
                     {rec.fullName}
                   </RNText>
-                  <RNText className="mt-0.5 font-semibold text-[15px] tracking-wide text-white/90">
+                  <RNText className="mt-0.5 font-medium text-base text-[#525252]">
                     {rec.mobileMasked}
                   </RNText>
                 </View>
               </View>
-              <View className="mt-4 gap-1.5 rounded-2xl bg-white/10 p-3">
+              <View className="mt-4 gap-1.5 rounded-lg bg-raised p-3">
                 <View className="flex-row items-center gap-2">
-                  <Icon name="location-outline" size={14} color="rgba(255,255,255,0.75)" />
-                  <RNText className="flex-1 font-medium text-[13px] text-white/85">
+                  <Icon name="location-outline" size={16} color={colors.subtle} />
+                  <RNText className="flex-1 font-medium text-sm text-[#525252]">
                     {rec.pincode} · {rec.location}
                   </RNText>
                 </View>
                 {rec.panLast4 ? (
                   <View className="flex-row items-center gap-2">
-                    <Icon name="card-outline" size={14} color="rgba(255,255,255,0.75)" />
-                    <RNText className="font-medium text-[13px] text-white/85">
+                    <Icon name="card-outline" size={16} color={colors.subtle} />
+                    <RNText className="font-medium text-sm text-[#525252]">
                       PAN ••••••{rec.panLast4}
                     </RNText>
                   </View>
@@ -181,7 +186,7 @@ export default function RecordScreen() {
                   <HeroChip
                     icon="alarm"
                     label={`Follow up ${formatDateTime(rec.nextFollowUpAt)}`}
-                    tone="rgba(245, 185, 66, 0.35)"
+                    tone={colors.warning}
                   />
                 ) : null}
               </View>
@@ -228,18 +233,18 @@ export default function RecordScreen() {
                 >
                   <CreditCardArt bank={bankName(c.bank)} width={84} compact />
                   <View className="flex-1 gap-0.5">
-                    <Text numberOfLines={1} className="font-bold text-[15px]">
+                    <Text numberOfLines={1} className="font-medium text-base">
                       {c.name}
                     </Text>
-                    <Muted numberOfLines={1} className="text-[12px]">
+                    <Muted numberOfLines={1} className="text-xs">
                       {bankName(c.bank) ? `${bankName(c.bank)} · ` : ''}
                       {c.categories.map((x) => x.label).join(', ') || 'uncategorised'}
                     </Muted>
-                    <Muted numberOfLines={1} className="text-[12px]">
+                    <Muted numberOfLines={1} className="text-xs">
                       joining {money(c.joiningFee)} · annual {money(c.annualFee)}
                     </Muted>
                     {c.benefits[0] ? (
-                      <Muted numberOfLines={1} className="text-[12px] text-[#115E59]">
+                      <Muted numberOfLines={1} className="text-xs text-[#115E59]">
                         • {c.benefits[0]}
                       </Muted>
                     ) : null}
@@ -248,7 +253,7 @@ export default function RecordScreen() {
                 </Card>
               ))}
               {cards ? (
-                <Muted className="text-center text-[11px]">
+                <Muted className="text-center text-xs">
                   As of {formatDateTime(cards.asOf)} · from current uploaded bank data
                 </Muted>
               ) : null}

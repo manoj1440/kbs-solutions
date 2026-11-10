@@ -24,7 +24,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { bankName, fileUrl, money } from '@/lib/cards';
-import { colors, gradients } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 /** S12 card detail (F-405) with sourcing-availability check and the Create Lead CTA (F-406). */
 export default function AdvisorCardDetail() {
@@ -63,7 +63,6 @@ export default function AdvisorCardDetail() {
   return (
     <Screen
       inset="none"
-      statusBar="light"
       scroll
       padded={false}
       contentClassName="pt-0"
@@ -95,32 +94,31 @@ export default function AdvisorCardDetail() {
               }
             />
           </View>
-          <Muted className="text-center text-[12px]">
+          <Muted className="text-center text-xs">
             Creates a KBS operational lead only; the bank status appears after the MIS upload.
           </Muted>
         </StickyFooter>
       }
     >
-      <HeroHeader colors={gradients.heroDeep} className="pb-8">
+      <HeroHeader className="pb-6">
         <View className="flex-row items-center gap-3">
           <IconButton
             icon="chevron-back"
             label="Back"
-            tone="light"
             onPress={() =>
               router.canGoBack() ? router.back() : router.replace('/(advisor)/cards' as never)
             }
           />
           <View className="flex-1">
             {bankName(card.bank) ? (
-              <RNText numberOfLines={1} className="font-medium text-[12px] text-white/70">
+              <RNText numberOfLines={1} className="font-normal text-xs text-[#737373]">
                 {bankName(card.bank)}
               </RNText>
             ) : null}
             <RNText
               accessibilityRole="header"
               numberOfLines={1}
-              className="font-bold text-[18px] text-white"
+              className="font-medium text-lg text-ink"
             >
               {card.name}
             </RNText>
@@ -131,7 +129,7 @@ export default function AdvisorCardDetail() {
             <Image
               accessibilityLabel={`${card.name} card`}
               source={{ uri: imageUrl }}
-              className="h-48 w-full rounded-2xl"
+              className="h-48 w-full rounded-xl"
               resizeMode="contain"
             />
           ) : (
@@ -141,11 +139,8 @@ export default function AdvisorCardDetail() {
         {card.categories.length ? (
           <View className="mt-5 flex-row flex-wrap justify-center gap-2">
             {card.categories.map((c) => (
-              <View
-                key={c.key}
-                className="rounded-full border border-white/20 bg-white/10 px-3 py-1"
-              >
-                <RNText className="font-semibold text-[12px] text-white">{c.label}</RNText>
+              <View key={c.key} className="rounded-md border border-line bg-white px-2 py-1">
+                <RNText className="font-normal text-xs text-[#525252]">{c.label}</RNText>
               </View>
             ))}
           </View>
@@ -155,7 +150,7 @@ export default function AdvisorCardDetail() {
       <View className="mt-4 gap-4 px-4">
         {card.description ? (
           <Appear index={1}>
-            <Text className="text-[15px] leading-[22px] text-[#44403C]">{card.description}</Text>
+            <Text className="text-base text-[#525252]">{card.description}</Text>
           </Appear>
         ) : null}
 
@@ -167,10 +162,13 @@ export default function AdvisorCardDetail() {
               <View className="gap-2.5">
                 {card.benefits.map((b, i) => (
                   <View key={i} className="flex-row items-start gap-2.5">
-                    <View className="mt-0.5 h-5 w-5 items-center justify-center rounded-full bg-[#E3F4F1]">
-                      <Icon name="checkmark" size={13} color={colors.success} />
-                    </View>
-                    <Text className="flex-1 text-[14px] leading-[20px]">{b}</Text>
+                    <Icon
+                      name="checkmark"
+                      size={16}
+                      color={colors.success}
+                      style={{ marginTop: 2 }}
+                    />
+                    <Text className="flex-1 text-md">{b}</Text>
                   </View>
                 ))}
               </View>
@@ -202,8 +200,8 @@ export default function AdvisorCardDetail() {
         {card.eligibilityHighlights ? (
           <Appear index={4}>
             <SectionCard icon="person-circle-outline" tone="info" title="Eligibility highlights">
-              <Text className="text-[14px] leading-[20px]">{card.eligibilityHighlights}</Text>
-              <Callout kind="warning" icon="information-circle">
+              <Text className="text-md">{card.eligibilityHighlights}</Text>
+              <Callout kind="warning" icon="information-circle-outline">
                 Indicative only — the bank decides every application.
               </Callout>
             </SectionCard>
@@ -240,7 +238,7 @@ export default function AdvisorCardDetail() {
               <Button
                 title="Check"
                 variant="secondary"
-                className="h-[52px]"
+                className="h-12"
                 disabled={!/^\d{6}$/.test(pincode)}
                 onPress={() => void check()}
               />
@@ -251,7 +249,7 @@ export default function AdvisorCardDetail() {
                   sourcing === true ? 'Available at this pincode' : 'Not available at this pincode'
                 }
                 variant={sourcing === true ? 'success' : 'destructive'}
-                icon={sourcing === true ? 'checkmark-circle' : 'close-circle'}
+                icon={sourcing === true ? 'checkmark-circle-outline' : 'close-circle-outline'}
               />
             ) : null}
             <ErrorText>{error}</ErrorText>

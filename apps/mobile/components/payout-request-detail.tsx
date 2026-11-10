@@ -21,7 +21,7 @@ import {
   Text,
 } from '@/components/ui';
 import { api } from '@/lib/api';
-import { colors, gradients, gradientStyle, shadow } from '@/lib/theme';
+import { colors, shadow } from '@/lib/theme';
 import { withBank } from '@/lib/cards';
 
 export interface PayoutRequestDto {
@@ -116,9 +116,9 @@ export function PayoutRequestDetail({ id }: { id: string }) {
     if (error) return <ErrorState message={error} onRetry={() => void load()} />;
     return (
       <View accessibilityLabel="Loading" className="gap-4">
-        <Skeleton className="h-44 w-full rounded-3xl" />
-        <Skeleton className="h-32 w-full rounded-2xl" />
-        <Skeleton className="h-40 w-full rounded-2xl" />
+        <Skeleton className="h-44 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
       </View>
     );
   }
@@ -140,13 +140,13 @@ export function PayoutRequestDetail({ id }: { id: string }) {
         size={36}
       />
       <View className="flex-1 gap-0.5">
-        <Text className="font-semibold text-[14px]">{label}</Text>
+        <Text className="font-medium text-md">{label}</Text>
         {a ? (
           <>
-            <Muted className="text-[12px]">
+            <Muted className="text-xs">
               {a.by.fullName} · {formatDateTime(a.at)}
             </Muted>
-            {a.reason ? <Muted className="text-[12px] italic">“{a.reason}”</Muted> : null}
+            {a.reason ? <Muted className="text-xs text-[#737373]">“{a.reason}”</Muted> : null}
           </>
         ) : null}
       </View>
@@ -168,39 +168,22 @@ export function PayoutRequestDetail({ id }: { id: string }) {
   return (
     <View className="gap-4">
       <Appear>
-        <View
-          className="overflow-hidden rounded-3xl p-5"
-          style={[gradientStyle(gradients.hero, 135), shadow.lg]}
-        >
-          <View
-            pointerEvents="none"
-            className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/[0.07]"
-          />
-          <View
-            pointerEvents="none"
-            className="absolute -bottom-10 left-8 h-28 w-28 rounded-full"
-            style={{ backgroundColor: 'rgba(245, 185, 66, 0.12)' }}
-          />
+        <View className="rounded-xl border border-line bg-white p-5" style={shadow.sm}>
           <View className="flex-row items-center justify-between gap-2">
-            <RNText
-              selectable
-              className="font-semibold text-[12px] uppercase tracking-[1.2px] text-white/60"
-            >
+            <RNText selectable className="font-normal text-xs text-[#737373] tabular-nums">
               {r.publicRef}
             </RNText>
-            <View className="rounded-full bg-white p-0.5">
-              <PayoutStateBadge state={r.state} />
-            </View>
+            <PayoutStateBadge state={r.state} />
           </View>
           <RNText
             accessibilityRole="header"
-            className="mt-2 font-extrabold text-[36px] tracking-tight text-gold"
+            className="mt-2 font-medium text-3xl text-gold tabular-nums"
           >
             {r.totalAmountInr != null
               ? formatInr(r.totalAmountInr)
               : `${r.itemCount} card${r.itemCount === 1 ? '' : 's'}`}
           </RNText>
-          <RNText className="mt-1 font-medium text-[13px] leading-[19px] text-white/75">
+          <RNText className="mt-1 font-normal text-sm text-[#525252]">
             {r.itemCount} card event(s) · submitted {formatDateTime(r.submittedAt)} by{' '}
             {r.advisor.fullName}
           </RNText>
@@ -214,7 +197,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
       <ErrorText>{error}</ErrorText>
       <Appear index={2}>
         <Card className="gap-1">
-          <RNText accessibilityRole="header" className="font-bold text-[15px] text-ink">
+          <RNText accessibilityRole="header" className="font-medium text-base text-ink">
             Approvals
           </RNText>
           {row(
@@ -227,18 +210,18 @@ export function PayoutRequestDetail({ id }: { id: string }) {
             <Callout kind="danger">{`Cancelled: ${r.cancelReason ?? ''}`}</Callout>
           ) : null}
           {r.payment ? (
-            <View className="mt-1 rounded-xl bg-[#F2EEE8] px-3 py-2.5">
-              <Muted className="text-[12px]">
+            <View className="mt-1 rounded-lg bg-raised px-3 py-2.5">
+              <Muted className="text-xs">
                 Payment {r.payment.state.toLowerCase().replace(/_/g, ' ')} ·{' '}
                 {formatInr(r.payment.amountInr)} · ref {r.payment.transferReference} ·{' '}
                 {formatDateTime(r.payment.paidAt)}
               </Muted>
             </View>
           ) : r.state === 'APPROVED' ? (
-            <View className="mt-1 flex-row items-center gap-2 rounded-xl bg-[#FDEEE6] px-3 py-2.5">
-              <Icon name="hourglass-outline" size={15} color="#9A3412" />
-              <RNText className="flex-1 font-medium text-[13px] text-[#9A3412]">
-                Both approved — awaiting Accounts payment.
+            <View className="mt-1 flex-row items-center gap-2 rounded-lg bg-raised px-3 py-2.5">
+              <Icon name="hourglass-outline" size={16} color={colors.subtle} />
+              <RNText className="flex-1 font-normal text-sm text-[#525252]">
+                Both approved — awaiting Accounts payment
               </RNText>
             </View>
           ) : null}
@@ -246,14 +229,9 @@ export function PayoutRequestDetail({ id }: { id: string }) {
       </Appear>
       {r.receipt ? (
         <Appear index={3}>
-          <Card className="gap-3" style={{ borderColor: '#B8E6DF' }}>
+          <Card className="gap-3">
             <View className="flex-row items-center gap-3">
-              <IconCircle
-                icon={r.state === 'PAID' ? 'checkmark-done' : 'receipt-outline'}
-                tone={r.state === 'PAID' ? 'success' : 'warning'}
-                size={40}
-              />
-              <Text className="flex-1 font-bold text-[15px]">
+              <Text className="flex-1 font-medium text-base">
                 {r.state === 'PAID'
                   ? 'Paid'
                   : (RECEIPT_LABEL[r.receipt.state] ?? 'Payment recorded')}
@@ -263,7 +241,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
                 variant={r.state === 'PAID' ? 'success' : 'warning'}
               />
             </View>
-            <RNText className="font-extrabold text-[26px] text-ink">
+            <RNText className="font-medium text-2xl text-ink tabular-nums">
               {formatInr(r.receipt.amountInr)}
             </RNText>
             <View>
@@ -277,7 +255,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
                 last
               />
             </View>
-            <Muted className="text-[12px]">
+            <Muted className="text-xs">
               Transferred by KBS Accounts to your registered bank account. Card events in this
               request are paid for this event.
             </Muted>
@@ -348,32 +326,27 @@ export function PayoutRequestDetail({ id }: { id: string }) {
         <Appear key={i.id} index={5 + idx}>
           <Card className="gap-2.5">
             <View className="flex-row items-center gap-3">
-              <IconCircle icon="card-outline" size={38} />
               <View className="flex-1">
-                <Text numberOfLines={1} className="font-bold text-[15px]">
+                <Text numberOfLines={1} className="font-medium text-base">
                   {i.lead.customerFullName}
                 </Text>
-                <Muted numberOfLines={1} className="text-[12px]">
+                <Muted numberOfLines={1} className="text-xs">
                   {i.lead.publicRef} · {withBank(i.bank, i.card)}
                 </Muted>
               </View>
             </View>
-            <View className="gap-1.5 rounded-xl bg-[#F2EEE8] p-3">
-              <View className="flex-row items-start gap-1.5">
-                <Icon name="business-outline" size={13} color="#5B2BA8" style={{ marginTop: 2 }} />
-                <Muted className="flex-1 text-[12px]">
+            <View className="gap-1.5 rounded-lg bg-raised p-3">
+              <View className="flex-row items-start gap-2">
+                {/* provenance dot — Bank MIS */}
+                <View className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#5B2BA3]" />
+                <Muted className="flex-1 text-xs">
                   MIS evidence: {i.triggerField} = “{i.triggerFieldValue}” · batch{' '}
                   {i.evidence.batchRef} ({formatDateTime(i.evidence.uploadedAt)})
                 </Muted>
               </View>
-              <View className="flex-row items-start gap-1.5">
-                <Icon
-                  name="document-text-outline"
-                  size={13}
-                  color={colors.subtle}
-                  style={{ marginTop: 2 }}
-                />
-                <Muted className="flex-1 text-[12px]">
+              <View className="flex-row items-start gap-2">
+                <View className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#215F7A]" />
+                <Muted className="flex-1 text-xs">
                   Card activated {formatDateTime(i.eligibleAt)}
                 </Muted>
               </View>
@@ -386,7 +359,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
               </View>
             ) : null}
             {i.priorRequests.length ? (
-              <Muted className="text-[12px]">
+              <Muted className="text-xs">
                 Prior requests for this lead:{' '}
                 {i.priorRequests.map((p) => `${p.publicRef} (${p.state.toLowerCase()})`).join(', ')}
               </Muted>

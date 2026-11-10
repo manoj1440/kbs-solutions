@@ -30,8 +30,8 @@ import { colors } from '@/lib/theme';
 function Mini({ label, value, last }: { label: string; value: number; last?: boolean }) {
   return (
     <View className={`flex-1 items-center py-1 ${last ? '' : 'border-r border-line'}`}>
-      <RNText className="font-extrabold text-[18px] text-ink">{value}</RNText>
-      <RNText numberOfLines={1} className="font-medium text-[11px] text-[#57534E]">
+      <RNText className="font-medium text-lg text-ink tabular-nums">{value}</RNText>
+      <RNText numberOfLines={1} className="font-normal text-xs text-[#525252]">
         {label}
       </RNText>
     </View>
@@ -48,12 +48,12 @@ function AdvisorCard({ r, index }: { r: AdvisorTeamRow; index: number }) {
         className="gap-3"
       >
         <View className="flex-row items-center gap-3">
-          <Avatar name={r.user.fullName || '?'} size={46} />
+          <Avatar name={r.user.fullName || '?'} size={40} />
           <View className="flex-1">
-            <Text numberOfLines={1} className="font-bold text-[15px]">
+            <Text numberOfLines={1} className="font-medium text-base">
               {name}
             </Text>
-            <Muted numberOfLines={1} className="text-[12px]">
+            <Muted numberOfLines={1} className="text-xs">
               {r.reporting
                 ? `${REPORTING_SOURCE_LABELS[r.reporting.source] ?? r.reporting.source}${r.reporting.agentCode ? ` ${r.reporting.agentCode}` : ''}`
                 : 'No active reporting line'}
@@ -67,14 +67,14 @@ function AdvisorCard({ r, index }: { r: AdvisorTeamRow; index: number }) {
           />
           <Icon name="chevron-forward" size={16} color={colors.subtle} />
         </View>
-        <View className="flex-row rounded-2xl bg-[#F7F4EF] py-2">
+        <View className="flex-row rounded-lg bg-raised py-2">
           <Mini label="Leads" value={r.leads.created.value} />
           <Mini label="Matched in MIS" value={r.leads.misMatched.value} />
           <Mini label="Awaiting MIS" value={r.leads.awaitingMis.value} last />
         </View>
         <View className="flex-row items-start gap-2">
-          <Icon name="wallet-outline" size={14} color={colors.subtle} style={{ marginTop: 2 }} />
-          <Muted className="flex-1 text-[12px] leading-[18px]">
+          <Icon name="wallet-outline" size={16} color={colors.subtle} style={{ marginTop: 0 }} />
+          <Muted className="flex-1 text-xs tabular-nums">
             Eligible {r.payouts.eligible.value} (
             {formatInr(r.payouts.eligible.amountInr ?? 0, { decimals: 0 })}) · approved unpaid{' '}
             {r.payouts.approvedUnpaid.value} · paid {r.payouts.paid.value} (
@@ -145,15 +145,15 @@ export default function ManagerAdvisors() {
         }
         ListHeaderComponent={
           <View className="gap-3">
-            <View className="flex-row items-start gap-2 rounded-2xl bg-[#EFE9E1] px-3.5 py-3">
+            <View className="flex-row items-start gap-2 rounded-xl bg-raised px-3 py-3">
               <Icon
-                name="information-circle"
+                name="information-circle-outline"
                 size={16}
-                color={colors.brand}
+                color={colors.subtle}
                 style={{ marginTop: 1 }}
               />
-              <Muted className="flex-1 text-[12px] leading-[18px] text-[#44403C]">
-                {note ?? 'Leads, bank MIS results and payouts for Advisors reporting to you.'}
+              <Muted className="flex-1 text-xs text-[#525252]">
+                {note ?? 'Leads, bank MIS results and payouts for Advisors reporting to you'}
               </Muted>
             </View>
             {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
@@ -164,7 +164,7 @@ export default function ManagerAdvisors() {
           loaded && !error ? (
             <EmptyState
               icon="briefcase-outline"
-              title="No Advisors report to you yet."
+              title="No Advisors report to you yet"
               body="Advisors join your team when they apply one of your Agent Codes."
             />
           ) : null
