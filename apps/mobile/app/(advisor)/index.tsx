@@ -55,7 +55,7 @@ interface NotificationRow {
 
 interface Draft {
   id: string;
-  card: { name: string; bank: { displayName: string } } | null;
+  card: { name: string; bank: { code?: string; displayName: string } } | null;
   customer: string | null;
 }
 

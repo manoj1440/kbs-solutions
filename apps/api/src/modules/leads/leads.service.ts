@@ -107,14 +107,14 @@ export class LeadsService {
 
   async listDrafts(actor: Actor) {
     const rows = await this.prisma.client.leadDraft.findMany({ where: { advisorUserId: actor.userId, expiresAt: { gt: new Date() } }, orderBy: { updatedAt: 'desc' } });
-    const cards = await this.prisma.client.creditCard.findMany({ where: { id: { in: rows.map((r) => r.cardId) } }, select: { id: true, name: true, bank: { select: { displayName: true } } } });
+    const cards = await this.prisma.client.creditCard.findMany({ where: { id: { in: rows.map((r) => r.cardId) } }, select: { id: true, name: true, bank: { select: { code: true, displayName: true } } } });
     const byId = new Map(cards.map((c) => [c.id, c]));
     return rows.map((r) => ({ id: r.id, step: r.step, card: byId.get(r.cardId) ?? null, customer: (r.data as DraftData).fullName ?? null, updatedAt: r.updatedAt.toISOString(), expiresAt: r.expiresAt.toISOString() }));
   }
 
   async viewDraft(actor: Actor, id: string): Promise<LeadDraftView> {
     const { row, data } = await this.draft(actor, id);
-    const card = await this.prisma.client.creditCard.findUniqueOrThrow({ where: { id: row.cardId }, select: { id: true, name: true, bank: { select: { id: true, displayName: true } } } });
+    const card = await this.prisma.client.creditCard.findUniqueOrThrow({ where: { id: row.cardId }, select: { id: true, name: true, bank: { select: { id: true, code: true, displayName: true } } } });
     return {
       id: row.id,
       step: row.step as LeadStep,

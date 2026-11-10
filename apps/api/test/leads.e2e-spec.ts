@@ -65,6 +65,10 @@ describe('F-406 lead creation / F-407 link + bank reference (FOS-03/04/05)', () 
     const id = d.body.data.id as string;
     expect(d.body.data).toMatchObject({ step: 'MOBILE', card: { name: 'HDFC Regalia' } });
     expect(d.body.data.declarations).toHaveLength(2);
+    // the app hides the internal bank by code, so draft views and the draft list must carry it
+    expect(typeof d.body.data.card.bank.code).toBe('string');
+    const list = await api().get('/api/v1/leads/drafts').set(t).expect(200);
+    expect(typeof list.body.data.find((x: { id: string }) => x.id === id).card.bank.code).toBe('string');
     await api().patch(`/api/v1/leads/drafts/${id}/details`).set(t).send({ fullName: 'X Y' }).expect(409); // order
     await api().patch(`/api/v1/leads/drafts/${id}/mobile`).set(t).send({ mobile: '12345' }).expect(400);
     await api().patch(`/api/v1/leads/drafts/${id}/mobile`).set(t).send({ mobile: '9811100999' }).expect(200);

@@ -32,7 +32,8 @@ export interface DeclarationText {
 export interface LeadDraftView {
   id: string;
   step: LeadStep;
-  card: { id: string; name: string; bank: { id: string; displayName: string } };
+  /** `bank.code` lets clients hide the internal bank (code KBS): cards are bank-independent. */
+  card: { id: string; name: string; bank: { id: string; code: string; displayName: string } };
   data: {
     mobileMasked?: string;
     fullName?: string;

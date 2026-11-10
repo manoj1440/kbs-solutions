@@ -43,7 +43,7 @@ import { withBank } from '@/lib/cards';
 interface Draft {
   id: string;
   step: string;
-  card: { name: string; bank: { displayName: string } } | null;
+  card: { name: string; bank: { code?: string; displayName: string } } | null;
   customer: string | null;
   expiresAt: string;
 }
