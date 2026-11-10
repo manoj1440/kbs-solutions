@@ -117,7 +117,7 @@ jobs:
       - name: Start API and web
         run: |
           (cd apps/api && nohup node dist/main.js > ../../api.log 2>&1 &)
-          (cd apps/web && nohup npx next start -p 3000 > ../../web.log 2>&1 &)
+          (cd apps/web && nohup pnpm exec next start -p 3000 > ../../web.log 2>&1 &)
           for i in $(seq 1 60); do curl -sf localhost:4000/api/v1/health && curl -sf -o /dev/null localhost:3000/login && break; sleep 2; done
       - run: pnpm --filter web test:e2e
         env: { E2E_BASE_URL: 'http://localhost:3000', E2E_DB_URL: postgresql://kbs:kbs@localhost:5432/kbs_e2e }
@@ -170,9 +170,9 @@ jobs:
       - name: Deploy web (Vercel)
         if: env.VERCEL_TOKEN != ''
         run: |
-          npx -y vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
-          npx -y vercel@latest build --prod --token="$VERCEL_TOKEN"
-          npx -y vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Mobile changed since the previous push?
         id: mobile
@@ -190,4 +190,4 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ vars.STAGING_API_URL }}
           # via env, never inlined: a multi-line message (or one with quotes/braces) broke the command
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: npx -y eas-cli@latest update --channel preview --platform android --environment preview --message "$(printf '%s' "${COMMIT_MESSAGE:-$GITHUB_SHA}" | head -n 1 | cut -c1-200)" --non-interactive
+        run: pnpm dlx eas-cli@latest update --channel preview --platform android --environment preview --message "$(printf '%s' "${COMMIT_MESSAGE:-$GITHUB_SHA}" | head -n 1 | cut -c1-200)" --non-interactive

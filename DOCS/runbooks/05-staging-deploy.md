@@ -35,7 +35,7 @@ There is no SMS provider yet (`OTP_PROVIDER=console` only, REQ-19 provider choic
 ## 3. Vercel (web)
 1. vercel.com → sign in with GitHub → *Add New → Project* → import the repo, **Root Directory `apps/web`**, framework Next.js. (`vercel.json` turns off Vercel's own git deploys — GitHub Actions deploys after CI.)
 2. *Settings → Environment Variables* (Production): `API_URL` = `https://<render-url>/api/v1`, `NEXT_PUBLIC_API_URL` = `/api/v1` (relative: the web proxies the API so login cookies are first-party).
-3. *Account Settings → Tokens* → create a token. For the two ids run `npx vercel link` inside `apps/web` once: `apps/web/.vercel/project.json` (git-ignored) holds `orgId` and `projectId`.
+3. *Account Settings → Tokens* → create a token. For the two ids run `pnpm dlx vercel link` inside `apps/web` once: `apps/web/.vercel/project.json` (git-ignored) holds `orgId` and `projectId`.
 
 ## 4. Expo
 expo.dev → *Account settings → Access tokens* → create `github-actions` token.

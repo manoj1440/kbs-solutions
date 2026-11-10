@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "api",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "api", "dev"],
+      "runtimeExecutable": "fnm",
+      "runtimeArgs": ["exec", "--using=22", "pnpm", "--filter", "api", "dev"],
       "port": 4000
     },
     {
       "name": "web",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "web", "dev"],
+      "runtimeExecutable": "fnm",
+      "runtimeArgs": ["exec", "--using=22", "pnpm", "--filter", "web", "dev"],
       "port": 3000
     }
   ]

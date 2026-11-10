@@ -1,7 +1,7 @@
 # Android APK / AAB release (F-906)
 
 ## One-time setup
-1. `cd apps/mobile && npx eas init` — links the Expo project and writes `expo.extra.eas.projectId` into `app.json` (commit it). Push tokens (F-701) need this id.
+1. `cd apps/mobile && pnpm dlx eas-cli@latest init` — links the Expo project and writes `expo.extra.eas.projectId` into `app.json` (commit it). Push tokens (F-701) need this id.
 2. Signing: let EAS manage the Android keystore (`eas credentials -p android` → *Generate new keystore*). For local builds export the same keystore once (`eas credentials` → *Download*) and keep it in the secret manager — never in git. Losing it means the app can no longer be updated on devices.
 3. Replace the placeholder API URLs in `apps/mobile/eas.json` (`preview` = UAT, `production` = production). `release-check` refuses `*.invalid`, `localhost` and `10.0.2.2`.
 
@@ -18,7 +18,7 @@ eas build --platform android --profile production        # AAB for Play Console
 eas build --platform android --profile device            # F-818: internal APK against a developer Mac on the LAN
 ```
 
-`eas` is not installed globally on the Mac — use `npx eas-cli@latest …`. Project: `d52957fe-d8b8-497b-ac7c-52ca691f43be` (owner `manojskidoss-team`, slug `kbs`).
+`eas` is not installed globally on the Mac — use `pnpm dlx eas-cli@latest …`. Project: `d52957fe-d8b8-497b-ac7c-52ca691f43be` (owner `manojskidoss-team`, slug `kbs`).
 
 **`device` profile (F-818):** extends `preview`, points `EXPO_PUBLIC_API_URL` at the developer Mac (`http://192.168.31.215:4000/api/v1` — update when the Mac's Wi-Fi IP changes: `ipconfig getifaddr en0`) and sets `APP_VARIANT=device`. `app.config.js` turns on `usesCleartextTraffic` for that variant only, so preview/production stay https-only. To use it: run the API with `pnpm dev` (it listens on all interfaces, port 4000), keep the phone on the same Wi-Fi, allow incoming connections if macOS asks. Never ship this APK. **Files on the phone:** set `S3_ENDPOINT=http://<Mac IP>:9000` in `apps/api/.env` too — signed links to videos and PDFs use that host, and `localhost` on a phone is the phone itself (training videos stay at 00:00, PDF links fail).
 
@@ -33,11 +33,11 @@ OTA updates only reach installs with the same `version` (`runtimeVersion.policy:
 **JS-only fixes without a new APK (EAS Update):** the `device` build listens on channel `device` (runtime `0.1.0`). `apps/mobile/.env` (git-ignored, `localhost`) would win over the shell, so turn dotenv off and pass the build's values:
 ```bash
 cd apps/mobile && EXPO_NO_DOTENV=1 APP_VARIANT=device EXPO_PUBLIC_API_URL=http://192.168.31.215:4000/api/v1 \
-  npx eas-cli@latest update --channel device --platform android --environment preview --message "…"
+  pnpm dlx eas-cli@latest update --channel device --platform android --environment preview --message "…"
 ```
 The phone downloads it on launch and applies it on the next launch (close and reopen the app twice). For emulator QA screenshots add `EXPO_PUBLIC_QA_ALLOW_CAPTURE=1` to that command (protected screens otherwise capture as black); publish once more without it when done. Only ever on the `device` channel. Native changes (new modules, app.json plugins) still need a build.
 
-**Monorepo build notes (F-818):** EAS runs `eas-build-post-install` (builds `@kbs/shared` / `@kbs/ui-tokens`, whose `dist/` is git-ignored); `babel-preset-expo` is a mobile devDependency; root `.npmrc` publicly hoists `@babel/*` because NativeWind's preset loads `@babel/plugin-transform-react-jsx` by name. Local proof before spending a cloud build: `cd apps/mobile && APP_VARIANT=device npx expo prebuild --platform android --no-install` (then delete `android/`) and `npx expo export --platform android`.
+**Monorepo build notes (F-818):** EAS runs `eas-build-post-install` (builds `@kbs/shared` / `@kbs/ui-tokens`, whose `dist/` is git-ignored); `babel-preset-expo` is a mobile devDependency; root `.npmrc` publicly hoists `@babel/*` because NativeWind's preset loads `@babel/plugin-transform-react-jsx` by name. Local proof before spending a cloud build: `cd apps/mobile && APP_VARIANT=device pnpm exec expo prebuild --platform android --no-install` (then delete `android/`) and `pnpm exec expo export --platform android`.
 
 ## Release checklist (REQ-28 §28.2 — all must pass)
 1. `pnpm release:check -- --profile=production` with `API_URL`, `ADMIN_TOKEN` (Admin access token for the target environment) and `API_ENV_FILE` (the deployed API env) → exit 0. It checks the build profile, production API settings (NODE_ENV, OTP provider, no dev master code, ClamAV scanning, S3, real secrets, non-owner `kbs_app` DB role, default request budget) and **every launch gate** (payout designated approver, training thresholds/reactivation window, compliance confirmations incl. calling-list consent, recording disclosure and WhatsApp policy, retention values, declarations).

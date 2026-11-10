@@ -19,6 +19,8 @@ All ten invariants: `DOCS/requirements/REQ-00-document-authority-and-interpretat
 | Coding / git / testing rules | `DOCS/conventions/01-engineering-conventions.md` |
 | Run it locally | `DOCS/runbooks/01-local-setup.md` |
 
+**Package manager: pnpm only.** Use `pnpm` / `pnpm --filter` / `pnpm exec` / `pnpm dlx` — never `npm`, `npx` or `yarn`. Only `pnpm-lock.yaml` is committed; the root `preinstall` script rejects other package managers. Node 22 (`.nvmrc`).
+
 ## 2. Session start protocol (do this every time)
 1. Read `DOCS/PROGRESS.md` — it says what is done, what is in progress, and the exact next step.
 2. Open the feature file it points at (`DOCS/features/F-xxx-*.md`). Read the REQ sections it lists. Do not start from memory of the PRD; start from the files.

@@ -1,14 +1,15 @@
 # Local setup
 
 ```bash
-# prerequisites: Node 22, pnpm 10 (corepack enable), Docker
+# prerequisites: Node 22 (`.nvmrc`; `fnm use`), pnpm 10 (corepack enable), Docker. pnpm only — never npm/npx/yarn.
 pnpm install
 pnpm infra:up                 # postgres:5432, redis:6379, S3 storage (RustFS, service "minio") :9000, console :9001
 cp apps/api/.env.example apps/api/.env
 cp packages/db/.env.example packages/db/.env
-cp apps/web/.env.example apps/web/.env.local
+# web needs no env file locally (defaults to http://localhost:4000/api/v1)
 cp apps/mobile/.env.example apps/mobile/.env
 pnpm db:migrate               # applies migrations
+pnpm --filter @kbs/shared build  # seed imports its dist/
 pnpm db:seed                  # creates the single Admin from BOOTSTRAP_ADMIN_MOBILE, config defaults, categories
 pnpm dev                      # api on :4000, web on :3000
 pnpm --filter mobile start    # Expo dev server (dev-client build needed once: see mobile README)

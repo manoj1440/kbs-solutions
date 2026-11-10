@@ -23,4 +23,4 @@ jobs:
         working-directory: apps/mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx -y eas-cli@latest build --platform android --profile ${{ inputs.profile }} --non-interactive --no-wait
+        run: pnpm dlx eas-cli@latest build --platform android --profile ${{ inputs.profile }} --non-interactive --no-wait
