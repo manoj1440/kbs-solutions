@@ -160,7 +160,7 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
           </section>
           <div className="grid gap-3">
             <section aria-label="Confirmed transfers" className="rounded-2xl border border-border bg-card p-4 shadow-card">
-              <div className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">{formatInr(d.confirmedTransfers.amountInr)}</div>
+              <div className="text-2xl font-semibold text-foreground tabular-nums">{formatInr(d.confirmedTransfers.amountInr)}</div>
               <div className="mt-1 text-xs text-fg-2">
                 Confirmed transfers · {d.confirmedTransfers.count} paid request(s) · {d.missingProof} recorded without proof
               </div>

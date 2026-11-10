@@ -89,7 +89,7 @@ function ConfigValue({ entry }: { entry: ConfigEntry }) {
   const v = entry.value;
   if (v === null || v === undefined)
     return (
-      <span className="inline-flex rounded-md border border-dashed border-border-strong px-2 py-0.5 font-mono text-xs text-fg-3 italic">
+      <span className="inline-flex rounded-md border border-dashed border-border-strong px-2 py-0.5 font-mono text-xs text-fg-3">
         unset
       </span>
     );
@@ -254,7 +254,7 @@ export default async function ConfigPage() {
                   >
                     <Icon className="size-3.5 shrink-0 text-fg-3" aria-hidden="true" />
                     <span className="truncate">{m.label}</span>
-                    <span className="ml-auto rounded-full bg-muted px-1.5 text-2xs font-semibold text-muted-foreground tabular-nums">
+                    <span className="ml-auto font-mono text-2xs text-muted-foreground tabular-nums">
                       {entries.length}
                     </span>
                   </a>
@@ -309,7 +309,7 @@ export default async function ConfigPage() {
                               ★
                             </Badge>
                           ) : null}
-                          <span className="rounded bg-muted px-1 text-2xs font-semibold tracking-wide text-muted-foreground">
+                          <span className="rounded bg-muted px-1 text-2xs font-semibold text-muted-foreground">
                             {c.valueType}
                           </span>
                         </div>

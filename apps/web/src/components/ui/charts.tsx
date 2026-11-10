@@ -40,7 +40,7 @@ export function DeltaBadge({
   let text: string;
   let mood: 'good' | 'bad' | 'flat';
   if (diff === 0) {
-    text = '— no change';
+    text = 'No change';
     mood = 'flat';
   } else if (previous === 0) {
     text = `↑ new`;
@@ -53,12 +53,8 @@ export function DeltaBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs leading-none font-semibold tabular-nums',
-        mood === 'good'
-          ? 'bg-teal-50 text-teal-700'
-          : mood === 'bad'
-            ? 'bg-rose-50 text-rose-700'
-            : 'bg-muted text-fg-2',
+        'inline-flex items-center gap-1 text-2xs leading-4 font-medium tabular-nums',
+        mood === 'good' ? 'text-success' : mood === 'bad' ? 'text-destructive' : 'text-fg-3',
         className,
       )}
       title={`${formatValue(current)} now, ${formatValue(previous)} in the previous period`}

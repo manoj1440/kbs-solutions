@@ -57,12 +57,12 @@ export default async function TrainingAdmin() {
                     prefetch={false}
                     className="lift group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
                   >
-                    <div className={cn('relative flex items-start justify-between gap-3 px-5 pt-5 pb-4', live ? 'bg-gradient-to-br from-teal-50 to-card' : 'bg-gradient-to-br from-amber-50/70 to-card')}>
+                    <div className={cn('relative flex items-start justify-between gap-3 px-5 pt-5 pb-4', 'bg-card')}>
                       <div className="flex items-center gap-3">
                         <span
                           className={cn(
-                            'inline-flex size-14 items-center justify-center rounded-2xl text-2xl font-bold tracking-tight text-white tabular-nums shadow-sm',
-                            live ? 'bg-[linear-gradient(135deg,#0d9488,#115e59)]' : 'brand-gradient',
+                            'inline-flex size-14 items-center justify-center rounded-2xl text-2xl font-semibold text-white tabular-nums shadow-sm',
+                            live ? 'bg-foreground text-background' : 'brand-gradient',
                           )}
                         >
                           {String(m.sequence).padStart(2, '0')}
@@ -74,7 +74,7 @@ export default async function TrainingAdmin() {
                           </Badge>
                         </div>
                       </div>
-                      <ArrowUpRight className="size-4 text-fg-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-stone-900" aria-hidden="true" />
+                      <ArrowUpRight className="size-4 text-fg-3 transition-colors group-hover:text-foreground" aria-hidden="true" />
                     </div>
                     <div className="flex flex-1 flex-col gap-4 px-5 pb-5">
                       <p className="text-[15px] leading-snug font-semibold text-foreground group-hover:text-stone-950">{m.title}</p>

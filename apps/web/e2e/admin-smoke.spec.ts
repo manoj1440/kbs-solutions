@@ -56,8 +56,8 @@ test.describe('Admin workspace smoke', () => {
   test('F-807: executive dashboard URL lands on the Business overview', async () => {
     await page.goto('/admin/dashboards');
     await expect(page).toHaveURL(/\/admin$/);
-    // F-814: the home's h1 is the greeting; the top bar names the section › page (from md up)
-    await expect(page.getByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening)/ })).toBeVisible();
+    // the home's h1 names the page (no greeting); the top bar names the section › page (from md up)
+    await expect(page.getByRole('heading', { level: 1, name: 'Business overview' })).toBeVisible();
     if ((page.viewportSize()?.width ?? 0) >= 768) await expect(page.getByRole('banner').getByText('Business overview')).toBeVisible();
     await expect(page.getByRole('complementary', { name: 'Today' })).toBeVisible();
     await expect(page.getByText('Recent leads')).toBeVisible();

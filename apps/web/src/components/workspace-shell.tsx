@@ -303,11 +303,11 @@ export function WorkspaceShell({
                 onClick={() => mobileNav.current?.close()}
                 aria-current={on ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-10 items-center gap-3 rounded-full px-3 py-2 text-ui font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                  on ? 'bg-foreground text-background' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
+                  'flex min-h-9 items-center gap-2.5 rounded-lg px-3 py-2 text-ui font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                  on ? 'bg-surface-muted text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
                 )}
               >
-                <Icon className="size-4 shrink-0" aria-hidden="true" />
+                <Icon className="size-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
                 {label}
               </Link>
             );
@@ -317,17 +317,17 @@ export function WorkspaceShell({
     ));
   }
 
-  const pill = 'glass rounded-full';
-  const iconButton = 'inline-flex size-10 items-center justify-center rounded-full text-fg-2 transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60';
+  const pill = 'glass rounded-xl';
+  const iconButton = 'inline-flex size-9 items-center justify-center rounded-lg text-fg-2 transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60';
   const navItem = (on: boolean) =>
     cn(
-      'flex items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-      expanded ? 'h-10 w-full gap-3 px-3' : 'mx-auto size-11 justify-center',
-      on ? 'bg-foreground text-background' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
+      'flex items-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+      expanded ? 'h-9 w-full gap-2.5 px-3' : 'mx-auto size-10 justify-center',
+      on ? 'bg-surface-muted text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
     );
 
   const logo = (
-    <span className="brand-gradient flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" aria-hidden="true">
+    <span className="brand-gradient flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold text-white" aria-hidden="true">
       K
     </span>
   );
@@ -338,13 +338,13 @@ export function WorkspaceShell({
         Skip to content
       </a>
       <aside className={cn('sticky top-0 z-30 hidden h-dvh shrink-0 py-4 pl-4 transition-[width] duration-200 md:block', expanded ? 'w-[272px]' : 'w-[92px]')}>
-        <div className="glass flex h-full flex-col rounded-[28px]">
+        <div className="glass flex h-full flex-col rounded-2xl">
           <div className={cn('flex shrink-0 gap-2 p-3', expanded ? 'items-center justify-between' : 'flex-col items-center')}>
-            <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className="flex min-w-0 items-center gap-2.5 rounded-full focus-visible:outline-2 focus-visible:outline-ring">
+            <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className="flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-ring">
               {logo}
               {expanded ? (
                 <span className="min-w-0">
-                  <span className="block truncate text-[15px] leading-5 font-semibold tracking-tight">
+                  <span className="block truncate text-[15px] leading-5 font-semibold">
                     KBS<span className="font-normal text-fg-3"> Solutions</span>
                   </span>
                   <span className="block truncate text-2xs text-muted-foreground">{subtitle}</span>
@@ -415,7 +415,7 @@ export function WorkspaceShell({
         </div>
       </aside>
       {tip ? (
-        <div role="tooltip" className="pointer-events-none fixed z-50 -translate-y-1/2 rounded-full bg-foreground px-3 py-1.5 text-xs font-medium whitespace-nowrap text-background shadow-pop" style={{ top: tip.top, left: tip.left }}>
+        <div role="tooltip" className="pointer-events-none fixed z-50 -translate-y-1/2 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium whitespace-nowrap text-background shadow-pop" style={{ top: tip.top, left: tip.left }}>
           {tip.label}
         </div>
       ) : null}
@@ -427,7 +427,7 @@ export function WorkspaceShell({
             </button>
             <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className={cn(pill, 'flex h-11 shrink-0 items-center gap-2 pr-4 pl-1 md:hidden')}>
               {logo}
-              <span className="text-[15px] font-semibold tracking-tight">KBS</span>
+              <span className="text-[15px] font-semibold">KBS</span>
             </Link>
             <div className={cn(pill, 'hidden h-11 min-w-0 items-center gap-2 px-4 md:flex')}>
               <span className="text-ui text-muted-foreground">{active.group}</span>
@@ -490,12 +490,12 @@ export function WorkspaceShell({
       <dialog
         ref={mobileNav}
         aria-label={`${humanize(area)} navigation menu`}
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] glass-strong rounded-r-[28px] p-0 text-foreground backdrop:bg-black/45 backdrop:backdrop-blur-sm open:flex open:flex-col"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] glass-strong rounded-r-2xl p-0 text-foreground backdrop:bg-black/45 backdrop:backdrop-blur-sm open:flex open:flex-col"
       >
         <div className="flex shrink-0 items-center justify-between px-4 py-4">
           <Link href={home} prefetch={false} className="flex items-center gap-2.5" onClick={() => mobileNav.current?.close()}>
             {logo}
-            <span className="text-[15px] font-semibold tracking-tight">
+            <span className="text-[15px] font-semibold">
               KBS<span className="font-normal text-fg-3"> Solutions</span>
             </span>
           </Link>
@@ -527,7 +527,7 @@ export function WorkspaceShell({
           setQuery('');
           setCursor(0);
         }}
-        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none glass-strong overflow-hidden rounded-[28px] p-0 backdrop:bg-black/45 backdrop:backdrop-blur-sm"
+        className="fixed inset-x-0 top-[12vh] mx-auto w-[min(600px,calc(100%-32px))] max-w-none glass-strong overflow-hidden rounded-2xl p-0 backdrop:bg-black/45 backdrop:backdrop-blur-sm"
       >
         <h2 id="workspace-search-title" className="sr-only">
           Find your workspace
@@ -579,7 +579,7 @@ export function WorkspaceShell({
               data-active={i === cursor || undefined}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-fg-2 data-[active]:bg-surface-muted data-[active]:text-foreground"
             >
-              <span className="flex size-8 items-center justify-center rounded-full bg-muted text-fg-2">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-fg-2">
                 <Icon className="size-4" />
               </span>
               <span className="min-w-0 flex-1">

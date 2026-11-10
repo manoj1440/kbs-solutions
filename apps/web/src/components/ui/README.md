@@ -1,6 +1,6 @@
 # Web design system (F-806, refreshed by F-814)
 
-F-817 reference look on a creamy palette: cream canvas, warm-white 22px cards with no visible border, near-black primary, orange hero accent (`brand`: hero tile, charts, progress, logo, unread dot), teal secondary / positive accent, warm greys (`stone-*`), pill buttons/inputs/selects, soft tinted badges, tabular numbers. Dark mode (F-817 r4): tokens flip under `.dark` and the stone/amber/rose/teal/sky/orange scales flip inside the workspace, so prefer tokens and tint pairs (`bg-amber-50 text-amber-700`); never `bg-white`, `to-white`, raw hex/rgb or `text-white` on a non-brand surface. Glass (F-817 r3): `.glass` for floating panels and KPI tiles, `.glass-strong` for menus/dialogs, `.glass-tile` for tiles inside glass — never on data tables or forms. Shell: one collapsible left sidebar with every page (icons only ↔ labels, `kbs_nav` cookie) + floating top bar (section › page, icons, user). Reference implementation: `src/app/(admin)/admin/mis/page.tsx`. F-814 plan and page tracker: `DOCS/features/F-814-web-ui-v2.md`.
+Unslop pass (2026-11) on top of F-817. Kept from F-817 by request: the cream palette, the warm orange / teal light behind the panels and the frosted glass (`.glass` panels and KPI tiles, `.glass-strong` menus and dialogs, `.glass-tile` inner tiles; blur turns off under prefers-reduced-transparency). KBS orange (`brand`) is the only accent — one key-figure tile per page, chart highlight, progress, logo, unread dot. Type weights 400–600, no tight tracking below display sizes, no uppercase tracked labels. Radius by size: tags 8, controls 10, cards 16; pills only for dots, avatars and bars. Stat cards are numbers (no icons). Hover is a colour or border step, never a lift. `.brand-gradient` keeps its name but is a solid `--brand-fill` so white text passes 4.5:1. Signature: the source tag (Bank MIS / KBS operational / KBS payment) with a dot. Dark mode: tokens flip under `.dark` and the stone/amber/rose/teal/sky/orange scales flip inside the workspace, so prefer tokens and tint pairs (`bg-amber-50 text-amber-700`); never `bg-white`, raw hex/rgb, or `text-white` on a non-brand surface — `from-stone-900` style fills turn light in dark mode (that is how the login button became white-on-white). Shell: one collapsible left sidebar with every page (icons only ↔ labels, `kbs_nav` cookie) + top bar (section › page, icons, user). Reference implementation: `src/app/(admin)/admin/mis/page.tsx`. F-814 plan and page tracker: `DOCS/features/F-814-web-ui-v2.md`.
 
 ## Rules
 1. **Presentation only.** Never change API calls, payloads, routes, permissions, validation, form field names/ids, button labels used by tests, or compliance copy. Keep every piece of information a page shows today.
@@ -20,7 +20,7 @@ F-817 reference look on a creamy palette: cream canvas, warm-white 22px cards wi
 | `bg-canvas` / `bg-card` / `bg-surface-muted` / `bg-muted` / `bg-surface-strong` / `bg-surface-selected` | page ground → cards → table headers/hover → chips → tracks → selected rows |
 | `text-foreground` / `text-fg-2` / `text-muted-foreground` / `text-fg-3` | primary → secondary → hints → decorative only (fails 4.5:1 on white — never body text) |
 | `border-border` / `border-border-subtle` / `border-border-strong` | default → inner dividers → hover/emphasis |
-| `bg-brand` / `text-brand-strong` / `bg-brand-soft`, `.brand-gradient`, `.brand-hatch` | the one accent — hero KPI, chart highlight, progress, logo |
+| `bg-brand` / `text-brand-strong` / `bg-brand-soft`, `.brand-gradient` (solid `--brand-fill`), `.brand-hatch` (solid) | the one accent — key-figure tile, chart highlight, progress, logo |
 | `shadow-card` / `shadow-pop` | resting cards → lifted/hover, popovers, tooltips |
 | `text-primary`, `ring-ring` | near-black primary, focus |
 
@@ -30,7 +30,7 @@ Fonts: Inter (`font-sans`) and JetBrains Mono (`font-mono`) via `next/font` in `
 | Component | Use |
 |---|---|
 | `PageHeader` | `icon`, `eyebrow` (nav group), `title`, `description`, `actions`, `meta`, optional children (usually a `StatGrid`). |
-| `StatGrid` / `StatCard` | KPI tiles: `label`, `value`, `hint`, `source`, `icon`, `tone`, `href`, `emphasis` (one gradient hero tile per page at most). |
+| `StatGrid` / `StatCard` | KPI tiles: `label`, `value`, `hint`, `source`, `icon`, `tone`, `href`, `emphasis` (one accent tile per page at most). `icon`/`tone` accepted, not rendered. |
 | `SectionCard` | Titled card: `icon`, `tone`, `title` (h2), `description`, `actions`, `flush` (table touches edges). |
 | `EmptyState` | Icon + title + guidance + optional action. |
 | `PillNav` | Link tabs / queues with optional `count`. Caller passes `active` href. |

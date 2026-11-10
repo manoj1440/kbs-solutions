@@ -5,7 +5,7 @@ import { OperationsDashboard } from '@/components/operations-dashboard';
 import type { PayoutRequestRow } from '@/components/payout-requests-table';
 import { Callout, RailCard } from '@/components/ui/kit';
 import { istNow } from '@/lib/admin-overview';
-import { apiFetch, getSession } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 import type { OverviewRow } from '@/lib/calling-shared';
 
 /**
@@ -14,13 +14,11 @@ import type { OverviewRow } from '@/lib/calling-shared';
  */
 export default async function ManagerDashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const clock = istNow();
-  const [session, pending, approvals, team] = await Promise.allSettled([
-    getSession(),
+  const [pending, approvals, team] = await Promise.allSettled([
     apiFetch<PendingAction[]>('/pending-actions'),
     apiFetch<PayoutRequestRow[]>('/payouts/requests?awaitingMe=true&pageSize=5'),
     apiFetch<{ telecallers: OverviewRow[] }>('/calling/team/overview'),
   ]);
-  const name = session.status === 'fulfilled' ? session.value?.user.fullName : null;
   const actions = pending.status === 'fulfilled' ? pending.value.data.filter((a) => !a.doneAt) : null;
   const awaiting = approvals.status === 'fulfilled' ? approvals.value : null;
   const callers = team.status === 'fulfilled' ? team.value.data.telecallers.filter((t) => t.followUpsDue > 0).sort((a, b) => b.followUpsDue - a.followUpsDue) : null;
@@ -38,16 +36,13 @@ export default async function ManagerDashboardPage({ searchParams }: { searchPar
       title="Team dashboard"
       heading={
         <header>
-          <h1 className="text-2xl font-semibold tracking-tight text-balance text-foreground sm:text-[28px] sm:leading-9">
-            {clock.greeting}
-            {name ? `, ${name}` : ''}
-          </h1>
+          <h1 className="text-2xl font-medium text-balance text-foreground sm:text-[32px] sm:leading-10">Team dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">{clock.dateLabel} · team dashboard</p>
         </header>
       }
       aside={
         <>
-          <h2 className="text-sm font-semibold text-foreground">Today</h2>
+          <h2 className="text-sm font-medium text-foreground">Today</h2>
           {actions ? (
             <RailCard
               title="Pending actions"

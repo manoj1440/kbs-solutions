@@ -43,7 +43,7 @@ const PROVENANCE_CLASS: Record<Provenance, string> = {
 
 export function ProvenanceChip({ provenance, asOf, batchRef }: { provenance: Provenance; asOf?: string | null; batchRef?: string | null }) {
   return (
-    <span className={cn('inline-flex max-w-full flex-wrap items-center gap-x-1 rounded-full px-2 py-0.5 text-2xs font-semibold ring-1 ring-inset', PROVENANCE_CLASS[provenance])}>
+    <span className={cn('inline-flex max-w-full flex-wrap items-center gap-x-1 rounded-md px-2 py-0.5 text-2xs font-semibold ring-1 ring-inset', PROVENANCE_CLASS[provenance])}>
       <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
       {PROVENANCE_WEB[provenance]}
       {asOf ? <span className="opacity-80">· as of {formatDateTime(asOf)}</span> : null}

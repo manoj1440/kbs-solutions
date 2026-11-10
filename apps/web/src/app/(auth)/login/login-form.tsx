@@ -7,7 +7,7 @@ import {
   isValidE164India,
   mobileInput,
 } from '@kbs/shared';
-import { AlertCircle, ArrowRight, CheckCircle2, Lock, Phone } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -140,15 +140,15 @@ export function LoginForm({ next }: { next?: string }) {
   const mobileValid = isValidE164India(mobile);
 
   return (
-    <Card className="relative w-full max-w-md gap-0 overflow-hidden rounded-[28px] border-0 bg-card py-0 shadow-[0_30px_80px_-30px_rgba(13,60,70,0.35)]">
+    <Card className="relative w-full max-w-md gap-0 overflow-hidden rounded-2xl border border-border-subtle bg-card py-0 shadow-pop">
       <CardHeader className="px-8 pt-8 pb-5">
-        <CardTitle className="text-[28px] font-bold tracking-tight text-foreground">
-          {step.kind === 'mobile' ? 'Welcome back!' : 'Check your phone'}
+        <CardTitle className="text-[28px] leading-9 font-medium text-foreground">
+          {step.kind === 'mobile' ? 'Sign in' : 'Check your phone'}
         </CardTitle>
-        <CardDescription className="text-[15px] leading-6">
+        <CardDescription className="text-sm leading-5">
           {step.kind === 'mobile'
-            ? 'Sign in to your KBS workspace and continue making opportunities happen.'
-            : `Enter the 6-digit code sent to ${masked}.`}
+            ? 'We send a one-time code to the mobile number registered with KBS'
+            : `Enter the 6-digit code sent to ${masked}`}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 px-8 pb-8">
@@ -165,7 +165,7 @@ export function LoginForm({ next }: { next?: string }) {
                 Mobile number
               </Label>
               <div className="relative">
-                <Phone className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-fg-3" />
+                <Phone className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-fg-3" strokeWidth={1.5} aria-hidden="true" />
                 <Input
                   id="mobile"
                   inputMode="tel"
@@ -174,23 +174,17 @@ export function LoginForm({ next }: { next?: string }) {
                   value={mobile}
                   onChange={(e) => setMobile(mobileInput(e.target.value))}
                   autoFocus
-                  className="h-14 rounded-2xl border-border bg-surface-muted pr-12 pl-12 text-[15px] tracking-wide transition-colors focus:border-stone-900 focus:bg-card"
+                  className="h-12 rounded-md border-border bg-surface-muted pr-11 pl-10 text-[15px] tabular-nums transition-colors focus:border-ring focus:bg-card"
                 />
                 {mobileValid ? (
-                  <CheckCircle2 className="absolute top-1/2 right-4 size-5 -translate-y-1/2 text-teal-500" />
+                  <CheckCircle2 className="absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-success" strokeWidth={1.5} aria-hidden="true" />
                 ) : null}
               </div>
               <p className="text-xs text-fg-3">Enter your registered mobile number</p>
             </div>
-            <Button
-              type="submit"
-              disabled={busy || !mobileValid}
-              className="relative h-14 w-full rounded-full bg-gradient-to-r from-stone-900 to-stone-800 text-base font-semibold text-white shadow-lg shadow-stone-900/30 transition-all hover:from-stone-800 hover:to-stone-700 hover:shadow-stone-800/40 disabled:from-stone-300 disabled:to-stone-300 disabled:text-stone-600 disabled:shadow-none"
-            >
+            <Button type="submit" size="lg" disabled={busy || !mobileValid} className="h-12 w-full">
               {busy ? 'Sending…' : 'Send OTP'}
-              <span className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20">
-                <ArrowRight className="size-5" />
-              </span>
+              <ArrowRight className="size-4" strokeWidth={1.5} aria-hidden="true" />
             </Button>
           </form>
         ) : (
@@ -231,22 +225,16 @@ export function LoginForm({ next }: { next?: string }) {
                     value={d}
                     onChange={(e) => setDigit(i, e.target.value)}
                     onKeyDown={(e) => onDigitKeyDown(i, e)}
-                    className={`h-14 w-full min-w-0 rounded-xl border-2 bg-surface-muted text-center font-mono text-xl font-bold transition-all focus:border-stone-900 focus:bg-card focus:ring-4 focus:ring-stone-900/15 focus:outline-none ${
-                      d ? 'border-stone-900/60 text-stone-950' : 'border-border text-foreground'
+                    className={`h-12 w-full min-w-0 rounded-md border bg-surface-muted text-center font-mono text-lg font-medium text-foreground transition-colors focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20 focus:outline-none ${
+                      d ? 'border-border-strong' : 'border-border'
                     }`}
                   />
                 ))}
               </div>
             </div>
-            <Button
-              type="submit"
-              disabled={busy || code.length !== OTP_LEN}
-              className="relative h-14 w-full rounded-full bg-gradient-to-r from-stone-900 to-stone-800 text-base font-semibold text-white shadow-lg shadow-stone-900/30 transition-all hover:from-stone-800 hover:to-stone-700 hover:shadow-stone-800/40 disabled:from-stone-300 disabled:to-stone-300 disabled:text-stone-600 disabled:shadow-none"
-            >
-              {busy ? 'Verifying…' : 'Verify & Sign in'}
-              <span className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20">
-                <ArrowRight className="size-5" />
-              </span>
+            <Button type="submit" size="lg" disabled={busy || code.length !== OTP_LEN} className="h-12 w-full">
+              {busy ? 'Verifying…' : 'Verify and sign in'}
+              <ArrowRight className="size-4" strokeWidth={1.5} aria-hidden="true" />
             </Button>
             <div className="flex items-center justify-between text-sm">
               <button
@@ -259,7 +247,7 @@ export function LoginForm({ next }: { next?: string }) {
               <button
                 type="button"
                 disabled={!canResend || busy}
-                className="font-medium text-stone-900 underline-offset-4 hover:underline disabled:text-fg-3"
+                className="font-medium text-foreground underline-offset-4 hover:underline disabled:text-fg-3"
                 onClick={() => void requestOtp(step.mobile)}
               >
                 {canResend ? 'Resend code' : `Resend in ${secondsLeft}s`}
@@ -270,28 +258,14 @@ export function LoginForm({ next }: { next?: string }) {
         {error ? (
           <p
             role="alert"
-            className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
+            className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
           >
-            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <AlertCircle className="mt-0.5 size-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
             {error}
           </p>
         ) : null}
-        <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-surface-strong" />
-          <span className="text-2xs font-medium tracking-widest text-fg-3">OR</span>
-          <span className="h-px flex-1 bg-surface-strong" />
-        </div>
-        <div className="flex items-center gap-3">
-          <Lock className="size-5 shrink-0 text-primary" aria-hidden="true" />
-          <span>
-            <span className="block text-sm font-semibold text-foreground">Secure & Private</span>
-            <span className="block text-xs text-muted-foreground">
-              Your data is encrypted and never shared.
-            </span>
-          </span>
-        </div>
-        <p className="text-center text-xs text-muted-foreground">
-          Need access? Contact your <span className="font-semibold text-stone-950">KBS administrator</span>.
+        <p className="border-t border-border-subtle pt-5 text-xs text-muted-foreground">
+          Need access? Ask your <span className="font-medium text-foreground">KBS administrator</span> to add your number
         </p>
       </CardContent>
     </Card>

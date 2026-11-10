@@ -162,7 +162,7 @@ function CardModal({
     <dialog
       ref={ref}
       aria-label={cardId ? 'Edit card' : 'Create card'}
-      className="fixed top-1/2 left-1/2 m-0 max-h-[calc(100dvh-2rem)] w-[min(44rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden glass-strong rounded-[28px] p-0 text-foreground backdrop:bg-black/45 open:flex open:flex-col"
+      className="fixed top-1/2 left-1/2 m-0 max-h-[calc(100dvh-2rem)] w-[min(44rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden glass-strong rounded-2xl p-0 text-foreground backdrop:bg-black/45 open:flex open:flex-col"
       onClose={onClose}
     >
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">
@@ -244,7 +244,7 @@ function CardModal({
                           )
                         }
                         className={cn(
-                          'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                          'rounded-md border px-3 py-1 text-xs font-medium transition-colors',
                           on
                             ? 'border-foreground bg-foreground text-background'
                             : 'border-border text-fg-2 hover:text-foreground',
@@ -301,7 +301,7 @@ function CardModal({
                     aria-checked={f.allIndia === v}
                     onClick={() => set('allIndia', v as boolean)}
                     className={cn(
-                      'rounded-full border px-4 py-1.5 text-sm font-medium',
+                      'rounded-md border px-4 py-1.5 text-sm font-medium',
                       f.allIndia === v
                         ? 'border-foreground bg-foreground text-background'
                         : 'border-border text-fg-2 hover:text-foreground',

@@ -191,7 +191,7 @@ export function NotificationCentre({ area }: { area: WebArea }) {
                     <span className="text-sm break-words text-fg-2">{n.body}</span>
                     <span className="text-xs text-fg-3 tabular-nums">{formatDateTime(n.createdAt)}</span>
                   </span>
-                  <ChevronRight className="mt-2 size-4 shrink-0 text-fg-3 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground" aria-hidden="true" />
+                  <ChevronRight className="mt-2 size-4 shrink-0 text-fg-3 transition-colors group-hover:text-foreground" aria-hidden="true" />
                 </button>
               </li>
             );

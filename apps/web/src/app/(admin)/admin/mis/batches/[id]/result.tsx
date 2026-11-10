@@ -47,7 +47,7 @@ function Progress({ batchId, job }: { batchId: string; job: MisJob }) {
         <span className="text-ui tabular-nums">{p ? `${p.done.toLocaleString('en-IN')} / ${p.total.toLocaleString('en-IN')}` : ''}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-card ring-1 ring-sky-100">
-        <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-sky-500 transition-colors" style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs text-sky-900/80">You can leave this page; you will get a notification when it finishes.</span>
     </div>

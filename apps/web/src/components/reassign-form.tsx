@@ -73,7 +73,7 @@ export function ReassignForm({
             <div className="min-w-0">
               <h2
                 id={`reassign-title-${recordId}`}
-                className="text-lg font-semibold tracking-tight text-foreground"
+                className="text-lg font-semibold text-foreground"
               >
                 Reassign calling record
               </h2>

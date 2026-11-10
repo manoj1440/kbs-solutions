@@ -56,7 +56,7 @@ export function LeadOps({ leadId, followUps, remarks }: { leadId: string; follow
         <p className="flex items-center gap-2 text-sm font-medium text-foreground">
           <ListTodo className="size-4 text-amber-600" aria-hidden="true" />
           Follow-up tasks
-          <span className="rounded-full bg-muted px-1.5 text-2xs font-semibold text-fg-2 tabular-nums">{followUps.length}</span>
+          <span className="font-mono text-2xs text-fg-3 tabular-nums">{followUps.length}</span>
         </p>
         {followUps.length === 0 ? <p className="rounded-xl border border-dashed border-border bg-surface-muted px-3 py-4 text-center text-sm text-muted-foreground">No follow-up tasks.</p> : null}
         {followUps.length ? (
@@ -116,7 +116,7 @@ export function LeadOps({ leadId, followUps, remarks }: { leadId: string; follow
         <p className="flex items-center gap-2 text-sm font-medium text-foreground">
           <MessageSquare className="size-4 text-sky-600" aria-hidden="true" />
           Operational remarks
-          <span className="rounded-full bg-muted px-1.5 text-2xs font-semibold text-fg-2 tabular-nums">{remarks.length}</span>
+          <span className="font-mono text-2xs text-fg-3 tabular-nums">{remarks.length}</span>
         </p>
         {remarks.length === 0 ? <p className="rounded-xl border border-dashed border-border bg-surface-muted px-3 py-4 text-center text-sm text-muted-foreground">No operational remarks.</p> : null}
         {remarks.length ? (

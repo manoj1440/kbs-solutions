@@ -28,10 +28,10 @@ export function StatusScreen({
   return (
     <main className="admin-canvas flex min-h-dvh flex-col items-center justify-center gap-8 p-4">
       <div className="flex items-center gap-2.5 text-foreground">
-        <span className="flex size-9 items-center justify-center brand-gradient rounded-full text-white shadow-card">
+        <span className="flex size-8 items-center justify-center brand-gradient rounded-lg text-white">
           <Building2 className="size-5" />
         </span>
-        <span className="text-lg font-bold tracking-tight">
+        <span className="text-lg font-semibold">
           KBS<span className="font-normal text-muted-foreground"> Solutions</span>
         </span>
       </div>
@@ -45,7 +45,7 @@ export function StatusScreen({
           {busy ? <span className="absolute -inset-1 animate-spin rounded-full border-2 border-transparent border-t-primary" aria-hidden="true" /> : null}
           <Icon className="size-8" strokeWidth={1.75} aria-hidden="true" />
         </span>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
+        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
         {children ? <div className="grid gap-2 text-sm leading-relaxed text-muted-foreground">{children}</div> : null}
         {actions ? <div className="mt-2 flex flex-wrap justify-center gap-2">{actions}</div> : null}
         {footer ? <div className="mt-2 w-full border-t border-border-subtle pt-3 text-xs text-fg-3">{footer}</div> : null}

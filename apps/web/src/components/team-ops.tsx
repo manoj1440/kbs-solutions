@@ -95,7 +95,7 @@ export async function TelecallerActivity({
               <ArrowLeft className="size-3.5" aria-hidden="true" />
               All callers
             </Link>
-            <h1 className="text-lg font-semibold tracking-tight text-foreground">{t.fullName}</h1>
+            <h1 className="text-lg font-semibold text-foreground">{t.fullName}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Badge variant={t.status === 'ACTIVE' ? 'success' : 'unknown'}>{humanize(t.status)}</Badge>
               {t.employeeCode ? <span className="font-mono">{t.employeeCode}</span> : null}

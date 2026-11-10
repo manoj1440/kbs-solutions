@@ -32,13 +32,13 @@ export function UploadListButton() {
       <dialog
         ref={dialog}
         aria-labelledby="upload-list-title"
-        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto glass-strong rounded-[28px] p-6 text-foreground shadow-xl backdrop:bg-black/45 backdrop:backdrop-blur-[2px]"
+        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto glass-strong rounded-2xl p-6 text-foreground shadow-xl backdrop:bg-black/45 backdrop:backdrop-blur-[2px]"
       >
         <div className="grid gap-4">
           <div className="flex items-start gap-3">
             <IconTile icon={FileSpreadsheet} tone="teal" />
             <div className="min-w-0">
-              <h2 id="upload-list-title" className="text-lg font-semibold tracking-tight text-foreground">
+              <h2 id="upload-list-title" className="text-lg font-semibold text-foreground">
                 Upload customer list
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">

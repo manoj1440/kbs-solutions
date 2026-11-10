@@ -108,7 +108,7 @@ export function ModuleEditor({ initial }: { initial: ModuleDetail }) {
             </Field>
           </div>
           <Field label="Learning material (optional, markdown)" htmlFor="material">
-            <textarea id="material" className="min-h-32 w-full rounded-lg border border-border bg-card p-3 text-sm shadow-pop outline-none hover:border-border-strong focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25" value={material} onChange={(e) => setMaterial(e.target.value)} />
+            <textarea id="material" className="min-h-32 w-full rounded-lg border border-border bg-card p-3 text-sm outline-none hover:border-border-strong focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25" value={material} onChange={(e) => setMaterial(e.target.value)} />
           </Field>
           <div className="grid gap-2 rounded-xl border border-border bg-surface-muted p-3">
             <Field label="Video (mp4/webm)" htmlFor="video">

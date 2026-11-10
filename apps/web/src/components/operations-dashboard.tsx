@@ -85,7 +85,7 @@ function Tile({ label, m, money, tone = 'teal' }: { label: string; m: Metric; mo
         {label}
       </div>
       <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-        <span className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">{m.value}</span>
+        <span className="text-2xl font-semibold text-foreground tabular-nums">{m.value}</span>
         {money && m.amountInr !== undefined ? <span className={cn('text-sm font-semibold tabular-nums', TONE[tone].text)}>{formatInr(m.amountInr)}</span> : null}
       </div>
       {m.denominator ? (
@@ -121,7 +121,7 @@ function SectionHeading({ id, icon, tone, title, description }: { id: string; ic
     <div className="flex items-start gap-3">
       <IconTile icon={icon} tone={tone} />
       <div className="min-w-0">
-        <h2 id={id} className="text-lg font-semibold tracking-tight text-foreground">
+        <h2 id={id} className="text-lg font-semibold text-foreground">
           {title}
         </h2>
         <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
@@ -143,7 +143,7 @@ function Bars({ rows, max, tone, empty, emptyIcon }: { rows: { key: string; labe
         return (
           <li key={r.key} className="grid gap-1">
             <div className="flex items-baseline justify-between gap-3 text-ui">
-              <span className={cn('min-w-0 truncate', muted ? 'text-muted-foreground italic' : 'text-foreground')} title={r.label}>
+              <span className={cn('min-w-0 truncate', muted ? 'text-muted-foreground' : 'text-foreground')} title={r.label}>
                 {r.label}
               </span>
               <span className="font-semibold text-foreground tabular-nums">{r.count}</span>
@@ -239,7 +239,7 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
         <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md text-xs font-medium text-fg-2 hover:text-foreground [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="size-3.5" aria-hidden="true" />
           More filters
-          {moreCount ? <span className="rounded-full bg-stone-100 px-1.5 text-2xs font-semibold text-stone-900 tabular-nums">{moreCount}</span> : null}
+          {moreCount ? <span className="font-mono text-2xs text-fg-2 tabular-nums">{moreCount}</span> : null}
           <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
         </summary>
         <div className="mt-3 grid grid-cols-2 items-end gap-3 lg:grid-cols-4">
@@ -342,12 +342,12 @@ export function OpsSections({ d }: { d: OpsDashboard }) {
           <Tile label="Approved, unpaid" m={a.payouts.approvedUnpaid} money tone="amber" />
           <Tile label="On hold" m={a.payouts.onHold} money tone="rose" />
           <Tile label="Paid (events)" m={a.payouts.paid} money tone="emerald" />
-          <div className="col-span-2 flex min-w-0 flex-col brand-gradient rounded-2xl border border-transparent p-4 text-white shadow-pop">
+          <div className="col-span-2 flex min-w-0 flex-col brand-gradient rounded-2xl border border-transparent p-5 text-white">
             <div className="flex items-center justify-between gap-2 text-xs font-medium text-stone-100">
               Confirmed transfers
               <BadgeIndianRupee className="size-4" aria-hidden="true" />
             </div>
-            <div className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums">{formatInr(a.payouts.confirmedTransfersInr.amountInr ?? 0)}</div>
+            <div className="mt-1.5 text-2xl font-semibold tabular-nums">{formatInr(a.payouts.confirmedTransfersInr.amountInr ?? 0)}</div>
             <div className="min-h-3 flex-1" />
             <p className="border-t border-white/15 pt-2 text-2xs leading-snug text-stone-100/90">Accounts payment · {a.payouts.confirmedTransfersInr.dateBasis}</p>
           </div>

@@ -133,7 +133,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
             <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-1.5 text-xs font-medium text-fg-2 select-none">
               <SlidersHorizontal className="size-3.5 text-fg-3" aria-hidden="true" />
               More filters
-              {advanced ? <span className="rounded-full bg-primary px-1.5 text-2xs font-semibold text-primary-foreground tabular-nums">{advanced}</span> : null}
+              {advanced ? <span className="rounded-sm bg-primary px-1.5 font-mono text-2xs text-primary-foreground tabular-nums">{advanced}</span> : null}
               <ChevronRight className="ml-auto size-4 text-fg-3 transition-transform group-open:rotate-90" aria-hidden="true" />
             </summary>
             <div className="grid gap-3 border-t border-border-subtle p-3 sm:grid-cols-2 lg:grid-cols-4">

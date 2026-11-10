@@ -109,7 +109,7 @@ function Dist({ title, d, icon }: { title: string; d: Distribution; icon: Lucide
                   <span
                     className={
                       muted
-                        ? 'text-muted-foreground italic'
+                        ? 'text-muted-foreground'
                         : 'min-w-0 font-mono text-ui break-words text-foreground'
                     }
                   >
@@ -173,10 +173,6 @@ export default async function ManagerAdvisorPage({
       </Link>
 
       <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,hsl(var(--brand)/12%),transparent_65%)]"
-        />
         <div className="relative grid gap-6">
           <div className="flex min-w-0 items-start gap-4">
             <Avatar

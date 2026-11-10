@@ -63,7 +63,7 @@
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
   --radius-xl: calc(var(--radius) + 8px);
-  --radius-2xl: 22px;
+  --radius-2xl: 16px;
   --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -75,20 +75,6 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
-}
-
-@keyframes login-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.admin-login .login-float {
-  animation: login-float 7s ease-in-out infinite;
 }
 
 /* F-817: reference look on a creamy, warm palette — cream canvas, warm-white cards, near-black primary, orange hero
@@ -129,8 +115,10 @@
   --brand-strong: 17 88% 40%; /* text/links on light, 5.2:1 */
   --brand-soft: 20 90% 95%;
   --brand-foreground: 0 0% 100%;
+  --brand-fill: 15 80% 42%; /* filled accent surfaces that carry white text, ≥4.5:1 in both themes */
   --elev-card: 0 1px 2px hsl(24 30% 20% / 4%);
   --elev-pop: 0 1px 2px hsl(24 30% 20% / 5%), 0 16px 32px -16px hsl(24 30% 20% / 20%);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* F-817 dark mode: warm charcoal, the same orange hero and teal accent, brighter for dark surfaces.
@@ -290,7 +278,7 @@
 }
 
 .admin-content h1 {
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .admin-content select {
@@ -304,8 +292,8 @@
 }
 
 .admin-content [data-slot='card-description'] {
-  font-size: 12.5px;
-  line-height: 1.65;
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .admin-content [data-slot='table-header'] {
@@ -322,8 +310,8 @@
 }
 
 .admin-content [data-slot='table-cell'] {
-  padding-top: 14px;
-  padding-bottom: 14px;
+  padding-top: 12px;
+  padding-bottom: 12px;
   font-size: 13px;
 }
 
@@ -335,7 +323,7 @@
 
 .admin-content [data-slot='table-container'] a:not([data-slot='button']) {
   color: hsl(var(--foreground));
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
 }
 
@@ -393,11 +381,11 @@ select:not([multiple]):not([size]) {
 }
 
 .admin-workspace select {
-  border-radius: 9999px;
+  border-radius: 8px;
   border-color: hsl(var(--input));
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color 150ms var(--ease),
+    box-shadow 150ms var(--ease);
 }
 
 .admin-workspace select:hover {
@@ -411,7 +399,7 @@ select:not([multiple]):not([size]) {
 }
 
 .admin-workspace textarea {
-  border-radius: 1rem;
+  border-radius: 8px;
   border-color: hsl(var(--input));
   background: hsl(var(--card));
 }
@@ -486,10 +474,9 @@ select:not([multiple]):not([size]) {
 }
 }
 
-/* F-817: the orange "profit" hatch of the reference chart, reused for progress fills */
+/* Progress / chart highlight fill: the accent, solid. */
 .brand-hatch {
   background-color: hsl(var(--brand));
-  background-image: repeating-linear-gradient(135deg, hsl(0 0% 100% / 28%) 0 2px, transparent 2px 7px);
 }
 
 @keyframes admin-in {
@@ -504,7 +491,7 @@ select:not([multiple]):not([size]) {
 }
 
 .admin-content > * > * {
-  animation: admin-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: admin-in 320ms var(--ease) both;
 }
 
 .admin-content > * > :nth-child(2) {
@@ -521,14 +508,12 @@ select:not([multiple]):not([size]) {
 
 .lift {
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    background-color 150ms var(--ease),
+    border-color 150ms var(--ease);
 }
 
 .lift:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--elev-pop);
+  border-color: hsl(var(--border-strong));
 }
 
 [data-slot='table-container'][data-responsive] {
@@ -692,7 +677,8 @@ html:has(.admin-workspace)::-webkit-scrollbar-thumb:hover,
   }
 }
 
-/* F-817: the reference hero tile — warm orange gradient */
+/* The one accent surface per page (key figure, logo mark): solid, dark enough for white text in both themes.
+   Class name kept from F-817 so callers don't change. */
 .brand-gradient {
-  background: linear-gradient(160deg, hsl(18 92% 63%) 0%, hsl(var(--brand)) 45%, hsl(12 82% 48%) 100%);
+  background: hsl(var(--brand-fill));
 }

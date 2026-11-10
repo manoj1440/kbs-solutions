@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { DeltaBadge, MiniBars, StackedBars } from '@/components/ui/charts';
 import { Callout, MiniStat, RailCard, SectionCard, selectClass } from '@/components/ui/kit';
 import { istNow, PERIODS, resolvePeriod } from '@/lib/admin-overview';
-import { ApiError, apiFetch, getSession } from '@/lib/api';
+import { ApiError, apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 import { RecentLeadsTable } from './recent-leads-table';
@@ -93,18 +93,17 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const trendIsPeriod = from === period.current.from;
 
   let home: Home;
-  const [homeRes, trendRes, todayRes, session] = await Promise.allSettled([
+  const [homeRes, trendRes, todayRes] = await Promise.allSettled([
     apiFetch<Home>(`/dashboards/admin/home${qsStr ? `?${qsStr}` : ''}`),
     apiFetch<AdminTrendResponse>(`/dashboards/admin/trend?from=${from}&to=${to}`),
     apiFetch<AdminTodayResponse>('/dashboards/admin/today'),
-    getSession(),
   ]);
   if (homeRes.status === 'fulfilled') home = homeRes.value.data;
   else {
     if (homeRes.reason instanceof ApiError && homeRes.reason.status === 401) redirect('/login?next=%2Fadmin');
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Business overview</h1>
+        <h1 className="text-xl font-semibold text-foreground">Business overview</h1>
         <Callout tone="warning" icon={TriangleAlert} role="alert" title="Dashboard data could not be loaded.">
           Refresh to retry. Unavailable figures are not zero.
         </Callout>
@@ -113,7 +112,6 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   }
   const trend = trendRes.status === 'fulfilled' ? trendRes.value.data : null;
   const today = todayRes.status === 'fulfilled' ? todayRes.value.data : null;
-  const name = session.status === 'fulfilled' ? session.value?.user.fullName : null;
 
   const { people, cumulative, business, calling, recentLeads, previous: prev } = home;
   const pipeline = calling.pipeline;
@@ -140,18 +138,13 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     <div className="flex flex-col gap-5">
       <header className="relative z-20 flex flex-wrap items-end gap-x-4 gap-y-3 pt-1">
         <div className="min-w-0">
-          <h1 className="text-[28px] leading-9 font-medium tracking-tight text-balance text-foreground sm:text-[36px] sm:leading-[44px]">
-            {clock.greeting}
-            {name ? `, ${name}` : ''}
-          </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            {clock.dateLabel} · leads, bank results, calling and payouts at a glance.
-          </p>
+          <h1 className="text-[28px] leading-9 font-medium text-balance text-foreground sm:text-[32px] sm:leading-10">Business overview</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{clock.dateLabel} · leads, bank results, calling and payouts</p>
         </div>
         <details data-popover className="group/period relative ml-auto">
           <summary
             aria-label="Period"
-            className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full bg-card px-4 text-ui font-medium text-foreground shadow-card hover:bg-surface-muted [&::-webkit-details-marker]:hidden"
+            className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-md border border-border bg-card px-3 text-ui font-medium text-foreground hover:bg-surface-muted [&::-webkit-details-marker]:hidden"
           >
             <CalendarRange className="size-4 text-fg-3" aria-hidden="true" />
             {period.label} <span className="text-xs text-muted-foreground">{rangeLabel}</span>
@@ -189,10 +182,10 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         <section aria-label="Payout earned" className="glass flex min-w-0 flex-col gap-4 rounded-2xl p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-ui font-medium text-fg-2">Payout earned</h2>
-            <span className="glass-tile rounded-full px-3 py-1 text-2xs font-medium text-fg-2">{rangeLabel}</span>
+            <span className="glass-tile rounded-md px-3 py-1 text-2xs font-medium text-fg-2">{rangeLabel}</span>
           </div>
           <div>
-            <p className="truncate text-[34px] leading-10 font-semibold tracking-tight text-foreground tabular-nums">{formatInr(earned)}</p>
+            <p className="truncate text-[34px] leading-10 font-semibold text-foreground tabular-nums">{formatInr(earned)}</p>
             <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {prev ? <DeltaBadge current={earned} previous={prev.payoutEarnedInr} suffix="" /> : null}
               <span>
@@ -233,26 +226,23 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           </div>
         </section>
 
-        <section aria-label="Business" className="glass grid min-w-0 grid-cols-2 gap-2.5 rounded-2xl p-2.5">
+        <section aria-label="Business" className="glass grid min-w-0 grid-cols-2 gap-2 rounded-2xl p-2">
           {kpis.map((k) => {
             const body = (
               <>
                 <span className="flex items-start justify-between gap-2">
                   <span className={cn('text-ui font-medium', k.hero ? 'text-white/90' : 'text-fg-2')}>{k.label}</span>
-                  <span className={cn('inline-flex size-7 shrink-0 items-center justify-center rounded-full', k.hero ? 'bg-white/20 text-white' : 'bg-card/80 text-fg-2')}>
-                    <k.icon className="size-3.5" aria-hidden="true" />
-                  </span>
                 </span>
-                <span className="mt-3 block truncate text-[30px] leading-9 font-semibold tracking-tight tabular-nums">{k.value.toLocaleString('en-IN')}</span>
+                <span className="mt-3 block truncate text-[28px] leading-9 font-medium tabular-nums">{k.value.toLocaleString('en-IN')}</span>
                 <span className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5 text-2xs">
-                  {k.prev != null ? <DeltaBadge current={k.value} previous={k.prev} suffix="" className={k.hero ? 'bg-white/20 text-white' : undefined} /> : null}
+                  {k.prev != null ? <DeltaBadge current={k.value} previous={k.prev} suffix="" className={k.hero ? 'text-white' : undefined} /> : null}
                   <span className={cn('truncate', k.hero ? 'text-white/85' : 'text-muted-foreground')} title={k.hint}>
                     {k.hint}
                   </span>
                 </span>
               </>
             );
-            const cls = cn('min-w-0 rounded-2xl p-4', k.hero ? 'brand-gradient text-white shadow-pop' : 'glass-tile text-foreground', k.href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring');
+            const cls = cn('min-w-0 rounded-xl p-4', k.hero ? 'brand-gradient text-white' : 'glass-tile text-foreground', k.href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring');
             return k.href ? (
               <Link key={k.label} href={k.href} prefetch={false} className={cls}>
                 {body}
@@ -266,11 +256,11 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         </section>
 
         <section aria-label="Trend" className="glass min-w-0 rounded-2xl p-5 lg:col-span-2 xl:col-span-1">
-          <h2 className="text-base font-semibold tracking-tight text-foreground">Leads & approvals</h2>
+          <h2 className="text-base font-medium text-foreground">Leads & approvals</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{trendIsPeriod ? rangeLabel : `Last 14 days (${day(from)} – ${day(to)})`} · by lead created date</p>
-          <div className="glass-tile mt-4 rounded-2xl p-4">
+          <div className="glass-tile mt-4 rounded-xl p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold text-foreground">Leads by bank result</p>
+              <p className="text-xs font-medium text-foreground">Leads by bank result</p>
               <p className="flex items-center gap-3 text-2xs text-fg-2">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="size-2 rounded-full bg-brand" aria-hidden="true" />
@@ -304,7 +294,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         <aside aria-label="Today" className="flex min-w-0 flex-col gap-4">
           <section aria-label="Calling progress" className="glass rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold tracking-tight text-foreground">Calling progress</h2>
+              <h2 className="text-base font-semibold text-foreground">Calling progress</h2>
               <Link href="/admin/calling-list" prefetch={false} className="text-xs font-semibold text-foreground hover:underline">
                 Records
               </Link>

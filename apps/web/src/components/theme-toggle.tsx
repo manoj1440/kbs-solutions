@@ -44,7 +44,7 @@ export function ThemeToggle({ initial, compact = false, className }: { initial: 
     persist(next);
   }
   return (
-    <div role="radiogroup" aria-label="Theme" className={cn('glass-tile flex gap-0.5 rounded-full p-1', compact ? 'items-center' : 'w-full', className)}>
+    <div role="radiogroup" aria-label="Theme" className={cn('glass-tile flex gap-0.5 rounded-lg p-1', compact ? 'items-center' : 'w-full', className)}>
       {OPTIONS.map(({ value, label, icon: Icon }) => {
         const on = theme === value;
         return (
@@ -57,7 +57,7 @@ export function ThemeToggle({ initial, compact = false, className }: { initial: 
             title={label}
             onClick={() => choose(value)}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring',
+              'inline-flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring',
               compact ? 'size-8' : 'h-8 flex-1',
               on ? 'bg-foreground text-background' : 'text-fg-3 hover:text-foreground',
             )}

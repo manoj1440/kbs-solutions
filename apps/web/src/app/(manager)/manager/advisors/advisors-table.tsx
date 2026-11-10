@@ -78,7 +78,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
               <span
                 className={
                   b.value === 'Awaiting MIS' || b.value === 'Not reported'
-                    ? 'text-muted-foreground italic'
+                    ? 'text-muted-foreground'
                     : 'min-w-0 font-mono break-words text-fg-2'
                 }
               >

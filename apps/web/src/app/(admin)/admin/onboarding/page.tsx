@@ -75,7 +75,7 @@ export default async function OnboardingQueuePage() {
                       ) : null}
                     </div>
                     {r.wait ? (
-                      <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ring-1 ring-inset', TONE[r.wait.tone].tile)}>
+                      <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-2xs font-semibold ring-1 ring-inset', TONE[r.wait.tone].tile)}>
                         <Hourglass className="size-3" aria-hidden="true" />
                         {r.wait.label}
                       </span>

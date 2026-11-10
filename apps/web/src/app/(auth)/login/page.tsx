@@ -1,4 +1,4 @@
-import { Building2, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 import { LOGIN_NOTICES, loginReason } from '@/lib/session-paths';
 
@@ -18,32 +18,20 @@ export default async function LoginPage({
     <main className="admin-login grid h-dvh overflow-hidden bg-canvas lg:grid-cols-[1.2fr_1fr]">
       <LoginShowcase />
       <section className="relative flex h-dvh min-h-0 flex-col items-center justify-center gap-6 overflow-hidden px-6">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-40 -right-40 size-[420px] rounded-full bg-brand/10 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 top-24 size-56 rounded-full bg-orange-100/50 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-40 -left-32 size-96 rounded-full bg-stone-400/20 blur-3xl"
-        />
         <div className="relative flex items-center gap-2.5 lg:hidden">
-          <span className="flex size-9 items-center justify-center brand-gradient rounded-full text-white">
-            <Building2 className="size-5" />
+          <span className="flex size-8 items-center justify-center brand-gradient rounded-lg text-sm font-semibold text-white" aria-hidden="true">
+            K
           </span>
-          <span className="text-lg font-bold tracking-tight text-foreground">
+          <span className="text-base font-semibold text-foreground">
             KBS<span className="font-normal text-muted-foreground"> Solutions</span>
           </span>
         </div>
         {reason ? (
           <p
             role={reason === 'deactivated' ? 'alert' : 'status'}
-            className={`relative flex w-full max-w-md items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${reason === 'deactivated' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-stone-300 bg-stone-100 text-stone-950'}`}
+            className={`relative flex w-full max-w-md items-start gap-2 rounded-md border px-4 py-3 text-sm ${reason === 'deactivated' ? 'border-destructive/30 bg-destructive/5 text-destructive' : 'border-border bg-surface-muted text-foreground'}`}
           >
-            <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <Info className="mt-0.5 size-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
             {LOGIN_NOTICES[reason]}
           </p>
         ) : null}

@@ -58,7 +58,7 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
           </>
         }
         meta={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 font-medium text-fg-2">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-fg-2">
             <Hash className="size-3.5 text-fg-3" aria-hidden="true" />
             KBS Lead ID <code className="font-mono font-semibold text-foreground">{l.kbsRef}</code>
           </span>
@@ -76,7 +76,7 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
             <div className="flex items-start gap-3">
               <IconTile icon={Landmark} tone="indigo" size="sm" />
               <div className="min-w-0">
-                <h2 id="bank-status-title" className="text-[15px] leading-6 font-semibold tracking-tight text-foreground">
+                <h2 id="bank-status-title" className="text-[15px] leading-6 font-semibold text-foreground">
                   Bank status
                 </h2>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Three independent bank-reported fields. Nothing here is inferred from KBS activity.</p>
@@ -258,7 +258,7 @@ function FieldList({ title, aside, fields, mono, blankWord }: { title: string; a
   const row = (f: (typeof fields)[number]) => (
     <div key={f.key} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 border-b border-border-subtle px-3 py-2 last:border-0">
       <dt className={mono ? 'font-mono text-2xs break-all text-muted-foreground' : 'text-muted-foreground'}>{f.label}</dt>
-      <dd className={f.blank ? 'text-fg-3 italic' : 'break-words text-foreground'}>{f.blank ? (f.value || blankWord) : f.value}</dd>
+      <dd className={f.blank ? 'text-fg-3' : 'break-words text-foreground'}>{f.blank ? (f.value || blankWord) : f.value}</dd>
     </div>
   );
   return (
