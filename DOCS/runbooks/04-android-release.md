@@ -22,6 +22,22 @@ eas build --platform android --profile device            # F-818: internal APK a
 
 **`device` profile (F-818):** extends `preview`, points `EXPO_PUBLIC_API_URL` at the developer Mac (`http://192.168.31.215:4000/api/v1` — update when the Mac's Wi-Fi IP changes: `ipconfig getifaddr en0`) and sets `APP_VARIANT=device`. `app.config.js` turns on `usesCleartextTraffic` for that variant only, so preview/production stay https-only. To use it: run the API with `pnpm dev` (it listens on all interfaces, port 4000), keep the phone on the same Wi-Fi, allow incoming connections if macOS asks. Never ship this APK. **Files on the phone:** set `S3_ENDPOINT=http://<Mac IP>:9000` in `apps/api/.env` too — signed links to videos and PDFs use that host, and `localhost` on a phone is the phone itself (training videos stay at 00:00, PDF links fail).
 
+## Local APK without an EAS login (emulator testing)
+Toolchain (Homebrew, Apple Silicon): `brew install openjdk@17`, `brew install --cask android-commandlinetools`, then with
+`JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home` and `ANDROID_HOME=/opt/homebrew/share/android-commandlinetools`:
+`sdkmanager --licenses`, `sdkmanager platform-tools emulator "platforms;android-36" "build-tools;36.0.0" "system-images;android-34;google_apis;arm64-v8a"`,
+`avdmanager create avd -n kbs_pixel -k "system-images;android-34;google_apis;arm64-v8a" -d pixel_7`. (The `android-platform-tools` cask download 404s; use `sdkmanager`.)
+```bash
+cd apps/mobile
+export EXPO_NO_DOTENV=1 APP_VARIANT=device EXPO_PUBLIC_API_URL=http://10.0.2.2:4000/api/v1 NODE_ENV=production
+pnpm exec expo prebuild --platform android --no-install        # android/ is git-ignored
+cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon \
+  -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1536m" -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease
+adb install -r app/build/outputs/apk/release/app-release.apk   # com.kbs.dsa, debug-signed — never ship it
+```
+Without the larger metaspace the lint step fails with `Metaspace`. `10.0.2.2` is the emulator's name for the Mac; the API must run on :4000.
+Protected screens (onboarding, leads…) screenshot as empty files over `adb` — that is FLAG_SECURE working.
+
 ## App updates (F-819)
 | Change | What to do | What users see |
 |---|---|---|

@@ -6,15 +6,15 @@
 # Usage (repo root):  bash apps/web/test/e2e-isolated.sh [playwright args…]
 #   E2E_SKIP_BUILD=1   reuse the last e2e web build (apps/web/.next-e2e)
 #   E2E_KEEP=1         keep kbs_e2e and leave the servers running for debugging (ports below)
-# Needs: the kbs-test-pg / kbs-test-redis containers (colima start; docker start kbs-test-pg kbs-test-redis),
+# Needs: the compose Postgres + Redis from `pnpm infra:up` (override with E2E_PG_CONTAINER / E2E_PG_PORT / E2E_REDIS_URL),
 #        an api build in apps/api/dist (the dev `nest start --watch` keeps it current; else `pnpm --filter api build`).
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
-PG=${E2E_PG_CONTAINER:-kbs-test-pg}
+PG=${E2E_PG_CONTAINER:-kbs-postgres-1}
 DB=${E2E_DB:-kbs_e2e}
-PG_PORT=${E2E_PG_PORT:-55432}
-REDIS_URL=${E2E_REDIS_URL:-redis://localhost:56379/3}
+PG_PORT=${E2E_PG_PORT:-5432}
+REDIS_URL=${E2E_REDIS_URL:-redis://localhost:6379/3}
 API_PORT=${E2E_API_PORT:-4300}
 WEB_PORT=${E2E_WEB_PORT:-3300}
 DB_URL="postgresql://kbs:kbs@localhost:${PG_PORT}/${DB}"
@@ -59,4 +59,4 @@ curl -sf "$API/health" >/dev/null || { echo "api did not start — see $LOGS/e2e
 
 echo "› playwright (server logs: $LOGS)"
 cd "$ROOT/apps/web"
-E2E_BASE_URL=$WEB E2E_API_URL=$API E2E_PG_CONTAINER=$PG E2E_PG_DB=$DB npx playwright test "$@"
+E2E_BASE_URL=$WEB E2E_API_URL=$API E2E_PG_CONTAINER=$PG E2E_PG_DB=$DB pnpm exec playwright test "$@"
