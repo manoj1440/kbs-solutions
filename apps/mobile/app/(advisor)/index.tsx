@@ -1,4 +1,10 @@
-import { ApiClientError, formatInr, type LeadStatusRow, type PendingAction } from '@kbs/shared';
+import {
+  ApiClientError,
+  decisionBucket,
+  formatInr,
+  type LeadStatusRow,
+  type PendingAction,
+} from '@kbs/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
@@ -118,7 +124,7 @@ export default function AdvisorHome() {
     }, [load]),
   );
 
-  const approved = leads.filter((l) => l.decision.display === 'Approved').length;
+  const approved = leads.filter((l) => decisionBucket(l.decision.display) === 'approved').length; // banks write Approve / Approved / APPROVED
   const applications = leads.filter(
     (l) => l.matched || l.bankApplicationNo || l.bankApplicationReference,
   ).length;

@@ -7,8 +7,8 @@ import {
   type LeadDraftView,
   type LeadStep,
 } from '@kbs/shared';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState, type ReactNode } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, Text as RNText, View } from 'react-native';
 
 import { CreditCardArt } from '@/components/brand/credit-card-art';
@@ -96,16 +96,29 @@ export default function LeadNew() {
     null,
   );
 
+  const startFailed = useRef(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     (async () => {
       try {
         if (draftId) setD((await api.get<LeadDraftView>(`/leads/drafts/${draftId}`)).data);
         else if (cardId) setD((await api.post<LeadDraftView>('/leads/drafts', { cardId })).data);
       } catch (e) {
+        startFailed.current = true;
         setError(e instanceof ApiClientError ? e.message : 'Could not start the lead.');
       }
     })();
-  }, [cardId, draftId]);
+  }, [cardId, draftId, attempt]);
+
+  // This screen is a hidden tab and stays mounted: without this, a failed start would stick for the same card.
+  useFocusEffect(
+    useCallback(() => {
+      if (!startFailed.current) return;
+      startFailed.current = false;
+      setError(null);
+      setAttempt((n) => n + 1);
+    }, []),
+  );
 
   const patch = async (step: string, body: unknown) => {
     if (!d) return;
