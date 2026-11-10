@@ -51,6 +51,15 @@ export default function ModuleScreen() {
 
   useEffect(() => {
     if (!videoUrl) return;
+    // a failed report must not lock the assessment for the rest of the visit: allow the next tick / replay to retry
+    const progressFailed = (e: unknown) => {
+      reported.current = false;
+      setError(
+        e instanceof ApiClientError
+          ? e.message
+          : 'Could not save your video progress. Check your connection and play the end of the video again.',
+      );
+    };
     const sub = player.addListener('timeUpdate', (ev) => {
       const duration = player.duration || undefined;
       const position = ev.currentTime;
@@ -59,7 +68,11 @@ export default function ModuleScreen() {
         reported.current = true;
         void training
           .videoProgress(sequence, position, duration, true)
-          .then(() => setVideoDone(true));
+          .then(() => {
+            setVideoDone(true);
+            setError(null);
+          })
+          .catch(progressFailed);
       }
     });
     const ended = player.addListener('playToEnd', () => {
@@ -67,7 +80,11 @@ export default function ModuleScreen() {
         reported.current = true;
         void training
           .videoProgress(sequence, player.duration, player.duration, true)
-          .then(() => setVideoDone(true));
+          .then(() => {
+            setVideoDone(true);
+            setError(null);
+          })
+          .catch(progressFailed);
       }
     });
     return () => {

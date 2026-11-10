@@ -19,8 +19,9 @@ const TABS: TabSpec[] = [
 
 /** Role area: re-checks gates on every render so a revoked gate bounces the user out (F-111). */
 export default function TelecallerLayout() {
-  const { status, user, gates } = useSession();
-  if (status === 'loading') return null;
+  const { status, unreachable, user, gates } = useSession();
+  // the retry state for an unreachable session lives on the entry screen
+  if (status === 'loading') return unreachable ? <Redirect href="/" /> : null;
   if (!user || !gates) return <Redirect href="/(auth)/welcome" />;
   const target = routeFor(user, gates);
   if (target !== '/(telecaller)') return <Redirect href={target as never} />;

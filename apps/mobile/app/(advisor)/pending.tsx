@@ -125,7 +125,7 @@ export default function PendingActions() {
                         {item.customer}
                       </Text>
                       <Muted numberOfLines={1} className="text-xs">
-                        {item.leadRef} · {item.issuer} {item.card}
+                        {item.leadRef} · {[item.issuer, item.card].filter(Boolean).join(' ')}
                       </Muted>
                     </View>
                     <Badge

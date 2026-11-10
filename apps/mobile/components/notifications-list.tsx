@@ -1,5 +1,5 @@
 import { ApiClientError, formatDateTime } from '@kbs/shared';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
 
@@ -79,7 +79,12 @@ export function NotificationsScreen({ area }: { area: Area }) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load notifications.');
     }
   }, []);
-  if (rows === null && !error) void load();
+  // hidden tab, stays mounted: reload on every visit (a tapped push must show the new item)
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
   const open = async (n: Row) => {
     try {
       const t = (
@@ -162,12 +167,19 @@ export function NotificationsScreen({ area }: { area: Area }) {
               icon="checkmark-done"
               disabled={!unread}
               onPress={async () => {
-                await api.post('/notifications/read-all', {});
-                setRows(
-                  (r) =>
-                    r?.map((x) => ({ ...x, readAt: x.readAt ?? new Date().toISOString() })) ?? r,
-                );
-                setUnread(0);
+                try {
+                  await api.post('/notifications/read-all', {});
+                  setRows(
+                    (r) =>
+                      r?.map((x) => ({ ...x, readAt: x.readAt ?? new Date().toISOString() })) ?? r,
+                  );
+                  setUnread(0);
+                  setError(null);
+                } catch (e) {
+                  setError(
+                    e instanceof ApiClientError ? e.message : 'Could not mark notifications read.',
+                  );
+                }
               }}
             />
           }

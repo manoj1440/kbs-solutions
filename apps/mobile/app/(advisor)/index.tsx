@@ -80,6 +80,8 @@ const QUICK: { icon: IconName; label: string; href: string }[] = [
 export default function AdvisorHome() {
   const { user } = useSession();
   const [leads, setLeads] = useState<LeadStatusRow[]>([]);
+  /** All of the Advisor's leads (the list above is one page of at most 100). */
+  const [leadTotal, setLeadTotal] = useState(0);
   const [totals, setTotals] = useState<LedgerTotals['totals'] | null>(null);
   const [notes, setNotes] = useState<NotificationRow[]>([]);
   const [unread, setUnread] = useState(0);
@@ -104,6 +106,7 @@ export default function AdvisorHome() {
         api.get<NotificationRow[]>('/notifications?pageSize=10'),
       ]);
       setLeads(l.data);
+      setLeadTotal(typeof l.meta.total === 'number' ? l.meta.total : l.data.length);
       setTotals(p.data.totals);
       setNotes(n.data);
       const meta = n.meta as Record<string, unknown>;
@@ -134,7 +137,7 @@ export default function AdvisorHome() {
   const inProgress = (totals?.requested.count ?? 0) + (totals?.approvedUnpaid.count ?? 0);
   const name = user?.fullName ?? '';
   const funnel: { label: string; value: number }[] = [
-    { label: 'Leads', value: leads.length },
+    { label: 'Leads', value: Math.max(leadTotal, leads.length) },
     { label: 'Applications', value: applications },
     { label: 'Approved', value: approved },
   ];
@@ -255,7 +258,7 @@ export default function AdvisorHome() {
                 rows: (pending ?? []).slice(0, 3).map((a) => ({
                   key: a.id,
                   title: a.whatToDo,
-                  subtitle: `${a.customer} · ${a.issuer}`,
+                  subtitle: [a.customer, a.issuer].filter(Boolean).join(' · '),
                   onPress: () =>
                     router.push({ pathname: '/(advisor)/lead', params: { id: a.leadId } }),
                 })),

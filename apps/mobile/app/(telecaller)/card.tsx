@@ -1,7 +1,7 @@
 import type { AvailableCard } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image, Text as RNText, View } from 'react-native';
 
 import { CreditCardArt } from '@/components/brand/credit-card-art';
@@ -27,10 +27,16 @@ import { colors } from '@/lib/theme';
 /** F-308 §4: Card Detail in Call — image, bank, name, categories, benefits, fees, charges, PDF, link version, provenance. */
 export default function CardDetailScreen() {
   const { card: raw, recordId } = useLocalSearchParams<{ card: string; recordId: string }>();
-  const card: AvailableCard | null = raw ? (JSON.parse(raw) as AvailableCard) : null;
+  const card = useMemo(() => (raw ? (JSON.parse(raw) as AvailableCard) : null), [raw]);
+  if (!card) return null;
+  // hidden tab, stays mounted: keyed so another card / customer never shows this one's image or share status
+  return <CardDetail key={`${card.id}|${recordId ?? ''}`} card={card} recordId={recordId} />;
+}
+
+function CardDetail({ card, recordId }: { card: AvailableCard; recordId?: string }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  if (card?.imageFileId && imageUrl === null) {
+  if (card.imageFileId && imageUrl === null) {
     setTimeout(
       () =>
         void fileUrl(card.imageFileId as string)
@@ -39,7 +45,6 @@ export default function CardDetailScreen() {
       0,
     );
   }
-  if (!card) return null;
   return (
     <Screen
       scroll

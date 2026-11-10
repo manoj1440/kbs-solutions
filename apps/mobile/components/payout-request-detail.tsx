@@ -1,4 +1,5 @@
 import { ApiClientError, formatDateTime, formatInr } from '@kbs/shared';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
 
@@ -111,7 +112,12 @@ export function PayoutRequestDetail({ id }: { id: string }) {
       setBusy(false);
     }
   };
-  if (r === null && !error) void load();
+  // the screens are hidden tabs that stay mounted: reload on every visit so a decision made elsewhere shows
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
   if (!r) {
     if (error) return <ErrorState message={error} onRetry={() => void load()} />;
     return (

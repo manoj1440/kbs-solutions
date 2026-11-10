@@ -110,6 +110,11 @@ function HeroChip({
 /** F-307 §3: customer detail + full history trail, with the call desk (F-309/F-310) and cards for the pincode (F-308). */
 export default function RecordScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  // hidden tab, stays mounted: keyed by id so nothing from the previous record is shown or submitted
+  return <RecordView key={id} id={id} />;
+}
+
+function RecordView({ id }: { id: string }) {
   const [rec, setRec] = useState<RecordDetail | null>(null);
   const [cards, setCards] = useState<AvailableCardsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -196,6 +201,7 @@ export default function RecordScreen() {
           <Appear index={1}>
             {!rec.hiddenAt ? (
               <CallDesk
+                key={rec.id}
                 recordId={rec.id}
                 canCall={rec.canCall}
                 cards={cards?.cards ?? []}

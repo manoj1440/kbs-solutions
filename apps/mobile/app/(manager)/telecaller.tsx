@@ -104,6 +104,7 @@ function WfhCard({ telecallerId }: { telecallerId: string }) {
           (w) => w.telecallerUserId === telecallerId,
         ),
       );
+      setError(null);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load WFH status.');
     }
@@ -233,6 +234,11 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: str
 
 export default function TelecallerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  // hidden tab, stays mounted: keyed by id so nothing from the previous record is shown or submitted
+  return <TelecallerDetailView key={id} id={id} />;
+}
+
+function TelecallerDetailView({ id }: { id: string }) {
   const [d, setD] = useState<Detail | null>(null);
   const [ops, setOps] = useState<Ops | null>(null);
   const [error, setError] = useState<string | null>(null);

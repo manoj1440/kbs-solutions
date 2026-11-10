@@ -1,7 +1,7 @@
 import { ApiClientError, type BrowseCard, digitsOnly } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image, Text as RNText, View } from 'react-native';
 
 import { SectionCard } from '@/components/advisor/parts';
@@ -32,14 +32,26 @@ export default function AdvisorCardDetail() {
     card: string;
     pincode?: string;
   }>();
-  const card: BrowseCard | null = raw ? (JSON.parse(raw) as BrowseCard) : null;
+  const card = useMemo(() => (raw ? (JSON.parse(raw) as BrowseCard) : null), [raw]);
+  if (!card) return null;
+  // hidden tab, stays mounted: keyed so another card never shows this one's image, pincode or sourcing result
+  return (
+    <CardDetail
+      key={`${card.id}|${initialPincode ?? ''}`}
+      card={card}
+      initialPincode={initialPincode}
+    />
+  );
+}
+
+function CardDetail({ card, initialPincode }: { card: BrowseCard; initialPincode?: string }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [pincode, setPincode] = useState(initialPincode ?? '');
   const [sourcing, setSourcing] = useState<BrowseCard['sourceableAtPincode']>(
-    card?.sourceableAtPincode ?? null,
+    card.sourceableAtPincode ?? null,
   );
   const [error, setError] = useState<string | null>(null);
-  if (card?.imageFileId && imageUrl === null)
+  if (card.imageFileId && imageUrl === null)
     setTimeout(
       () =>
         void fileUrl(card.imageFileId as string)
@@ -47,7 +59,6 @@ export default function AdvisorCardDetail() {
           .catch(() => setImageUrl('')),
       0,
     );
-  if (!card) return null;
   const check = async () => {
     setError(null);
     try {

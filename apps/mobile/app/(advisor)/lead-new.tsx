@@ -72,6 +72,43 @@ export default function LeadNew() {
     draftId,
     pincode: searchedPincode,
   } = useLocalSearchParams<{ cardId?: string; draftId?: string; pincode?: string }>();
+  // This screen is a hidden tab and stays mounted. The form is keyed by what it was opened for, and by a counter that
+  // moves on when the screen is reopened for the same card after a submit, so the next lead always gets a fresh draft
+  // and an empty form. (Opened for another card or draft, the key changes by itself — no second remount.)
+  const opened = `${draftId ?? ''}|${cardId ?? ''}`;
+  const submittedFor = useRef<string | null>(null);
+  const [round, setRound] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      const same = submittedFor.current === opened;
+      submittedFor.current = null;
+      if (same) setRound((n) => n + 1);
+    }, [opened]),
+  );
+  return (
+    <LeadNewForm
+      key={`${opened}|${round}`}
+      cardId={cardId}
+      draftId={draftId}
+      searchedPincode={searchedPincode}
+      onSubmitted={() => {
+        submittedFor.current = opened;
+      }}
+    />
+  );
+}
+
+function LeadNewForm({
+  cardId,
+  draftId,
+  searchedPincode,
+  onSubmitted,
+}: {
+  cardId?: string;
+  draftId?: string;
+  searchedPincode?: string;
+  onSubmitted: () => void;
+}) {
   const [d, setD] = useState<LeadDraftView | null>(null);
   const [editing, setEditing] = useState<LeadStep | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -144,6 +181,7 @@ export default function LeadNew() {
     setError(null);
     try {
       const r = await api.post<{ id: string; kbsRef: string }>(`/leads/drafts/${d.id}/submit`, {});
+      onSubmitted();
       router.replace({
         pathname: '/(advisor)/lead-created',
         params: {

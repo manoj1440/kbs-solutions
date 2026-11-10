@@ -28,7 +28,8 @@ interface Row {
   state: string;
   advisor: { fullName: string };
   itemCount: number;
-  totalAmountInr: number;
+  /** Set by Admin's approval — null while the request waits for the Manager. */
+  totalAmountInr: number | null;
   submittedAt: string;
   outstanding: string[];
 }
@@ -56,18 +57,24 @@ function RequestCard({ item, index, mine }: { item: Row; index: number; mine: bo
           <PayoutStateBadge state={item.state} />
         </View>
         <View className="rounded-lg bg-raised px-4 py-3">
-          <RNText className="font-normal text-xs text-[#525252]">Requested amount</RNText>
+          <RNText className="font-normal text-xs text-[#525252]">
+            {item.totalAmountInr != null ? 'Approved amount' : 'Activated cards'}
+          </RNText>
           <View className="mt-0.5 flex-row items-end justify-between gap-2">
             <RNText
               numberOfLines={1}
               adjustsFontSizeToFit
               className="flex-1 font-medium text-xl text-ink tabular-nums"
             >
-              {formatInr(item.totalAmountInr)}
+              {item.totalAmountInr != null
+                ? formatInr(item.totalAmountInr)
+                : `${item.itemCount} card${item.itemCount === 1 ? '' : 's'}`}
             </RNText>
-            <View className="mb-1 flex-row items-center gap-1">
-              <Muted className="text-xs tabular-nums">{item.itemCount} card event(s)</Muted>
-            </View>
+            {item.totalAmountInr != null ? (
+              <View className="mb-1 flex-row items-center gap-1">
+                <Muted className="text-xs tabular-nums">{item.itemCount} card event(s)</Muted>
+              </View>
+            ) : null}
           </View>
         </View>
         <View className="flex-row items-center gap-1.5">

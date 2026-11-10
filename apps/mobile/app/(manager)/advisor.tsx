@@ -39,7 +39,8 @@ interface RequestRow {
   publicRef: string;
   state: string;
   itemCount: number;
-  totalAmountInr: number;
+  /** Set by Admin's approval — null before it. */
+  totalAmountInr: number | null;
   submittedAt: string;
   outstanding: string[];
 }
@@ -47,6 +48,11 @@ interface RequestRow {
 /** F-315 (Manager mobile): one Advisor's leads, bank results and payout history. Read-only evidence, no score. */
 export default function ManagerAdvisorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  // hidden tab, stays mounted: keyed by id so nothing from the previous record is shown or submitted
+  return <ManagerAdvisorView key={id} id={id} />;
+}
+
+function ManagerAdvisorView({ id }: { id: string }) {
   const [row, setRow] = useState<AdvisorTeamRow | null>(null);
   const [leads, setLeads] = useState<LeadStatusRow[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
@@ -215,7 +221,9 @@ export default function ManagerAdvisorScreen() {
               >
                 <View className="flex-row items-center justify-between gap-2">
                   <RNText className="font-medium text-xl text-ink">
-                    {formatInr(r.totalAmountInr, { decimals: 0 })}
+                    {r.totalAmountInr != null
+                      ? formatInr(r.totalAmountInr, { decimals: 0 })
+                      : `${r.itemCount} card${r.itemCount === 1 ? '' : 's'}`}
                   </RNText>
                   <PayoutStateBadge state={r.state} />
                 </View>

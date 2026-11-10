@@ -9,7 +9,7 @@ import {
 } from '@kbs/shared';
 import * as Linking from 'expo-linking';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, Text as RNText, View } from 'react-native';
 
 import { CopyValue, FieldRow, MetaLine, SectionCard, Timeline } from '@/components/advisor/parts';
@@ -136,6 +136,11 @@ const RAW_PREVIEW = 8;
  */
 export default function LeadScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  // hidden tab, stays mounted: keyed by id so nothing from the previous record is shown or submitted
+  return <LeadView key={id} id={id} />;
+}
+
+function LeadView({ id }: { id: string }) {
   const [l, setL] = useState<LeadDetail | null>(null);
   const [history, setHistory] = useState<MisHistoryGroup[]>([]);
   const [tab, setTab] = useState<Tab>('overview');
@@ -157,6 +162,7 @@ export default function LeadScreen() {
       ]);
       setL(d.data);
       setHistory(h.data);
+      setError(null);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load the lead.');
     }
@@ -166,53 +172,51 @@ export default function LeadScreen() {
       void load();
     }, [load]),
   );
-  const open = async () => {
+  // one action at a time: a double tap must not post twice, and an old error never outlives the next attempt
+  const inFlight = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const act = async (fallback: string, fn: () => Promise<void>) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    setError(null);
     try {
+      await fn();
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : fallback);
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  };
+  const open = () =>
+    act('Could not open the link.', async () => {
       const r = await api.post<{ url: string }>(`/leads/${id}/link/open`, {});
       await Linking.openURL(r.data.url);
-      await load();
-    } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not open the link.');
-    }
-  };
-  const saveRef = async () => {
-    try {
+    });
+  const saveRef = () =>
+    act('Could not save the reference.', async () => {
       await api.post(`/leads/${id}/bank-reference`, { referenceKind: kind, referenceValue: ref });
       setRef('');
-      await load();
-    } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not save the reference.');
-    }
-  };
-  const addTask = async () => {
-    try {
+    });
+  const addTask = () =>
+    act('Could not create the task.', async () => {
       await api.post(`/leads/${id}/follow-ups`, {
         text: taskText.trim(),
         dueAt: new Date(Date.now() + taskDays * 86_400_000).toISOString(),
       });
       setTaskText('');
-      await load();
-    } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not create the task.');
-    }
-  };
-  const addRemark = async () => {
-    try {
+    });
+  const addRemark = () =>
+    act('Could not add the remark.', async () => {
       await api.post(`/leads/${id}/remarks`, { text: remark.trim() });
       setRemark('');
-      await load();
-    } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not add the remark.');
-    }
-  };
-  const doneTask = async (taskId: string) => {
-    try {
+    });
+  const doneTask = (taskId: string) =>
+    act('Could not update the task.', async () => {
       await api.post(`/follow-ups/${taskId}/done`, {});
-      await load();
-    } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not update the task.');
-    }
-  };
+    });
   const refresh = async () => {
     setRefreshing(true);
     await load();
@@ -504,7 +508,7 @@ export default function LeadScreen() {
                   />
                   <Button
                     title={l.bankReference.value ? 'Correct reference' : 'Save reference'}
-                    disabled={!ref.trim()}
+                    disabled={busy || !ref.trim()}
                     onPress={() => void saveRef()}
                   />
                 </View>
@@ -768,7 +772,7 @@ export default function LeadScreen() {
                 <Button
                   title="Add follow-up task"
                   icon="add"
-                  disabled={taskText.trim().length < 3}
+                  disabled={busy || taskText.trim().length < 3}
                   onPress={() => void addTask()}
                 />
               </View>
@@ -803,7 +807,7 @@ export default function LeadScreen() {
                 title="Add remark"
                 icon="send"
                 variant="outline"
-                disabled={!remark.trim()}
+                disabled={busy || !remark.trim()}
                 onPress={() => void addRemark()}
               />
             </SectionCard>

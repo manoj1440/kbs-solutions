@@ -121,6 +121,7 @@ export default function LeadCreated() {
           subtitle="WhatsApp hand-off, logged as KBS activity"
         >
           <ShareButtons
+            key={id}
             target={{ type: 'LEAD', id }}
             cardId={cardId}
             kinds={['APPLICATION_LINK']}

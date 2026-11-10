@@ -460,7 +460,12 @@ export default function OnboardingGate() {
                         `/agent-codes/validate?code=${encodeURIComponent(form.code)}`,
                       )
                       .then((r) => setCodeCheck(r.data.valid ? 'valid' : 'invalid'))
-                      .catch(() => setCodeCheck('invalid'));
+                      // only a server answer can say the code is wrong; a network failure leaves it unchecked
+                      .catch((e) =>
+                        setCodeCheck(
+                          e instanceof ApiClientError && e.status < 500 ? 'invalid' : null,
+                        ),
+                      );
                 }}
               />
               {codeCheck ? (

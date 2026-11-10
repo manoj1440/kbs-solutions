@@ -1,4 +1,4 @@
-import type { Gates, MeResponse, UserSummary } from '@kbs/shared';
+import { ApiClientError, type Gates, type MeResponse, type UserSummary } from '@kbs/shared';
 import {
   createContext,
   useCallback,
@@ -17,6 +17,8 @@ import { api, onSessionEnded, tokenStore } from './api';
 
 interface SessionState {
   status: 'loading' | 'signed-out' | 'signed-in';
+  /** The session could not be checked (offline / server error) and nothing is loaded yet: show a retry, never sign out. */
+  unreachable: boolean;
   user: UserSummary | null;
   gates: Gates | null;
   permissions: string[];
@@ -34,22 +36,33 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<SessionState['status']>('loading');
   const [me, setMe] = useState<MeResponse | null>(null);
   const [deviceWarning, setDeviceWarning] = useState<string | null>(null);
+  const [unreachable, setUnreachable] = useState(false);
 
   const refresh = useCallback(async () => {
     const access = await tokenStore.getAccess();
     if (!access) {
       setMe(null);
+      setUnreachable(false);
       setStatus('signed-out');
       return;
     }
     try {
       const r = await api.get<MeResponse>('/auth/me');
       setMe(r.data);
+      setUnreachable(false);
       setStatus('signed-in');
-    } catch {
-      await tokenStore.clear();
-      setMe(null);
-      setStatus('signed-out');
+    } catch (e) {
+      // only a refused session (401 after the refresh attempt) signs out
+      if (e instanceof ApiClientError && e.status === 401) {
+        await tokenStore.clear();
+        setMe(null);
+        setUnreachable(false);
+        setStatus('signed-out');
+        return;
+      }
+      // offline / server error: keep the tokens and whatever is loaded; with nothing loaded yet the entry screen offers a retry
+      setUnreachable(true);
+      setStatus((s) => (s === 'signed-in' ? s : 'loading'));
     }
   }, []);
 
@@ -73,6 +86,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     () =>
       onSessionEnded(() => {
         setMe(null);
+        setUnreachable(false);
         setStatus('signed-out');
       }),
     [],
@@ -98,6 +112,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const value = useMemo<SessionState>(
     () => ({
       status,
+      unreachable,
       user: me?.user ?? null,
       gates: me?.gates ?? null,
       permissions: me?.permissions ?? [],
@@ -113,10 +128,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
         await tokenStore.clear();
         setMe(null);
         setDeviceWarning(null);
+        setUnreachable(false);
         setStatus('signed-out');
       },
     }),
-    [status, me, refresh, deviceWarning],
+    [status, unreachable, me, refresh, deviceWarning],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -51,7 +51,9 @@ interface AwaitingRow {
   id: string;
   publicRef: string;
   advisor: { fullName: string };
-  totalAmountInr: number;
+  itemCount: number;
+  /** Set by Admin's approval — null while the request waits for the Manager. */
+  totalAmountInr: number | null;
 }
 interface CallerRow {
   id: string;
@@ -79,8 +81,11 @@ function HeroMeta({ m }: { m: M }) {
 
 /** F-815: how old the bank numbers are — one line per bank, amber when stale. Bank values come from MIS only. */
 function MisFreshnessLine({ mis }: { mis: MisFreshness }) {
-  const applied = mis.banks.filter((b) => b.lastAppliedAt);
-  const none = mis.banks.length - applied.length;
+  // the internal bank (code KBS) is never shown or counted — cards are bank-independent
+  const banks = mis.banks.filter((b) => b.bankCode !== 'KBS');
+  const applied = banks.filter((b) => b.lastAppliedAt);
+  const none = banks.length - applied.length;
+  if (banks.length === 0) return null;
   return (
     <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1 px-1">
       <Icon name="time-outline" size={16} color={colors.subtle} />
@@ -326,7 +331,10 @@ export default function ManagerHome() {
                         key: r.id,
                         title: r.advisor.fullName,
                         subtitle: r.publicRef,
-                        right: formatInr(r.totalAmountInr, { decimals: 0 }),
+                        right:
+                          r.totalAmountInr != null
+                            ? formatInr(r.totalAmountInr, { decimals: 0 })
+                            : `${r.itemCount} card${r.itemCount === 1 ? '' : 's'}`,
                         onPress: () =>
                           router.push({
                             pathname: '/(manager)/payout-request',

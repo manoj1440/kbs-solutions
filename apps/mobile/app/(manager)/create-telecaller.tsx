@@ -1,6 +1,6 @@
 import { ApiClientError, CreateTelecallerBody, mobileInput, type UserSummary } from '@kbs/shared';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Text as RNText, type TextInput, View } from 'react-native';
 
 import {
@@ -31,6 +31,19 @@ export default function CreateTelecaller() {
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<UserSummary | null>(null);
 
+  // hidden tab, stays mounted: coming back after a creation starts a clean form, not the old success screen
+  const finished = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!finished.current) return;
+      finished.current = false;
+      setCreated(null);
+      setFullName('');
+      setMobile('');
+      setError(null);
+    }, []),
+  );
+
   async function submit() {
     setError(null);
     const parsed = CreateTelecallerBody.safeParse({ fullName, mobile });
@@ -42,6 +55,7 @@ export default function CreateTelecaller() {
     try {
       const r = await api.post<UserSummary>('/telecallers', parsed.data);
       setCreated(r.data);
+      finished.current = true;
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not create the Telecaller.');
     } finally {
@@ -66,6 +80,7 @@ export default function CreateTelecaller() {
               icon="person-add-outline"
               variant="outline"
               onPress={() => {
+                finished.current = false;
                 setCreated(null);
                 setFullName('');
                 setMobile('');
