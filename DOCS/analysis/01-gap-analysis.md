@@ -109,6 +109,19 @@ REQ-20 §20.5 warns not to block assistive tech silently. Android `FLAG_SECURE` 
 
 ---
 
+### A22. Engineering dispositions from the end-to-end audit (2026-11-10, session 23) — not owner decisions; reverse any of them by saying so
+- **What counts as "card activated" for a payout.** Bank activation text is free text (PRD samples: `V + ACTIVE`, `TXN ACTIVE - Rs 100`, `INACTIVE`). The old rule (`contains "activ"`) also paid `ACTIVATION PENDING`, `DEACTIVATED`, `YET TO ACTIVATE`. Now only the whole word ACTIVE / ACTIVATED counts, negated wording is inactive, and pending / "yet to" wording is *unknown* → no entitlement (`activationBucket`, `packages/shared/src/status-tone.ts`). Fails closed (MIS-11 "no silent synonym guess"). If a bank uses another word for activated, add it there with a test.
+- **Admin's amount is split per card.** Payouts are rate-free (session 21): the amount lives on the request. Every dashboard totals per card, so on Admin approval the amount is split paise-exact across the request's cards (`PayoutEntitlement.amountInr`, `PayoutRequestItem.amountSnapshotInr`); cancelling the request zeroes it again. Migration `20261110180000_split_approved_amount_per_card` back-fills earlier approvals. The Advisor never receives a per-card amount: ledger rows, entitlement list and request items return 0 to an Advisor, the payment receipt only once the request is Paid.
+- **Manager-first is reflected everywhere.** Admin is notified when the Manager approves (not at submission); Admin's "awaiting me" list and both dashboard counts include a request only after the Manager approved it.
+- **Training deadline is enforced on submit.** An attempt opened before the deadline and submitted after it is recorded but passes nothing; a reactivation with no `training.reactivationWindowHours` stays closed in the API too (it was only blocked in the app) and can be reactivated again once the window is configured. A Manager's training reactivation is refused when the account was deactivated by the Admin.
+- **Customers imported before anyone is trained** are allocated when the first Telecaller passes training (same consent gate and algorithm as an upload), then the A20 rebalance runs.
+- **Accounts sees payout data only after both approvals** (RBAC-01): Advisor ledger, entitlement list, exceptions and cancelled-cheque files are limited to requests that are approved / paid / on hold.
+- **Office-network gate on every Telecaller customer route** (REQ-09 §9.1): interests, application-number entry, own performance, call detail/history, remarks and the share log now carry it.
+- **Scoping:** a record's call history is scoped by the record (the new assignee sees earlier attempts after a reassignment); a Manager can read the share log only for their own team's records.
+- **Agent Codes screen.** Web Admin → People → Agent codes: create/revoke codes, approve/reject pending reporting changes; user page: "Change reporting person". The API existed with no screen.
+
+**Left for KBS to decide (not changed):** (1) no notification is sent when a Telecaller's follow-up call falls due (REQ-19 §19.1) — needs a scheduled job; (2) a lead can be created for a pincode where the chosen card is not available (REQ-11 §11.7) — block or warn?; (3) under `training.passRule = AVERAGE_ACROSS_MODULES` a Telecaller who passed all three modules below the average cannot retake anything; (4) an older MIS file uploaded after a newer one overwrites the newer values (REQ-23 §23.4) — needs a report date per batch; (5) `POST /users/:id/reporting` lets a Telecaller report to the Admin — should it be Manager-only?; (6) the app's welcome slides still show bank brand art (ICICI / SBI / HDFC) although banks are hidden in the product.
+
 ## B. Ambiguities in the PRD that would cause divergent implementations
 
 | # | Ambiguity | Resolution |
