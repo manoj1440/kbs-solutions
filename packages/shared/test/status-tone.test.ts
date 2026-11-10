@@ -29,6 +29,16 @@ describe('F-803 status tones (REQ-20 §20.2, VIEW-01)', () => {
     for (const v of ['INACTIVE', 'Not Activated']) expect(activationBucket(v)).toBe('inactive');
     expect(activationBucket('Card Dispatched')).toBeNull();
   });
+  it('activation never guesses: only the word ACTIVE / ACTIVATED creates a payable card; negated or pending wording does not', () => {
+    for (const v of ['ACTIVE', 'Activated', 'Card Activated', 'V + ACTIVE', 'TXN ACTIVE - Rs 100']) expect(activationBucket(v)).toBe('active');
+    for (const v of ['INACTIVE', 'IN-ACTIVE', 'NON ACTIVE', 'Not Active', 'DEACTIVATED', 'De-activated']) expect(activationBucket(v)).toBe('inactive');
+    for (const v of ['ACTIVATION PENDING', 'YET TO ACTIVATE', 'Pending - ACTIVE check', 'To be activated', 'Card Dispatched', 'ACTIVITY']) expect(activationBucket(v)).toBeNull();
+  });
+  it('activation tone follows activationBucket: "Activated" is active, "Not active" is never green', () => {
+    for (const v of ['Activated', 'Card Activated', 'V + ACTIVE', 'active']) expect(statusTone('activation', f(v, v))).toBe('success');
+    for (const v of ['Not Active', 'Not Activated', 'Inactive', 'INACTIVE - 30 days']) expect(statusTone('activation', f(v, v))).toBe('warning');
+    expect(statusTone('activation', f('Card Dispatched', 'Card Dispatched'))).toBe('secondary');
+  });
   it('payout states: one vocabulary for web and mobile', () => {
     expect(payoutStateTone('PAID')).toBe('success');
     for (const s of ['REJECTED', 'ON_HOLD', 'CANCELLED', 'VOID']) expect(payoutStateTone(s)).toBe('destructive');
