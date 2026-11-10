@@ -1,0 +1,4 @@
+import ExcelJS from 'exceljs';
+const H=['Application No','LC2_CODE','CURRENT_STAGE','APPLICATION_REFERENCE_NUMBER','CREATION_DATE_TIME','CUSTOMER_TYPE','CUSTOMER_NAME','CHANNEL','IPA_STATUS','DAP_FINAL_FLAG','DROPOFF_REASON','IDCOM_STATUS','VKYC_STATUS','VKYC_CONSENT_DATE','VKYC_EXPIRY_DATE','CAPTURE_LINK','PROMO_CODE','PRODUCT_CODE','FINAL_DECISION','FINAL_DECISION_DATE','DECLINE_CODE','DECLINE_DESCRIPTION','CURABLE_FLAG','COMPANY_NAME','BKYC Status','Reason','KYC Status','Decision Month','Decline Descreption','Decline Type','Product Des','Secured/Unsecured','KYC Success/NR','Card Type','Creation Date','Card Activation Staus'];
+const rows=JSON.parse(process.argv[3]);
+const wb=new ExcelJS.Workbook();const ws=wb.addWorksheet('Sheet1');ws.addRow(H);for(const r of rows)ws.addRow(H.map(h=>r[h]??''));await wb.xlsx.writeFile(process.argv[2]);

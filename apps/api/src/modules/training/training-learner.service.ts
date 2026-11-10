@@ -46,6 +46,8 @@ export class TrainingLearnerService {
   }
 
   private deadlinePassed(e: { deadlineAt: Date | null; status: string }) {
+    // reactivated with no window configured (training.reactivationWindowHours unset) stays closed — fail closed, never unlimited time
+    if (e.status === 'REACTIVATED_IN_PROGRESS' && e.deadlineAt === null) return true;
     return e.status === 'EXPIRED_DEACTIVATED' || (e.deadlineAt !== null && e.deadlineAt.getTime() < Date.now());
   }
 
@@ -133,6 +135,11 @@ export class TrainingLearnerService {
     const attempt = await this.prisma.client.trainingAttempt.findUnique({ where: { id: attemptId }, include: { moduleResult: { include: { module: true, enrollment: true } } } });
     if (!attempt || attempt.moduleResult.enrollment.telecallerUserId !== actor.userId) throw AppError.notFound('Attempt');
     if (attempt.submittedAt) throw new AppError('CONFLICT', 'This attempt was already submitted.');
+    // REQ-05 §5.4 / REQ-23 §23.2: an attempt opened before the deadline but submitted after it never passes anything
+    if (this.deadlinePassed(attempt.moduleResult.enrollment)) {
+      await this.prisma.client.trainingAttempt.update({ where: { id: attemptId }, data: { submittedAt: new Date(), answers: body.answers, passed: false } });
+      throw new AppError('GATE_TRAINING_BLOCKED', 'Your training window has ended. Ask your Manager to reactivate your training.', { reason: 'DEADLINE_PASSED' }, 'CONTACT_MANAGER');
+    }
     const ids = attempt.questionIds as string[];
     const questions = await this.prisma.client.trainingQuestion.findMany({ where: { id: { in: ids } } });
     const correct = questions.filter((q) => body.answers[q.id] === q.correctKey).length;

@@ -12,6 +12,7 @@ import { PAN_PROVIDER, type PanVerificationProvider } from '../../providers/port
 import { AuditService } from '../audit/audit.service';
 import { PincodeMasterService } from '../calling-list/pincode-master.service';
 import { CatalogueService } from '../catalogue/catalogue.service';
+import { DEFAULT_BANK_CODE } from '../catalogue/default-bank';
 import { ConfigService } from '../config/config.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PayoutRequestsService } from '../payouts/payout-requests.service';
@@ -278,6 +279,8 @@ export class LeadsService {
     const rec = await this.prisma.client.callingRecord.findFirst({ where: { mobile: lead.customerMobile, interests: { some: {} } }, select: { id: true } });
     if (rec) await this.prisma.client.$transaction([this.prisma.client.callingRecord.update({ where: { id: rec.id }, data: { possibleCollision: true } }), this.prisma.client.lead.update({ where: { id: lead.id }, data: { possibleCollision: true } })]);
     await this.notifications.notify({ recipientUserId: parentId, kind: 'LEAD_CREATED', title: 'New lead created', body: `${lead.publicRef} · ${card.name}`, deepLink: { entityType: 'Lead', entityId: lead.id }, dedupeKey: `lead:created:${lead.id}` });
+    // REQ-19 §19.1 Advisor: "lead operational confirmation" — a KBS lead, not a bank submission
+    await this.notifications.notify({ recipientUserId: actor.userId, kind: 'LEAD_CREATED', title: 'Lead saved in KBS', body: `${lead.publicRef} · ${card.name}. Bank status appears only after the bank MIS upload.`, deepLink: { entityType: 'Lead', entityId: lead.id }, dedupeKey: `lead:created:${lead.id}:advisor` });
     RequestContextStore.audit({ entityId: lead.id, after: { publicRef: lead.publicRef, cardId: card.id, bankId: card.bankId, panVerificationStatus: lead.panVerificationStatus, employmentType: lead.employmentType } });
     return this.detail(actor, lead.id);
   }
@@ -419,13 +422,14 @@ export class LeadsService {
   async filterOptions(actor: Actor): Promise<LeadFilterOptions> {
     const scope = this.scopeWhere(actor);
     const [banks, cards, snaps] = await Promise.all([
-      this.prisma.client.lead.findMany({ where: scope, distinct: ['bankId'], select: { bank: { select: { id: true, displayName: true } } }, orderBy: { bank: { displayName: 'asc' } } }),
+      this.prisma.client.lead.findMany({ where: scope, distinct: ['bankId'], select: { bank: { select: { id: true, code: true, displayName: true } } }, orderBy: { bank: { displayName: 'asc' } } }),
       this.prisma.client.lead.findMany({ where: scope, distinct: ['cardId'], select: { card: { select: { id: true, name: true, bankId: true } } }, orderBy: { card: { name: 'asc' } } }),
       this.prisma.client.bankStatusSnapshot.findMany({ where: { lead: scope }, select: { currentStage: true, finalDecision: true, cardActivationStatus: true } }),
     ]);
     const tokens = this.blankTokens();
     const distinct = (vals: (string | null)[]) => [...new Set(vals.filter((v): v is string => typeof v === 'string' && !isBlankBankValue(v, tokens)).map((v) => v.trim()))].sort();
-    return { banks: banks.map((b) => b.bank), cards: cards.map((c) => c.card), stages: distinct(snaps.map((x) => x.currentStage)), decisions: distinct(snaps.map((x) => x.finalDecision)), activations: distinct(snaps.map((x) => x.cardActivationStatus)) };
+    return { banks: banks.filter((b) => b.bank.code !== DEFAULT_BANK_CODE).map((b) => ({ id: b.bank.id, displayName: b.bank.displayName })), // the hidden internal bank is never a filter
+       cards: cards.map((c) => c.card), stages: distinct(snaps.map((x) => x.currentStage)), decisions: distinct(snaps.map((x) => x.finalDecision)), activations: distinct(snaps.map((x) => x.cardActivationStatus)) };
   }
 
   /** Scope check shared with other modules that expose per-lead reads (e.g. MIS history). */

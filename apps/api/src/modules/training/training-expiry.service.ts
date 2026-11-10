@@ -80,8 +80,12 @@ export class TrainingExpiryService {
     const enrollment = await this.prisma.client.trainingEnrollment.findUnique({ where: { telecallerUserId }, include: { moduleResults: { include: { module: true } } } });
     if (!enrollment) throw AppError.notFound('Telecaller');
     const deadlinePassed = enrollment.deadlineAt !== null && enrollment.deadlineAt.getTime() < Date.now();
-    if (enrollment.status !== 'EXPIRED_DEACTIVATED' && !deadlinePassed) throw new AppError('CONFLICT', 'This Telecaller is not deactivated by the training deadline.');
+    const awaitingWindow = enrollment.status === 'REACTIVATED_IN_PROGRESS' && enrollment.deadlineAt === null; // reactivated before a window was configured
+    if (enrollment.status !== 'EXPIRED_DEACTIVATED' && !deadlinePassed && !awaitingWindow) throw new AppError('CONFLICT', 'This Telecaller is not deactivated by the training deadline.');
     if (enrollment.status === 'PASSED') throw new AppError('CONFLICT', 'Training is already passed.');
+    // a training reactivation must not undo an Admin deactivation (those carry the acting Admin; the deadline sweep has no actor)
+    const lastStatusEvent = await this.prisma.client.userLifecycleEvent.findFirst({ where: { userId: telecallerUserId, eventType: { in: ['DEACTIVATED', 'REACTIVATED'] } }, orderBy: { at: 'desc' } });
+    if (lastStatusEvent?.eventType === 'DEACTIVATED' && lastStatusEvent.actorUserId) throw new AppError('CONFLICT', 'This Telecaller was deactivated by the Admin. Ask the Admin to reactivate the account first.');
     const firstUnpassed = enrollment.moduleResults.filter((r) => r.status !== 'PASSED').map((r) => r.module.sequence).sort((a, b) => a - b)[0] ?? 1;
     const windowHours = this.config.getInt('training.reactivationWindowHours');
     const newDeadlineAt = windowHours === null ? null : new Date(Date.now() + windowHours * 3_600_000);

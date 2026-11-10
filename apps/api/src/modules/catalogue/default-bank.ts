@@ -7,3 +7,9 @@ export async function defaultBankId(prisma: PrismaService['client']): Promise<st
   const b = await prisma.bank.upsert({ where: { code: DEFAULT_BANK_CODE }, update: {}, create: { code: DEFAULT_BANK_CODE, displayName: 'KBS' }, select: { id: true } });
   return b.id;
 }
+
+/** Name to show for a bank: empty for the hidden internal bank, so "bank card" text never prints it. */
+export const visibleBankName = (b: { code: string; displayName: string }): string => (b.code === DEFAULT_BANK_CODE ? '' : b.displayName);
+
+/** "<bank> <text>" without the hidden internal bank. */
+export const withVisibleBank = (b: { code: string; displayName: string }, text: string): string => [visibleBankName(b), text].filter(Boolean).join(' ');

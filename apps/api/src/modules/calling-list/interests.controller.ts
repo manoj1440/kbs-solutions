@@ -3,7 +3,7 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
 
 import type { Actor } from '../../common/actor';
-import { Audited, CurrentActor, Idempotent, RequirePermission } from '../../common/decorators';
+import { Audited, CurrentActor, Idempotent, RequireGates, RequirePermission } from '../../common/decorators';
 
 import { InterestsService } from './interests.service';
 
@@ -16,12 +16,14 @@ export class InterestsController {
   constructor(private readonly svc: InterestsService) {}
 
   @Get('interests')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALLING_QUEUE_OWN', 'CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
   list(@CurrentActor() actor: Actor, @Query() raw: unknown) {
     return this.svc.list(actor, ListQuery.parse(raw));
   }
 
   @Post('interests/:id/bank-reference')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALL_OUTCOME_RECORD', 'CALLING_RECORDS_READ_ALL')
   @Idempotent()
   @Audited({ action: 'callingInterest.bankReference', entityType: 'CallingInterest', entityIdFrom: 'id' })
@@ -30,6 +32,7 @@ export class InterestsController {
   }
 
   @Get('me/performance')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALLING_QUEUE_OWN')
   myPerformance(@CurrentActor() actor: Actor, @Query() raw: unknown) {
     const q = RangeQuery.parse(raw);

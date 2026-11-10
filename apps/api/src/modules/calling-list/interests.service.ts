@@ -10,7 +10,7 @@ import { countStages, emptyStageCounts, interestStage, STAGE_SELECT } from './in
 import { type DateRange, TeamOpsService } from './team-ops.service';
 
 const include = {
-  card: { select: { id: true, name: true, bank: { select: { id: true, displayName: true } } } },
+  card: { select: { id: true, name: true, bank: { select: { id: true, code: true, displayName: true } } } },
   callingRecord: { select: { id: true, fullName: true, mobile: true } },
   telecaller: { select: { id: true, fullName: true } },
   bankStatus: true,

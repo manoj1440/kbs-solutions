@@ -26,6 +26,7 @@ export class CallsController {
   }
 
   @Get('calls/:id')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALL_INITIATE', 'CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
   get(@CurrentActor() actor: Actor, @Param('id') id: string) {
     return this.calls.get(actor, id);
@@ -39,6 +40,7 @@ export class CallsController {
   }
 
   @Get('calling/records/:id/calls')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALLING_QUEUE_OWN', 'CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
   callsForRecord(@CurrentActor() actor: Actor, @Param('id') id: string) {
     return this.calls.listForRecord(actor, id);
@@ -62,12 +64,14 @@ export class CallsController {
   }
 
   @Get('calling/records/:id/remarks')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALLING_QUEUE_OWN', 'CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
   remarks(@CurrentActor() actor: Actor, @Param('id') id: string) {
     return this.outcomes.listRemarks(actor, id);
   }
 
   @Post('calling/records/:id/remarks')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALL_OUTCOME_RECORD', 'CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
   @Idempotent()
   @Audited({ action: 'remark.add', entityType: 'OperationalRemark', entityIdFrom: 'id' })
@@ -76,6 +80,7 @@ export class CallsController {
   }
 
   @Put('remarks/:id')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALL_OUTCOME_RECORD', 'CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
   @Audited({ action: 'remark.edit', entityType: 'OperationalRemark', entityIdFrom: 'id' })
   editRemark(@CurrentActor() actor: Actor, @Param('id') id: string, @Body() raw: unknown) {

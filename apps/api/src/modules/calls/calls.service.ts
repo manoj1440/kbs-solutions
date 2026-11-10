@@ -176,8 +176,18 @@ export class CallsService {
     const r = await this.prisma.client.callingRecord.findUnique({ where: { id: callingRecordId }, select: { assignedTelecallerUserId: true } });
     if (!r) throw AppError.notFound('Record');
     const rows = await this.prisma.client.callAttempt.findMany({ where: { callingRecordId }, orderBy: { initiatedAt: 'desc' }, include: { recording: true } });
-    for (const a of rows) this.assertScope(actor, a.telecallerUserId, r.assignedTelecallerUserId);
-    return rows.map((a) => this.view(a));
+    // scope is the record, not each attempt: after a reassignment the new Telecaller sees the earlier attempts too (REQ-08 §8.3)
+    const assignee = r.assignedTelecallerUserId;
+    if (actor.role === 'ADMIN') return rows.map((a) => this.view(a));
+    if (actor.role === 'MANAGER') {
+      const inTeam = (assignee !== null && actor.teamUserIds.includes(assignee)) || rows.some((a) => actor.teamUserIds.includes(a.telecallerUserId));
+      if (!inTeam) throw AppError.notFound('Record');
+      return rows.map((a) => this.view(a));
+    }
+    if (assignee === actor.userId) return rows.map((a) => this.view(a));
+    const own = rows.filter((a) => a.telecallerUserId === actor.userId);
+    if (own.length === 0) throw AppError.notFound('Record');
+    return own.map((a) => this.view(a));
   }
 
   private view(a: { id: string; callingRecordId: string; providerKey: string; providerCallId: string | null; targetMobileMasked: string; initiatedAt: Date; providerState: CallAttemptView['providerState']; connectedAt: Date | null; endedAt: Date | null; durationSec: number | null; failureReason: string | null; recording: { status: RecordingStatusValue; durationSec: number | null; failureReason: string | null } | null }): CallAttemptView {

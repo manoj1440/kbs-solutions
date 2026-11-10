@@ -95,4 +95,17 @@ describe('F-203 training flow', () => {
     const blocked = await request(app.getHttpServer()).post('/api/v1/training/modules/1/attempts').set(auth(t.accessToken)).expect(403);
     expect(blocked.body.error.code).toBe('GATE_TRAINING_BLOCKED');
   });
+
+  it('REQ-05 §5.4 / REQ-23 §23.2: an attempt opened before the deadline but submitted after it passes nothing', async () => {
+    const { telecallerMobile } = await setupManagerAndTelecaller(app, prisma, '53');
+    const t = await loginAs(app, prisma, telecallerMobile);
+    await request(app.getHttpServer()).post('/api/v1/training/modules/1/video-progress').set(auth(t.accessToken)).send({ positionSec: 10, durationSec: 10, completed: true }).expect(201);
+    const a = await request(app.getHttpServer()).post('/api/v1/training/modules/1/attempts').set(auth(t.accessToken)).expect(201);
+    await prisma.trainingEnrollment.update({ where: { telecallerUserId: t.user.id }, data: { deadlineAt: new Date(Date.now() - 1000) } });
+    const late = await request(app.getHttpServer()).post(`/api/v1/training/attempts/${a.body.data.attemptId}/submit`).set(auth(t.accessToken)).send({ answers: answersFor(a.body.data.questions, a.body.data.questions.length) }).expect(403);
+    expect(late.body.error.code).toBe('GATE_TRAINING_BLOCKED');
+    const result = await prisma.trainingModuleResult.findFirstOrThrow({ where: { enrollment: { telecallerUserId: t.user.id }, module: { sequence: 1 } } });
+    expect(result.status).not.toBe('PASSED');
+    expect((await prisma.trainingAttempt.findUniqueOrThrow({ where: { id: a.body.data.attemptId } })).passed).toBe(false);
+  });
 });

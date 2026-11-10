@@ -25,6 +25,7 @@ export class SharingController {
   }
 
   @Get('calling/records/:id/shares')
+  @RequireGates('training', 'network') // REQ-09 §9.1: every Telecaller customer action needs the office network / WFH (no-op for other roles)
   @RequirePermission('CALLING_QUEUE_OWN', 'CALLING_RECORDS_READ_TEAM', 'CALLING_RECORDS_READ_ALL')
   shares(@CurrentActor() actor: Actor, @Param('id') id: string) {
     return this.svc.listForRecord(actor, id);

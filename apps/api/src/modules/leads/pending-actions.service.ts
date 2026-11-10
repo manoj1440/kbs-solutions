@@ -5,6 +5,7 @@ import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { visibleBankName } from '../catalogue/default-bank';
 import { ConfigService } from '../config/config.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -76,7 +77,7 @@ export class PendingActionsService {
     const scope = { ...this.leadScope(actor), ...(q.leadId ? { id: q.leadId } : {}) };
     const tasks = await this.prisma.client.followUpTask.findMany({
       where: { leadId: { not: null }, lead: scope, ...(q.includeDone ? {} : { doneAt: null }), ...(actor.role === 'ADVISOR' ? { ownerUserId: actor.userId } : {}) },
-      include: { owner: { select: { id: true, fullName: true, role: true } }, lead: { select: { id: true, publicRef: true, customerFullName: true, card: { select: { name: true } }, bank: { select: { displayName: true } } } } },
+      include: { owner: { select: { id: true, fullName: true, role: true } }, lead: { select: { id: true, publicRef: true, customerFullName: true, card: { select: { name: true } }, bank: { select: { code: true, displayName: true } } } } },
       orderBy: { dueAt: 'asc' },
     });
     const items: PendingAction[] = tasks
@@ -87,7 +88,7 @@ export class PendingActionsService {
         leadRef: t.lead!.publicRef,
         customer: t.lead!.customerFullName,
         card: t.lead!.card.name,
-        issuer: t.lead!.bank.displayName,
+        issuer: visibleBankName(t.lead!.bank),
         owner: { userId: t.owner.id, name: t.owner.fullName, role: t.owner.role === 'MANAGER' ? 'MANAGER' : 'ADVISOR' },
         whatToDo: t.text,
         source: { type: 'KBS_TASK', createdByUserId: t.ownerUserId },
@@ -129,7 +130,7 @@ export class PendingActionsService {
           leadRef: l.publicRef,
           customer: l.customerFullName,
           card: l.card.name,
-          issuer: l.bank.displayName,
+          issuer: visibleBankName(l.bank),
           owner,
           whatToDo: r.owner ? r.label : `Bank reported: ${v.trim()}`,
           source: { type: 'MIS_FIELD', field: r.field, batchRef: s.lastMatchedBatch.publicRef, bankText: v.trim() },

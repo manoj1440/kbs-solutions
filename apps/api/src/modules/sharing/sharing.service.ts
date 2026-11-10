@@ -12,6 +12,7 @@ import { WHATSAPP_PROVIDER, type WhatsAppProvider } from '../../providers/ports'
 import { AuditService } from '../audit/audit.service';
 import { SuppressionService } from '../calling-list/suppression.service';
 import { CatalogueService } from '../catalogue/catalogue.service';
+import { withVisibleBank } from '../catalogue/default-bank';
 import { ConfigService } from '../config/config.service';
 import { FilesService } from '../files/files.service';
 import { IdCardsService } from '../id-cards/id-cards.service';
@@ -95,7 +96,7 @@ export class SharingService {
       linkVersion = link.version;
       assetVersionRef = `link:${link.id}:v${link.version}`;
       // verbatim URL — never normalised (WA-02) — except `{code}`, filled with the sharer's own code
-      text = `Hi ${target.customerName}, here is the ${card.bank.displayName} ${card.name} application link as discussed:\n${personaliseLink(link.url, shareCodeOf(me.publicRef))}\n— ${me.fullName}, KBS Solutions`;
+      text = `Hi ${target.customerName}, here is the ${withVisibleBank(card.bank, card.name)} application link as discussed:\n${personaliseLink(link.url, shareCodeOf(me.publicRef))}\n— ${me.fullName}, KBS Solutions`;
       if (target.callingRecordId) {
         // one interest per record + card + caller: re-sharing or an earlier outcome must not count it twice
         const where = { callingRecordId: target.callingRecordId, telecallerUserId: actor.userId, cardId: card.id };
@@ -113,7 +114,7 @@ export class SharingService {
       if (!card.benefitPdf) throw new AppError('CONFLICT', 'This card has no approved benefit PDF.');
       assetVersionRef = `pdf:${card.benefitPdf.id}:card-v${card.version}`;
       mediaUrl = this.redirectUrl(card.benefitPdf.id, action.id);
-      text = `Hi ${target.customerName}, the benefits of the ${card.bank.displayName} ${card.name} are in this PDF:`;
+      text = `Hi ${target.customerName}, the benefits of the ${withVisibleBank(card.bank, card.name)} are in this PDF:`;
     } else {
       const card = await this.idCards.ensureRendered(actor.userId);
       if (!card || !card.renderedFileId) throw new AppError('CONFLICT', 'Your official ID is revoked or not available.', undefined);
@@ -168,7 +169,12 @@ export class SharingService {
     return { updated: r.count };
   }
 
-  listForRecord(actor: Actor, callingRecordId: string) {
+  async listForRecord(actor: Actor, callingRecordId: string) {
+    if (actor.role === 'MANAGER') {
+      // REQ-03 §3.3: a Manager reads only their own team's records
+      const rec = await this.prisma.client.callingRecord.findUnique({ where: { id: callingRecordId }, select: { assignedTelecallerUserId: true } });
+      if (!rec?.assignedTelecallerUserId || !actor.teamUserIds.includes(rec.assignedTelecallerUserId)) throw AppError.notFound('Record');
+    }
     return this.prisma.client.shareAction.findMany({ where: { callingRecordId, ...(actor.role === 'TELECALLER' ? { actorUserId: actor.userId } : {}) }, orderBy: { at: 'desc' } });
   }
 }

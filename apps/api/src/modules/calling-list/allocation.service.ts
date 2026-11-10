@@ -174,6 +174,14 @@ export class AllocationService {
    * attempt, no follow-up, not hidden/suppressed), newest assignment first, so a Telecaller never loses a customer they have worked.
    */
   async rebalance(trigger: { actorUserId: string; reason: string }) {
+    // REQ-26 §26.1 step 3 / A20: customers imported while nobody had passed training are still unassigned — give them out first
+    // (same consent gate and algorithm as an upload), otherwise the first trained Telecaller starts with an empty queue.
+    const waiting = await this.prisma.client.callingRecord.findMany({
+      where: { reviewStatus: 'ACCEPTED', assignedTelecallerUserId: null, hiddenAt: null, suppressed: false, batch: { status: 'IMPORTED' } },
+      distinct: ['batchId'],
+      select: { batchId: true },
+    });
+    for (const w of waiting) await this.allocateBatchIfAllowed({ userId: trigger.actorUserId } as Actor, w.batchId);
     if (!this.config.getBool('allocation.rebalanceOnTrainingPass')) return { moved: 0, perTelecaller: {} };
     const cap = this.config.getInt('allocation.maxActivePerTelecaller');
     const pool = (await this.eligiblePool()).map((p) => ({ ...p, load: p.active }));
