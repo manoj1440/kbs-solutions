@@ -10,6 +10,8 @@ import { ConfigService } from '../config/config.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PayoutEligibilityService } from '../payouts/eligibility.service';
 
+import { reportDayOf } from './mis-dates';
+
 type RefKind = 'APPLICATION_NO' | 'APPLICATION_REFERENCE_NUMBER' | 'OTHER';
 interface RefValue {
   kind: RefKind;
@@ -194,6 +196,10 @@ export class MisPipelineService {
    * Per MATCHED row, per mapped field: compare with the snapshot → history row (SET / CHANGED / CONFIRMED_SAME / REPORTED_BLANK);
    * snapshot updated only for non-blank values (or blankOverwrites). Row-level `appliedAt` makes retries resume; identical
    * re-processing writes no new history because the (leadId, batchId, field) unique already exists.
+   *
+   * MIS-ORDER (REQ-23 §23.4): a row whose batch has an OLDER report day than the batch that last set the lead's snapshot is a
+   * stale report — the snapshot, its freshness markers and the history stay untouched; the row is marked `staleReport` and
+   * produces no notification, no payout evaluation and no entitlement review. Equal days: the later upload wins, as before.
    */
   async apply(actor: Actor, batchId: string, opts: { onlyRowIds?: string[]; onProgress?: MisProgress } = {}) {
     const batch = await this.prisma.client.misImportBatch.findUniqueOrThrow({ where: { id: batchId }, include: { profile: true } });
@@ -209,6 +215,15 @@ export class MisPipelineService {
     const reviewEntitlements = new Set<string>();
     let updatedChanged = 0;
     let updatedNoChange = 0;
+    let staleSkipped = 0;
+    const staleLeads = new Set<string>();
+    const batchDay = reportDayOf(batch);
+    /** Non-null when `last` (the batch that set the status on file) reports a later day than this batch. */
+    const staleNote = (last: { id: string; publicRef: string; reportDate: Date | null; uploadedAt: Date } | null | undefined): string | null => {
+      if (!last || last.id === batchId) return null;
+      const onFile = reportDayOf(last);
+      return batchDay < onFile ? `STALE_REPORT: this report is for ${batchDay}; the status on file comes from ${last.publicRef} (${onFile}). Bank values were not changed.` : null;
+    };
 
     await withMisApplyContext(batchId, async () => {
       for (const row of rows) {
@@ -216,10 +231,18 @@ export class MisPipelineService {
         const mapped = (row.mapped as Record<string, string>) ?? {};
         const dates = (row.mappedDates as Record<string, { text: string; iso: string | null }>) ?? {};
         const changed: string[] = [];
+        let stale = false;
         await this.prisma.client.$transaction(async (tx) => {
           // F-903: the database trigger accepts bank-status writes only when this transaction declares the MIS apply
           await tx.$executeRawUnsafe(MIS_APPLY_SET_LOCAL);
-          const snap = await tx.bankStatusSnapshot.findUnique({ where: { leadId } });
+          const snap = await tx.bankStatusSnapshot.findUnique({ where: { leadId }, include: { lastMatchedBatch: { select: { id: true, publicRef: true, reportDate: true, uploadedAt: true } } } });
+          const note = staleNote(snap?.lastMatchedBatch);
+          if (note) {
+            // older report than the status on file: no snapshot / history write at all, only the row's own outcome
+            await tx.misRow.update({ where: { id: row.id }, data: { appliedAt: new Date(), staleReport: true, applyNote: note } });
+            stale = true;
+            return;
+          }
           const textUpdates: Record<string, string | null> = {};
           const dateUpdates: Record<string, Date | null> = {};
           const history: Array<{ field: string; oldValue: string | null; newValue: string | null; changeKind: 'SET' | 'CHANGED' | 'CONFIRMED_SAME' | 'REPORTED_BLANK'; reportedEventDate: Date | null }> = [];
@@ -273,23 +296,30 @@ export class MisPipelineService {
             }
           }
         });
-        if (changed.length) updatedChanged++;
+        if (stale) {
+          staleSkipped++;
+          staleLeads.add(leadId);
+        } else if (changed.length) updatedChanged++;
         else updatedNoChange++;
-        await opts.onProgress?.('apply', updatedChanged + updatedNoChange, rows.length);
+        await opts.onProgress?.('apply', updatedChanged + updatedNoChange + staleSkipped, rows.length);
       }
 
       for (const row of interestRows) {
-        if (await this.applyInterestRow(batch, row, blankTokens)) updatedChanged++;
+        const outcome = await this.applyInterestRow(batch, row, blankTokens, staleNote);
+        if (outcome === 'stale') staleSkipped++;
+        else if (outcome === 'changed') updatedChanged++;
         else updatedNoChange++;
-        await opts.onProgress?.('apply', updatedChanged + updatedNoChange, matchedRows.length);
+        await opts.onProgress?.('apply', updatedChanged + updatedNoChange + staleSkipped, matchedRows.length);
       }
 
       // FULL_SNAPSHOT: leads matched by an earlier batch of this bank but absent now → ABSENT_FROM_BATCH (values untouched)
       if (!opts.onlyRowIds && batch.profile.snapshotMode === 'FULL_SNAPSHOT') {
         const present = new Set((await this.prisma.client.misRow.findMany({ where: { batchId, matchState: 'MATCHED' }, select: { matchedLeadId: true } })).map((r) => r.matchedLeadId));
-        const others = await this.prisma.client.bankStatusSnapshot.findMany({ where: { bankId: batch.bankId, lastMatchedBatchId: { not: batchId } }, select: { leadId: true } });
+        const others = await this.prisma.client.bankStatusSnapshot.findMany({ where: { bankId: batch.bankId, lastMatchedBatchId: { not: batchId } }, select: { leadId: true, lastMatchedBatch: { select: { id: true, publicRef: true, reportDate: true, uploadedAt: true } } } });
         for (const o of others) {
           if (present.has(o.leadId)) continue;
+          // MIS-ORDER: an older report says nothing about a lead whose status comes from a newer one
+          if (staleNote(o.lastMatchedBatch)) continue;
           await this.prisma.client.$transaction(async (tx) => {
             await tx.$executeRawUnsafe(MIS_APPLY_SET_LOCAL);
             await tx.bankStatusHistory.upsert({ where: { leadId_batchId_field: { leadId: o.leadId, batchId, field: '*' } }, create: { leadId: o.leadId, batchId, field: '*', changeKind: 'ABSENT_FROM_BATCH', importedAt: batch.uploadedAt, uploaderUserId: batch.uploaderUserId }, update: {} });
@@ -301,7 +331,8 @@ export class MisPipelineService {
     // F-602: evaluate every applied lead against the bank's payout rules (idempotent by eventKey; corrections → UNDER_REVIEW)
     let evaluated = 0;
     for (const row of rows) {
-      await this.eligibility.evaluateLead(row.matchedLeadId as string, batchId);
+      // MIS-ORDER: a stale report creates / reviews no entitlement
+      if (!staleLeads.has(row.matchedLeadId as string)) await this.eligibility.evaluateLead(row.matchedLeadId as string, batchId);
       await opts.onProgress?.('payouts', ++evaluated, rows.length);
     }
 
@@ -324,21 +355,29 @@ export class MisPipelineService {
     }
     if (!opts.onlyRowIds) {
       const counts = Object.fromEntries((await this.prisma.client.misRow.groupBy({ by: ['matchState'], where: { batchId }, _count: { _all: true } })).map((g) => [g.matchState, g._count._all]));
-      const totals = { ...((batch.totals as Record<string, unknown>) ?? {}), updatedChanged, updatedNoChange, unmatched: counts.UNMATCHED ?? 0, conflicts: counts.CONFLICT ?? 0, invalid: counts.INVALID ?? 0, ignored: counts.IGNORED ?? 0, needsReview: (counts.UNMATCHED ?? 0) + (counts.CONFLICT ?? 0), appliedRows: matchedRows.length, callingInterestsApplied: interestRows.length };
+      // counted from the rows so an apply resumed after a failure still reports every stale row of the batch
+      const staleTotal = await this.prisma.client.misRow.count({ where: { batchId, staleReport: true } });
+      const totals = { ...((batch.totals as Record<string, unknown>) ?? {}), updatedChanged, updatedNoChange, staleSkipped: staleTotal, unmatched: counts.UNMATCHED ?? 0, conflicts: counts.CONFLICT ?? 0, invalid: counts.INVALID ?? 0, ignored: counts.IGNORED ?? 0, needsReview: (counts.UNMATCHED ?? 0) + (counts.CONFLICT ?? 0), appliedRows: matchedRows.length, callingInterestsApplied: interestRows.length };
       await this.prisma.client.misImportBatch.update({ where: { id: batchId }, data: { stage: 'APPLIED', appliedAt: batch.appliedAt ?? new Date(), totals } });
-      await this.notifications.notify({ recipientUserId: actor.userId, kind: 'MIS_IMPORT_RESULT', title: `MIS upload ${batch.publicRef} done`, body: `${updatedChanged} lead(s) updated, ${updatedNoChange} unchanged, ${totals.needsReview + totals.invalid} row(s) with no KBS lead.`, deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:applied:${batchId}:${matchedRows.length}` });
+      await this.notifications.notify({ recipientUserId: actor.userId, kind: 'MIS_IMPORT_RESULT', title: `MIS upload ${batch.publicRef} done`, body: `${updatedChanged} lead(s) updated, ${updatedNoChange} unchanged, ${totals.needsReview + totals.invalid} row(s) with no KBS lead.${staleTotal ? ` ${staleTotal} row(s) were older than the status already on file and were not applied.` : ''}`, deepLink: { entityType: 'MisImportBatch', entityId: batchId }, dedupeKey: `mis:applied:${batchId}:${matchedRows.length}` });
       RequestContextStore.audit({ entityId: batchId, after: { stage: 'APPLIED', totals } });
       return totals;
     }
-    return { updatedChanged, updatedNoChange, appliedRows: matchedRows.length };
+    return { updatedChanged, updatedNoChange, staleSkipped, appliedRows: matchedRows.length };
   }
 
   /**
    * A21: one MIS row → a Telecaller's `CallingBankStatus`. Same rules as leads: only inside the MIS apply transaction (INV-01, F-903),
    * blank = unknown and never overwrites (INV-02), stage / decision / activation kept apart (INV-03), no payout evaluation (INV-05).
-   * Returns whether a bank value changed; the Telecaller is notified when it did.
+   * Returns whether a bank value changed; the Telecaller is notified when it did. MIS-ORDER: an older report than the one
+   * on file is `stale` — status, freshness markers untouched, no notification.
    */
-  private async applyInterestRow(batch: { id: string; bankId: string; uploadedAt: Date; publicRef: string }, row: { id: string; mapped: unknown; mappedDates: unknown; matchedCallingInterestId: string | null }, blankTokens: string[]) {
+  private async applyInterestRow(
+    batch: { id: string; bankId: string; uploadedAt: Date; publicRef: string },
+    row: { id: string; mapped: unknown; mappedDates: unknown; matchedCallingInterestId: string | null },
+    blankTokens: string[],
+    staleNote: (last: { id: string; publicRef: string; reportDate: Date | null; uploadedAt: Date } | null | undefined) => string | null,
+  ): Promise<'changed' | 'same' | 'stale'> {
     const interestId = row.matchedCallingInterestId as string;
     const mapped = (row.mapped as Record<string, string>) ?? {};
     const dates = (row.mappedDates as Record<string, { iso: string | null }>) ?? {};
@@ -346,6 +385,12 @@ export class MisPipelineService {
     const changed = await this.prisma.client.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(MIS_APPLY_SET_LOCAL);
       const snap = await tx.callingBankStatus.findUnique({ where: { callingInterestId: interestId } });
+      const last = snap && snap.lastMatchedBatchId !== batch.id ? await tx.misImportBatch.findUnique({ where: { id: snap.lastMatchedBatchId }, select: { id: true, publicRef: true, reportDate: true, uploadedAt: true } }) : null;
+      const note = staleNote(last);
+      if (note) {
+        await tx.misRow.update({ where: { id: row.id }, data: { appliedAt: new Date(), staleReport: true, applyNote: note } });
+        return null;
+      }
       const data: Record<string, string | Date> = {};
       for (const f of FIELDS) {
         const raw = mapped[f];
@@ -361,12 +406,13 @@ export class MisPipelineService {
       await tx.misRow.update({ where: { id: row.id }, data: { appliedAt: new Date() } });
       return Object.keys(data).filter((k) => k !== 'finalDecisionDate');
     });
+    if (!changed) return 'stale';
     if (changed.length) {
       const i = await this.prisma.client.callingInterest.findUniqueOrThrow({ where: { id: interestId }, select: { telecallerUserId: true, callingRecordId: true, callingRecord: { select: { fullName: true } }, bankStatus: true } });
       const parts = changed.filter((f) => f !== 'applicationNo').map((f) => `${MIS_NOTIFY_FIELD_LABEL[f as keyof typeof MIS_NOTIFY_FIELD_LABEL] ?? f}: ${(i.bankStatus as Record<string, unknown> | null)?.[f] ?? ''}`);
       await this.notifications.notify({ recipientUserId: i.telecallerUserId, kind: 'MIS_CHANGED', title: 'Bank MIS updated', body: `${i.callingRecord.fullName} — ${parts.join(', ') || 'matched in bank MIS'} (MIS ${batch.publicRef}).`, deepLink: { entityType: 'CallingRecord', entityId: i.callingRecordId } /* the record screen shows its Applications */, sourceRef: { batchId: batch.id, fields: changed }, dedupeKey: `mis.interest.changed:${interestId}:${batch.id}` });
     }
-    return changed.length > 0;
+    return changed.length > 0 ? 'changed' : 'same';
   }
 
   /** F-408 §3: change history grouped by batch for one lead. */

@@ -1,4 +1,4 @@
-import { formatDateTime } from '@kbs/shared';
+import { formatDate, formatDateTime } from '@kbs/shared';
 import { Ban, FileSpreadsheet } from 'lucide-react';
 
 import { BankMark, Callout, DetailHeader, StatCard, StatGrid } from '@/components/ui/kit';
@@ -14,6 +14,8 @@ interface Batch {
   publicRef: string;
   stage: string;
   uploadedAt: string;
+  /** REQ-23 §23.4: set when Admin said which day the sheet is for */
+  reportDate: string | null;
   totals: Record<string, number> | null;
   rejectReason: string | null;
   bank: { code: string; displayName: string };
@@ -27,13 +29,14 @@ export default async function MisBatchPage({ params }: { params: Promise<{ id: s
   const [b, job] = await Promise.all([apiFetch<Batch>(`/mis/batches/${id}`).then((r) => r.data), apiFetch<{ job: MisJob }>(`/mis/batches/${id}/job`).then((r) => r.data.job)]);
   const t = b.totals ?? {};
   const notLinked = (t.unmatched ?? 0) + (t.conflicts ?? 0) + (t.invalid ?? 0);
+  const stale = t.staleSkipped ?? 0;
   return (
     <div className="grid gap-6">
       <DetailHeader
         back={{ href: '/admin/mis', label: 'Bank MIS upload' }}
         visual={<BankMark code={b.bank.code} />}
         title={`${b.bank.displayName} MIS`}
-        subtitle={`${b.file.originalName} · uploaded by ${b.uploader.fullName} · ${formatDateTime(b.uploadedAt)}`}
+        subtitle={`${b.file.originalName} · uploaded by ${b.uploader.fullName} · ${formatDateTime(b.uploadedAt)}${b.reportDate ? ` · report date ${formatDate(b.reportDate, 'UTC')}` : ''}`}
       />
       {b.stage === 'REJECTED' ? (
         <Callout tone="danger" icon={Ban} role="alert">
@@ -48,6 +51,7 @@ export default async function MisBatchPage({ params }: { params: Promise<{ id: s
               <StatCard label="Leads updated" value={t.updatedChanged ?? 0} hint="Bank status changed" tone="emerald" />
               <StatCard label="Leads unchanged" value={t.updatedNoChange ?? 0} hint="Same status as before" tone="slate" />
               <StatCard label="No KBS lead" value={notLinked} hint="Application not raised through KBS" tone="slate" />
+              {stale > 0 ? <StatCard label="Older than on file" value={stale} hint="A newer bank report is already on file; status kept" tone="slate" /> : null}
             </StatGrid>
           ) : null}
           <BatchRows batchId={b.id} stage={b.stage} />

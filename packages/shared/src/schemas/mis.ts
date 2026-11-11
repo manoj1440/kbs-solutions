@@ -99,7 +99,15 @@ export const UpdateMisProfileBody = z
 export type UpdateMisProfileBody = z.infer<typeof UpdateMisProfileBody>;
 
 /** F-809: profileId optional — all banks share one MIS layout, so the server resolves the bank's latest APPROVED profile. */
-export const CreateMisBatchBody = z.object({ bankId: z.string().uuid().optional(), profileId: z.string().uuid().optional(), fileId: z.string().uuid(), sheetName: z.string().max(100).optional() }).strict();
+/**
+ * REQ-23 §23.4: `reportDate` (YYYY-MM-DD) is the day the bank's sheet is for; omitted = the upload day. A batch whose report
+ * day is older than the one already on file for a lead never overwrites that lead's bank values.
+ */
+export const MisReportDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD.')
+  .refine((v) => !Number.isNaN(Date.parse(`${v}T00:00:00Z`)) && new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v, 'Not a calendar date.');
+export const CreateMisBatchBody = z.object({ bankId: z.string().uuid().optional(), profileId: z.string().uuid().optional(), fileId: z.string().uuid(), sheetName: z.string().max(100).optional(), reportDate: MisReportDate.optional() }).strict();
 export type CreateMisBatchBody = z.infer<typeof CreateMisBatchBody>;
 
 export const MisBatchListQuery = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(100).default(50), bankId: z.string().uuid().optional(), stage: z.string().optional() });

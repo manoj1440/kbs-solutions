@@ -13,7 +13,7 @@ import { AuditService } from '../audit/audit.service';
 import { defaultBankId } from '../catalogue/default-bank';
 import { FilesService } from '../files/files.service';
 
-import { parseBankDate } from './mis-dates';
+import { istDay, parseBankDate, reportDayOf } from './mis-dates';
 
 type Profile = { id: string; fieldMap: unknown; headerAliases: unknown; referenceFields: unknown; dateFormats: unknown; timezone: string; sheetSelector: string | null; knownValues: unknown };
 interface RefField {
@@ -79,6 +79,9 @@ export class MisImportService {
   async create(actor: Actor, input: CreateMisBatchBody) {
     // MIS is bank-independent in the product: no bank picked → the hidden internal bank every new card/lead uses
     const body = { ...input, bankId: input.bankId ?? (await defaultBankId(this.prisma.client)) };
+    // REQ-23 §23.4: a report dated in the future would make every later normal upload look stale
+    if (body.reportDate && body.reportDate > istDay(new Date())) throw new AppError('VALIDATION_FAILED', 'Report date cannot be in the future.');
+    const reportDate = body.reportDate ? new Date(`${body.reportDate}T00:00:00.000Z`) : null;
     // F-809/F-816: every bank uses the same MIS layout, so the upload only names the bank; the latest APPROVED profile
     // resolves the field map, and a bank without one gets the built-in standard format (no mapping to set up).
     const profile = body.profileId
@@ -93,14 +96,16 @@ export class MisImportService {
     const check = resolveHeaders(profile, sheet.headers);
     const refPresent = check.refs.some((r) => r.resolved);
     const statusPresent = ['currentStage', 'finalDecision', 'cardActivationStatus'].some((f) => check.resolved[f]);
-    const batch = existing ?? (await this.prisma.client.misImportBatch.create({ data: { publicRef: makePublicRef(RefPrefix.MIS_BATCH), bankId: body.bankId, profileId: profile.id, fileId: file.id, checksum, sheetName: sheet.name, uploaderUserId: actor.userId, stage: 'UPLOADED' } }));
+    const batch = existing ?? (await this.prisma.client.misImportBatch.create({ data: { publicRef: makePublicRef(RefPrefix.MIS_BATCH), bankId: body.bankId, profileId: profile.id, fileId: file.id, checksum, sheetName: sheet.name, uploaderUserId: actor.userId, stage: 'UPLOADED', reportDate } }));
+    // the same file uploaded again after a rejection: Admin may now say which day it is for (never on a part-applied batch)
+    if (existing && reportDate && existing.stage !== 'FAILED') await this.prisma.client.misImportBatch.update({ where: { id: existing.id }, data: { reportDate } });
     if (!refPresent || !statusPresent) {
       const reason = !refPresent ? `No reference column found (expected one of: ${check.refs.map((r) => r.header).join(', ')}). Is this a pincode or calling-list workbook?` : 'No status column found (CURRENT_STAGE / FINAL_DECISION / Card Activation Staus).';
       await this.prisma.client.misImportBatch.update({ where: { id: batch.id }, data: { stage: 'REJECTED', rejectReason: reason, preview: { headers: sheet.headers, sheets, missing: check.missing, unmapped: check.unmapped } } });
       RequestContextStore.audit({ entityId: batch.id, after: { stage: 'REJECTED', reason } });
       return this.get(batch.id);
     }
-    RequestContextStore.audit({ entityId: batch.id, after: { publicRef: batch.publicRef, fileId: file.id, sheet: sheet.name, rows: sheet.rows.length, missingHeaders: check.missing, unmappedColumns: check.unmapped } });
+    RequestContextStore.audit({ entityId: batch.id, after: { publicRef: batch.publicRef, fileId: file.id, sheet: sheet.name, rows: sheet.rows.length, missingHeaders: check.missing, unmappedColumns: check.unmapped, reportDate: body.reportDate ?? null } });
     await this.parse(batch.id, profile, sheet, check);
     return this.get(batch.id);
   }
@@ -153,7 +158,8 @@ export class MisImportService {
   async get(id: string) {
     const b = await this.prisma.client.misImportBatch.findUnique({ where: { id }, include: { bank: { select: { id: true, code: true, displayName: true } }, profile: { select: { id: true, name: true, version: true, snapshotMode: true } }, file: { select: { originalName: true, sizeBytes: true } }, uploader: { select: { id: true, fullName: true, role: true } } } });
     if (!b) throw AppError.notFound('MIS batch');
-    return b;
+    // REQ-23 §23.4: `reportDay` is the day apply orders this batch by (Admin's reportDate, else the upload day in IST)
+    return { ...b, reportDay: reportDayOf(b) };
   }
 
   /** F-814 MIS clock: last applied import per active bank, timestamps only (REQ-20 §20.3, REQ-16 §16.3 — per bank, never one global status). */
@@ -305,6 +311,8 @@ export class MisImportService {
         matchedLead: r.matchedLead,
         resolution: r.resolution,
         appliedAt: r.appliedAt?.toISOString() ?? null,
+        staleReport: r.staleReport,
+        applyNote: r.applyNote,
         referenceValues: r.referenceValues,
         mapped: this.maskMapped(r.mapped as Record<string, string>, reveal),
         raw: reveal ? r.raw : Object.fromEntries(Object.entries(r.raw as Record<string, string>).map(([h, v]) => [h, piiHeaders.has(h) ? (maskName(v) ?? '') : v])),

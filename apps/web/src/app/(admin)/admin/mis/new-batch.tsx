@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { FileUploadButton } from '@/components/file-upload-button';
 import { Button } from '@/components/ui/button';
+import { selectClass } from '@/components/ui/kit';
 import { clientApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,9 @@ export function UploadMisButton() {
   const [open, setOpen] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // REQ-23 §23.4: the day the bank's sheet is for; empty = today. An older sheet never overwrites a newer status.
+  const [reportDate, setReportDate] = useState('');
+  const [today, setToday] = useState('');
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -35,6 +39,8 @@ export function UploadMisButton() {
         className="h-9 shrink-0"
         onClick={() => {
           setMsg(null);
+          setReportDate('');
+          setToday(new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10)); // IST day: the API refuses a future report date
           setOpen(true);
         }}
       >
@@ -59,6 +65,11 @@ export function UploadMisButton() {
           </button>
         </div>
         <div className="grid gap-4 px-5 py-5">
+          <label className="grid gap-1.5 text-sm font-medium text-foreground">
+            Report date (optional)
+            <input type="date" className={selectClass} value={reportDate} max={today || undefined} disabled={busy} onChange={(e) => setReportDate(e.target.value)} />
+            <span className="text-xs font-normal text-muted-foreground">The day this bank sheet is for. Leave empty for today. An older sheet does not replace a newer status already on file.</span>
+          </label>
           <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-stone-300 bg-stone-100/40 px-4 py-6 text-center">
             <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-card text-stone-900 shadow-sm ring-1 ring-stone-200">
               <FileUp className="size-5" aria-hidden="true" />
@@ -73,7 +84,7 @@ export function UploadMisButton() {
                 setBusy(true);
                 setMsg(null);
                 try {
-                  const r = await clientApi.post<{ id: string; stage?: string; duplicateOf?: string }>('/mis/batches', { fileId: f.id });
+                  const r = await clientApi.post<{ id: string; stage?: string; duplicateOf?: string }>('/mis/batches', { fileId: f.id, ...(reportDate ? { reportDate } : {}) });
                   if (!r.data.duplicateOf && r.data.stage !== 'REJECTED') {
                     try {
                       await clientApi.post(`/mis/batches/${r.data.id}/apply`, {});

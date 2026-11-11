@@ -1434,6 +1434,8 @@ model MisImportBatch {
   sheetName            String?
   uploaderUserId       String
   uploadedAt           DateTime      @default(now())
+  /// REQ-23 §23.4: the day the bank's sheet is for (Admin input). Null = the upload day. Apply never lets an older report overwrite a newer one.
+  reportDate           DateTime?     @db.Date
   stage                MisBatchStage @default(UPLOADED)
   totals               Json?
   preview              Json?
@@ -1482,6 +1484,9 @@ model MisRow {
   reviewedAt               DateTime?
   resolution               String?
   appliedAt                DateTime?
+  /// REQ-23 §23.4: processed, but its batch's report date is older than the status already on file → bank values were NOT written
+  staleReport              Boolean          @default(false)
+  applyNote                String?
 
   batch                  MisImportBatch      @relation(fields: [batchId], references: [id])
   matchedLead            Lead?               @relation(fields: [matchedLeadId], references: [id])

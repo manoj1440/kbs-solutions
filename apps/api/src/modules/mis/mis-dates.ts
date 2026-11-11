@@ -62,3 +62,15 @@ export function parseBankDate(text: string | null | undefined, formats: string[]
   }
   return null;
 }
+
+/**
+ * REQ-23 §23.4: the calendar day (YYYY-MM-DD) a batch's bank report is for — Admin's `reportDate`, else the IST day it was
+ * uploaded. Compared as plain strings; a batch with an OLDER day than the one on file is a stale report. Equal days keep
+ * the normal "later upload wins" behaviour.
+ */
+export function reportDayOf(batch: { reportDate: Date | null; uploadedAt: Date }): string {
+  if (batch.reportDate) return batch.reportDate.toISOString().slice(0, 10);
+  return istDay(batch.uploadedAt);
+}
+
+export const istDay = (t: Date): string => new Date(t.getTime() + 330 * 60_000).toISOString().slice(0, 10);
