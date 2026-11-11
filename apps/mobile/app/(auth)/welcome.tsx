@@ -74,9 +74,9 @@ function Headline({ lines, sub, center }: { lines: string[]; sub: string; center
 
 function CardStack() {
   const cards = [
-    { bank: 'ICICI Bank', seed: 'rose-1', rotate: '-14deg', x: -64, y: 18 },
-    { bank: 'SBI Card', seed: 'teal-a', rotate: '12deg', x: 64, y: 22 },
-    { bank: 'HDFC Bank', seed: 'kbs-navy', rotate: '-2deg', x: 0, y: 0 },
+    { bank: 'Travel Card', seed: 'rose-1', rotate: '-14deg', x: -64, y: 18 },
+    { bank: 'Cashback Card', seed: 'teal-a', rotate: '12deg', x: 64, y: 22 },
+    { bank: 'Rewards Card', seed: 'kbs-navy', rotate: '-2deg', x: 0, y: 0 },
   ];
   return (
     <View className="h-64 w-full items-center justify-center">
@@ -107,16 +107,16 @@ function MiniCard({ seed }: { seed: string }) {
 
 function DiscoverHero() {
   const rows: [string, string, string][] = [
-    ['HDFC Millennia Credit Card', 'Best for online shopping & lifestyle', 'kbs-navy'],
-    ['SBI SimplyCLICK', 'Best for everyday spends', 'teal-a'],
-    ['Axis ACE', 'Fuel & grocery benefits', 'rose-1'],
-    ['ICICI Coral', 'Travel benefits', 'amber'],
+    ['Rewards Card', 'Online shopping & lifestyle', 'kbs-navy'],
+    ['Cashback Card', 'Everyday spends', 'teal-a'],
+    ['Fuel Card', 'Fuel & grocery benefits', 'rose-1'],
+    ['Travel Card', 'Travel benefits', 'amber'],
   ];
   return (
     <View className="w-full gap-2">
       <Panel className="h-12 flex-row items-center gap-2.5 px-4">
         <Icon name="search" size={18} color={colors.subtle} />
-        <RNText className="font-normal text-md text-[#8A8A8A]">Search cards, banks</RNText>
+        <RNText className="font-normal text-md text-[#8A8A8A]">Search cards</RNText>
       </Panel>
       <View className="flex-row gap-2">
         {['All', 'Travel', 'Shopping', 'Premium'].map((t, i) => (
@@ -236,7 +236,7 @@ export default function Welcome() {
           <View className="mt-7 flex-row gap-2">
             {(
               [
-                ['business-outline', 'Top banks'],
+                ['card-outline', 'Top cards'],
                 ['pricetags-outline', 'Best offers'],
                 ['wallet-outline', 'Higher earnings'],
               ] as [IconName, string][]
@@ -338,8 +338,8 @@ export default function Welcome() {
             <CheckRow icon="wallet-outline" label="Payouts" sub="On every activated card" />
             <CheckRow
               icon="shield-checkmark-outline"
-              label="Bank partnerships"
-              sub="Work with leading banks"
+              label="Card partnerships"
+              sub="Work with leading card issuers"
             />
             <CheckRow
               icon="school-outline"

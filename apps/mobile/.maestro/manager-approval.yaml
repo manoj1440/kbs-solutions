@@ -1,5 +1,7 @@
 # Manager: login → Approvals tab lists requests awaiting the Manager → open one (read-only check)
 appId: com.kbs.dsa
+env:
+  MANAGER_MOBILE: ${MANAGER_MOBILE || '9876500001'} # override: maestro test -e MANAGER_MOBILE=98xxxxxxxx …
 ---
 - launchApp:
     clearState: true
@@ -12,11 +14,11 @@ appId: com.kbs.dsa
           optional: true
 - tapOn: "Let's Login.*"
 - tapOn: "98765 43210"
-- inputText: "9876500001"
+- inputText: ${MANAGER_MOBILE}
 - tapOn: "Login"
 - inputText: "000000"
 - tapOn: "Verify OTP"
-- assertVisible: "My team"
+- assertVisible: "Team overview"
 - tapOn: "Approvals"
 - assertVisible:
     text: ".*approval.*"

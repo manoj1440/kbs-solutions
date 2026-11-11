@@ -1,5 +1,7 @@
 # F-315 Manager: Advisors tab → Advisor drill-down → read-only lead with separate bank badges
 appId: com.kbs.dsa
+env:
+  MANAGER_MOBILE: ${MANAGER_MOBILE || '9876500001'} # override: maestro test -e MANAGER_MOBILE=98xxxxxxxx …
 ---
 - launchApp:
     clearState: true
@@ -12,22 +14,25 @@ appId: com.kbs.dsa
           optional: true
 - tapOn: "Let's Login.*"
 - tapOn: "98765 43210"
-- inputText: "9876500001"
+- inputText: ${MANAGER_MOBILE}
 - tapOn: "Login"
 - inputText: "000000"
 - tapOn: "Verify OTP"
-- assertVisible: "My team"
+- assertVisible: "Team overview"
 - tapOn: "Advisors"
 - assertVisible: "Advisors"
 - tapOn:
     id: ".*"
     text: "Open .*"
     index: 0
-- assertVisible: "Current stage"
-- assertVisible: "Final decision"
-- assertVisible: "Card activation"
 - scrollUntilVisible:
-    element: "Leads"
+    element: "Current stage"
+- scrollUntilVisible:
+    element: "Final decision"
+- scrollUntilVisible:
+    element: "Card activation"
+- scrollUntilVisible:
+    element: "Leads · .*"
 - tapOn:
     text: "Open lead .*"
     index: 0

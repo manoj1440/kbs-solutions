@@ -33,8 +33,8 @@ function Value({ children }: { children: ReactNode }) {
   );
 }
 
-/** F-805 shared Manager / Telecaller profile: identity header, account facts, shortcuts and a destructive sign-out row. */
-export function ProfileView({ actions }: { actions: ProfileAction[] }) {
+/** F-805 shared Manager / Telecaller profile: identity header, account facts, an optional role section (`extra`), shortcuts and a destructive sign-out row. */
+export function ProfileView({ actions, extra }: { actions: ProfileAction[]; extra?: ReactNode }) {
   const { user, signOut } = useSession();
   const name = user?.fullName || '(name pending)';
   const facts: { icon: IconName; label: string; value: string }[] = [
@@ -96,6 +96,8 @@ export function ProfileView({ actions }: { actions: ProfileAction[] }) {
             ))}
           </Card>
         </Appear>
+
+        {extra ? <Appear index={2}>{extra}</Appear> : null}
 
         <Appear index={2} className="gap-3">
           <SectionHeader title="Shortcuts" />

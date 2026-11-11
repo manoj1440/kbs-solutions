@@ -259,7 +259,7 @@ function Gallery() {
           </HeroHeader>
         </View>
         <View className="items-center">
-          <CreditCardArt bank="HDFC Bank" name="Millennia" width={300} />
+          <CreditCardArt bank="Rewards Card" name="Card Holder" width={300} />
         </View>
       </Section>
 

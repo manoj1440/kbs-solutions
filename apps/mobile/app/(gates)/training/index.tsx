@@ -7,6 +7,7 @@ import {
   Appear,
   Badge,
   Button,
+  Callout,
   Card,
   ErrorState,
   HeroHeader,
@@ -21,7 +22,13 @@ import {
 } from '@/components/ui';
 import { useSession } from '@/lib/session';
 import { colors } from '@/lib/theme';
-import { countdown, training, type TrainingMe, type TrainingModuleState } from '@/lib/training';
+import {
+  averageRetakeNotice,
+  countdown,
+  training,
+  type TrainingMe,
+  type TrainingModuleState,
+} from '@/lib/training';
 
 /** Timeline node: a status dot with the module number — done (check), current (ink ring) or locked. */
 function TimelineNode({ state, index }: { state: 'done' | 'current' | 'locked'; index: number }) {
@@ -51,11 +58,14 @@ function ModuleRow({
   i,
   last,
   canOpen,
+  canRetake,
 }: {
   m: TrainingModuleState;
   i: number;
   last: boolean;
   canOpen: boolean;
+  /** average pass rule: a passed module may be opened again to raise the average */
+  canRetake: boolean;
 }) {
   const locked = m.status === 'LOCKED';
   const passed = m.status === 'PASSED';
@@ -131,6 +141,21 @@ function ModuleRow({
               />
             </Link>
           ) : null}
+          {canRetake && (m.retakeAvailable ?? (passed && m.published)) ? (
+            <Link
+              href={{ pathname: '/(gates)/training/module', params: { seq: String(m.sequence) } }}
+              asChild
+            >
+              <Button
+                title="Retake"
+                size="sm"
+                variant="secondary"
+                icon="refresh"
+                accessibilityLabel={`Retake Module ${m.sequence}`}
+                className="mt-1 self-start"
+              />
+            </Link>
+          ) : null}
         </Card>
       </View>
     </View>
@@ -164,6 +189,8 @@ export default function TrainingLanding() {
   const pct = modules.length ? Math.round((done / modules.length) * 100) : 0;
   const current = modules.find((m) => m.status === 'IN_PROGRESS' && m.published);
   const canOpen = !blocked && !reactivatedNoWindow;
+  // average pass rule only (additive API fields); absent/false keeps the default behaviour
+  const averageNotice = canOpen ? averageRetakeNotice(me) : null;
 
   return (
     <Screen
@@ -271,6 +298,11 @@ export default function TrainingLanding() {
             </Card>
           </Appear>
         ) : null}
+        {averageNotice ? (
+          <Appear index={1}>
+            <Callout kind="warning">{averageNotice}</Callout>
+          </Appear>
+        ) : null}
         {me?.status === 'PASSED' ? (
           <Appear index={1}>
             <Card className="gap-3">
@@ -308,6 +340,7 @@ export default function TrainingLanding() {
                     i={i}
                     last={i === modules.length - 1}
                     canOpen={canOpen}
+                    canRetake={averageNotice !== null}
                   />
                 ))}
               </View>

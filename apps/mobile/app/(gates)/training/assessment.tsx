@@ -18,7 +18,12 @@ import {
   StickyFooter,
   Text,
 } from '@/components/ui';
-import { training, type AttemptResult, type AttemptStart } from '@/lib/training';
+import {
+  averageRetakeNotice,
+  training,
+  type AttemptResult,
+  type AttemptStart,
+} from '@/lib/training';
 import { useSession } from '@/lib/session';
 
 /** F-203: MCQ assessment and result (REQ-25 §25.2 "MCQ result"). */
@@ -29,6 +34,8 @@ export default function AssessmentScreen() {
   const [attempt, setAttempt] = useState<AttemptStart | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<AttemptResult | null>(null);
+  // average pass rule: set when every module is passed but the average is still short (null under the default rule)
+  const [averageNotice, setAverageNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -60,6 +67,11 @@ export default function AssessmentScreen() {
     setBusy(true);
     try {
       const r = await training.submit(attempt.attemptId, answers);
+      if (r.canRetakeForAverage) {
+        // the averages come from /training/me; if that read fails the notice is shown without the numbers
+        const me = await training.me().catch(() => null);
+        setAverageNotice(averageRetakeNotice(me ?? { canRetakeForAverage: true }));
+      }
       setResult(r);
       await refresh();
     } catch (e) {
@@ -77,7 +89,7 @@ export default function AssessmentScreen() {
         iconRight="arrow-forward"
         onPress={() => router.replace('/')}
       />
-    ) : result.passed && result.nextModuleSequence ? (
+    ) : result.passed && averageNotice ? null : result.passed && result.nextModuleSequence ? (
       <Button
         title={`Go to Module ${result.nextModuleSequence}`}
         size="lg"
@@ -104,13 +116,15 @@ export default function AssessmentScreen() {
     ) : null;
     const note = result.allModulesPassed
       ? 'You have passed all three modules. Your calling queue is now available.'
-      : result.passed && result.nextModuleSequence
-        ? null
-        : result.deadlinePassed
-          ? 'Your training window has ended. Ask your Manager to reactivate your training.'
-          : result.retryAvailable
-            ? null
-            : 'No attempts left for this module. Contact your Manager.';
+      : averageNotice
+        ? averageNotice
+        : result.passed && result.nextModuleSequence
+          ? null
+          : result.deadlinePassed
+            ? 'Your training window has ended. Ask your Manager to reactivate your training.'
+            : result.retryAvailable
+              ? null
+              : 'No attempts left for this module. Contact your Manager.';
     return (
       <Screen
         scroll

@@ -14,6 +14,8 @@ export interface TrainingModuleState {
   attemptsRemaining: number | null;
   videoCompletedAt: string | null;
   assessmentAvailable: boolean;
+  /** Average pass rule only: this passed module may be retaken to raise the average. */
+  retakeAvailable?: boolean;
   passedAt: string | null;
 }
 export interface TrainingMe {
@@ -24,6 +26,11 @@ export interface TrainingMe {
   currentModuleSequence: number;
   attemptLimit: number | null;
   modules: TrainingModuleState[];
+  /** Average pass rule only: every module is passed but the average is below the required one, so a passed module may be retaken. Absent/false under the default rule. */
+  canRetakeForAverage?: boolean;
+  averageScorePct?: number;
+  /** null unless the average pass rule is on */
+  requiredAveragePct?: number | null;
 }
 export interface AttemptStart {
   attemptId: string;
@@ -42,6 +49,8 @@ export interface AttemptResult {
   nextModuleSequence: number | null;
   deadlinePassed: boolean;
   retryAvailable: boolean;
+  /** Average pass rule only: every module is passed but the average is still short. */
+  canRetakeForAverage?: boolean;
 }
 
 export const training = {
@@ -60,4 +69,18 @@ export function countdown(deadlineAt: string | null): string {
   const h = Math.floor(ms / 3_600_000);
   const m = Math.floor((ms % 3_600_000) / 60_000);
   return `${h}h ${m}m left`;
+}
+
+/** One decimal at most, rounded down so an average just under the mark never reads as the mark itself. */
+const pctText = (n: number) => String(Math.floor(n * 10) / 10);
+
+/** The notice for the average pass rule, or null when the retake-for-average state does not apply (default rule, flag absent). */
+export function averageRetakeNotice(
+  me: Pick<TrainingMe, 'canRetakeForAverage' | 'averageScorePct' | 'requiredAveragePct'> | null | undefined,
+): string | null {
+  if (!me?.canRetakeForAverage) return null;
+  if (typeof me.averageScorePct !== 'number' || typeof me.requiredAveragePct !== 'number') {
+    return 'All modules passed, but your average is below the required average. Retake a module to raise it.';
+  }
+  return `All modules passed, but your average is ${pctText(me.averageScorePct)}% — ${pctText(me.requiredAveragePct)}% is needed. Retake a module to raise it.`;
 }

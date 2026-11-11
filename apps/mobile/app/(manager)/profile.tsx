@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
 
+import { MyAgentCodes } from '@/components/team/agent-codes';
 import { ProfileView } from '@/components/team/profile-view';
 
-/** Manager profile (F-805): identity header, account facts, shortcuts, sign out. */
+/** Manager profile (F-805): identity header, account facts, own Agent Codes (REQ-10 §10.4), shortcuts, sign out. */
 export default function Profile() {
   return (
     <ProfileView
+      extra={<MyAgentCodes />}
       actions={[
         {
           icon: 'notifications-outline',

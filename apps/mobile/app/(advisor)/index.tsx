@@ -181,10 +181,10 @@ export default function AdvisorHome() {
             <RNText className="font-normal text-sm text-[#525252]">Total earnings</RNText>
             {loaded ? (
               <RNText
-                accessibilityLabel={`Total earnings ${formatInr(earnings, { decimals: 0 })}`}
+                accessibilityLabel={`Total earnings ${formatInr(earnings)}`}
                 className="mt-1 font-medium text-3xl text-gold tabular-nums"
               >
-                {formatInr(earnings, { decimals: 0 })}
+                {formatInr(earnings)}
               </RNText>
             ) : (
               <Skeleton className="mt-2 h-9 w-44" />

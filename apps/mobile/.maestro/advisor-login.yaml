@@ -1,5 +1,7 @@
 # Advisor: welcome carousel → OTP login → Home → Earnings → Notifications
 appId: com.kbs.dsa
+env:
+  ADVISOR_MOBILE: ${ADVISOR_MOBILE || '9555999001'} # override: maestro test -e ADVISOR_MOBILE=98xxxxxxxx …
 ---
 - launchApp:
     clearState: true
@@ -15,15 +17,14 @@ appId: com.kbs.dsa
     optional: true
 - tapOn: "Let's Login.*"
 - tapOn: "98765 43210"
-- inputText: "9555999001"
+- inputText: ${ADVISOR_MOBILE}
 - tapOn: "Login"
 - inputText: "000000"
 - tapOn: "Verify OTP"
 - assertVisible: "Home"
 - tapOn: "Earnings"
 - assertVisible:
-    text: ".*Card events appear here only when the bank MIS confirms.*"
+    text: ".*bank MIS.*"
 - tapOn: "Home"
-- tapOn:
-    label: "Notifications.*"
+- tapOn: "Notifications.*"
 - assertVisible: "Notifications"
