@@ -9,7 +9,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Redirect, useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
-import { Text as RNText, View } from 'react-native';
+import { Linking, Text as RNText, View } from 'react-native';
 
 import {
   AppBar,
@@ -81,7 +81,12 @@ export default function OnboardingGate() {
     code: '',
     payload: '',
   });
-  const [kyc, setKyc] = useState<{ sessionRef: string; instructions: string } | null>(null);
+  const [kyc, setKyc] = useState<{
+    sessionRef: string;
+    instructions: string;
+    /** the provider's own page (DigiLocker); when present nothing is typed here */
+    actionUrl?: string;
+  } | null>(null);
   const [codeCheck, setCodeCheck] = useState<'valid' | 'invalid' | null>(null);
 
   const load = useCallback(async () => {
@@ -269,14 +274,28 @@ export default function OnboardingGate() {
               ) : (
                 <>
                   <Muted>{kyc.instructions}</Muted>
-                  <Input
-                    label="Provider response"
-                    icon="key-outline"
-                    value={form.payload}
-                    onChangeText={(t) => setForm({ ...form, payload: t })}
-                    placeholder="Paste the provider's completion code"
-                    autoCapitalize="none"
-                  />
+                  {kyc.actionUrl ? (
+                    <Button
+                      title="Open verification page"
+                      variant="outline"
+                      icon="open-outline"
+                      onPress={() => {
+                        const url = kyc.actionUrl as string;
+                        void Linking.openURL(url).catch(() =>
+                          setError('Could not open the verification page. Try again.'),
+                        );
+                      }}
+                    />
+                  ) : (
+                    <Input
+                      label="Provider response"
+                      icon="key-outline"
+                      value={form.payload}
+                      onChangeText={(t) => setForm({ ...form, payload: t })}
+                      placeholder="Paste the provider's completion code"
+                      autoCapitalize="none"
+                    />
+                  )}
                 </>
               )}
             </>
@@ -293,25 +312,44 @@ export default function OnboardingGate() {
                   void run(async () =>
                     setKyc(
                       (await api.post<OnboardingView>('/onboarding/me/identity/start', {})).data
-                        .identity as { sessionRef: string; instructions: string },
+                        .identity as {
+                        sessionRef: string;
+                        instructions: string;
+                        actionUrl?: string;
+                      },
                     ),
                   )
                 }
               />
             ) : (
               <Button
-                title="Complete verification"
+                title={kyc.actionUrl ? 'I have completed verification' : 'Complete verification'}
                 size="lg"
                 icon="checkmark-circle"
                 loading={busy}
-                disabled={busy || !form.payload}
+                disabled={busy || (!kyc.actionUrl && !form.payload)}
                 onPress={() =>
                   void run(async () => {
-                    await api.post('/onboarding/me/identity/complete', {
-                      sessionRef: kyc.sessionRef,
-                      payload: form.payload,
-                    });
-                    setKyc(null);
+                    try {
+                      await api.post('/onboarding/me/identity/complete', {
+                        sessionRef: kyc.sessionRef,
+                        ...(kyc.actionUrl ? {} : { payload: form.payload }),
+                      });
+                      setKyc(null);
+                    } catch (e) {
+                      // not finished on the provider's page yet, or the provider is briefly unavailable: keep the session
+                      // so the Advisor can go back to it; any other outcome ends it — "Try again" starts a new one
+                      const status =
+                        e instanceof ApiClientError
+                          ? (e.error.details as { status?: string } | undefined)?.status
+                          : undefined;
+                      const pending = status === 'PENDING' || status === 'UNAVAILABLE';
+                      if (!pending) {
+                        setKyc(null);
+                        void load();
+                      }
+                      throw e;
+                    }
                   })
                 }
               />

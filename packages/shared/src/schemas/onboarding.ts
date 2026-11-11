@@ -14,7 +14,7 @@ export type OnboardingConsentBody = z.infer<typeof OnboardingConsentBody>;
 
 /** Provider payload is opaque to KBS; the schema forbids the obvious PII carriers by name. */
 export const OnboardingIdentityCompleteBody = z
-  .object({ sessionRef: z.string().min(1).max(200), payload: z.unknown() })
+  .object({ sessionRef: z.string().min(1).max(200), payload: z.unknown().optional() }) // no payload when the provider verifies on its own page
   .strict()
   .superRefine((v, ctx) => {
     const p = v.payload;
@@ -53,7 +53,7 @@ export interface OnboardingView {
   totalSteps: number;
   personal: { fullName: string; email: string | null };
   consent: { privacyNoticeVersion: string; at: string } | null;
-  identity: { status: string; provider: string | null; method: string | null; verifiedAt: string | null; summary: Record<string, unknown> | null; sessionRef?: string; instructions?: string };
+  identity: { status: string; provider: string | null; method: string | null; verifiedAt: string | null; summary: Record<string, unknown> | null; sessionRef?: string; instructions?: string; /** provider page to open (e.g. DigiLocker); when present, complete is called without a payload */ actionUrl?: string };
   bank: { accountHolderName: string; accountLast4: string; ifsc: string; bankName: string } | null;
   cheque: { fileId: string; originalName: string } | null;
   reportingParent: { id: string; fullName: string; role: string } | null;

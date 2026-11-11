@@ -1,8 +1,9 @@
 import { OnboardingAgentCodeBody, OnboardingBankBody, OnboardingChequeBody, OnboardingConsentBody, OnboardingIdentityCompleteBody, OnboardingPersonalBody, OnboardingReviewBody } from '@kbs/shared';
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 
 import type { Actor } from '../../common/actor';
-import { Audited, CurrentActor, Idempotent, RequirePermission } from '../../common/decorators';
+import { Audited, CurrentActor, Idempotent, Public, RequirePermission } from '../../common/decorators';
 
 import { OnboardingService } from './onboarding.service';
 
@@ -10,6 +11,25 @@ import { OnboardingService } from './onboarding.service';
 @Controller()
 export class OnboardingController {
   constructor(private readonly svc: OnboardingService) {}
+
+  /**
+   * Where the identity provider (e.g. DigiLocker) sends the Advisor's browser afterwards. It carries no data and records
+   * nothing — the result is read from the provider when the Advisor taps "I have completed verification" in the app.
+   */
+  @Public()
+  @Get('onboarding/identity/return')
+  identityReturn(@Res() res: Response) {
+    res
+      .status(200)
+      .type('html')
+      .set('Cache-Control', 'no-store')
+      .set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'")
+      .send(
+        '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KBS Solutions</title>' +
+          '<style>body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F2EEE8;color:#171717}main{max-width:22rem;padding:2rem;text-align:center}h1{font-size:1.25rem;font-weight:600}p{color:#525252;line-height:1.5}</style></head>' +
+          '<body><main><h1>Verification step finished</h1><p>Return to the KBS Solutions app and tap <strong>I have completed verification</strong>.</p></main></body></html>',
+      );
+  }
 
   @Get('onboarding/me')
   @RequirePermission('ONBOARDING_SELF')

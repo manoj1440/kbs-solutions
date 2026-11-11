@@ -139,11 +139,13 @@ export class OnboardingService {
     const consents = (p.consentRecords as ConsentRecord[] | null) ?? [];
     const consent = consents[consents.length - 1];
     if (!consent?.identityConsent) throw new AppError('CONFLICT', 'Consent is required before identity verification.');
-    const s = await this.kyc.start({ userId: actor.userId, consentAt: new Date(consent.at) });
+    const fullName = (await this.prisma.client.user.findUnique({ where: { id: actor.userId }, select: { fullName: true } }))?.fullName ?? undefined;
+    const s = await this.kyc.start({ userId: actor.userId, consentAt: new Date(consent.at), fullName });
     await this.prisma.client.advisorProfile.update({ where: { userId: actor.userId }, data: { identityStatus: 'PENDING', identityProvider: this.kyc.name, identityMethod: this.kyc.method, identityProviderRef: s.sessionRef } });
     RequestContextStore.audit({ entityId: actor.userId, after: { provider: this.kyc.name, method: this.kyc.method, sessionRef: s.sessionRef } });
     const v = await this.view(actor);
-    return { ...v, identity: { ...v.identity, sessionRef: s.sessionRef, instructions: s.instructions } };
+    // actionUrl: the provider's own page (e.g. DigiLocker) the Advisor opens; nothing identity-related is entered in KBS
+    return { ...v, identity: { ...v.identity, sessionRef: s.sessionRef, instructions: s.instructions, ...(s.actionUrl ? { actionUrl: s.actionUrl } : {}) } };
   }
 
   /** Completes with the provider payload; only the outcome + evidence summary are stored. */
@@ -154,10 +156,14 @@ export class OnboardingService {
     if (p.identityProviderRef !== body.sessionRef) throw new AppError('VALIDATION_FAILED', 'Unknown verification session; start again.');
     let result: Awaited<ReturnType<KycProvider['complete']>>;
     try {
-      result = await this.kyc.complete({ sessionRef: body.sessionRef, payload: body.payload });
+      // providers that verify on their own page send no payload; they get the profile name to match against
+      const fullName = (await this.prisma.client.user.findUnique({ where: { id: actor.userId }, select: { fullName: true } }))?.fullName ?? undefined;
+      result = await this.kyc.complete({ sessionRef: body.sessionRef, payload: this.kyc.name === 'mock' ? body.payload : { fullName } });
     } catch {
       result = { status: 'UNAVAILABLE', providerRef: body.sessionRef, evidenceSummary: {} };
     }
+    // the Advisor has not finished on the provider's page: nothing is recorded, the session stays open
+    if (result.status === 'PENDING') throw new AppError('CONFLICT', 'Verification is not finished yet. Complete it on the verification page, then tap "I have completed verification".', { status: 'PENDING' });
     const summary = this.scrub(result.evidenceSummary);
     await this.prisma.client.advisorProfile.update({
       where: { userId: actor.userId },
@@ -166,8 +172,29 @@ export class OnboardingService {
     if (result.status === 'VERIFIED') await this.advance(actor.userId, 'IDENTITY', 'BANK');
     RequestContextStore.audit({ entityId: actor.userId, after: { status: result.status, providerRef: result.providerRef } });
     if (result.status === 'UNAVAILABLE') throw new AppError('RATE_LIMITED', 'The identity verification service is unavailable right now. Nothing was recorded — please try again later.', { status: 'UNAVAILABLE' }, 'RETRY_LATER');
-    if (result.status !== 'VERIFIED') throw new AppError('VALIDATION_FAILED', 'Identity verification did not succeed. Check the instructions and try again.', { status: result.status });
+    if (result.status !== 'VERIFIED') throw new AppError('VALIDATION_FAILED', OnboardingService.identityFailureMessage(summary.reason), { status: result.status, reason: typeof summary.reason === 'string' ? summary.reason : undefined });
     return this.view(actor);
+  }
+
+  /** Plain-language reason for a failed identity check; provider reason codes carry no personal data. */
+  private static identityFailureMessage(reason: unknown): string {
+    switch (reason) {
+      case 'NAME_MISMATCH':
+        return 'The name on your Aadhaar does not match the name you entered. Go back to "Your details", enter your name exactly as on your Aadhaar, then verify again.';
+      case 'MINOR':
+        return 'Identity verification did not succeed: an Advisor must be 18 or older.';
+      case 'CONSENT_DENIED':
+      case 'DOCUMENT_CONSENT_NOT_GIVEN':
+        return 'You did not allow KBS Solutions to verify your Aadhaar on the verification page. Start again and allow it to continue.';
+      case 'LINK_EXPIRED':
+      case 'CONSENT_SESSION_EXPIRED':
+      case 'SESSION_NOT_FOUND':
+        return 'The verification link expired. Start verification again.';
+      case 'DOCUMENT_NOT_LINKED':
+        return 'Your DigiLocker account has no Aadhaar linked. Link your Aadhaar in DigiLocker, then start verification again.';
+      default:
+        return 'Identity verification did not succeed. Start verification again and follow the steps on the verification page.';
+    }
   }
 
   /** Defensive: drop anything in a provider summary that looks like an identity number (REQ-10 §10.2). */

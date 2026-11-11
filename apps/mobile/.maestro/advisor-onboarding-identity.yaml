@@ -1,0 +1,39 @@
+# Advisor signup → details → consent → identity step (mock provider code) → bank details.
+# Needs a mobile that is not registered yet and an API with KYC_PROVIDER=mock and OTP_DEV_MASTER_CODE=000000.
+# With a real identity provider (runbook 09) the identity step opens the provider's page instead; run that by hand.
+appId: com.kbs.dsa
+env:
+  NEW_ADVISOR_MOBILE: ${NEW_ADVISOR_MOBILE || '9555999099'} # override: maestro test -e NEW_ADVISOR_MOBILE=98xxxxxxxx …
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Next.*"
+          optional: true
+- tapOn: "New here\\? Create account"
+- tapOn: "98765 43210"
+- inputText: ${NEW_ADVISOR_MOBILE}
+- tapOn: "Send OTP"
+- inputText: "000000"
+- tapOn: "Verify OTP"
+- assertVisible: "Step 1 of 7"
+- tapOn: "As on your bank account"
+- inputText: "Flow Test Advisor"
+- tapOn: "you@example.com"
+- inputText: "flow.test@example.com"
+- hideKeyboard
+- tapOn: "Continue"
+- assertVisible: "Step 2 of 7"
+- tapOn: "I consent and accept the terms"
+- assertVisible: "Step 3 of 7"
+- tapOn: "Start verification"
+- tapOn: "Paste the provider's completion code"
+- inputText: "MOCK_OK"
+- hideKeyboard
+- tapOn: "Complete verification"
+- assertVisible: "Step 4 of 7"
+- assertVisible: "Bank details"
