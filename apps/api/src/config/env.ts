@@ -26,7 +26,17 @@ export const EnvSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32),
   DATA_ENCRYPTION_KEY: z.string().min(40), // base64 of 32 bytes
   OTP_PEPPER: z.string().min(8).default('dev-pepper-change-me'),
-  OTP_PROVIDER: z.enum(['console']).default('console'),
+  /** `console` prints the code to the log (dev only). `msg91` sends a real SMS — runbook 07. */
+  OTP_PROVIDER: z.enum(['console', 'msg91']).default('console'),
+  /** MSG91 transactional SMS (Send SMS / flow API). Host only — no scheme, no path. */
+  MSG91_HOST: z.string().regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i, 'host name only, e.g. control.msg91.com').default('control.msg91.com'),
+  MSG91_AUTH_KEY: z.string().optional(),
+  /** MSG91's id of the SMS template (the DLT template id is entered against it inside MSG91). */
+  MSG91_TEMPLATE_ID: z.string().optional(),
+  /** DLT-registered header (sender id) of that template. */
+  MSG91_SENDER_ID: z.string().optional(),
+  /** Variable name used in the MSG91 template for the code (`##VAR1##`). Case-sensitive. */
+  MSG91_OTP_VARIABLE: z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/).default('VAR1'),
   OTP_DEV_MASTER_CODE: z.string().regex(/^\d{6}$/).optional().or(z.literal('')),
   TELEPHONY_PROVIDER: z.enum(['mock', 'exotel']).default('mock'),
   /** Exotel click-to-call (Connect Two Numbers). Host: api.exotel.com (Singapore) or api.in.exotel.com (Mumbai). */
@@ -67,6 +77,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Invalid environment:\n  ${issues}`);
   }
   assertMasterCodeAllowed(parsed.data);
+  assertOtpProviderConfigured(parsed.data);
   if (parsed.data.TELEPHONY_PROVIDER === 'exotel') {
     const missing = (['EXOTEL_ACCOUNT_SID', 'EXOTEL_API_KEY', 'EXOTEL_API_TOKEN', 'EXOTEL_CALLER_ID', 'EXOTEL_WEBHOOK_TOKEN'] as const).filter((k) => !parsed.data[k]);
     if (missing.length) throw new Error(`TELEPHONY_PROVIDER=exotel needs ${missing.join(', ')}`);
@@ -82,6 +93,13 @@ export function assertMasterCodeAllowed(env: Pick<Env, 'NODE_ENV' | 'OTP_DEV_MAS
   if (env.NODE_ENV === 'staging' && /^(\d)\1{5}$|^123456$/.test(code)) {
     throw new Error('OTP_DEV_MASTER_CODE in staging must be a secret code, not a guessable one');
   }
+}
+
+/** A real SMS provider without its keys must stop the boot in every environment — never a login screen that cannot send. */
+export function assertOtpProviderConfigured(env: Pick<Env, 'OTP_PROVIDER' | 'MSG91_AUTH_KEY' | 'MSG91_TEMPLATE_ID' | 'MSG91_SENDER_ID'>): void {
+  if (env.OTP_PROVIDER !== 'msg91') return;
+  const missing = (['MSG91_AUTH_KEY', 'MSG91_TEMPLATE_ID', 'MSG91_SENDER_ID'] as const).filter((k) => !env[k]?.trim());
+  if (missing.length) throw new Error(`OTP_PROVIDER=msg91 needs ${missing.join(', ')} (see DOCS/runbooks/07-sms-otp-provider.md)`);
 }
 
 export const ENV = Symbol('ENV');

@@ -12,6 +12,7 @@ import { MockKycAdapter } from './adapters/mock-kyc.adapter';
 import { MockPanAdapter } from './adapters/mock-pan.adapter';
 import { MockPushAdapter } from './adapters/mock-push.adapter';
 import { MockTelephonyAdapter } from './adapters/mock-telephony.adapter';
+import { Msg91OtpAdapter } from './adapters/msg91-otp.adapter';
 import { NoopScanAdapter } from './adapters/noop-scan.adapter';
 import { S3StorageAdapter } from './adapters/s3-storage.adapter';
 import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER, STORAGE_PROVIDER, TELEPHONY_PROVIDER, WHATSAPP_PROVIDER } from './ports';
@@ -20,7 +21,14 @@ import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER,
 @Global()
 @Module({
   providers: [
-    { provide: OTP_PROVIDER, inject: [ENV], useFactory: (env: Env) => new ConsoleOtpAdapter(env.NODE_ENV === 'production') },
+    {
+      provide: OTP_PROVIDER,
+      inject: [ENV],
+      useFactory: (env: Env) =>
+        env.OTP_PROVIDER === 'msg91'
+          ? new Msg91OtpAdapter({ host: env.MSG91_HOST, authKey: (env.MSG91_AUTH_KEY as string).trim(), templateId: (env.MSG91_TEMPLATE_ID as string).trim(), senderId: (env.MSG91_SENDER_ID as string).trim(), otpVariable: env.MSG91_OTP_VARIABLE })
+          : new ConsoleOtpAdapter(env.NODE_ENV === 'production'),
+    },
     {
       provide: TELEPHONY_PROVIDER,
       inject: [ENV],

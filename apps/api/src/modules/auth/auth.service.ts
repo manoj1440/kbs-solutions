@@ -67,7 +67,16 @@ export class AuthService {
       data: { mobile, purpose: body.purpose, codeHash: '', phantom: !eligible, expiresAt: new Date(Date.now() + expirySec * 1000), ip },
     });
     await this.prisma.client.otpChallenge.update({ where: { id: challenge.id }, data: { codeHash: this.crypto.hashOtp(code, challenge.id) } });
-    if (eligible) await this.otp.send(mobile, code);
+    if (eligible) {
+      try {
+        await this.otp.send(mobile, code);
+      } catch {
+        // the SMS provider refused or timed out: drop the challenge so the failed send does not start the resend cooldown,
+        // and answer with a retryable error instead of a 500
+        await this.prisma.client.otpChallenge.delete({ where: { id: challenge.id } }).catch(() => undefined);
+        throw new AppError('AUTH_OTP_SEND_FAILED', 'We could not send the code. Please try again in a moment.', undefined, 'RETRY_LATER');
+      }
+    }
     return { challengeId: challenge.id, expiresInSec: expirySec, resendAfterSec: cooldown };
   }
 

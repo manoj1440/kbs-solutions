@@ -38,6 +38,10 @@ services:
       - { key: DATA_ENCRYPTION_KEY, generateValue: true }
       - { key: OTP_PROVIDER, value: console }
       - { key: OTP_DEV_MASTER_CODE, sync: false } # secret 6 digits, shared only with testers (no SMS provider yet)
+      # Real SMS OTP via MSG91 (runbook 07). Fill these first, then change OTP_PROVIDER above to msg91 (boot refuses msg91 without them).
+      - { key: MSG91_AUTH_KEY, sync: false }
+      - { key: MSG91_TEMPLATE_ID, sync: false } # MSG91's id of the approved OTP template
+      - { key: MSG91_SENDER_ID, sync: false } # DLT-registered header (6 letters)
       - { key: PUSH_PROVIDER, value: expo }
       - { key: SCAN_PROVIDER, value: noop }
       - { key: STORAGE_PROVIDER, value: s3 }

@@ -35,7 +35,11 @@ if (envFile && existsSync(envFile)) for (const line of readFileSync(envFile, 'ut
 check('api-env', 'API env file provided', envFile && existsSync(envFile), envFile ?? 'set API_ENV_FILE');
 check('api-env', 'NODE_ENV=production', env.NODE_ENV === 'production', env.NODE_ENV);
 check('api-env', 'OTP dev master code disabled', !env.OTP_DEV_MASTER_CODE);
-check('api-env', 'real OTP provider (not console)', env.OTP_PROVIDER && env.OTP_PROVIDER !== 'console', env.OTP_PROVIDER);
+// real SMS providers the API knows (apps/api/src/config/env.ts) and the keys each one cannot boot without
+const OTP_PROVIDER_KEYS = { msg91: ['MSG91_AUTH_KEY', 'MSG91_TEMPLATE_ID', 'MSG91_SENDER_ID'] };
+const otpKeys = OTP_PROVIDER_KEYS[env.OTP_PROVIDER];
+check('api-env', 'real OTP provider (not console)', Boolean(otpKeys), env.OTP_PROVIDER ? `${env.OTP_PROVIDER} — expected one of: ${Object.keys(OTP_PROVIDER_KEYS).join(', ')}` : `set OTP_PROVIDER to one of: ${Object.keys(OTP_PROVIDER_KEYS).join(', ')}`);
+for (const k of otpKeys ?? []) check('api-env', `${k} is set (OTP_PROVIDER=${env.OTP_PROVIDER})`, env[k] && !/change-me|your[-_ ]|example|xxxx/i.test(env[k]), 'see DOCS/runbooks/07-sms-otp-provider.md');
 check('api-env', 'malware scanning on (SCAN_PROVIDER=clamav)', env.SCAN_PROVIDER === 'clamav', env.SCAN_PROVIDER);
 check('api-env', 'object storage (STORAGE_PROVIDER=s3)', env.STORAGE_PROVIDER === 's3', env.STORAGE_PROVIDER);
 for (const k of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'OTP_PEPPER']) check('api-env', `${k} is set and not a placeholder`, env[k] && env[k].length >= 32 && !/change-me|ci-|test-/.test(env[k]));
