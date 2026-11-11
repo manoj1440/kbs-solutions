@@ -40,10 +40,18 @@ export interface WhatsAppProvider {
 export const KYC_PROVIDER = Symbol('KYC_PROVIDER');
 export interface KycProvider {
   readonly name: string;
-  readonly method: string; // e.g. 'UIDAI_OFFLINE_EKYC' — documented lawful route
-  start(input: { userId: string; consentAt: Date }): Promise<{ sessionRef: string; instructions: string }>;
-  /** Returns only a verification outcome; implementations must never surface an Aadhaar number. */
-  complete(input: { sessionRef: string; payload: unknown }): Promise<{ status: 'VERIFIED' | 'FAILED' | 'UNAVAILABLE'; providerRef: string; evidenceSummary: Record<string, unknown> }>;
+  readonly method: string; // e.g. 'DIGILOCKER_AADHAAR' — documented lawful route
+  /**
+   * `actionUrl`: when present, the client opens it in the browser (the provider's own page, e.g. DigiLocker) and later calls
+   * `complete` with no payload. `fullName` is the profile name the provider result is matched against.
+   */
+  start(input: { userId: string; consentAt: Date; fullName?: string }): Promise<{ sessionRef: string; instructions: string; actionUrl?: string }>;
+  /**
+   * Returns only a verification outcome; implementations must never surface an Aadhaar number.
+   * `PENDING`: the person has not finished on the provider's page yet — nothing is to be recorded, the session stays open.
+   * Stateless providers receive the profile name again as `payload: { fullName }`.
+   */
+  complete(input: { sessionRef: string; payload: unknown }): Promise<{ status: 'VERIFIED' | 'FAILED' | 'UNAVAILABLE' | 'PENDING'; providerRef: string; evidenceSummary: Record<string, unknown> }>;
 }
 
 export const PAN_PROVIDER = Symbol('PAN_PROVIDER');

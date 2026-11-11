@@ -40,6 +40,17 @@ const OTP_PROVIDER_KEYS = { msg91: ['MSG91_AUTH_KEY', 'MSG91_TEMPLATE_ID', 'MSG9
 const otpKeys = OTP_PROVIDER_KEYS[env.OTP_PROVIDER];
 check('api-env', 'real OTP provider (not console)', Boolean(otpKeys), env.OTP_PROVIDER ? `${env.OTP_PROVIDER} — expected one of: ${Object.keys(OTP_PROVIDER_KEYS).join(', ')}` : `set OTP_PROVIDER to one of: ${Object.keys(OTP_PROVIDER_KEYS).join(', ')}`);
 for (const k of otpKeys ?? []) check('api-env', `${k} is set (OTP_PROVIDER=${env.OTP_PROVIDER})`, env[k] && !/change-me|your[-_ ]|example|xxxx/i.test(env[k]), 'see DOCS/runbooks/07-sms-otp-provider.md');
+// real identity / PAN providers (runbook 09): both share the Cashfree Secure ID keys
+const VERIFICATION_PROVIDER_KEYS = { cashfree: ['CASHFREE_VERIFICATION_CLIENT_ID', 'CASHFREE_VERIFICATION_CLIENT_SECRET', 'CASHFREE_VERIFICATION_ENV'] };
+const verificationKeys = new Map();
+for (const [variable, label] of [['KYC_PROVIDER', 'real KYC provider (not mock)'], ['PAN_PROVIDER', 'real PAN provider (not mock)']]) {
+  const keys = VERIFICATION_PROVIDER_KEYS[env[variable]];
+  check('api-env', label, Boolean(keys), env[variable] ? `${env[variable]} — expected one of: ${Object.keys(VERIFICATION_PROVIDER_KEYS).join(', ')}` : `set ${variable} to one of: ${Object.keys(VERIFICATION_PROVIDER_KEYS).join(', ')}`);
+  for (const k of keys ?? []) verificationKeys.set(k, [...(verificationKeys.get(k) ?? []), `${variable}=${env[variable]}`]);
+}
+for (const [k, why] of verificationKeys) check('api-env', `${k} is set (${why.join(', ')})`, env[k] && !/change-me|your[-_ ]|example|xxxx/i.test(env[k]), 'see DOCS/runbooks/09-kyc-pan-provider.md');
+if (verificationKeys.size && profile === 'production') check('api-env', 'CASHFREE_VERIFICATION_ENV=production', env.CASHFREE_VERIFICATION_ENV === 'production', `${env.CASHFREE_VERIFICATION_ENV ?? 'unset'} — sandbox answers are test data`);
+if (env.KYC_PROVIDER === 'cashfree') check('api-env', 'API_PUBLIC_URL is https (DigiLocker redirect, KYC_PROVIDER=cashfree)', /^https:\/\//.test(env.API_PUBLIC_URL ?? ''), 'Cashfree refuses a redirect URL that is not https');
 check('api-env', 'malware scanning on (SCAN_PROVIDER=clamav)', env.SCAN_PROVIDER === 'clamav', env.SCAN_PROVIDER);
 check('api-env', 'object storage (STORAGE_PROVIDER=s3)', env.STORAGE_PROVIDER === 's3', env.STORAGE_PROVIDER);
 for (const k of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'OTP_PEPPER']) check('api-env', `${k} is set and not a placeholder`, env[k] && env[k].length >= 32 && !/change-me|ci-|test-/.test(env[k]));

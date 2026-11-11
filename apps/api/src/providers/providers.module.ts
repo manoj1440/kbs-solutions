@@ -2,6 +2,9 @@ import { Global, Module } from '@nestjs/common';
 
 import { ENV, type Env } from '../config/env';
 
+import { CashfreeDigilockerKycAdapter } from './adapters/cashfree-digilocker-kyc.adapter';
+import { CashfreePanAdapter } from './adapters/cashfree-pan.adapter';
+import type { CashfreeVerificationConfig } from './adapters/cashfree-verification.client';
 import { ClamdScanAdapter } from './adapters/clamd-scan.adapter';
 import { ConsoleOtpAdapter } from './adapters/console-otp.adapter';
 import { ExotelTelephonyAdapter } from './adapters/exotel-telephony.adapter';
@@ -16,6 +19,14 @@ import { Msg91OtpAdapter } from './adapters/msg91-otp.adapter';
 import { NoopScanAdapter } from './adapters/noop-scan.adapter';
 import { S3StorageAdapter } from './adapters/s3-storage.adapter';
 import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER, STORAGE_PROVIDER, TELEPHONY_PROVIDER, WHATSAPP_PROVIDER } from './ports';
+
+/** Boot validation (config/env.ts) guarantees these are present whenever a cashfree provider is selected. */
+const cashfreeConfig = (env: Env): CashfreeVerificationConfig => ({
+  env: env.CASHFREE_VERIFICATION_ENV as 'sandbox' | 'production',
+  clientId: (env.CASHFREE_VERIFICATION_CLIENT_ID as string).trim(),
+  clientSecret: (env.CASHFREE_VERIFICATION_CLIENT_SECRET as string).trim(),
+  publicKeyPem: env.CASHFREE_VERIFICATION_PUBLIC_KEY?.trim() || undefined,
+});
 
 /** Selects adapters by env. Real vendor adapters are added per feature once contracts exist (REQ-28 §28.1). */
 @Global()
@@ -38,8 +49,16 @@ import { KYC_PROVIDER, OTP_PROVIDER, PAN_PROVIDER, PUSH_PROVIDER, SCAN_PROVIDER,
           : new MockTelephonyAdapter(),
     },
     { provide: WHATSAPP_PROVIDER, useFactory: () => new HandoffWhatsAppAdapter() },
-    { provide: KYC_PROVIDER, useFactory: () => new MockKycAdapter() },
-    { provide: PAN_PROVIDER, useFactory: () => new MockPanAdapter() },
+    {
+      provide: KYC_PROVIDER,
+      inject: [ENV],
+      useFactory: (env: Env) => (env.KYC_PROVIDER === 'cashfree' ? new CashfreeDigilockerKycAdapter({ ...cashfreeConfig(env), apiPublicUrl: env.API_PUBLIC_URL }) : new MockKycAdapter()),
+    },
+    {
+      provide: PAN_PROVIDER,
+      inject: [ENV],
+      useFactory: (env: Env) => (env.PAN_PROVIDER === 'cashfree' ? new CashfreePanAdapter({ ...cashfreeConfig(env), apiVersion: env.CASHFREE_VERIFICATION_API_VERSION }) : new MockPanAdapter()),
+    },
     { provide: PUSH_PROVIDER, inject: [ENV], useFactory: (env: Env) => (env.PUSH_PROVIDER === 'expo' ? new ExpoPushAdapter(env.EXPO_ACCESS_TOKEN) : new MockPushAdapter()) },
     { provide: SCAN_PROVIDER, inject: [ENV], useFactory: (env: Env) => (env.SCAN_PROVIDER === 'clamav' ? new ClamdScanAdapter(env.CLAMAV_HOST, env.CLAMAV_PORT, env.CLAMAV_TIMEOUT_MS) : new NoopScanAdapter()) },
     {

@@ -6,7 +6,7 @@ import type { KycProvider } from '../ports';
 export class MockKycAdapter implements KycProvider {
   readonly name = 'mock';
   readonly method = 'MOCK_OFFLINE_VERIFICATION';
-  async start(input: { userId: string; consentAt: Date }) {
+  async start(input: { userId: string; consentAt: Date; fullName?: string }) {
     return { sessionRef: `kyc-${randomUUID()}`, instructions: `Mock KYC session for ${input.userId} (consent ${input.consentAt.toISOString()}). Submit payload MOCK_OK.` };
   }
   async complete(input: { sessionRef: string; payload: unknown }) {

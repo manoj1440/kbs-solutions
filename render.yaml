@@ -59,6 +59,14 @@ services:
       - { key: EXOTEL_API_TOKEN, sync: false }
       - { key: EXOTEL_CALLER_ID, sync: false } # the ExoPhone
       - { key: EXOTEL_WEBHOOK_TOKEN, sync: false } # random string, e.g. `openssl rand -hex 24`
+      # Real identity (Aadhaar via DigiLocker) and customer PAN checks via Cashfree Secure ID (runbook 09). Unset = mock.
+      # Fill the CASHFREE_VERIFICATION_* values first, then set the two providers to cashfree (boot refuses cashfree without them).
+      - { key: KYC_PROVIDER, sync: false } # mock | cashfree
+      - { key: PAN_PROVIDER, sync: false } # mock | cashfree
+      - { key: CASHFREE_VERIFICATION_CLIENT_ID, sync: false } # Secure ID key, not the Payment Gateway key
+      - { key: CASHFREE_VERIFICATION_CLIENT_SECRET, sync: false }
+      - { key: CASHFREE_VERIFICATION_ENV, sync: false } # sandbox | production
+      - { key: CASHFREE_VERIFICATION_PUBLIC_KEY, sync: false } # PEM; needed on Render (no fixed outbound IP to whitelist) — Cashfree 2FA method "Public Key"
 
   - type: keyvalue
     name: kbs-solutions-redis

@@ -203,7 +203,9 @@ describe('F-605 Accounts payment recording (PAY-05, PAY-06, PAY-07)', () => {
       }
       return out;
     };
-    const offenders = roots.flatMap((r) => walk(r)).filter((f) => /disburs|payout[-_ ]?gateway|razorpay|cashfree|initiateTransfer|transferFunds|sendMoney/i.test(readFileSync(f, 'utf8')));
+    // Cashfree is allowed only as the identity/PAN *verification* vendor (runbook 09); anything pairing it with payouts,
+    // transfers or beneficiaries — or its payout hosts — still fails this guard.
+    const offenders = roots.flatMap((r) => walk(r)).filter((f) => /disburs|payout[-_ ]?gateway|razorpay|cashfree[^\n]{0,80}(payout|transfer|beneficiar)|payout[^\n]{0,80}cashfree|payout-(api|gamma)\.cashfree|initiateTransfer|transferFunds|sendMoney/i.test(readFileSync(f, 'utf8')));
     expect(offenders).toEqual([]);
   });
 });
