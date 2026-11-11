@@ -133,7 +133,9 @@ Also: the Manager sees their own Agent Codes in the app; a failed SMS send retur
 
 **SMS provider (REQ-19 §19.2 OPEN):** MSG91 adapter added as the engineering default (`OTP_PROVIDER=msg91`, runbook 07). KBS keeps generating and verifying the code; MSG91 only delivers it. Never tested against a live account.
 
-**Still not built (need a vendor choice first):** real Aadhaar offline-KYC and PAN verification adapters (both are mocks), WhatsApp Business API delivery. See runbook 08.
+**Identity and PAN vendor (owner decision 2026-11-11): Cashfree Secure ID.** `KYC_PROVIDER=cashfree` — the Advisor verifies Aadhaar on DigiLocker's own page (the app opens it and then asks "I have completed verification"); KBS stores only outcome, provider reference, method and time, and a name match against the name entered in step 1 plus 18+ are required. `PAN_PROVIDER=cashfree` — customer PAN + name; a name mismatch blocks the lead, a provider outage is `UNAVAILABLE`, never "invalid PAN". Engineering choices to confirm: name rule (same words in any order; Cashfree's `GOOD_PARTIAL_MATCH` counts as a match for PAN), 2FA by public key. Runbook 09. **Neither adapter has been called against a live Cashfree account.**
+
+**Still not built:** WhatsApp Business API delivery (hand-off only). See runbook 08.
 
 ## B. Ambiguities in the PRD that would cause divergent implementations
 
