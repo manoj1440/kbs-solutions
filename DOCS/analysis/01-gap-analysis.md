@@ -122,6 +122,19 @@ REQ-20 §20.5 warns not to block assistive tech silently. Android `FLAG_SECURE` 
 
 **Left for KBS to decide (not changed):** (1) no notification is sent when a Telecaller's follow-up call falls due (REQ-19 §19.1) — needs a scheduled job; (2) a lead can be created for a pincode where the chosen card is not available (REQ-11 §11.7) — block or warn?; (3) under `training.passRule = AVERAGE_ACROSS_MODULES` a Telecaller who passed all three modules below the average cannot retake anything; (4) an older MIS file uploaded after a newer one overwrites the newer values (REQ-23 §23.4) — needs a report date per batch; (5) `POST /users/:id/reporting` lets a Telecaller report to the Admin — should it be Manager-only?; (6) the app's welcome slides still show bank brand art (ICICI / SBI / HDFC) although banks are hidden in the product.
 
+### A23. The six points left open in A22 — closed with engineering dispositions (2026-11-11, owner asked to close them; reverse any by saying so)
+1. **Follow-up due notices (REQ-19 §19.1).** A maintenance job every 5 minutes (`followUps.notifyDue`, worker or `JOBS_INLINE`) notifies the assigned Telecaller and their Manager once per record + due time, and the owner of a lead follow-up task once per task + due time. Skips do-not-contact, hidden, declined/completed records and inactive users. Only follow-ups that fell due in the last 7 days are announced (bounds the first run after a deploy or outage).
+2. **Card not available at the customer's pincode (REQ-11 §11.7).** Blocked: the pincode step and submit refuse with "<card> is not available at pincode <pincode>…", using the same availability rule as the card search. A card with no availability set is available nowhere.
+3. **Average pass rule dead-end (REQ-05 §5.3).** Under `AVERAGE_ACROSS_MODULES`, when every module is passed but the average is short, any module can be retaken to raise the best score; a passed module never regresses. The default per-module rule is unchanged. The attempt limit still applies.
+4. **Older MIS uploaded after a newer one (REQ-23 §23.4).** A batch may carry a **report date** (optional on upload; empty = the upload day). A row whose report day is older than the report that last set that lead's status changes nothing: no snapshot, history, freshness, notification or payout effect; the batch shows "Older than on file". Equal days keep "later upload wins". Future dates are refused. Freshness shown to users is still the upload time, not the report date.
+5. **Telecaller reporting person.** Must be an active Manager (Advisors: Manager or Admin, unchanged).
+6. **Bank brands on the app's welcome slides.** Replaced with neutral card wording.
+Also: the Manager sees their own Agent Codes in the app; a failed SMS send returns `AUTH_OTP_SEND_FAILED` (503) and does not start the resend cooldown.
+
+**SMS provider (REQ-19 §19.2 OPEN):** MSG91 adapter added as the engineering default (`OTP_PROVIDER=msg91`, runbook 07). KBS keeps generating and verifying the code; MSG91 only delivers it. Never tested against a live account.
+
+**Still not built (need a vendor choice first):** real Aadhaar offline-KYC and PAN verification adapters (both are mocks), WhatsApp Business API delivery. See runbook 08.
+
 ## B. Ambiguities in the PRD that would cause divergent implementations
 
 | # | Ambiguity | Resolution |
