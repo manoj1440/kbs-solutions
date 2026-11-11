@@ -47,7 +47,7 @@ Name match, in this order:
 1. Cashfree's own `name_match_result`, when the account has the (separately activated, chargeable) name-match feature:
    `DIRECT_MATCH` and `GOOD_PARTIAL_MATCH` count as a match; `MODERATE_PARTIAL_MATCH`, `POOR_PARTIAL_MATCH`, `NO_MATCH`
    do not. No score threshold of our own is applied.
-2. Otherwise `registered_name` is compared in memory with the strict rule below, then dropped.
+2. Otherwise `registered_name` is compared in memory with the rule below, then dropped. KBS does not depend on the paid feature.
 
 `providerRef` is Cashfree's numeric `reference_id`. The registered name, the PAN and the customer name are never returned
 by the adapter or logged. (The leads module keeps the PAN encrypted and its last four characters, as before.)
@@ -100,15 +100,26 @@ The adapter keeps nothing between requests, so the onboarding service passes the
 `payload: { fullName }`.
 
 ### Name rule (`name-match.ts`)
-Two names match only when they contain exactly the same words after: Unicode-normalising and dropping accents,
-upper-casing, turning every character that is not a letter or digit into a space, collapsing spaces, and dropping
-**leading** honorifics (MR, MRS, MS, MISS, DR, SHRI, SMT, SHRIMATI, KUM, KUMARI). Word order does not matter
-("SHARMA RAJESH" = "Rajesh Sharma"); names equal once spaces are removed also match ("RAJESHKUMAR" = "Rajesh Kumar",
-"R.K. Sharma" = "RK Sharma"). Not a match: a missing or extra word (middle name), an initial against a full word,
-spelling variants. No similarity score.
+Decided 2026-11-11 (engineering decision on the owner's instruction, for this product): the person is already
+authenticated by the provider — their own DigiLocker, or the PAN record — so this is a consistency check, not the
+security gate. Exact-only matching would block genuine users whose document carries a middle or father's name or an
+initial, and each retry is a paid verification.
 
-Consequence to expect in support: an Advisor whose profile name lacks a middle name that Aadhaar carries gets
-`NAME_MISMATCH` and must correct the profile name to the Aadhaar spelling, then start again.
+After normalising (Unicode, accents dropped, upper-case, punctuation to spaces, leading honorifics MR / MRS / MS / MISS /
+DR / SHRI / SMT / SHRIMATI / KUM / KUMARI removed) two names match when any of:
+- the words are the same in any order ("SHARMA RAJESH" = "Rajesh Sharma");
+- they are equal once spaces are removed ("RAJESHKUMAR" = "Rajesh Kumar", "R.K. Sharma" = "RK Sharma");
+- every word of the shorter name is found in the longer one — a one-letter word may stand for a word starting with that
+  letter — and at least two full words agree exactly ("Rajesh Sharma" = "Rajesh Kumar Sharma"; "Rajesh K Sharma" =
+  "Rajesh Kumar Sharma").
+
+Not a match: only one full word in common ("Rajesh" vs "Rajesh Sharma"; "R Sharma" vs "Rajesh Sharma"), a word the
+document does not have, spelling variants ("Mohd" vs "Mohammed"), a different word ("Rajesh" vs "Rakesh"). No similarity
+score is used. On a mismatch the Advisor is told to enter the name exactly as on the Aadhaar and verify again.
+
+Consequence to expect in support: an Advisor who entered only one name, or a name with a different spelling from the
+Aadhaar, gets `NAME_MISMATCH` and is told to enter the name exactly as on the Aadhaar and verify again. A left-out
+middle or father's name no longer fails.
 
 ## Data minimisation (REQ-10, REQ-21)
 KBS stores for identity: the outcome (`VERIFIED` / `FAILED` / `UNAVAILABLE`), the provider name (`cashfree`), the method
