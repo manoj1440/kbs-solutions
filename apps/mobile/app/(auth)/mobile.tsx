@@ -11,8 +11,18 @@ import { useState } from 'react';
 import { Pressable, Text as RNText, type TextInput, View } from 'react-native';
 
 import { AuthShell } from '@/components/auth';
-import { Appear, Button, ErrorText, Icon, Input, Muted, useDeferredFocus } from '@/components/ui';
+import {
+  Appear,
+  Button,
+  ErrorText,
+  Icon,
+  Input,
+  Muted,
+  useDeferredFocus,
+  WaitBar,
+} from '@/components/ui';
 import { api } from '@/lib/api';
+import { clock, resendWait, useCountdown } from '@/lib/countdown';
 import { colors } from '@/lib/theme';
 
 /** S06 Login — mobile + OTP only (REQ-12; passwords are never used). */
@@ -22,6 +32,9 @@ export default function MobileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const field = useDeferredFocus<TextInput>();
+  // resend wait for the number a code was last requested for
+  const { secondsLeft, pct, start } = useCountdown(0);
+  const [waitMobile, setWaitMobile] = useState('');
 
   async function submit() {
     setError(null);
@@ -32,6 +45,9 @@ export default function MobileScreen() {
     setBusy(true);
     try {
       const r = await api.post<OtpRequestResponse>('/auth/otp/request', { mobile, purpose });
+      // one code per number per cooldown: remember it so coming back here shows the live wait
+      setWaitMobile(mobile);
+      start(r.data.resendAfterSec);
       router.push({
         pathname: '/(auth)/otp',
         params: {
@@ -42,13 +58,19 @@ export default function MobileScreen() {
         },
       });
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not send the code.');
+      // a code was sent to this number moments ago: show the live wait instead of an error
+      const w = resendWait(e);
+      if (w) {
+        setWaitMobile(mobile);
+        start(w.seconds, w.total);
+      } else setError(e instanceof ApiClientError ? e.message : 'Could not send the code.');
     } finally {
       setBusy(false);
     }
   }
 
   const signup = purpose === 'ADVISOR_SIGNUP';
+  const waiting = secondsLeft > 0 && mobile === waitMobile;
   const valid = isValidE164India(mobile);
   return (
     <AuthShell
@@ -81,13 +103,33 @@ export default function MobileScreen() {
       <ErrorText>{error}</ErrorText>
       <View className="gap-4">
         <Button
-          title={busy ? 'Sending…' : signup ? 'Send OTP' : 'Login'}
+          title={
+            busy
+              ? 'Sending…'
+              : waiting
+                ? `${signup ? 'Send OTP' : 'Login'} in ${clock(secondsLeft)}`
+                : signup
+                  ? 'Send OTP'
+                  : 'Login'
+          }
           size="lg"
-          iconRight={busy ? undefined : 'arrow-forward'}
+          iconRight={busy || waiting ? undefined : 'arrow-forward'}
           loading={busy}
-          disabled={busy || !valid}
+          disabled={busy || !valid || waiting}
           onPress={submit}
         />
+        {waiting ? (
+          <View
+            className="gap-2"
+            accessibilityRole="timer"
+            accessibilityLabel={`You can request a new code in ${secondsLeft} seconds`}
+          >
+            <WaitBar pct={pct} />
+            <Muted className="text-center text-xs">
+              A code was just sent to this number. You can request a new one when the timer ends.
+            </Muted>
+          </View>
+        ) : null}
         <View className="flex-row items-center gap-2.5 rounded-lg bg-raised px-3 py-3">
           <Icon name="shield-checkmark-outline" size={18} color={colors.subtle} />
           <Muted className="flex-1 text-xs">

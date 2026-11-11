@@ -52,7 +52,9 @@ export class AuthService {
       this.prisma.client.otpChallenge.count({ where: { ip, createdAt: { gte: hourAgo } } }),
     ]);
     if (lastForMobile && Date.now() - lastForMobile.createdAt.getTime() < cooldown * 1000) {
-      throw new AppError('AUTH_OTP_RESEND_TOO_SOON', `Please wait ${cooldown} seconds before requesting another code.`, undefined, 'RETRY_LATER');
+      // the real time left (not the full cooldown), so clients can run a live countdown and re-enable the button themselves
+      const retryAfterSec = Math.max(1, Math.ceil((cooldown * 1000 - (Date.now() - lastForMobile.createdAt.getTime())) / 1000));
+      throw new AppError('AUTH_OTP_RESEND_TOO_SOON', `Please wait ${retryAfterSec} second${retryAfterSec === 1 ? '' : 's'} before requesting another code.`, { retryAfterSec, cooldownSec: cooldown }, 'RETRY_LATER');
     }
     if (sendsMobile >= (this.config.getInt('auth.otp.maxSendsPerMobilePerHour') ?? 10) || sendsIp >= (this.config.getInt('auth.otp.maxSendsPerIpPerHour') ?? 30)) {
       throw new AppError('AUTH_OTP_RATE_LIMITED', 'Too many code requests. Try again later.', undefined, 'RETRY_LATER');

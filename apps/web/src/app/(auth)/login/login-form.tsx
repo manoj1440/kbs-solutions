@@ -34,6 +34,9 @@ function otpStep(mobile: string, r: OtpRequestResponse): Step {
   };
 }
 
+/** The resend wait for one number: until when, and out of how many seconds (for the progress bar). */
+const waitFor = (mobile: string, seconds: number, totalSec: number) => ({ mobile, until: Date.now() + seconds * 1000, totalSec });
+
 /** F-801: OTP-only login (REQ-04 §4.1). Same UI whether or not the number exists (REQ-23 §23.1). */
 export function LoginForm({ next }: { next?: string }) {
   const router = useRouter();
@@ -43,15 +46,20 @@ export function LoginForm({ next }: { next?: string }) {
   const digitRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  // Countdown for "resend": seconds remaining, driven by an interval (state, so render stays pure).
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const resendAt = step.kind === 'otp' ? step.resendAt : 0;
+  // Resend wait: the server allows one code per number per cooldown. `wait` remembers which number is waiting and until
+  // when, so the countdown is live on both steps (also after "Change number" and back) and the button re-enables itself.
+  const [wait, setWait] = useState<{ mobile: string; until: number; totalSec: number } | null>(null);
+  const [tick, setTick] = useState(0); // seconds left for `wait`, refreshed by the interval (render stays pure)
   useEffect(() => {
-    if (!resendAt) return;
-    const compute = () => Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
-    const t = setInterval(() => setSecondsLeft(compute()), 1000);
+    if (!wait) return;
+    const compute = () => Math.max(0, Math.ceil((wait.until - Date.now()) / 1000));
+    const t = setInterval(() => setTick(compute()), 250);
     return () => clearInterval(t);
-  }, [resendAt]);
+  }, [wait]);
+  const activeMobile = step.kind === 'otp' ? step.mobile : mobile;
+  const secondsLeft = wait && wait.mobile === activeMobile ? tick : 0;
+  const waitPct = wait && secondsLeft > 0 ? Math.min(100, (secondsLeft / Math.max(1, wait.totalSec)) * 100) : 0;
+  const clock = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
 
   const code = digits.join('');
 
@@ -68,11 +76,17 @@ export function LoginForm({ next }: { next?: string }) {
         purpose: 'LOGIN',
       });
       setStep(otpStep(m, r.data));
-      setSecondsLeft(r.data.resendAfterSec);
+      setWait(waitFor(m, r.data.resendAfterSec, r.data.resendAfterSec));
+      setTick(r.data.resendAfterSec);
       setDigits(Array(OTP_LEN).fill(''));
       requestAnimationFrame(() => digitRefs.current[0]?.focus());
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not send the code. Try again.');
+      // a code was sent to this number moments ago: show the live wait instead of an error
+      const d = e instanceof ApiClientError && e.error.code === 'AUTH_OTP_RESEND_TOO_SOON' ? (e.error.details as { retryAfterSec?: number; cooldownSec?: number } | undefined) : undefined;
+      if (d?.retryAfterSec) {
+        setWait(waitFor(m, d.retryAfterSec, d.cooldownSec ?? d.retryAfterSec));
+        setTick(d.retryAfterSec);
+      } else setError(e instanceof ApiClientError ? e.message : 'Could not send the code. Try again.');
     } finally {
       setBusy(false);
     }
@@ -182,10 +196,18 @@ export function LoginForm({ next }: { next?: string }) {
               </div>
               <p className="text-xs text-fg-3">Enter your registered mobile number</p>
             </div>
-            <Button type="submit" size="lg" disabled={busy || !mobileValid} className="h-12 w-full">
-              {busy ? 'Sending…' : 'Send OTP'}
+            <Button type="submit" size="lg" disabled={busy || !mobileValid || secondsLeft > 0} className="h-12 w-full tabular-nums">
+              {busy ? 'Sending…' : secondsLeft > 0 ? `Send OTP in ${clock}` : 'Send OTP'}
               <ArrowRight className="size-4" strokeWidth={1.5} aria-hidden="true" />
             </Button>
+            {secondsLeft > 0 ? (
+              <div className="grid gap-2" role="status" aria-live="polite">
+                <div className="h-1 overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
+                  <div className="h-full rounded-full bg-primary transition-[width] duration-300 ease-linear" style={{ width: `${waitPct}%` }} />
+                </div>
+                <p className="text-xs text-fg-3">A code was just sent to this number. You can request a new one when the timer ends.</p>
+              </div>
+            ) : null}
           </form>
         ) : (
           <form
@@ -247,12 +269,17 @@ export function LoginForm({ next }: { next?: string }) {
               <button
                 type="button"
                 disabled={!canResend || busy}
-                className="font-medium text-foreground underline-offset-4 hover:underline disabled:text-fg-3"
+                className="font-medium text-foreground tabular-nums underline-offset-4 hover:underline disabled:text-fg-3"
                 onClick={() => void requestOtp(step.mobile)}
               >
-                {canResend ? 'Resend code' : `Resend in ${secondsLeft}s`}
+                {canResend ? 'Resend code' : `Resend in ${clock}`}
               </button>
             </div>
+            {canResend ? null : (
+              <div className="h-1 overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
+                <div className="h-full rounded-full bg-primary transition-[width] duration-300 ease-linear" style={{ width: `${waitPct}%` }} />
+              </div>
+            )}
           </form>
         )}
         {error ? (

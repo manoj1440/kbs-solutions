@@ -1,0 +1,24 @@
+# OTP resend wait: live countdown on the code screen, and on the number screen after going back (button re-enables itself).
+appId: com.kbs.dsa
+env:
+  ADVISOR_MOBILE: ${ADVISOR_MOBILE || '9555999001'} # override: maestro test -e ADVISOR_MOBILE=98xxxxxxxx …
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Next.*"
+          optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${ADVISOR_MOBILE}
+- tapOn: "Login"
+- assertVisible: "OTP verification"
+- assertVisible: ".*Resend OTP in.*"
+- hideKeyboard
+- tapOn: "Edit mobile number"
+- assertVisible: "Login in [0-9]:[0-9][0-9]"
+- assertVisible: "A code was just sent to this number.*"

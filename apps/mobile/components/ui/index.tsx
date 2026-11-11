@@ -91,6 +91,22 @@ export function Overline({ className, ...props }: TextProps & { className?: stri
 export function Label({ className, ...props }: TextProps & { className?: string }) {
   return <RNText className={cx('mb-1.5 font-medium text-sm text-ink', className)} {...props} />;
 }
+/** Thin bar that empties as a wait runs down (`pct` = share of the wait still left). Decorative: pair it with text. */
+export function WaitBar({ pct }: { pct: number }) {
+  return (
+    <View
+      className="h-1 w-full overflow-hidden rounded-full bg-raised"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <View
+        className="h-full rounded-full bg-brand"
+        style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+      />
+    </View>
+  );
+}
+
 export function ErrorText({ children }: PropsWithChildren) {
   if (!children) return null;
   return (

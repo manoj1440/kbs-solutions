@@ -43,6 +43,10 @@ describe('core foundation (F-101…F-111)', () => {
       expect(phantom.body.error.code).toBe('AUTH_OTP_INVALID');
       const again = await request(app.getHttpServer()).post('/api/v1/auth/otp/request').send({ mobile: '9111111111' }).expect(429);
       expect(again.body.error.code).toBe('AUTH_OTP_RESEND_TOO_SOON');
+      // the real time left, so web and app can run a live countdown and re-enable the button themselves
+      expect(again.body.error.details.cooldownSec).toBeGreaterThan(0);
+      expect(again.body.error.details.retryAfterSec).toBeGreaterThan(0);
+      expect(again.body.error.details.retryAfterSec).toBeLessThanOrEqual(again.body.error.details.cooldownSec);
     });
 
     it('AUTH-02: five wrong codes lock the mobile', async () => {

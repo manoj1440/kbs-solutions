@@ -1,13 +1,14 @@
 import { ApiClientError, type AuthSessionResponse, type OtpRequestResponse } from '@kbs/shared';
 import * as Device from 'expo-device';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, Text as RNText, TextInput, View } from 'react-native';
 
 import { AuthShell } from '@/components/auth';
-import { Appear, Button, ErrorText, Icon, Muted, useDeferredFocus } from '@/components/ui';
+import { Appear, Button, ErrorText, Icon, Muted, useDeferredFocus, WaitBar } from '@/components/ui';
 import { api } from '@/lib/api';
 import { routeFor, useSession } from '@/lib/session';
+import { clock, resendWait, useCountdown } from '@/lib/countdown';
 import { colors } from '@/lib/theme';
 
 const BOXES = 6;
@@ -49,13 +50,7 @@ export default function OtpScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(true);
-  const [secondsLeft, setSecondsLeft] = useState(Number(params.resendAfterSec ?? 60));
-
-  useEffect(() => {
-    if (secondsLeft <= 0) return;
-    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [secondsLeft]);
+  const { secondsLeft, pct, start } = useCountdown(Number(params.resendAfterSec ?? 60));
 
   async function verify() {
     setError(null);
@@ -87,16 +82,17 @@ export default function OtpScreen() {
         purpose: params.purpose,
       });
       setChallengeId(r.data.challengeId);
-      setSecondsLeft(r.data.resendAfterSec);
+      start(r.data.resendAfterSec);
       setCode('');
     } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not resend the code.');
+      // asked again too early: show the live wait instead of an error
+      const w = resendWait(e);
+      if (w) start(w.seconds, w.total);
+      else setError(e instanceof ApiClientError ? e.message : 'Could not resend the code.');
     }
   }
 
   const masked = `+91 ${(params.mobile ?? '').slice(0, 2)}••• ${(params.mobile ?? '').slice(-4)}`;
-  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
-  const ss = String(secondsLeft % 60).padStart(2, '0');
   return (
     <AuthShell
       title="OTP verification"
@@ -153,14 +149,19 @@ export default function OtpScreen() {
       </Appear>
       <View className="items-center">
         {secondsLeft > 0 ? (
-          <View className="flex-row items-center gap-1.5 px-3 py-2">
-            <Icon name="time-outline" size={16} color={colors.subtle} />
-            <Muted>
-              Resend OTP in{' '}
-              <RNText className="font-medium text-ink tabular-nums">
-                {mm}:{ss}
-              </RNText>
-            </Muted>
+          <View
+            className="w-full items-center gap-2"
+            accessibilityRole="timer"
+            accessibilityLabel={`You can resend the code in ${secondsLeft} seconds`}
+          >
+            <View className="flex-row items-center gap-1.5 px-3 pt-2">
+              <Icon name="time-outline" size={16} color={colors.subtle} />
+              <Muted>
+                Resend OTP in{' '}
+                <RNText className="font-medium text-ink tabular-nums">{clock(secondsLeft)}</RNText>
+              </Muted>
+            </View>
+            <WaitBar pct={pct} />
           </View>
         ) : (
           <Pressable
