@@ -46,10 +46,10 @@ describe('F-406 lead creation / F-407 link + bank reference (FOS-03/04/05)', () 
     ({ app, prisma } = await bootTestApp());
     adminToken = (await loginAs(app, prisma, ADMIN_MOBILE)).accessToken;
     await api().put('/api/v1/config/leads.declarations').set(auth(adminToken)).send({ value: [{ id: 'D1', version: '1', text: 'I confirm the details are accurate.' }, { id: 'D2', version: '1', text: 'I authorise a credit bureau check.' }], reason: 'test' }).expect(200);
-    await prisma.pincodeMaster.createMany({ data: [{ pincode: '302001', officeName: 'Jaipur GPO', district: 'Jaipur', state: 'Rajasthan' }], skipDuplicates: true });
+    await prisma.pincodeMaster.createMany({ data: [{ pincode: '302001', officeName: 'Jaipur GPO', district: 'Jaipur', state: 'Rajasthan' }, { pincode: '110001', officeName: 'Connaught Place', district: 'New Delhi', state: 'Delhi' }], skipDuplicates: true });
     const bank = await prisma.bank.findUniqueOrThrow({ where: { code: 'HDFC' } });
     bankId = bank.id;
-    const c = await api().post('/api/v1/catalogue/cards').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId, name: 'HDFC Regalia' }).expect(201);
+    const c = await api().post('/api/v1/catalogue/cards').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId, name: 'HDFC Regalia', availability: ['302001'] }).expect(201); // offered at this pincode only
     cardId = c.body.data.id;
     await api().post(`/api/v1/catalogue/cards/${cardId}/links`).set(auth(adminToken)).set('idempotency-key', idem()).send({ channel: 'ADVISOR', url: LINK }).expect(201);
     await api().post(`/api/v1/catalogue/cards/${cardId}/publish`).set(auth(adminToken)).set('idempotency-key', idem()).send({}).expect(201);
@@ -130,6 +130,47 @@ describe('F-406 lead creation / F-407 link + bank reference (FOS-03/04/05)', () 
     expect((await api().get('/api/v1/leads').set(auth(other.token)).expect(200)).body.meta.total).toBe(0);
     await api().get(`/api/v1/leads/${lead.id}`).set(auth(other.token)).expect(404);
     expect((await api().get('/api/v1/leads').set(auth(adminToken)).expect(200)).body.meta.total).toBe(1);
+  });
+
+  it('REQ-11 §11.7: a pincode where the card is not available is refused at the step and again at submit — no lead; All-India card passes anywhere', async () => {
+    const t = auth(advToken);
+    const before = await prisma.lead.count();
+    const toPincodeStep = async (card: string, mobile: string) => {
+      const d = await api().post('/api/v1/leads/drafts').set(t).set('idempotency-key', idem()).send({ cardId: card }).expect(201);
+      const id = d.body.data.id as string;
+      await api().patch(`/api/v1/leads/drafts/${id}/mobile`).set(t).send({ mobile }).expect(200);
+      await api().patch(`/api/v1/leads/drafts/${id}/details`).set(t).send({ fullName: 'Ramesh Customer' }).expect(200);
+      await api().patch(`/api/v1/leads/drafts/${id}/pan`).set(t).send({ pan: 'ABCPR1234K' }).expect(200);
+      return id;
+    };
+    // card published for 302001 only → 110001 refused, draft does not advance
+    const id = await toPincodeStep(cardId, '9811177701');
+    const no = await api().patch(`/api/v1/leads/drafts/${id}/pincode`).set(t).send({ pincode: '110001', locationConfirmed: true }).expect(400);
+    expect(no.body.error).toMatchObject({ code: 'VALIDATION_FAILED', message: 'HDFC Regalia is not available at pincode 110001. Choose another card or check the pincode.', details: { field: 'pincode', reason: 'CARD_NOT_AVAILABLE_AT_PINCODE' } });
+    const still = (await api().get(`/api/v1/leads/drafts/${id}`).set(t).expect(200)).body.data;
+    expect(still.step).toBe('PINCODE');
+    expect(still.data.pincode).toBeUndefined();
+    await api().patch(`/api/v1/leads/drafts/${id}/employment`).set(t).send({ employmentType: 'SALARIED' }).expect(409);
+    // the pincode inside the card's list passes
+    const ok = await api().patch(`/api/v1/leads/drafts/${id}/pincode`).set(t).send({ pincode: '302001', locationConfirmed: true }).expect(200);
+    expect(ok.body.data.step).toBe('EMPLOYMENT');
+
+    // an All-India card passes at any pincode, including one the pincode master does not know
+    const india = await api().post('/api/v1/catalogue/cards').set(auth(adminToken)).set('idempotency-key', idem()).send({ bankId, name: 'HDFC Everywhere', applyUrl: LINK, availability: 'ALL_INDIA', active: true }).expect(201);
+    const id2 = await toPincodeStep(india.body.data.id, '9811177702');
+    await api().patch(`/api/v1/leads/drafts/${id2}/pincode`).set(t).send({ pincode: '110001', locationConfirmed: true }).expect(200);
+    await api().patch(`/api/v1/leads/drafts/${id2}/pincode`).set(t).send({ pincode: '799999', city: 'Somewhere', state: 'Tripura', locationConfirmed: true }).expect(200);
+
+    // availability withdrawn between the step and submit → submit refused with the same message, draft kept, no lead
+    const review = await fullDraft(advToken, { mobile: '9811177703' });
+    await api().patch(`/api/v1/catalogue/cards/${cardId}`).set(auth(adminToken)).send({ availability: ['110001'] }).expect(200);
+    const refused = await api().post(`/api/v1/leads/drafts/${review}/submit`).set(t).set('idempotency-key', idem()).expect(400);
+    expect(refused.body.error.message).toBe('HDFC Regalia is not available at pincode 302001. Choose another card or check the pincode.');
+    expect(await prisma.lead.count()).toBe(before);
+    expect((await api().get(`/api/v1/leads/drafts/${review}`).set(t).expect(200)).body.data.step).toBe('REVIEW');
+    await api().patch(`/api/v1/catalogue/cards/${cardId}`).set(auth(adminToken)).send({ availability: ['302001'] }).expect(200);
+    await api().post(`/api/v1/leads/drafts/${review}/submit`).set(t).set('idempotency-key', idem()).expect(201);
+    expect(await prisma.lead.count()).toBe(before + 1);
   });
 
   it('F-407: link share/open recorded as KBS activity with verbatim URL + version; bank status untouched', async () => {

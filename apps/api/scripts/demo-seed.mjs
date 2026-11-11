@@ -88,7 +88,7 @@ console.log('agent code', agentCode);
 const banks = await call('GET', '/catalogue/banks', { token: T });
 const hdfc = banks.find((b) => b.code === 'HDFC' || /hdfc/i.test(b.displayName ?? b.name ?? '')) ?? banks[0];
 const mkCard = async (name, desc, benefits) => {
-  const c = await call('POST', '/catalogue/cards', { token: T, body: { bankId: hdfc.id, name, description: desc, benefits, joiningFee: 1000, annualFee: 1000, categoryKeys: ['SHOPPING'] } });
+  const c = await call('POST', '/catalogue/cards', { token: T, body: { bankId: hdfc.id, name, description: desc, benefits, joiningFee: 1000, annualFee: 1000, categoryKeys: ['SHOPPING'], availability: 'ALL_INDIA' } });
   await call('POST', `/catalogue/cards/${c.id}/links`, { token: T, body: { channel: 'BOTH', url: `https://apply.example.com/${c.id}` } });
   await call('POST', `/catalogue/cards/${c.id}/publish`, { token: T, body: {} });
   return c;

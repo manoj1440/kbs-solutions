@@ -110,4 +110,30 @@ describe('F-106 Agent Codes and reporting hierarchy (FOS-02)', () => {
     const audit = await prisma.auditLog.findFirst({ where: { action: 'hierarchy.reassign', entityId: a.telecallerId } });
     expect(audit?.reason).toBe('team merge');
   });
+
+  it('REQ-15 / REQ-26 §26.1: a Telecaller reports to an ACTIVE Manager only — never the Admin; an Advisor may report to a Manager or the Admin', async () => {
+    const a = await setupManagerAndTelecaller(app, prisma, '25');
+    const b = await setupManagerAndTelecaller(app, prisma, '26');
+    const post = (childId: string, parentUserId: string) => request(app.getHttpServer()).post(`/api/v1/users/${childId}/reporting`).set(auth(a.admin.accessToken)).send({ parentUserId, reason: 'restructure' });
+    const toAdmin = await post(a.telecallerId, a.admin.user.id).expect(400);
+    expect(toAdmin.body.error).toMatchObject({ code: 'VALIDATION_FAILED', message: 'A Telecaller must report to an active Manager.' });
+    // an inactive Manager is refused too
+    await prisma.user.update({ where: { id: b.managerId }, data: { status: 'DEACTIVATED' } });
+    const toInactive = await post(a.telecallerId, b.managerId).expect(400);
+    expect(toInactive.body.error.message).toBe('A Telecaller must report to an active Manager.');
+    // a Telecaller is not a valid parent for anyone
+    await post(a.telecallerId, b.telecallerId).expect(400);
+    const current = await prisma.reportingAssignment.findFirstOrThrow({ where: { childUserId: a.telecallerId, status: 'ACTIVE', effectiveTo: null } });
+    expect(current.parentUserId).toBe(a.managerId); // unchanged
+    await prisma.user.update({ where: { id: b.managerId }, data: { status: 'ACTIVE' } });
+    await post(a.telecallerId, b.managerId).expect(201);
+
+    // Advisor: Manager and Admin are both valid (unchanged)
+    const adv = await registerAdvisor(app, prisma, '9555500004');
+    expect(adv.user.reportingParent?.role).toBe('ADMIN');
+    await post(adv.user.id, a.managerId).expect(201);
+    await post(adv.user.id, a.admin.user.id).expect(201);
+    const bad = await post(adv.user.id, a.telecallerId).expect(400);
+    expect(bad.body.error.message).toBe('Reporting parent must be an active Manager or the Admin.');
+  });
 });

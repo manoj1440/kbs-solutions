@@ -11,6 +11,7 @@ import { PrismaService } from '../../infra/prisma/prisma.service';
 import { PAN_PROVIDER, type PanVerificationProvider } from '../../providers/ports';
 import { AuditService } from '../audit/audit.service';
 import { PincodeMasterService } from '../calling-list/pincode-master.service';
+import { CardAvailabilityService } from '../catalogue/card-availability.service';
 import { CatalogueService } from '../catalogue/catalogue.service';
 import { DEFAULT_BANK_CODE } from '../catalogue/default-bank';
 import { ConfigService } from '../config/config.service';
@@ -68,6 +69,7 @@ export class LeadsService {
     private readonly audit: AuditService,
     private readonly pincodes: PincodeMasterService,
     private readonly catalogue: CatalogueService,
+    private readonly availability: CardAvailabilityService,
     private readonly hierarchy: HierarchyService,
     private readonly notifications: NotificationsService,
     @Inject(PAN_PROVIDER) private readonly pan: PanVerificationProvider,
@@ -196,9 +198,17 @@ export class LeadsService {
     return this.viewDraft(actor, id);
   }
 
+  /** REQ-11 §11.7: no lead for a pincode where the chosen card is not offered (the card's own publications decide, as in catalogue browse). */
+  private async assertCardAvailableAt(cardId: string, pincode: string) {
+    if (await this.availability.isAvailableAt(cardId, pincode, 'ADVISOR')) return;
+    const card = await this.prisma.client.creditCard.findUnique({ where: { id: cardId }, select: { name: true } });
+    throw new AppError('VALIDATION_FAILED', `${card?.name ?? 'This card'} is not available at pincode ${pincode}. Choose another card or check the pincode.`, { field: 'pincode', reason: 'CARD_NOT_AVAILABLE_AT_PINCODE', cardId, pincode });
+  }
+
   async stepPincode(actor: Actor, id: string, body: LeadPincodeBody) {
     const { row, data } = await this.draft(actor, id);
     this.assertStep(row.step as LeadStep, 'PINCODE');
+    await this.assertCardAvailableAt(row.cardId, body.pincode);
     const lookup = await this.pincodes.lookup(body.pincode);
     const city = body.city ?? lookup.district ?? undefined;
     const state = body.state ?? lookup.state ?? undefined;
@@ -245,6 +255,7 @@ export class LeadsService {
     if (data.annualIncomeItr === undefined) problems.push('annualIncomeItr');
     if (!data.bureauAckAt || !data.acceptedDeclarationIds?.length) problems.push('declarations');
     if (problems.length) throw new AppError('VALIDATION_FAILED', 'Some steps are incomplete.', { problems });
+    await this.assertCardAvailableAt(row.cardId, data.pincode as string); // availability can change between the step and submit
     const card = await this.prisma.client.creditCard.findUniqueOrThrow({ where: { id: row.cardId } });
     const parentId = (await this.hierarchy.currentParentId(actor.userId)) ?? (await this.hierarchy.adminUserId());
     const lead = await this.prisma.client.$transaction(async (tx) => {

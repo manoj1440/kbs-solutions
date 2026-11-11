@@ -107,6 +107,12 @@ export class CardAvailabilityService {
     return byCard;
   }
 
+  /** REQ-11 §11.7: is this one card offered at the pincode? The same publication check as `browse?pincode` / `available`. */
+  async isAvailableAt(cardId: string, pincode: string, channel: Channel): Promise<boolean> {
+    const loc = await this.pincodes.lookup(pincode);
+    return (await this.publicationsAt(pincode, loc.state, channel, new Date())).has(cardId);
+  }
+
   /** Cards for a calling record (Telecaller own / Manager team / Admin), using the record's stored pincode. */
   async forCallingRecord(actor: Actor, recordId: string) {
     const r = await this.prisma.client.callingRecord.findUnique({ where: { id: recordId }, select: { id: true, pincode: true, assignedTelecallerUserId: true } });

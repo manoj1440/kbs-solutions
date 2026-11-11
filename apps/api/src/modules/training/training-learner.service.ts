@@ -51,11 +51,24 @@ export class TrainingLearnerService {
     return e.status === 'EXPIRED_DEACTIVATED' || (e.deadlineAt !== null && e.deadlineAt.getTime() < Date.now());
   }
 
+  /**
+   * `training.passRule = AVERAGE_ACROSS_MODULES`: every module can be passed while the average of the best scores is still
+   * under `training.defaultPassThresholdPct`. Then (and only then) a passed module may be retaken to raise its best score.
+   */
+  private averageState(enrollmentStatus: string, results: Array<{ status: string; bestScorePct: number | null }>) {
+    const averageRule = this.config.getString('training.passRule') === 'AVERAGE_ACROSS_MODULES';
+    const required = this.config.getInt('training.defaultPassThresholdPct') ?? 70;
+    const average = results.length ? results.reduce((s, x) => s + (x.bestScorePct ?? 0), 0) / results.length : 0;
+    const allModulesPassed = results.length > 0 && results.every((x) => x.status === 'PASSED');
+    return { averageRule, required, average, allModulesPassed, canRetake: averageRule && enrollmentStatus !== 'PASSED' && allModulesPassed };
+  }
+
   async me(actor: Actor) {
     const { enrollment, results } = await this.loadEnrollment(actor.userId);
     const attemptLimit = this.config.getInt('training.attemptLimit');
     const videoRequired = this.config.getBool('training.videoCompletionRequired');
     const blocked = this.deadlinePassed(enrollment);
+    const avg = this.averageState(enrollment.status, results);
     return {
       status: enrollment.status,
       firstLoginAt: enrollment.firstLoginAt?.toISOString() ?? null,
@@ -64,6 +77,12 @@ export class TrainingLearnerService {
       currentModuleSequence: enrollment.currentModuleSequence,
       passRule: this.config.getString('training.passRule'),
       attemptLimit,
+      /** Average of the modules' best scores (an unattempted module counts 0), floored to one decimal so it never shows a pass that is not one. */
+      averageScorePct: Math.floor(avg.average * 10) / 10,
+      /** Average needed to pass; null unless the AVERAGE_ACROSS_MODULES rule is on. */
+      requiredAveragePct: avg.averageRule ? avg.required : null,
+      /** All modules passed but the average is short: any module with `retakeAvailable` may be retaken to raise it. */
+      canRetakeForAverage: avg.canRetake && !blocked,
       modules: results.map((r) => ({
         sequence: r.module.sequence,
         title: r.module.title,
@@ -78,6 +97,7 @@ export class TrainingLearnerService {
         attemptsRemaining: attemptLimit === null ? null : Math.max(0, attemptLimit - r.attemptCount),
         videoCompletedAt: r.videoCompletedAt?.toISOString() ?? null,
         assessmentAvailable: !blocked && r.status === 'IN_PROGRESS' && r.module.status === 'PUBLISHED' && (!videoRequired || r.videoCompletedAt !== null || !r.module.videoFileId) && (attemptLimit === null || r.attemptCount < attemptLimit),
+        retakeAvailable: avg.canRetake && !blocked && r.status === 'PASSED' && r.module.status === 'PUBLISHED' && (attemptLimit === null || r.attemptCount < attemptLimit),
         passedAt: r.passedAt?.toISOString() ?? null,
       })),
     };
@@ -101,7 +121,8 @@ export class TrainingLearnerService {
     const r = results.find((x) => x.module.sequence === sequence);
     if (!r) throw AppError.notFound('Module');
     if (r.status === 'LOCKED') throw new AppError('TRAINING_MODULE_LOCKED', `Pass Module ${sequence - 1} before starting Module ${sequence}.`);
-    if (r.status === 'PASSED') throw new AppError('CONFLICT', 'This module is already passed.');
+    // AVERAGE rule only: all modules passed but the average is short → a passed module may be retaken to raise its best score
+    if (r.status === 'PASSED' && !this.averageState(enrollment.status, results).canRetake) throw new AppError('CONFLICT', 'This module is already passed.');
     if (r.module.status !== 'PUBLISHED') throw new AppError('CONFLICT', 'This module is not published yet. Contact the Admin.');
     const attemptLimit = this.config.getInt('training.attemptLimit');
     if (attemptLimit !== null && r.attemptCount >= attemptLimit) throw new AppError('TRAINING_ATTEMPT_LIMIT', 'You have used all attempts for this module. Contact your Manager.');
@@ -155,25 +176,32 @@ export class TrainingLearnerService {
       const nowPassed = r.status === 'PASSED' || passedModule; // a passed module never regresses (REQ-05 §5.3)
       await tx.trainingModuleResult.update({ where: { id: r.id }, data: { bestScorePct: best, status: nowPassed ? 'PASSED' : 'IN_PROGRESS', passedAt: r.passedAt ?? (passedModule ? new Date() : null) } });
       let allPassed = false;
+      let canRetakeForAverage = false;
       let nextSequence = enrollment.currentModuleSequence;
-      if (passedModule && r.status !== 'PASSED') {
+      const rule = this.config.getString('training.passRule');
+      const firstPass = passedModule && r.status !== 'PASSED';
+      // retake of an already passed module to raise the average (AVERAGE rule only; the score may be below the module threshold)
+      const retake = r.status === 'PASSED' && enrollment.status !== 'PASSED' && rule === 'AVERAGE_ACROSS_MODULES';
+      if (firstPass) {
         const next = await tx.trainingModuleResult.findFirst({ where: { enrollmentId: enrollment.id, module: { sequence: r.module.sequence + 1 } }, include: { module: true } });
         if (next) {
           if (next.status === 'LOCKED') await tx.trainingModuleResult.update({ where: { id: next.id }, data: { status: 'IN_PROGRESS' } });
           nextSequence = next.module.sequence;
         }
+      }
+      if (firstPass || retake) {
         const results = await tx.trainingModuleResult.findMany({ where: { enrollmentId: enrollment.id } });
         const everyPassed = results.every((x) => x.status === 'PASSED' || x.id === r.id);
         if (everyPassed) {
-          const rule = this.config.getString('training.passRule');
           if (rule === 'AVERAGE_ACROSS_MODULES') {
             const avg = results.reduce((s, x) => s + (x.id === r.id ? best : (x.bestScorePct ?? 0)), 0) / results.length;
             allPassed = avg >= (this.config.getInt('training.defaultPassThresholdPct') ?? 70);
+            canRetakeForAverage = !allPassed;
           } else allPassed = true;
         }
         await tx.trainingEnrollment.update({ where: { id: enrollment.id }, data: { currentModuleSequence: nextSequence, ...(allPassed ? { status: 'PASSED', passedAt: new Date() } : {}) } });
       }
-      return { allPassed, nextSequence };
+      return { allPassed, nextSequence, canRetakeForAverage };
     });
 
     const deadlinePassed = this.deadlinePassed(enrollment);
@@ -193,6 +221,8 @@ export class TrainingLearnerService {
       correct,
       total: ids.length,
       allModulesPassed: outcome.allPassed,
+      /** AVERAGE rule: every module is passed but the average is short — a module may be retaken (see `GET /training/me`). */
+      canRetakeForAverage: outcome.canRetakeForAverage && !deadlinePassed,
       nextModuleSequence: passedModule && !outcome.allPassed ? outcome.nextSequence : null,
       deadlinePassed,
       retryAvailable: !passedModule && !deadlinePassed && (this.config.getInt('training.attemptLimit') === null || r.attemptCount < (this.config.getInt('training.attemptLimit') as number)),

@@ -79,6 +79,57 @@ describe('F-203 training flow', () => {
     expect(again.body.error.code).toBe('CONFLICT');
   });
 
+  it('REQ-05 §5.3 AVERAGE_ACROSS_MODULES: all modules passed with a low average is not PASSED; a passed module can be retaken, never regresses, and a higher score passes', async () => {
+    const admin = await loginAs(app, prisma, ADMIN_MOBILE);
+    const setCfg = (key: string, value: unknown) => request(app.getHttpServer()).put(`/api/v1/config/${key}`).set(auth(admin.accessToken)).send({ value, reason: 'average rule test' }).expect(200);
+    const thresholds = await prisma.trainingModule.findMany({ select: { sequence: true, passThresholdPct: true } });
+    await prisma.trainingModule.updateMany({ data: { passThresholdPct: 60 } }); // each module passes at 60 …
+    await setCfg('training.passRule', 'AVERAGE_ACROSS_MODULES');
+    await setCfg('training.defaultPassThresholdPct', 70); // … but the average must reach 70
+    try {
+      const { telecallerMobile } = await setupManagerAndTelecaller(app, prisma, '54');
+      const t = await loginAs(app, prisma, telecallerMobile);
+      const http = () => request(app.getHttpServer());
+      const attempt = async (seq: number, correct: number) => {
+        const a = await http().post(`/api/v1/training/modules/${seq}/attempts`).set(auth(t.accessToken)).expect(201);
+        return (await http().post(`/api/v1/training/attempts/${a.body.data.attemptId}/submit`).set(auth(t.accessToken)).send({ answers: answersFor(a.body.data.questions, correct) }).expect(201)).body.data;
+      };
+      let last;
+      for (const seq of [1, 2, 3]) {
+        await http().post(`/api/v1/training/modules/${seq}/video-progress`).set(auth(t.accessToken)).send({ positionSec: 10, durationSec: 10, completed: true }).expect(201);
+        // no retake while a module is still unpassed
+        if (seq === 2) await http().post('/api/v1/training/modules/1/attempts').set(auth(t.accessToken)).expect(409);
+        last = await attempt(seq, 3); // 60% each → every module passes, average 60 < 70
+        expect(last.passed).toBe(true);
+      }
+      expect(last).toMatchObject({ allModulesPassed: false, canRetakeForAverage: true });
+      let me = (await http().get('/api/v1/training/me').set(auth(t.accessToken)).expect(200)).body.data;
+      expect(me).toMatchObject({ status: 'IN_PROGRESS', passRule: 'AVERAGE_ACROSS_MODULES', averageScorePct: 60, requiredAveragePct: 70, canRetakeForAverage: true });
+      expect(me.modules.map((m: { status: string; retakeAvailable: boolean }) => [m.status, m.retakeAvailable])).toEqual([['PASSED', true], ['PASSED', true], ['PASSED', true]]);
+      expect((await http().get('/api/v1/auth/me').set(auth(t.accessToken)).expect(200)).body.data.gates.training.passed).toBe(false);
+
+      // a worse retake changes nothing: the best score stays, the module stays PASSED
+      const worse = await attempt(2, 1);
+      expect(worse).toMatchObject({ scorePct: 20, passed: false, allModulesPassed: false, canRetakeForAverage: true });
+      const m2 = await prisma.trainingModuleResult.findFirstOrThrow({ where: { enrollment: { telecallerUserId: t.user.id }, module: { sequence: 2 } } });
+      expect(m2).toMatchObject({ status: 'PASSED', bestScorePct: 60, attemptCount: 2 });
+
+      // 100% on module 1 → (100 + 60 + 60) / 3 = 73.3 ≥ 70 → PASSED
+      const better = await attempt(1, 5);
+      expect(better).toMatchObject({ scorePct: 100, passed: true, allModulesPassed: true, canRetakeForAverage: false });
+      me = (await http().get('/api/v1/training/me').set(auth(t.accessToken)).expect(200)).body.data;
+      expect(me).toMatchObject({ status: 'PASSED', averageScorePct: 73.3, canRetakeForAverage: false });
+      expect(me.modules.every((m: { retakeAvailable: boolean }) => !m.retakeAvailable)).toBe(true);
+      expect((await http().get('/api/v1/auth/me').set(auth(t.accessToken)).expect(200)).body.data.gates.training).toMatchObject({ passed: true, status: 'PASSED' });
+      expect(await prisma.notification.count({ where: { recipientUserId: t.user.id, kind: 'TRAINING_PASSED' } })).toBe(1);
+      // once PASSED there is nothing left to retake
+      await http().post('/api/v1/training/modules/1/attempts').set(auth(t.accessToken)).expect(409);
+    } finally {
+      await setCfg('training.passRule', 'PER_MODULE_THRESHOLD');
+      for (const m of thresholds) await prisma.trainingModule.update({ where: { sequence: m.sequence }, data: { passThresholdPct: m.passThresholdPct } });
+    }
+  });
+
   it('attempt limit is honoured when configured; deadline passed blocks new attempts', async () => {
     const admin = await loginAs(app, prisma, ADMIN_MOBILE);
     await request(app.getHttpServer()).put('/api/v1/config/training.attemptLimit').set(auth(admin.accessToken)).send({ value: 1, reason: 'test limit' }).expect(200);

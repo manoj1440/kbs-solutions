@@ -132,13 +132,17 @@ export class AgentCodesService {
     return r;
   }
 
-  /** Admin reassigns a Telecaller or Advisor to another Manager (or the Admin). Historical attribution untouched. */
+  /**
+   * Admin reassigns a Telecaller to another Manager, or an Advisor to another Manager or the Admin. Historical attribution untouched.
+   * A Telecaller always belongs to a Manager (REQ-15, REQ-26 §26.1).
+   */
   async reassign(actor: Actor, childUserId: string, body: ReassignReportingBody) {
     const [child, parent] = await Promise.all([
       this.prisma.client.user.findUnique({ where: { id: childUserId }, select: { id: true, role: true } }),
       this.prisma.client.user.findUnique({ where: { id: body.parentUserId }, select: { id: true, role: true, status: true } }),
     ]);
     if (!child || (child.role !== 'TELECALLER' && child.role !== 'ADVISOR')) throw AppError.notFound('User');
+    if (child.role === 'TELECALLER' && (!parent || parent.role !== 'MANAGER' || parent.status !== 'ACTIVE')) throw new AppError('VALIDATION_FAILED', 'A Telecaller must report to an active Manager.', { field: 'parentUserId' });
     if (!parent || (parent.role !== 'MANAGER' && parent.role !== 'ADMIN') || parent.status !== 'ACTIVE') throw new AppError('VALIDATION_FAILED', 'Reporting parent must be an active Manager or the Admin.');
     const before = await this.hierarchy.currentParentId(childUserId);
     if (before === parent.id) throw new AppError('CONFLICT', 'Already reporting to this person.');

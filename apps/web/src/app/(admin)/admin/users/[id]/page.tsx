@@ -82,14 +82,16 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   ]);
   const recoveryEnabled = cfg.find((c) => c.key === 'auth.recoveryEnabled')?.value === true;
   const isAdmin = u.role === 'ADMIN';
-  // F-106: only a Telecaller or Advisor can be moved; the new parent is an active Manager or the Admin
+  // F-106: only a Telecaller or Advisor can be moved; an Advisor to an active Manager or the Admin, a Telecaller to a Manager only
   const canReassign = u.role === 'TELECALLER' || u.role === 'ADVISOR';
   type ParentOption = { id: string; fullName: string; role: string };
   const parents: ParentOption[] = canReassign
     ? (
         await Promise.all([
           apiFetch<ParentOption[]>('/users?role=MANAGER&status=ACTIVE&pageSize=200'),
-          apiFetch<ParentOption[]>('/users?role=ADMIN&status=ACTIVE&pageSize=5'),
+          ...(u.role === 'ADVISOR'
+            ? [apiFetch<ParentOption[]>('/users?role=ADMIN&status=ACTIVE&pageSize=5')]
+            : []),
         ])
       )
         .flatMap((r) => r.data)
