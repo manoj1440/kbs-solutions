@@ -117,31 +117,48 @@ export function HeroTile({
   meta,
   icon,
   accent,
+  dark,
 }: {
   label: string;
   value: ReactNode;
   meta?: ReactNode;
   icon?: IconName;
   accent?: string;
+  /** inside a `HeroCard`: a translucent cell with white text */
+  dark?: boolean;
 }) {
   void icon;
   void accent;
   return (
-    <View className="flex-1 rounded-xl border border-line bg-white p-3">
-      <RNText numberOfLines={1} className="font-normal text-sm text-[#525252]">
+    <View className={dark ? 'flex-1 rounded-xl bg-white/10 p-3' : 'flex-1 rounded-xl bg-white p-3'}>
+      <RNText
+        numberOfLines={1}
+        className={
+          dark ? 'font-normal text-sm text-white/70' : 'font-normal text-sm text-[#525252]'
+        }
+      >
         {label}
       </RNText>
       <RNText
         numberOfLines={1}
         adjustsFontSizeToFit
-        className="mt-1 font-medium text-xl text-ink tabular-nums"
+        className={
+          dark
+            ? 'mt-1 font-semibold text-xl text-white tabular-nums'
+            : 'mt-1 font-semibold text-xl text-ink tabular-nums'
+        }
       >
         {value}
       </RNText>
       {meta ? (
         <View className="mt-0.5">
           {typeof meta === 'string' ? (
-            <RNText numberOfLines={1} className="font-normal text-xs text-[#737373]">
+            <RNText
+              numberOfLines={1}
+              className={
+                dark ? 'font-normal text-xs text-white/60' : 'font-normal text-xs text-[#737373]'
+              }
+            >
               {meta}
             </RNText>
           ) : (

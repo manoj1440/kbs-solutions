@@ -55,7 +55,7 @@ export default function Profile() {
   return (
     <Screen scroll header={<AppBar title="Profile" />}>
       <Appear>
-        <View className="rounded-xl border border-line bg-white p-4">
+        <View className="rounded-2xl bg-white p-4">
           <View className="flex-row items-center gap-4">
             <Avatar name={name} size={48} />
             <View className="flex-1 gap-0.5">

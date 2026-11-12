@@ -174,7 +174,7 @@ export function PayoutRequestDetail({ id }: { id: string }) {
   return (
     <View className="gap-4">
       <Appear>
-        <View className="rounded-xl border border-line bg-white p-5" style={shadow.sm}>
+        <View className="rounded-2xl bg-white p-5" style={shadow.sm}>
           <View className="flex-row items-center justify-between gap-2">
             <RNText selectable className="font-normal text-xs text-[#737373] tabular-nums">
               {r.publicRef}

@@ -65,7 +65,7 @@ export function CreditCardArt({
         <Text
           numberOfLines={1}
           style={{
-            fontFamily: 'Inter_600SemiBold',
+            fontFamily: 'Manrope_700Bold',
             fontSize: 13 * s,
             letterSpacing: 1.2 * s,
             color: '#fff',
@@ -115,7 +115,7 @@ export function CreditCardArt({
         <Text
           style={{
             marginTop: 14 * s,
-            fontFamily: 'Inter_600SemiBold',
+            fontFamily: 'Manrope_700Bold',
             fontSize: 14 * s,
             letterSpacing: 2 * s,
             color: 'rgba(255,255,255,0.9)',
@@ -132,7 +132,7 @@ export function CreditCardArt({
           numberOfLines={1}
           style={{
             flex: 1,
-            fontFamily: 'Inter_600SemiBold',
+            fontFamily: 'Manrope_700Bold',
             fontSize: 12 * s,
             color: 'rgba(255,255,255,0.92)',
           }}

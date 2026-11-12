@@ -92,7 +92,7 @@ export default function MobileScreen() {
           placeholder="98765 43210"
           value={mobile}
           onChangeText={(t) => setMobile(mobileInput(t))}
-          inputClassName="min-w-0"
+          inputClassName="min-w-0 font-medium text-lg"
           right={
             valid ? <Icon name="checkmark-circle-outline" size={18} color={colors.success} /> : null
           }
@@ -101,15 +101,7 @@ export default function MobileScreen() {
       <ErrorText>{error}</ErrorText>
       <View className="gap-4">
         <Button
-          title={
-            busy
-              ? 'Sending…'
-              : waiting
-                ? `${signup ? 'Send OTP' : 'Login'} in ${clock(secondsLeft)}`
-                : signup
-                  ? 'Send OTP'
-                  : 'Login'
-          }
+          title={busy ? 'Sending…' : waiting ? `Send code in ${clock(secondsLeft)}` : 'Send code'}
           size="lg"
           iconRight={busy || waiting ? undefined : 'arrow-forward'}
           loading={busy}

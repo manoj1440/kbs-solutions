@@ -232,7 +232,7 @@ export default function AssessmentScreen() {
       {!attempt && !error ? (
         <View className="gap-4">
           {[0, 1].map((i) => (
-            <View key={i} className="gap-3 rounded-xl border border-line bg-white p-4">
+            <View key={i} className="gap-3 rounded-2xl bg-white p-4">
               <Skeleton className="h-3 w-1/4" />
               <Skeleton className="h-4 w-5/6" />
               <Skeleton className="h-12 w-full rounded-lg" />

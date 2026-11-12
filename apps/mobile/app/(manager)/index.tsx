@@ -34,6 +34,7 @@ import {
   Skeleton,
   SkeletonList,
   Text,
+  HeroCard,
 } from '@/components/ui';
 import { ago, TodayCard, todayLabel } from '@/components/today';
 import { api } from '@/lib/api';
@@ -69,9 +70,9 @@ const MIS_STALE_DAYS = 7;
 function HeroMeta({ m }: { m: M }) {
   return (
     <View className="flex-row items-center gap-1">
-      <SourceTag source={m.source} />
+      <SourceTag source={m.source} light />
       {m.denominator ? (
-        <RNText className="font-normal text-xs text-[#737373] tabular-nums">
+        <RNText className="font-normal text-xs text-white/60 tabular-nums">
           · of {m.denominator.value}
         </RNText>
       ) : null}
@@ -85,7 +86,7 @@ function MisFreshnessLine({ mis }: { mis: MisFreshness }) {
   const banks = mis.banks.filter((b) => b.bankCode !== 'KBS');
   const applied = banks.filter((b) => b.lastAppliedAt);
   const none = banks.length - applied.length;
-  if (banks.length === 0) return null;
+  if (applied.length === 0) return null; // nothing to report yet — no stray icon
   return (
     <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1 px-1">
       <Icon name="time-outline" size={16} color={colors.subtle} />
@@ -272,42 +273,42 @@ export default function ManagerHome() {
                 />
               </View>
 
-              <View className="mt-6 flex-row items-center justify-between">
-                <RNText className="font-medium text-sm text-[#525252]">
-                  Team calling activity
-                </RNText>
-                <RNText className="font-normal text-xs text-[#737373] tabular-nums">
-                  {telecallers.length} Telecallers · {advisors.length} Advisors
-                </RNText>
-              </View>
-              <View className="mt-3 gap-2">
-                {[0, 2].map((start) => (
-                  <View key={start} className="flex-row gap-2">
-                    {heroTiles.slice(start, start + 2).map(([label, m]) =>
-                      m ? (
-                        <HeroTile
-                          key={label}
-                          label={label}
-                          value={m.value}
-                          meta={<HeroMeta m={m} />}
-                        />
-                      ) : (
-                        <View
-                          key={label}
-                          className="flex-1 rounded-xl border border-line bg-white p-3"
-                        >
-                          <RNText className="font-normal text-sm text-[#525252]">{label}</RNText>
-                          {loaded ? (
-                            <RNText className="mt-1.5 font-medium text-xl text-[#737373]">—</RNText>
-                          ) : (
-                            <Skeleton className="mt-2 h-7 w-12" />
-                          )}
-                        </View>
-                      ),
-                    )}
-                  </View>
-                ))}
-              </View>
+              <HeroCard className="mt-5">
+                <View className="flex-row items-center justify-between">
+                  <RNText className="font-medium text-md text-white">Team calling today</RNText>
+                  <RNText className="font-normal text-xs text-white/70 tabular-nums">
+                    {telecallers.length} Telecallers · {advisors.length} Advisors
+                  </RNText>
+                </View>
+                <View className="mt-4 gap-2">
+                  {[0, 2].map((start) => (
+                    <View key={start} className="flex-row gap-2">
+                      {heroTiles.slice(start, start + 2).map(([label, m]) =>
+                        m ? (
+                          <HeroTile
+                            key={label}
+                            dark
+                            label={label}
+                            value={m.value}
+                            meta={<HeroMeta m={m} />}
+                          />
+                        ) : (
+                          <View key={label} className="flex-1 rounded-xl bg-white/10 p-3">
+                            <RNText className="font-normal text-sm text-white/70">{label}</RNText>
+                            {loaded ? (
+                              <RNText className="mt-1.5 font-semibold text-xl text-white/60">
+                                —
+                              </RNText>
+                            ) : (
+                              <Skeleton className="mt-2 h-7 w-12" />
+                            )}
+                          </View>
+                        ),
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </HeroCard>
             </HeroHeader>
 
             <View className="mt-5 gap-6 px-4">

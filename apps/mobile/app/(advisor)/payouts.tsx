@@ -208,7 +208,7 @@ export default function Payouts() {
 
       <View className="gap-4 px-4 pt-4">
         <Appear index={1}>
-          <View className="rounded-xl border border-line bg-white p-4">
+          <View className="rounded-2xl bg-white p-4">
             <RNText className="font-normal text-sm text-[#525252]">Total earnings</RNText>
             {t ? (
               <RNText

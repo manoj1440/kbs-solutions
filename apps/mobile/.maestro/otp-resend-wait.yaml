@@ -15,10 +15,10 @@ env:
 - tapOn: "Let's Login.*"
 - tapOn: "98765 43210"
 - inputText: ${ADVISOR_MOBILE}
-- tapOn: "Login"
-- assertVisible: "OTP verification"
-- assertVisible: ".*Resend OTP in.*"
+- tapOn: "Send code"
+- assertVisible: "Enter the code"
+- assertVisible: ".*Resend code in.*"
 - hideKeyboard
 - tapOn: "Back"
-- assertVisible: "Login in [0-9]:[0-9][0-9]"
+- assertVisible: "Send code in [0-9]:[0-9][0-9]"
 - assertVisible: "A code was just sent to this number.*"

@@ -239,17 +239,17 @@ export { Glass, GlassScope } from './glass';
 const buttonVariants = cva('flex-row items-center justify-center gap-2 rounded-lg px-5', {
   variants: {
     variant: {
-      /** graphite fill, white text */
-      default: 'bg-ink',
-      /** the accent — the one primary money action on a screen (#C2410C passes 4.5:1 with white) */
+      /** F-820: the primary action is the accent on every screen (#C2410C, white text 5.2:1) */
+      default: 'bg-gold',
+      /** same as default — kept for older call sites */
       gold: 'bg-gold',
-      secondary: 'border border-line bg-raised',
-      outline: 'border border-[#D4D4D4] bg-white',
+      secondary: 'bg-raised',
+      outline: 'border border-[#DDD8D1] bg-white',
       destructive: 'bg-[#B42318]',
       ghost: 'px-3',
       light: 'border border-white/25 bg-white/10',
     },
-    size: { sm: 'h-10 px-4', md: 'h-12', lg: 'h-12' },
+    size: { sm: 'h-11 px-4', md: 'h-14', lg: 'h-14' },
   },
   defaultVariants: { variant: 'default', size: 'md' },
 });
@@ -268,6 +268,8 @@ const buttonText = cva('font-medium', {
   },
   defaultVariants: { variant: 'default', size: 'md' },
 });
+/** Filled variants go flat neutral when disabled (not a faded copy of the action colour). */
+const FILLED = new Set(['default', 'gold', 'destructive']);
 const BUTTON_FG: Record<string, string> = {
   default: '#fff',
   gold: '#fff',
@@ -299,19 +301,20 @@ export function Button({
     style?: StyleProp<ViewStyle>;
   }) {
   const v = variant ?? 'default';
-  const fg = BUTTON_FG[v] ?? '#fff';
-  const fill: StyleProp<ViewStyle> =
-    v === 'default'
-      ? { backgroundColor: colors.brand }
-      : v === 'gold'
-        ? { backgroundColor: colors.gold }
-        : null;
+  const off = !!disabled && !loading;
+  const flat = off && FILLED.has(v);
+  const fg = flat ? '#A39E97' : (BUTTON_FG[v] ?? '#fff');
+  const fill: StyleProp<ViewStyle> = flat
+    ? { backgroundColor: '#E9E6E1' }
+    : v === 'default' || v === 'gold'
+      ? { backgroundColor: colors.gold }
+      : null;
   return (
     <PressableScale
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled, busy: !!loading }}
       disabled={disabled || loading}
-      className={cx(buttonVariants({ variant, size }), disabled && 'opacity-45', className)}
+      className={cx(buttonVariants({ variant, size }), off && !flat && 'opacity-45', className)}
       style={[fill, style]}
       {...props}
     >
@@ -320,7 +323,11 @@ export function Button({
       ) : icon ? (
         <Ionicons name={icon} size={size === 'sm' ? 16 : 18} color={fg} />
       ) : null}
-      <RNText numberOfLines={1} className={buttonText({ variant, size })}>
+      <RNText
+        numberOfLines={1}
+        className={buttonText({ variant, size })}
+        style={flat ? { color: fg } : undefined}
+      >
         {title}
       </RNText>
       {iconRight && !loading ? (
@@ -352,17 +359,17 @@ export function IconButton({
       ? 'bg-white/10 border border-white/20'
       : tone === 'soft'
         ? 'bg-raised'
-        : 'bg-white border border-line';
+        : 'bg-white';
   const fg = color ?? (tone === 'light' ? '#fff' : colors.ink);
   return (
     <PressableScale
       accessibilityLabel={badge ? `${label}, ${badge} unread` : label}
       onPress={onPress}
       hitSlop={6}
-      className={cx('items-center justify-center rounded-lg', bg)}
+      className={cx('items-center justify-center rounded-full', bg)}
       style={{ width: size, height: size }}
     >
-      <Ionicons name={icon} size={18} color={fg} />
+      <Ionicons name={icon} size={20} color={fg} />
       {badge ? (
         <View className="absolute -right-1 -top-1 h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-gold px-1">
           <RNText className="font-medium text-xs text-white tabular-nums">
@@ -411,16 +418,13 @@ export const Input = forwardRef<
       {label ? <Label>{label}</Label> : null}
       <View
         className={cx(
-          'flex-row items-center gap-2.5 rounded-lg border bg-white px-4',
-          multiline ? 'min-h-24 items-start py-3' : 'h-12',
-          error ? 'border-[#B42318]' : focused ? 'border-ink' : 'border-[#D4D4D4]',
+          'flex-row items-center gap-3 rounded-lg border-[1.5px] bg-white px-4',
+          multiline ? 'min-h-24 items-start py-3' : 'h-14',
+          error ? 'border-[#B42318]' : focused ? 'border-ink' : 'border-[#E0DCD6]',
           className,
         )}
-        style={
-          focused && !error ? { boxShadow: '0px 0px 0px 3px rgba(23, 23, 23, 0.08)' } : undefined
-        }
       >
-        {icon ? <Ionicons name={icon} size={18} color={colors.subtle} /> : null}
+        {icon ? <Ionicons name={icon} size={20} color={colors.subtle} /> : null}
         {prefix ? (
           <View className="flex-row items-center gap-2">
             <RNText className="font-medium text-base text-ink tabular-nums">{prefix}</RNText>
@@ -463,10 +467,11 @@ export const Input = forwardRef<
 
 /* ───────────────────────── Containers ───────────────────────── */
 
-const cardVariants = cva('rounded-xl', {
+const cardVariants = cva('rounded-2xl', {
   variants: {
     variant: {
-      elevated: 'border border-line bg-white p-4',
+      /** F-820: a white surface on the canvas — no outline, no shadow */
+      elevated: 'bg-white p-4',
       outline: 'border border-line bg-white p-4',
       tinted: 'bg-raised p-4',
       flat: 'bg-white p-4',
@@ -555,8 +560,8 @@ export function Badge({
   return (
     <View
       className={cx(
-        'flex-row items-center gap-1.5 self-start rounded-md',
-        size === 'sm' ? 'px-1.5 py-0.5' : 'px-2 py-1',
+        'flex-row items-center gap-1.5 self-start rounded-full',
+        size === 'sm' ? 'px-2 py-0.5' : 'px-2.5 py-1',
       )}
       style={{ backgroundColor: solid ? t.fg : t.bg }}
     >
@@ -593,8 +598,8 @@ export function Chip({
       accessibilityState={{ selected: active }}
       onPress={onPress}
       className={cx(
-        'h-9 flex-row items-center gap-1.5 rounded-full px-3.5',
-        active ? 'bg-ink' : 'border border-line bg-white',
+        'h-10 flex-row items-center gap-1.5 rounded-full px-4',
+        active ? 'bg-ink' : 'bg-white',
       )}
     >
       {icon ? <Ionicons name={icon} size={16} color={active ? '#fff' : colors.subtle} /> : null}
@@ -632,7 +637,7 @@ export function Segmented<K extends string>({
   return (
     <View
       accessibilityRole="tablist"
-      className={cx('flex-row rounded-lg p-1', dark ? 'bg-white/10' : 'bg-[#EDEDEE]')}
+      className={cx('flex-row rounded-lg p-1', dark ? 'bg-white/10' : 'bg-[#E9E6E1]')}
     >
       {options.map((o) => {
         const active = o.key === value;
@@ -642,13 +647,13 @@ export function Segmented<K extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onChange(o.key)}
-            className="h-10 flex-1 items-center justify-center rounded-md"
+            className="h-11 flex-1 items-center justify-center rounded-md"
           >
             {active ? (
               <View
                 style={[
                   StyleSheet.absoluteFill,
-                  { borderRadius: 6, backgroundColor: '#fff' },
+                  { borderRadius: 10, backgroundColor: '#fff' },
                   shadow.sm,
                 ]}
               />
@@ -802,10 +807,7 @@ export function SkeletonList({ rows = 4, className }: { rows?: number; className
   return (
     <View accessibilityLabel="Loading" className={cx('gap-3', className)}>
       {Array.from({ length: rows }, (_, i) => (
-        <View
-          key={i}
-          className="flex-row items-center gap-3 rounded-xl border border-line bg-white p-4"
-        >
+        <View key={i} className="flex-row items-center gap-3 rounded-2xl bg-white p-4">
           <Skeleton className="h-10 w-10 rounded-lg" />
           <View className="flex-1 gap-2">
             <Skeleton className="h-3.5 w-2/3" />
@@ -918,8 +920,8 @@ export function SectionHeader({
           hitSlop={10}
           className="flex-row items-center gap-0.5"
         >
-          <RNText className="font-medium text-sm text-[#525252]">{action}</RNText>
-          <Ionicons name="chevron-forward" size={16} color={colors.subtle} />
+          <RNText className="font-medium text-sm text-gold">{action}</RNText>
+          <Ionicons name="chevron-forward" size={16} color={colors.gold} />
         </Pressable>
       ) : null}
     </View>
@@ -999,12 +1001,7 @@ export function EmptyState({
 }) {
   return (
     <Animated.View entering={FadeIn.duration(200).easing(EASE)}>
-      <View
-        className={cx(
-          'items-center rounded-xl border border-line bg-white px-6',
-          compact ? 'py-6' : 'py-10',
-        )}
-      >
+      <View className={cx('items-center rounded-2xl bg-white px-6', compact ? 'py-6' : 'py-10')}>
         <View className="mb-3 h-10 w-10 items-center justify-center rounded-lg bg-raised">
           <Ionicons name={icon} size={18} color={colors.subtle} />
         </View>
@@ -1028,10 +1025,7 @@ export function EmptyState({
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <View
-      accessibilityRole="alert"
-      className="items-center rounded-xl border border-line bg-white px-6 py-8"
-    >
+    <View accessibilityRole="alert" className="items-center rounded-2xl bg-white px-6 py-8">
       <IconCircle icon="cloud-offline-outline" tone="destructive" size={40} />
       <RNText className="mt-3 text-center font-medium text-base text-ink">
         Something went wrong
@@ -1183,6 +1177,14 @@ export function Screen({
         )}
         {footer}
       </KeyboardAvoidingView>
+      {/* F-820: with `inset="none"` the header scrolls with the page — keep scrolled content out of the status bar */}
+      {inset === 'none' ? (
+        <View
+          pointerEvents="none"
+          className="absolute left-0 right-0 top-0 bg-canvas"
+          style={{ height: insets.top }}
+        />
+      ) : null}
     </GlassScope>
   );
 }
@@ -1291,15 +1293,20 @@ export function HeroHeader({
   void rounded;
   const insets = useSafeAreaInsets();
   return (
-    <View
-      className="border-b border-line bg-canvas"
-      style={[{ paddingTop: insets.top + 8 }, style]}
-    >
+    <View className="bg-canvas" style={[{ paddingTop: insets.top + 8 }, style]}>
       <View className={cx('px-4', !/\bpb-/.test(className ?? '') && 'pb-5', className)}>
         {children}
       </View>
     </View>
   );
+}
+
+/**
+ * F-820: the one dark "ink" card on a home screen — the figure that matters for that role, white on near-black.
+ * One per screen; everything else stays quiet. Text inside uses `text-white` / `text-white/70`.
+ */
+export function HeroCard({ children, className }: PropsWithChildren<{ className?: string }>) {
+  return <View className={cx('rounded-3xl bg-ink p-5', className)}>{children}</View>;
 }
 
 /** Pinned bottom action area with safe-area padding. */
@@ -1311,7 +1318,7 @@ export function StickyFooter({ children, className }: PropsWithChildren<{ classN
       className={cx('gap-2 px-4 pt-3', className)}
       style={[
         { paddingBottom: Math.max(insets.bottom, 12) + 4 },
-        { borderWidth: 0, borderTopWidth: StyleSheet.hairlineWidth, boxShadow: 'none' },
+        { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
       ]}
     >
       {children}
@@ -1361,7 +1368,12 @@ export function BottomSheet({
           }}
         >
           {/* F-818 frosted sheet: blur of what is behind + warm-white tint */}
-          <Glass strong intensity={70} className="rounded-t-[20px]" style={StyleSheet.absoluteFill} />
+          <Glass
+            strong
+            intensity={70}
+            className="rounded-t-[20px]"
+            style={StyleSheet.absoluteFill}
+          />
           <View className="items-center pb-1 pt-3">
             <View className="h-1 w-9 rounded-full bg-[#DDD6CC]" />
           </View>
@@ -1439,8 +1451,8 @@ export function ChoiceRow({
       onPress={onPress}
       scaleTo={0.985}
       className={cx(
-        'min-h-12 flex-row items-center gap-3 rounded-lg border px-4 py-3',
-        selected ? 'border-ink bg-raised' : 'border-[#D4D4D4] bg-white',
+        'min-h-14 flex-row items-center gap-3 rounded-lg border-[1.5px] px-4 py-3',
+        selected ? 'border-ink bg-white' : 'border-raised bg-raised',
         disabled && 'opacity-50',
       )}
     >
@@ -1454,8 +1466,8 @@ export function ChoiceRow({
               ? 'radio-button-on'
               : 'radio-button-off'
         }
-        size={18}
-        color={selected ? colors.ink : colors.subtle}
+        size={22}
+        color={selected ? colors.gold : colors.subtle}
       />
       <View className="flex-1">
         <RNText className={cx('font-normal text-base text-ink', selected && 'font-medium')}>

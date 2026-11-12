@@ -8,20 +8,20 @@ import { Platform, type ViewStyle } from 'react-native';
  * orange = the bright brand orange for small marks only. Keep in sync with tailwind.config.js.
  */
 export const colors = {
-  navy: '#1C1917',
-  ink: '#1C1917',
-  brand: '#1C1917',
+  navy: '#16130F',
+  ink: '#16130F',
+  brand: '#16130F',
   indigo: '#C2410C',
   gold: '#C2410C',
   goldSoft: '#FDF1EC',
   orange: '#F05A28',
   orangeStrong: '#C2410C',
   teal: '#0F766E',
-  canvas: '#F2EEE8',
-  surface: '#FFFDFA',
-  raised: '#F7F4EF',
-  line: '#E7E1D8',
-  text: '#1C1917',
+  canvas: '#F4F3F1',
+  surface: '#FFFFFF',
+  raised: '#F1EFEC',
+  line: '#ECE9E5',
+  text: '#16130F',
   muted: '#4A433E',
   subtle: '#6A625D',
   white: '#FFFFFF',
@@ -71,11 +71,11 @@ export function gradientStyle(stops: readonly string[], angle = 135): ViewStyle 
   return { experimental_backgroundImage: css } as ViewStyle;
 }
 
-/** Neutral depth only (light theme): small soft shadows, never coloured, never a glow. */
+/** F-820: surfaces separate by tone, not by shadow. Only things that float over content (sheets, the centre tab action) keep a soft neutral shadow. */
 export const shadow = {
-  sm: { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' } as ViewStyle,
-  md: { boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' } as ViewStyle,
-  lg: { boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.06)' } as ViewStyle,
+  sm: {} as ViewStyle,
+  md: {} as ViewStyle,
+  lg: { boxShadow: '0px 10px 30px rgba(22, 19, 15, 0.10)' } as ViewStyle,
 };
 
 export type Tone =

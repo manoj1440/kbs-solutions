@@ -145,17 +145,9 @@ export default function ManagerAdvisors() {
         }
         ListHeaderComponent={
           <View className="gap-3">
-            <View className="flex-row items-start gap-2 rounded-xl bg-raised px-3 py-3">
-              <Icon
-                name="information-circle-outline"
-                size={16}
-                color={colors.subtle}
-                style={{ marginTop: 1 }}
-              />
-              <Muted className="flex-1 text-xs text-[#525252]">
-                {note ?? 'Leads, bank MIS results and payouts for Advisors reporting to you'}
-              </Muted>
-            </View>
+            <Muted className="px-1 text-xs text-[#737373]">
+              {note ?? 'Leads, bank MIS results and payouts for Advisors reporting to you'}
+            </Muted>
             {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
             {!loaded ? <SkeletonList rows={3} /> : null}
           </View>

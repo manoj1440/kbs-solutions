@@ -25,6 +25,7 @@ import {
   SectionHeader,
   Skeleton,
   Text,
+  HeroCard,
 } from '@/components/ui';
 import { ago, TodayCard, todayLabel } from '@/components/today';
 import { api } from '@/lib/api';
@@ -177,12 +178,12 @@ export default function AdvisorHome() {
 
       <View className="gap-5 px-4 pt-4">
         <Appear index={1}>
-          <View className="rounded-xl border border-line bg-white p-4">
-            <RNText className="font-normal text-sm text-[#525252]">Total earnings</RNText>
+          <HeroCard>
+            <RNText className="font-normal text-md text-white/70">Total earnings</RNText>
             {loaded ? (
               <RNText
                 accessibilityLabel={`Total earnings ${formatInr(earnings)}`}
-                className="mt-1 font-medium text-3xl text-gold tabular-nums"
+                className="mt-1 font-semibold text-3xl text-white tabular-nums"
               >
                 {formatInr(earnings)}
               </RNText>
@@ -192,35 +193,48 @@ export default function AdvisorHome() {
             <View className="mt-3 flex-row gap-4">
               <View className="flex-row items-center gap-1.5">
                 <View className="h-1.5 w-1.5 rounded-full bg-orange" />
-                <RNText className="font-normal text-sm text-[#525252] tabular-nums">
+                <RNText className="font-normal text-sm text-white/80 tabular-nums">
                   {claimable} card{claimable === 1 ? '' : 's'} to claim
                 </RNText>
               </View>
               <View className="flex-row items-center gap-1.5">
-                <View className="h-1.5 w-1.5 rounded-full bg-teal" />
-                <RNText className="font-normal text-sm text-[#525252] tabular-nums">
+                <View className="h-1.5 w-1.5 rounded-full bg-[#5EEAD4]" />
+                <RNText className="font-normal text-sm text-white/80 tabular-nums">
                   {inProgress} in progress
                 </RNText>
               </View>
             </View>
-            <View className="mt-4 flex-row border-t border-line pt-3">
+            {claimable > 0 ? (
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Request payout"
+                onPress={() => router.push('/(advisor)/payouts' as never)}
+                className="mt-4 h-12 flex-row items-center justify-center gap-2 rounded-lg bg-gold"
+              >
+                <RNText className="font-medium text-base text-white">Request payout</RNText>
+                <Icon name="arrow-forward" size={18} color="#fff" />
+              </PressableScale>
+            ) : null}
+            <View className="mt-5 flex-row border-t border-white/15 pt-4">
               {funnel.map((f, i) => (
                 <PressableScale
                   key={f.label}
                   accessibilityLabel={`${f.label}: ${f.value}`}
                   onPress={() => router.push('/(advisor)/leads' as never)}
-                  className={`flex-1 gap-0.5 ${i ? 'border-l border-line pl-3' : ''}`}
+                  className={`flex-1 gap-0.5 ${i ? 'border-l border-white/15 pl-4' : ''}`}
                 >
                   {loaded ? (
-                    <RNText className="font-medium text-xl text-ink tabular-nums">{f.value}</RNText>
+                    <RNText className="font-semibold text-xl text-white tabular-nums">
+                      {f.value}
+                    </RNText>
                   ) : (
                     <Skeleton className="h-7 w-8" />
                   )}
-                  <Muted className="text-xs">{f.label}</Muted>
+                  <RNText className="font-normal text-xs text-white/70">{f.label}</RNText>
                 </PressableScale>
               ))}
             </View>
-          </View>
+          </HeroCard>
         </Appear>
 
         {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
@@ -234,8 +248,8 @@ export default function AdvisorHome() {
                 onPress={() => router.push(q.href as never)}
                 className="w-[23%] items-center gap-2"
               >
-                <View className="h-12 w-12 items-center justify-center rounded-lg border border-line bg-white">
-                  <Icon name={q.icon} size={18} color={colors.ink} />
+                <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white">
+                  <Icon name={q.icon} size={24} color={colors.ink} />
                 </View>
                 <RNText className="text-center font-medium text-xs text-ink">{q.label}</RNText>
               </PressableScale>
@@ -312,7 +326,7 @@ export default function AdvisorHome() {
         <Appear index={4}>
           <PressableScale
             onPress={() => router.push('/(advisor)/cards' as never)}
-            className="rounded-xl border border-line bg-white p-4"
+            className="rounded-2xl bg-white p-4"
           >
             <View className="flex-row items-center gap-4">
               <View className="flex-1">

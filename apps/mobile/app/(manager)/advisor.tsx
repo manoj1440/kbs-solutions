@@ -94,7 +94,7 @@ function ManagerAdvisorView({ id }: { id: string }) {
       {row ? (
         <>
           <Appear>
-            <View className="overflow-hidden rounded-xl border border-line bg-white p-5">
+            <View className="overflow-hidden rounded-2xl bg-white p-5">
               <View className="flex-row items-center gap-4">
                 <Avatar name={row.user.fullName || '?'} size={48} />
                 <View className="flex-1 gap-1">

@@ -120,7 +120,7 @@ export function NotificationsScreen({ area }: { area: Area }) {
           accessibilityLabel={`${n.readAt ? '' : 'Unread. '}${n.title}`}
           onPress={() => void open(n)}
           scaleTo={0.985}
-          className="flex-row gap-3 rounded-xl border border-line bg-white p-4"
+          className="flex-row gap-3 rounded-2xl bg-white p-4"
         >
           <IconCircle icon={v.icon} tone={v.tone} size={36} />
           <View className="flex-1 gap-0.5">

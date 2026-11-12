@@ -89,7 +89,7 @@ export default function CreateTelecaller() {
         }
       >
         <Appear>
-          <View className="items-center rounded-xl border border-line bg-white px-5 py-7">
+          <View className="items-center rounded-2xl bg-white px-5 py-7">
             <IconCircle icon="checkmark" tone="success" size={40} />
             <RNText className="mt-4 font-medium text-xl text-ink">Telecaller created</RNText>
             <RNText className="mt-1 text-center font-normal text-sm text-[#525252]">

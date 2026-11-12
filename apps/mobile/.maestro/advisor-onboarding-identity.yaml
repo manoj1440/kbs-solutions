@@ -17,9 +17,8 @@ env:
 - tapOn: "New here\\? Create account"
 - tapOn: "98765 43210"
 - inputText: ${NEW_ADVISOR_MOBILE}
-- tapOn: "Send OTP"
-- inputText: "000000"
-- tapOn: "Verify OTP"
+- tapOn: "Send code"
+- inputText: "000000" # the sixth digit verifies by itself
 - assertVisible: "Step 1 of 7"
 - tapOn: "As on your bank account"
 - inputText: "Flow Test Advisor"

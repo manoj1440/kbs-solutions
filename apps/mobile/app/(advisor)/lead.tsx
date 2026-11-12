@@ -263,7 +263,7 @@ function LeadView({ id }: { id: string }) {
 
       {/* Hero summary */}
       <Appear>
-        <View className="rounded-xl border border-line bg-white p-4">
+        <View className="rounded-2xl bg-white p-4">
           <View className="flex-row items-center gap-3">
             <Avatar name={l.customer.name} size={44} />
             <View className="flex-1">

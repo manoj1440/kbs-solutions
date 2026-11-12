@@ -227,7 +227,7 @@ export default function Leads() {
               onPress={() =>
                 router.push({ pathname: '/(advisor)/lead-new', params: { draftId: d.id } })
               }
-              className="w-64 rounded-xl border border-line bg-white p-4"
+              className="w-64 rounded-2xl bg-white p-4"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center gap-1.5 rounded-md bg-raised px-2 py-1">

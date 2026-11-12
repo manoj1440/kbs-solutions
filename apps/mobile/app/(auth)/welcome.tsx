@@ -19,9 +19,7 @@ import { cardArt, colors, gradientStyle } from '@/lib/theme';
 /* ───────── slide building blocks (graphite on the page canvas) ───────── */
 
 function Panel({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <View className={`rounded-xl border border-line bg-white ${className ?? ''}`}>{children}</View>
-  );
+  return <View className={`rounded-2xl bg-white ${className ?? ''}`}>{children}</View>;
 }
 
 function FeatureRow({ icon, title, sub }: { icon: IconName; title: string; sub: string }) {

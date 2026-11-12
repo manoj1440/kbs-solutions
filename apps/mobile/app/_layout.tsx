@@ -1,13 +1,13 @@
 import '../global.css';
 
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
   useFonts,
-} from '@expo-google-fonts/inter';
+} from '@expo-google-fonts/manrope';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
@@ -22,13 +22,13 @@ import { SessionProvider } from '@/lib/session';
 import { colors } from '@/lib/theme';
 
 export default function RootLayout() {
-  // F-805: Inter faces ship with the JS bundle (expo-font is linked by expo) — no native rebuild needed.
+  // F-820: Manrope faces ship with the JS bundle (expo-font is linked by expo) — no native rebuild needed.
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
   if (!fontsLoaded && !fontError)
     return <View style={{ flex: 1, backgroundColor: colors.canvas }} />;

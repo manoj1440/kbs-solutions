@@ -66,12 +66,12 @@ export function StatusTrio({
           <View
             key={label}
             accessibilityLabel={`${label}: ${f.display}`}
-            className="flex-1 gap-1 rounded-lg border border-line bg-white px-2.5 py-2"
+            className="flex-1 gap-1 rounded-lg bg-raised px-3 py-2.5"
           >
             <RNText className="font-normal text-xs text-[#737373]">{label}</RNText>
             <View className="flex-row items-start gap-1.5">
               <View className="mt-1.5 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.fg }} />
-              <RNText className="flex-1 font-medium text-xs text-ink">{f.display}</RNText>
+              <RNText className="flex-1 font-medium text-sm text-ink">{f.display}</RNText>
             </View>
           </View>
         );

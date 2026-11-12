@@ -239,7 +239,7 @@ export default function TrainingLanding() {
 
       <View className="mt-5 gap-6 px-4">
         <Appear>
-          <View className="rounded-xl border border-line bg-white p-4">
+          <View className="rounded-2xl bg-white p-4">
             {me ? (
               <>
                 <View className="flex-row items-end justify-between">

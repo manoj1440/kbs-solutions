@@ -132,7 +132,7 @@ export default function ModuleScreen() {
 
       {videoUrl ? (
         <Appear index={1}>
-          <View className="overflow-hidden rounded-xl border border-line bg-white">
+          <View className="overflow-hidden rounded-2xl bg-white">
             <VideoView
               player={player}
               style={{ width: '100%', aspectRatio: 16 / 9 }}

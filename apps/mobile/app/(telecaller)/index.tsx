@@ -10,7 +10,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, Text as RNText, View } from 'react-native';
 
-import { HeroTile, humanize } from '@/components/team';
+import { humanize } from '@/components/team';
 import {
   Appear,
   Avatar,
@@ -29,6 +29,7 @@ import {
   Segmented,
   SkeletonList,
   Text,
+  HeroCard,
 } from '@/components/ui';
 import { todayLabel } from '@/components/today';
 import { api } from '@/lib/api';
@@ -234,45 +235,42 @@ export default function TelecallerHome() {
                   onPress={() => router.push('/(telecaller)/notifications' as never)}
                 />
               </View>
-              <View className="mt-6 flex-row items-end justify-between">
-                <View>
-                  <RNText className="font-normal text-sm text-[#525252]">Due now</RNText>
-                  <RNText
-                    accessibilityLabel={`${counts?.dueNow ?? 0} follow-ups due now`}
-                    className={`mt-1 font-medium text-3xl tabular-nums ${counts?.dueNow ? 'text-gold' : 'text-ink'}`}
-                  >
-                    {counts ? counts.dueNow : '–'}
-                  </RNText>
-                </View>
-                {counts?.dueNow ? (
-                  <PressableScale
-                    accessibilityLabel="Show follow-ups"
-                    onPress={() => setTab('followups')}
-                    className="mb-1 h-10 flex-row items-center gap-2 rounded-lg bg-gold px-4"
-                  >
-                    <Icon name="alarm-outline" size={16} color="#fff" />
-                    <RNText className="font-medium text-md text-white">Call back now</RNText>
-                  </PressableScale>
-                ) : (
-                  <View className="mb-2 flex-row items-center gap-1.5">
-                    <View className="h-1.5 w-1.5 rounded-full bg-[#0F766E]" />
-                    <RNText className="font-normal text-sm text-[#525252]">Nothing overdue</RNText>
+              <HeroCard className="mt-5">
+                <View className="flex-row items-end justify-between">
+                  <View>
+                    <RNText className="font-normal text-md text-white/70">
+                      Follow-ups due now
+                    </RNText>
+                    <RNText
+                      accessibilityLabel={`${counts?.dueNow ?? 0} follow-ups due now`}
+                      className="mt-1 font-semibold text-3xl text-white tabular-nums"
+                    >
+                      {counts ? counts.dueNow : '–'}
+                    </RNText>
                   </View>
-                )}
-              </View>
-              <View className="mt-4 flex-row gap-2">
-                <HeroTile
-                  label="Active"
-                  value={counts ? counts.active : '–'}
-                  meta="in your queue"
-                />
-                <HeroTile
-                  label="Follow-ups"
-                  value={counts ? counts.followups : '–'}
-                  meta="scheduled"
-                />
-                <HeroTile label="History" value={counts ? counts.hidden : '–'} meta="read-only" />
-              </View>
+                  {counts?.dueNow ? (
+                    <PressableScale
+                      accessibilityLabel="Show follow-ups"
+                      onPress={() => setTab('followups')}
+                      className="mb-1 h-12 flex-row items-center gap-2 rounded-lg bg-gold px-5"
+                    >
+                      <Icon name="call" size={18} color="#fff" />
+                      <RNText className="font-medium text-base text-white">Call back now</RNText>
+                    </PressableScale>
+                  ) : (
+                    <View className="mb-2 flex-row items-center gap-1.5">
+                      <View className="h-1.5 w-1.5 rounded-full bg-[#5EEAD4]" />
+                      <RNText className="font-normal text-sm text-white/80">Nothing overdue</RNText>
+                    </View>
+                  )}
+                </View>
+                {counts ? (
+                  <RNText className="mt-4 border-t border-white/15 pt-4 font-normal text-sm text-white/70 tabular-nums">
+                    {counts.active} in your queue · {counts.followups} follow-up
+                    {counts.followups === 1 ? '' : 's'} scheduled
+                  </RNText>
+                ) : null}
+              </HeroCard>
             </HeroHeader>
             <View className="gap-3 px-4">
               <Segmented<QueueTab>

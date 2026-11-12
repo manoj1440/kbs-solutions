@@ -2,7 +2,7 @@ import { ApiClientError, type AuthSessionResponse, type OtpRequestResponse } fro
 import * as Device from 'expo-device';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text as RNText, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, Text as RNText, TextInput, View } from 'react-native';
 
 import { AuthShell } from '@/components/auth';
 import { Appear, Button, ErrorText, Icon, Muted, useDeferredFocus, WaitBar } from '@/components/ui';
@@ -18,15 +18,15 @@ function Caret() {
   return <View style={{ height: 24, width: 2, borderRadius: 1, backgroundColor: colors.ink }} />;
 }
 
+/** One large cell per digit: the next one is ringed in ink, filled ones sit on a quiet fill, a wrong code turns them red. */
 function OtpBox({ digit, active, error }: { digit?: string; active: boolean; error: boolean }) {
   const filled = !!digit;
   return (
     <View
-      className={`h-14 flex-1 items-center justify-center rounded-lg border ${error ? 'border-[#B42318] bg-[#FDEDEC]' : active ? 'border-ink bg-white' : filled ? 'border-[#D4D4D4] bg-white' : 'border-[#D4D4D4] bg-canvas'}`}
-      style={active && !error ? { boxShadow: '0px 0px 0px 3px rgba(23, 23, 23, 0.08)' } : undefined}
+      className={`h-16 flex-1 items-center justify-center rounded-lg ${error ? 'border-2 border-[#B42318] bg-[#FDEDEC]' : active ? 'border-2 border-ink bg-white' : filled ? 'border-[1.5px] border-raised bg-raised' : 'border-[1.5px] border-[#E0DCD6] bg-white'}`}
     >
       {filled ? (
-        <RNText className="font-medium text-xl text-ink tabular-nums">{digit}</RNText>
+        <RNText className="font-semibold text-xl text-ink tabular-nums">{digit}</RNText>
       ) : active ? (
         <Caret />
       ) : null}
@@ -34,7 +34,7 @@ function OtpBox({ digit, active, error }: { digit?: string; active: boolean; err
   );
 }
 
-/** S07 OTP verification — 6 boxes, masked number, edit, resend countdown (REQ-12). */
+/** S07 OTP verification (REQ-12) — six large cells, verifies itself on the sixth digit, live resend countdown. */
 export default function OtpScreen() {
   const params = useLocalSearchParams<{
     challengeId: string;
@@ -52,23 +52,28 @@ export default function OtpScreen() {
   const [focused, setFocused] = useState(true);
   const { secondsLeft, pct, start } = useCountdown(Number(params.resendAfterSec ?? 60));
 
-  async function verify() {
+  async function verify(entered = code) {
+    if (busy || entered.length !== BOXES) return;
     setError(null);
     setBusy(true);
     try {
       const r = await api.post<AuthSessionResponse>('/auth/otp/verify', {
         challengeId,
-        code,
+        code: entered,
         platform: 'ANDROID',
         deviceId: Device.osBuildId ?? undefined,
       });
       if (!r.data.accessToken || !r.data.refreshToken) throw new Error('missing tokens');
+      Keyboard.dismiss(); // the next screen must not open under a keyboard
       await signIn(r.data.accessToken, r.data.refreshToken);
       await refresh();
       router.replace(routeFor(r.data.user, r.data.gates) as never);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not verify the code.');
       if (e instanceof ApiClientError && e.error.code === 'AUTH_OTP_EXPIRED') router.back();
+      // a wrong code: show it in red for a moment, then clear the cells so the next try starts clean
+      else if (e instanceof ApiClientError && e.error.code === 'AUTH_OTP_INVALID')
+        setTimeout(() => setCode(''), 900);
     } finally {
       setBusy(false);
     }
@@ -95,11 +100,21 @@ export default function OtpScreen() {
   const masked = `+91 ${(params.mobile ?? '').slice(0, 2)}••• ${(params.mobile ?? '').slice(-4)}`;
   return (
     <AuthShell
-      title="OTP verification"
+      title="Enter the code"
       subtitle={
-        <RNText className="font-normal text-sm text-[#525252]">
-          Code sent to <RNText className="font-medium text-ink tabular-nums">{masked}</RNText>
-        </RNText>
+        <View className="flex-row flex-wrap items-center gap-x-1.5">
+          <RNText className="font-normal text-md text-[#525252]">
+            Sent to <RNText className="font-medium text-ink tabular-nums">{masked}</RNText>
+          </RNText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Change mobile number"
+            onPress={() => router.back()}
+            hitSlop={10}
+          >
+            <RNText className="font-medium text-md text-gold">Change</RNText>
+          </Pressable>
+        </View>
       }
     >
       <Appear index={1}>
@@ -122,7 +137,13 @@ export default function OtpScreen() {
           <TextInput
             ref={input}
             value={code}
-            onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, BOXES))}
+            onChangeText={(v) => {
+              const next = v.replace(/\D/g, '').slice(0, BOXES);
+              if (error) setError(null);
+              setCode(next);
+              // the sixth digit is the submit: nobody should have to find a button after typing a code
+              if (next.length === BOXES) void verify(next);
+            }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             keyboardType="number-pad"
@@ -132,43 +153,40 @@ export default function OtpScreen() {
           />
         </Pressable>
       </Appear>
+      <ErrorText>{error}</ErrorText>
+      <Button
+        title={busy ? 'Verifying…' : 'Verify'}
+        size="lg"
+        loading={busy}
+        disabled={busy || code.length !== BOXES}
+        onPress={() => void verify()}
+      />
       <View className="items-center">
         {secondsLeft > 0 ? (
           <View
-            className="w-full items-center gap-2"
+            className="w-full items-center gap-3"
             accessibilityRole="timer"
             accessibilityLabel={`You can resend the code in ${secondsLeft} seconds`}
           >
-            <View className="flex-row items-center gap-1.5 px-3 pt-2">
-              <Icon name="time-outline" size={16} color={colors.subtle} />
-              <Muted>
-                Resend OTP in{' '}
-                <RNText className="font-medium text-ink tabular-nums">{clock(secondsLeft)}</RNText>
-              </Muted>
+            <Muted className="text-md">
+              Resend code in{' '}
+              <RNText className="font-medium text-ink tabular-nums">{clock(secondsLeft)}</RNText>
+            </Muted>
+            <View className="w-24">
+              <WaitBar pct={pct} />
             </View>
-            <WaitBar pct={pct} />
           </View>
         ) : (
           <Pressable
             accessibilityRole="button"
             onPress={resend}
-            className="min-h-11 flex-row items-center gap-1.5 rounded-lg bg-raised px-4"
+            hitSlop={8}
+            className="min-h-11 flex-row items-center justify-center gap-1.5 px-4"
           >
-            <Icon name="refresh" size={16} color={colors.ink} />
-            <RNText className="font-medium text-md text-brand">Resend OTP</RNText>
+            <Icon name="refresh" size={18} color={colors.gold} />
+            <RNText className="font-medium text-base text-gold">Resend code</RNText>
           </Pressable>
         )}
-      </View>
-      <ErrorText>{error}</ErrorText>
-      <View className="gap-3">
-        <Button
-          title={busy ? 'Verifying…' : 'Verify OTP'}
-          size="lg"
-          icon={busy ? undefined : 'shield-checkmark-outline'}
-          loading={busy}
-          disabled={busy || code.length !== BOXES}
-          onPress={verify}
-        />
       </View>
     </AuthShell>
   );

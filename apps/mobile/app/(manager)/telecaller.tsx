@@ -309,7 +309,7 @@ function TelecallerDetailView({ id }: { id: string }) {
       {d ? (
         <>
           <Appear>
-            <View className="overflow-hidden rounded-xl border border-line bg-white p-5">
+            <View className="overflow-hidden rounded-2xl bg-white p-5">
               <View className="flex-row items-center gap-4">
                 <Avatar name={d.telecaller.fullName} size={48} />
                 <View className="flex-1 gap-1">

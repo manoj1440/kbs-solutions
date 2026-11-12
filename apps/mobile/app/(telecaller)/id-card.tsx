@@ -75,10 +75,7 @@ export default function IdCardScreen() {
         <>
           <Appear>
             {/* the ID badge: a flat white card with a hairline and a thin KBS-orange band */}
-            <View
-              className="overflow-hidden rounded-2xl border border-line bg-white"
-              style={shadow.lg}
-            >
+            <View className="overflow-hidden rounded-2xl bg-white" style={shadow.lg}>
               <View
                 className="h-1 w-full"
                 style={{ backgroundColor: active ? colors.orange : colors.subtle }}

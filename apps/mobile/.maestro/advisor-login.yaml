@@ -18,9 +18,8 @@ env:
 - tapOn: "Let's Login.*"
 - tapOn: "98765 43210"
 - inputText: ${ADVISOR_MOBILE}
-- tapOn: "Login"
-- inputText: "000000"
-- tapOn: "Verify OTP"
+- tapOn: "Send code"
+- inputText: "000000" # the sixth digit verifies by itself
 - assertVisible: "Home"
 - tapOn: "Earnings"
 - assertVisible:
