@@ -70,7 +70,7 @@ test.describe('Admin workspace smoke', () => {
     await expect(page.locator('summary[aria-label="Period"]')).toContainText('Last 30 days');
   });
 
-  test('F-807/F-817: the left sidebar lists every page once; icons only, labels and sections when expanded', async () => {
+  test('F-807/F-817: the left sidebar lists every page once; labels and sections by default, icons only when collapsed', async () => {
     test.skip((page.viewportSize()?.width ?? 0) < 768, 'desktop sidebar');
     await page.goto('/admin');
     const nav = page.getByRole('navigation', { name: 'Admin navigation' });
@@ -79,27 +79,32 @@ test.describe('Admin workspace smoke', () => {
     expect(new Set(hrefs).size).toBe(hrefs.length);
     expect(hrefs).not.toContain('/admin/dashboards');
     expect(hrefs).not.toContain('/admin/account');
-    // collapsed: icon links still carry their page name
-    await expect(nav.getByRole('link', { name: 'Calling records' })).toBeVisible();
-    await page.getByRole('button', { name: 'Expand navigation' }).click();
+    // F-821: labels and sections show by default
     for (const group of ['Overview', 'Sales', 'Calling', 'People', 'Products', 'Payouts', 'Reports', 'Settings'])
       await expect(nav.getByText(group, { exact: true })).toBeVisible();
     await expect(nav.getByText('Caller performance', { exact: true })).toBeVisible();
+    // collapsed: icon links still carry their page name
+    await page.getByRole('button', { name: 'Collapse navigation' }).click();
+    await expect(nav.getByRole('link', { name: 'Calling records' })).toBeVisible();
+    await expect(nav.getByText('Caller performance', { exact: true })).toBeHidden();
     // the choice is remembered across navigations, then put back
     await page.reload();
-    await expect(page.getByRole('button', { name: 'Collapse navigation' })).toBeVisible();
-    await page.getByRole('button', { name: 'Collapse navigation' }).click();
     await expect(page.getByRole('button', { name: 'Expand navigation' })).toBeVisible();
+    await page.getByRole('button', { name: 'Expand navigation' }).click();
+    await expect(page.getByRole('button', { name: 'Collapse navigation' })).toBeVisible();
   });
 
   test('F-817: theme toggle switches to dark, survives a reload, and System follows the OS', async () => {
-    test.skip((page.viewportSize()?.width ?? 0) < 768, 'top-bar theme toggle (phones use the menu drawer)');
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'account-menu theme toggle (phones use the menu drawer)');
     await page.goto('/admin');
     const html = page.locator('html');
+    const openMenu = () => page.locator('summary[aria-label="Account menu"]').click(); // F-821: the toggle lives in the account menu
+    await openMenu();
     await page.getByRole('radio', { name: 'Dark' }).first().click();
     await expect(html).toHaveClass(/\bdark\b/);
     await page.reload();
     await expect(html).toHaveClass(/\bdark\b/);
+    await openMenu();
     await expect(page.getByRole('radio', { name: 'Dark' }).first()).toHaveAttribute('aria-checked', 'true');
     await page.emulateMedia({ colorScheme: 'light' });
     await page.getByRole('radio', { name: 'System' }).first().click();

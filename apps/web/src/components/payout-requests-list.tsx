@@ -73,7 +73,7 @@ export async function PayoutRequestsList({ basePath, sp: rawSp, title, mode = 'a
               </option>
             ))}
           </select>
-          <Button type="submit" size="sm" className="h-9">
+          <Button variant="outline" type="submit" size="sm" className="h-9">
             <Filter />
             Apply
           </Button>

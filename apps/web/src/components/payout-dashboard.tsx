@@ -115,7 +115,7 @@ export async function PayoutDashboard({ basePath, requestBase, sp, title, canAck
             </option>
           ))}
         </select>
-        <Button type="submit" size="sm" className="h-9">
+        <Button variant="outline" type="submit" size="sm" className="h-9">
           Apply
         </Button>
         <Button asChild variant="ghost" size="sm" className="h-9">

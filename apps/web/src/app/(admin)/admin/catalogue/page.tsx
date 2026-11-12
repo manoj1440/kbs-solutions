@@ -69,7 +69,7 @@ export default async function CataloguePage({
                 <option value="DRAFT">Inactive</option>
                 <option value="RETIRED">Retired</option>
               </select>
-              <Button type="submit" size="sm" className="h-9">
+              <Button variant="outline" type="submit" size="sm" className="h-9">
                 <Filter />
                 Apply
               </Button>

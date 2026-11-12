@@ -10,21 +10,22 @@ import { cn } from '@/lib/utils';
  * Stage, Decision, Activation and Payout state are deliberately separate components (REQ-14 §14.3).
  */
 
-/** Tone → text colour (F-813: bank values render as plain coloured text, no chip). */
-const TONE_TEXT: Record<StatusTone, string> = {
-  success: 'text-success',
-  destructive: 'text-destructive',
-  warning: 'text-warning',
-  info: 'text-info',
-  unknown: 'text-fg-2',
-  secondary: 'text-fg-2',
+/** Tone → dot colour (F-821: the bank's words stay in ink with a toned dot, so a status never reads as a link). */
+const TONE_DOT: Record<StatusTone, string> = {
+  success: 'bg-success',
+  destructive: 'bg-destructive',
+  warning: 'bg-warning',
+  info: 'bg-info',
+  unknown: 'bg-fg-3',
+  secondary: 'bg-fg-3',
 };
 
 function StatusBadge({ kind, field, label }: { kind: StatusKind; field: StatusField; label?: string }) {
   return (
     <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
       {label ? <span className="shrink-0 text-2xs font-medium text-muted-foreground">{label}:</span> : null}
-      <span title={field.raw ?? undefined} className={cn('min-w-0 max-w-full truncate text-xs font-semibold', TONE_TEXT[statusTone(kind, field)])}>
+      <span className={cn('size-1.5 shrink-0 -translate-y-px self-center rounded-full', TONE_DOT[statusTone(kind, field)])} aria-hidden="true" />
+      <span title={field.raw ?? undefined} className="min-w-0 max-w-full truncate text-xs font-semibold text-foreground">
         {bankText(field.display)}
       </span>
     </span>

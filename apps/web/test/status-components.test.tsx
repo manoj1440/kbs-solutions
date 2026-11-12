@@ -19,13 +19,13 @@ describe('F-803 web status components (VIEW-01, REQ-20 §20.2)', () => {
     expect(a).not.toContain('MIS');
     expect(b).toContain(NOT_REPORTED);
     expect(a).not.toContain(NOT_REPORTED);
-    for (const out of [a, b]) expect(out).toContain('text-fg-2');
+    for (const out of [a, b]) expect(out).toContain('bg-fg-3'); // F-821: the tone is on the dot, the words stay in ink
   });
   it('a reported Inprocess decision is labelled and toned differently from "Awaiting bank update"', () => {
     const out = html(<DecisionBadge field={inprocess} />);
     expect(out).toContain('Inprocess');
     expect(out).toContain('Decision:');
-    expect(out).not.toContain('text-fg-2');
+    expect(out).not.toContain('bg-fg-3');
   });
   it('text is always present: provenance, freshness and payout labels', () => {
     expect(html(<ProvenanceChip provenance="BANK_MIS" asOf="2026-09-20T10:30:00.000Z" batchRef="KBS-M-1" />)).toMatch(/Bank.*as of.*KBS-M-1/);

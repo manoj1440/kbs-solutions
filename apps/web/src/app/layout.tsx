@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono, Manrope } from 'next/font/google';
 import './globals.css';
 
 import { DismissOnOutside } from '@/components/dismiss-on-outside';
 
 // F-814 U1: self-hosted at build time by next/font (no runtime request to Google).
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', display: 'swap' });
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains', display: 'swap' });
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ const THEME_SCRIPT = `(function(){try{var m=document.cookie.match(/(?:^|; )kbs_t
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${manrope.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>

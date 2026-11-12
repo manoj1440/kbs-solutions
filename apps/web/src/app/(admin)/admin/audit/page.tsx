@@ -127,7 +127,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           </select>
           <input aria-label="From date" className={cn(selectClass, 'h-9 w-36')} type="date" name="from" defaultValue={sp.from ?? ''} />
           <input aria-label="To date" className={cn(selectClass, 'h-9 w-36')} type="date" name="to" defaultValue={sp.to ?? ''} />
-          <Button type="submit" size="sm" className="h-9">
+          <Button variant="outline" type="submit" size="sm" className="h-9">
             Apply
           </Button>
           <Button asChild variant="ghost" size="sm" className="h-9">

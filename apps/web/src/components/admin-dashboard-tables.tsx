@@ -69,7 +69,7 @@ function Frame({
         <Form className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle p-3" action={path}>
           <input aria-label="From date" className={cn(selectClass, 'h-9 w-36')} type="date" name="from" defaultValue={sp.from ?? ''} />
           <input aria-label="To date" className={cn(selectClass, 'h-9 w-36')} type="date" name="to" defaultValue={sp.to ?? ''} />
-          <Button type="submit" size="sm" className="h-9">
+          <Button variant="outline" type="submit" size="sm" className="h-9">
             <Filter />
             Apply
           </Button>

@@ -65,7 +65,7 @@ export default async function ManagerAdvisorsPage({
               </option>
             ))}
           </select>
-          <Button type="submit" size="sm" className="h-9">
+          <Button variant="outline" type="submit" size="sm" className="h-9">
             <Filter />
             Apply
           </Button>

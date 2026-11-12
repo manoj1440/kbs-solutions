@@ -105,6 +105,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-818-mobile-glass-web-palette.md](./F-818-mobile-glass-web-palette.md) | F-818 Mobile: glass UI + the web palette (cream, near-black, orange, teal) | UX shells | DONE | F-805, F-817 |
 | [F-819-app-updates-ota-and-forced.md](./F-819-app-updates-ota-and-forced.md) | F-819 Mobile app updates: automatic OTA + forced native update | UX shells | DONE | F-818, F-104 |
 | [F-820-mobile-redesign.md](./F-820-mobile-redesign.md) | F-820 Mobile redesign: flat canvas, borderless cards, Manrope, orange primary, auto-verify OTP, bottom bar | UX shells | DONE | F-818, F-805 |
+| [F-821-web-redesign.md](./F-821-web-redesign.md) | F-821 Web redesign: flat canvas, labelled sidebar, orange primary, status dot, ink hero, Manrope | Web UX | DONE | F-817, F-820 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | DONE | F-801, F-802 |
 | [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | DONE | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |

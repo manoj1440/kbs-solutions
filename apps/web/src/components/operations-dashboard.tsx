@@ -226,7 +226,7 @@ export async function OpsFilters({ basePath, sp, hidden }: { basePath: string; s
           </select>
         </Field>
         <div className="col-span-2 flex gap-2 sm:col-span-1">
-          <Button type="submit" className="h-10">
+          <Button variant="outline" type="submit" className="h-10">
             <Filter />
             Apply
           </Button>

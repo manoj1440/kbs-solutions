@@ -121,7 +121,7 @@ export function StatCard({
         <span className={cn('text-ui font-medium', emphasis ? 'text-white/85' : 'text-fg-2')}>{label}</span>
       </div>
       <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="truncate text-[28px] leading-9 font-medium tabular-nums sm:text-[32px] sm:leading-10">{value}</span>
+        <span className="truncate text-[28px] leading-9 font-semibold tabular-nums sm:text-[32px] sm:leading-10">{value}</span>
         {delta}
       </div>
       {hint ? <p className={cn('mt-1 text-xs leading-relaxed', emphasis ? 'text-white/85' : 'text-muted-foreground')}>{hint}</p> : null}
@@ -141,7 +141,7 @@ export function StatCard({
   );
   const cls = cn(
     'group relative min-w-0 overflow-hidden rounded-2xl border border-transparent p-5',
-    emphasis ? 'brand-gradient text-white' : 'glass',
+    emphasis ? 'hero-ink text-white' : 'bg-card',
     href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
     className,
   );
@@ -247,17 +247,17 @@ export function MiniStat({
 }) {
   const body = (
     <>
-      <span className="flex items-start gap-1.5 text-2xs leading-tight font-medium text-fg-2">
+      <span className="flex items-start gap-1.5 text-xs leading-tight font-medium text-fg-2">
         <span className={cn('mt-1 size-1.5 shrink-0 rounded-full', TONE[tone].bar)} aria-hidden="true" />
         {label}
       </span>
-      <span className="mt-1 block text-xl leading-7 font-medium text-foreground tabular-nums">{value}</span>
+      <span className="mt-1.5 block text-2xl leading-8 font-semibold text-foreground tabular-nums">{value}</span>
       {hint ? <span className="line-clamp-2 block text-2xs leading-snug text-muted-foreground">{hint}</span> : null}
     </>
   );
   const cls = cn(
     // F-817: white on the canvas, soft grey when it sits inside a card (reference inner tiles)
-    'glass block min-w-0 rounded-xl px-4 py-3 in-data-[slot=card]:border-transparent in-data-[slot=card]:bg-surface-muted in-data-[slot=card]:shadow-none',
+    'block min-w-0 rounded-2xl bg-card px-4 py-3.5 in-data-[slot=card]:border-transparent in-data-[slot=card]:bg-surface-muted in-data-[slot=card]:shadow-none',
     active && 'border-foreground! ring-1 ring-foreground',
     href && 'transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
   );

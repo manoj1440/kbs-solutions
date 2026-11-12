@@ -128,7 +128,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const earned = business.payouts.eligible.amountInr ?? 0;
   const prevLabel = prev ? 'vs the period before' : rangeLabel;
   const kpis = [
-    { label: 'Leads created', value: business.leads.created.value, prev: prev?.leads, hint: `${business.leads.misMatched.value} with a bank status · ${business.leads.awaitingMis.value} awaiting`, icon: FilePlus2, href: '/admin/leads', hero: true },
+    { label: 'Leads created', value: business.leads.created.value, prev: prev?.leads, hint: `${business.leads.misMatched.value} with a bank status · ${business.leads.awaitingMis.value} awaiting`, icon: FilePlus2, href: '/admin/leads' },
     { label: 'Bank approved', value: business.approved, prev: prev?.approved, hint: `${business.declined} declined · ${business.inProcess} in process`, icon: BadgeCheck },
     { label: 'Cards activated', value: business.activated, prev: prev?.activated, hint: 'Reported active by the bank', icon: CreditCard },
     { label: 'Calls connected', value: calls.connected.value, prev: prev?.connected, hint: `${calls.attempts.value} attempts`, icon: PhoneCall, href: '/admin/calling-list/performance' },
@@ -168,7 +168,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               <Form action="/admin" className="grid gap-2 px-3 pb-1">
                 <input type="date" name="from" aria-label="From" defaultValue={sp.from ?? period.current.from ?? ''} className={cn(selectClass, 'h-9 px-3 text-xs')} />
                 <input type="date" name="to" aria-label="To" defaultValue={sp.to ?? period.current.to ?? ''} className={cn(selectClass, 'h-9 px-3 text-xs')} />
-                <Button type="submit" size="sm">
+                <Button variant="outline" type="submit" size="sm">
                   Apply
                 </Button>
               </Form>
@@ -179,13 +179,13 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)_minmax(0,1.15fr)]">
         {/* the reference "Total balance" card: the payout earned in the period, its change, two actions, the team as "wallets" */}
-        <section aria-label="Payout earned" className="glass flex min-w-0 flex-col gap-4 rounded-2xl p-5">
+        <section aria-label="Payout earned" className="hero-ink flex min-w-0 flex-col gap-4 rounded-2xl p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-ui font-medium text-fg-2">Payout earned</h2>
             <span className="glass-tile rounded-md px-3 py-1 text-2xs font-medium text-fg-2">{rangeLabel}</span>
           </div>
           <div>
-            <p className="truncate text-[34px] leading-10 font-semibold text-foreground tabular-nums">{formatInr(earned)}</p>
+            <p className="truncate text-[40px] leading-[48px] font-semibold text-foreground tabular-nums">{formatInr(earned)}</p>
             <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {prev ? <DeltaBadge current={earned} previous={prev.payoutEarnedInr} suffix="" /> : null}
               <span>
@@ -215,10 +215,10 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               {team.slice(0, 3).map((t) => {
                 const active = people[t.role as keyof typeof people].active;
                 return (
-                  <Link key={t.role} href={`/admin/users?role=${t.role}`} prefetch={false} className="min-w-0 rounded-xl bg-card/75 p-2.5 transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-ring">
+                  <Link key={t.role} href={`/admin/users?role=${t.role}`} prefetch={false} className="min-w-0 rounded-xl bg-card p-2.5 transition-colors hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-ring">
                     <span className="block truncate text-2xs font-medium text-fg-2 capitalize">{t.label}</span>
                     <span className="mt-1 block text-lg leading-6 font-semibold text-foreground tabular-nums">{t.n}</span>
-                    <span className={cn('mt-1 block truncate text-2xs font-medium', active ? 'text-teal-700' : 'text-muted-foreground')}>{active ? `${active} active` : 'None active'}</span>
+                    <span className={cn('mt-1 block truncate text-2xs font-medium', active ? 'text-success' : 'text-muted-foreground')}>{active ? `${active} active` : 'None active'}</span>
                   </Link>
                 );
               })}
@@ -231,18 +231,18 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
             const body = (
               <>
                 <span className="flex items-start justify-between gap-2">
-                  <span className={cn('text-ui font-medium', k.hero ? 'text-white/90' : 'text-fg-2')}>{k.label}</span>
+                  <span className="text-ui font-medium text-fg-2">{k.label}</span>
                 </span>
-                <span className="mt-3 block truncate text-[28px] leading-9 font-medium tabular-nums">{k.value.toLocaleString('en-IN')}</span>
+                <span className="mt-3 block truncate text-[28px] leading-9 font-semibold tabular-nums">{k.value.toLocaleString('en-IN')}</span>
                 <span className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5 text-2xs">
-                  {k.prev != null ? <DeltaBadge current={k.value} previous={k.prev} suffix="" className={k.hero ? 'text-white' : undefined} /> : null}
-                  <span className={cn('truncate', k.hero ? 'text-white/85' : 'text-muted-foreground')} title={k.hint}>
+                  {k.prev != null ? <DeltaBadge current={k.value} previous={k.prev} suffix="" /> : null}
+                  <span className="truncate text-muted-foreground" title={k.hint}>
                     {k.hint}
                   </span>
                 </span>
               </>
             );
-            const cls = cn('min-w-0 rounded-xl p-4', k.hero ? 'brand-gradient text-white' : 'glass-tile text-foreground', k.href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring');
+            const cls = cn('glass-tile min-w-0 rounded-xl p-4 text-foreground', k.href && 'lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring');
             return k.href ? (
               <Link key={k.label} href={k.href} prefetch={false} className={cls}>
                 {body}

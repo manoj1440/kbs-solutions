@@ -11,7 +11,6 @@ import {
   BookOpenCheck,
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
   CircleHelp,
   ClipboardCheck,
   ClipboardList,
@@ -197,7 +196,7 @@ function matchLength(href: string, pathname: string, params: URLSearchParams, ro
 export function WorkspaceShell({
   session,
   area,
-  navExpanded = false,
+  navExpanded = true,
   theme = 'system',
   children,
 }: {
@@ -306,7 +305,7 @@ export function WorkspaceShell({
                 aria-current={on ? 'page' : undefined}
                 className={cn(
                   'flex min-h-9 items-center gap-2.5 rounded-lg px-3 py-2 text-ui font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                  on ? 'bg-surface-muted text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
+                  on ? 'bg-brand-soft text-brand-strong' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
                 )}
               >
                 <Icon className="size-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
@@ -319,13 +318,13 @@ export function WorkspaceShell({
     ));
   }
 
-  const pill = 'glass rounded-xl';
+  const pill = 'rounded-xl bg-card';
   const iconButton = 'inline-flex size-9 items-center justify-center rounded-lg text-fg-2 transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60';
   const navItem = (on: boolean) =>
     cn(
       'flex items-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-      expanded ? 'h-9 w-full gap-2.5 px-3' : 'mx-auto size-10 justify-center',
-      on ? 'bg-surface-muted text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
+      expanded ? 'h-9 w-full gap-3 px-3' : 'mx-auto size-10 justify-center',
+      on ? 'bg-brand-soft text-brand-strong' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
     );
 
   const logo = (
@@ -339,8 +338,8 @@ export function WorkspaceShell({
       <a href="#admin-content" className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-card p-3 text-sm focus:not-sr-only">
         Skip to content
       </a>
-      <aside className={cn('sticky top-0 z-30 hidden h-dvh shrink-0 py-4 pl-4 transition-[width] duration-200 md:block', expanded ? 'w-[272px]' : 'w-[92px]')}>
-        <div className="glass flex h-full flex-col rounded-2xl">
+      <aside className={cn('sticky top-0 z-30 hidden h-dvh shrink-0 border-r border-border bg-card transition-[width] duration-200 md:block', expanded ? 'w-[256px]' : 'w-[72px]')}>
+        <div className="flex h-full flex-col">
           <div className={cn('flex shrink-0 gap-2 p-3', expanded ? 'items-center justify-between' : 'flex-col items-center')}>
             <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className="flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-ring">
               {logo}
@@ -353,15 +352,15 @@ export function WorkspaceShell({
                 </span>
               ) : null}
             </Link>
-            <button type="button" onClick={toggleNav} aria-expanded={expanded} aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'} title={expanded ? 'Collapse' : 'Expand'} className={cn(iconButton, 'size-9 shrink-0 bg-surface-muted')}>
+            <button type="button" onClick={toggleNav} aria-expanded={expanded} aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'} title={expanded ? 'Collapse' : 'Expand'} className={cn(iconButton, 'size-9 shrink-0')}>
               {expanded ? <PanelLeftClose className="size-[18px]" /> : <PanelLeftOpen className="size-[18px]" />}
             </button>
           </div>
-          <nav aria-label={`${humanize(area)} navigation`} className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-3" onScroll={() => setTip(null)}>
+          <nav aria-label={`${humanize(area)} navigation`} className="min-h-0 flex-1 overflow-y-auto px-2.5 pt-1 pb-3" onScroll={() => setTip(null)}>
             {GROUPS.map((group, gi) => (
               <div key={group.label} className={cn(gi > 0 && (expanded ? 'mt-4' : 'mt-2 border-t border-border-subtle pt-2'))}>
                 {expanded ? <p className="px-3 pb-1.5 text-xs font-medium text-muted-foreground">{group.label}</p> : <p className="sr-only">{group.label}</p>}
-                <div className="grid gap-1">
+                <div className="grid gap-0.5">
                   {group.items.map(({ href, label, icon: Icon }) => {
                     const on = active.href === href;
                     return (
@@ -422,8 +421,8 @@ export function WorkspaceShell({
         </div>
       ) : null}
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30">
-          <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-4 sm:h-[76px] sm:gap-3 sm:px-6">
+        <header className="sticky top-0 z-30 bg-canvas">
+          <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-4 sm:gap-3 sm:px-6">
             <button type="button" aria-label="Open navigation" className={cn(pill, 'inline-flex size-11 shrink-0 items-center justify-center text-fg-2 hover:text-foreground md:hidden')} onClick={() => mobileNav.current?.showModal()}>
               <Menu className="size-5" />
             </button>
@@ -431,17 +430,12 @@ export function WorkspaceShell({
               {logo}
               <span className="text-[15px] font-semibold">KBS</span>
             </Link>
-            <div className={cn(pill, 'hidden h-11 min-w-0 items-center gap-2 px-4 md:flex')}>
+            <p className="hidden min-w-0 items-baseline gap-2 truncate md:flex">
               <span className="text-ui text-muted-foreground">{active.group}</span>
-              <ChevronRight className="size-3.5 shrink-0 text-fg-3" aria-hidden="true" />
-              <span className="flex min-w-0 items-center gap-2 text-ui font-semibold text-foreground">
-                <active.icon className="size-4 shrink-0" aria-hidden="true" />
-                <span className="truncate">{active.label}</span>
-              </span>
-            </div>
+              <span className="text-fg-3" aria-hidden="true">/</span>
+              <span className="truncate text-[15px] font-semibold text-foreground">{active.label}</span>
+            </p>
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              {/* phones keep the labelled toggle in the menu drawer: the bar has no room for three more icons */}
-              <ThemeToggle initial={theme} compact className={cn(pill, 'hidden h-11 px-1.5 sm:flex')} />
               <div className={cn(pill, 'flex h-11 items-center gap-0.5 px-0.5')}>
                 <button type="button" className={iconButton} aria-label="Search workspace" title="Search (⌘K)" onClick={() => search.current?.showModal()}>
                   <Search className="size-[18px]" />
@@ -460,7 +454,7 @@ export function WorkspaceShell({
                   </span>
                   <ChevronDown className="hidden size-4 text-fg-3 sm:block" aria-hidden="true" />
                 </summary>
-                <div className="glass-strong absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl">
+                <div className="glass-strong absolute right-0 z-40 mt-2 w-72 overflow-hidden rounded-2xl">
                   <div className="glass-tile flex items-center gap-3 px-4 py-3">
                     <Avatar name={name} className="bg-foreground text-background" />
                     <div className="min-w-0">
@@ -475,6 +469,10 @@ export function WorkspaceShell({
                     <Link href={`${accountBase}/notifications`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
                       <Bell className="size-4 text-fg-3" /> All notifications
                     </Link>
+                  </div>
+                  <div className="border-t border-border-subtle px-3 py-3">
+                    <p className="pb-2 text-xs font-medium text-muted-foreground">Appearance</p>
+                    <ThemeToggle initial={theme} />
                   </div>
                   <div className="border-t border-border-subtle p-3">
                     <LogoutButton />
