@@ -75,14 +75,12 @@ export default function MobileScreen() {
   return (
     <AuthShell
       title={signup ? 'Create account' : 'Sign in'}
-      subtitle={signup ? 'Register as an Advisor to continue' : 'Use your registered mobile number'}
+      subtitle={
+        signup
+          ? 'Register as an Advisor. We text a 6-digit code to your number'
+          : 'We text a 6-digit code to your registered number'
+      }
     >
-      <Appear index={1} className="gap-1">
-        <RNText className="font-medium text-lg text-ink">
-          {signup ? 'Enter your mobile number' : 'Login with your mobile'}
-        </RNText>
-        <Muted>We&apos;ll text a 6-digit code to verify it&apos;s you.</Muted>
-      </Appear>
       <Appear index={2}>
         <Input
           ref={field}
@@ -130,12 +128,6 @@ export default function MobileScreen() {
             </Muted>
           </View>
         ) : null}
-        <View className="flex-row items-center gap-2.5 rounded-lg bg-raised px-3 py-3">
-          <Icon name="shield-checkmark-outline" size={18} color={colors.subtle} />
-          <Muted className="flex-1 text-xs">
-            We will send a one-time code — passwords are never used.
-          </Muted>
-        </View>
       </View>
       <View className="mt-2 items-center">
         {signup ? (

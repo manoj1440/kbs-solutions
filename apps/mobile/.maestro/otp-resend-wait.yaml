@@ -19,6 +19,6 @@ env:
 - assertVisible: "OTP verification"
 - assertVisible: ".*Resend OTP in.*"
 - hideKeyboard
-- tapOn: "Edit mobile number"
+- tapOn: "Back"
 - assertVisible: "Login in [0-9]:[0-9][0-9]"
 - assertVisible: "A code was just sent to this number.*"

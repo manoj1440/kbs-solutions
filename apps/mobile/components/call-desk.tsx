@@ -259,7 +259,6 @@ export function CallDesk({
         <View className="flex-row items-center gap-3">
           <View className="flex-1">
             <Text className="font-medium text-base">Outcome</Text>
-            <Muted className="text-xs">What happened on this call?</Muted>
           </View>
         </View>
         {saved ? (
@@ -335,12 +334,6 @@ export function CallDesk({
           }
           onPress={() => void submit()}
         />
-        <View className="flex-row items-start gap-2">
-          <Icon name="shield-checkmark-outline" size={16} color={colors.subtle} />
-          <Muted className="flex-1 text-xs">
-            Outcomes are operational only — bank status comes from the MIS, never from here.
-          </Muted>
-        </View>
       </Card>
     </View>
   );

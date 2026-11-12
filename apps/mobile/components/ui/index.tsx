@@ -1246,20 +1246,20 @@ export function AppBar({
           {right ? <View className="flex-row items-center gap-2">{right}</View> : null}
         </View>
       ) : null}
+      {/* Top-level tab screens (no back arrow): one compact row — title, then a quiet count/meta on the right. */}
       {large && title ? (
-        <View className="mt-2">
+        <View className="min-h-12 flex-row items-center gap-3">
           <RNText
             accessibilityRole="header"
-            className={cx('font-medium text-2xl', light ? 'text-white' : 'text-ink')}
+            numberOfLines={1}
+            className={cx('flex-1 font-medium text-xl', light ? 'text-white' : 'text-ink')}
           >
             {title}
           </RNText>
           {subtitle ? (
             <RNText
-              className={cx(
-                'mt-0.5 font-normal text-md',
-                light ? 'text-white/70' : 'text-[#525252]',
-              )}
+              numberOfLines={1}
+              className={cx('font-normal text-sm', light ? 'text-white/70' : 'text-[#737373]')}
             >
               {subtitle}
             </RNText>
@@ -1404,12 +1404,13 @@ export function Stepper({ steps, current }: { steps: string[]; current: number }
           </View>
         ))}
       </View>
-      <View className="flex-row items-center justify-between">
-        <RNText className="font-medium text-xs text-ink tabular-nums">
-          Step {Math.min(current + 1, steps.length)} of {steps.length}
-        </RNText>
-        <RNText className="font-normal text-xs text-[#737373]">{steps[current] ?? ''}</RNText>
-      </View>
+      {/* the step's own card carries its name; repeating it here only added a third copy */}
+      <RNText
+        accessibilityLabel={`Step ${Math.min(current + 1, steps.length)} of ${steps.length}: ${steps[current] ?? ''}`}
+        className="font-medium text-xs text-ink tabular-nums"
+      >
+        Step {Math.min(current + 1, steps.length)} of {steps.length}
+      </RNText>
     </View>
   );
 }

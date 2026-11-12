@@ -68,17 +68,7 @@ export default function IdCardScreen() {
   );
   const active = card?.status === 'ACTIVE';
   return (
-    <Screen
-      scroll
-      header={
-        <AppBar
-          back={false}
-          large
-          title="Official ID"
-          subtitle="Your KBS Solutions identity card"
-        />
-      }
-    >
+    <Screen scroll header={<AppBar back={false} large title="Official ID" />}>
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
       {!card && !error ? <Skeleton className="h-96 w-full rounded-2xl" /> : null}
       {card ? (

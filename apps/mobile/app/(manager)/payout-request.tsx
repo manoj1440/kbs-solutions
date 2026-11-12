@@ -7,10 +7,7 @@ import { AppBar, Screen } from '@/components/ui';
 export default function ManagerPayoutRequestScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   return (
-    <Screen
-      scroll
-      header={<AppBar title="Payout request" subtitle="Review the evidence before you decide" />}
-    >
+    <Screen scroll header={<AppBar title="Payout request" />}>
       <PayoutRequestDetail key={id} id={id} />
     </Screen>
   );

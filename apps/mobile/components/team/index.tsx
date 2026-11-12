@@ -170,7 +170,7 @@ export function DistributionCard({
       <View>
         <RNText className="font-medium text-base text-ink">{title}</RNText>
         <RNText className="font-normal text-xs text-[#737373] tabular-nums">
-          Bank MIS values verbatim · {d.denominator.value} leads
+          Bank MIS · {d.denominator.value} leads
         </RNText>
       </View>
       {d.buckets.map((b) => {

@@ -134,16 +134,14 @@ export default function Leads() {
   const header = (
     <View className="gap-3 px-4 pb-3 pt-1">
       <View className="min-h-12 flex-row items-center justify-between gap-3">
-        <View className="flex-1">
-          <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
-            My leads
-          </RNText>
-          <Muted>
-            {total !== null
-              ? `${total} lead${total === 1 ? '' : 's'}${activeCount || q ? ' match' : ''}`
-              : 'Loading…'}
+        <RNText accessibilityRole="header" className="flex-1 font-medium text-xl text-ink">
+          My leads
+        </RNText>
+        {total !== null ? (
+          <Muted className="tabular-nums">
+            {`${total}${activeCount || q ? ' match' : total === 1 ? ' lead' : ' leads'}`}
           </Muted>
-        </View>
+        ) : null}
         <PillButton
           icon="options-outline"
           label="Filters"

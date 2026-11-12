@@ -21,7 +21,7 @@ import {
   SectionHeader,
   Text,
 } from '@/components/ui';
-import { bankName, fileUrl, money, withBank } from '@/lib/cards';
+import { bankName, fileUrl, money } from '@/lib/cards';
 import { colors } from '@/lib/theme';
 
 /** F-308 §4: Card Detail in Call — image, bank, name, categories, benefits, fees, charges, PDF, link version, provenance. */
@@ -46,12 +46,7 @@ function CardDetail({ card, recordId }: { card: AvailableCard; recordId?: string
     );
   }
   return (
-    <Screen
-      scroll
-      header={
-        <AppBar title={card.name} subtitle={withBank(card.bank, 'share during the call', ' · ')} />
-      }
-    >
+    <Screen scroll header={<AppBar title={card.name} />}>
       <Appear className="items-center gap-4 pt-1">
         {imageUrl ? (
           <Image
@@ -132,8 +127,7 @@ function CardDetail({ card, recordId }: { card: AvailableCard; recordId?: string
           ) : null}
           <ErrorText>{error}</ErrorText>
           <Muted className="text-xs">
-            Opens WhatsApp with the approved content (link v{card.link?.version ?? '—'}, sent
-            exactly as configured). “Share sheet opened” is not a delivery confirmation.
+            Opens WhatsApp with the approved text. Opening it does not confirm delivery
           </Muted>
         </Card>
       </Appear>

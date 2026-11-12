@@ -55,10 +55,10 @@ export function ProfileView({ actions, extra }: { actions: ProfileAction[]; extr
   return (
     <Screen inset="none" scroll padded={false} contentClassName="pt-0">
       <HeroHeader>
-        <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
+        <RNText accessibilityRole="header" className="font-medium text-xl text-ink">
           Profile
         </RNText>
-        <View className="mt-5 flex-row items-center gap-4">
+        <View className="mt-3 flex-row items-center gap-4">
           <Avatar name={user?.fullName || 'KBS'} size={56} />
           <View className="flex-1">
             <RNText numberOfLines={1} className="font-medium text-lg text-ink">

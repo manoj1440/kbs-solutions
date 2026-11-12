@@ -142,7 +142,7 @@ function RecordView({ id }: { id: string }) {
   );
 
   return (
-    <Screen scroll header={<AppBar title={rec?.fullName ?? 'Customer'} subtitle="Call desk" />}>
+    <Screen scroll header={<AppBar title={rec?.fullName ?? 'Customer'} />}>
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
       {!rec && !error ? (
         <View className="gap-3">
@@ -259,9 +259,7 @@ function RecordView({ id }: { id: string }) {
                 </Card>
               ))}
               {cards ? (
-                <Muted className="text-center text-xs">
-                  As of {formatDateTime(cards.asOf)} · from current uploaded bank data
-                </Muted>
+                <Muted className="text-center text-xs">As of {formatDateTime(cards.asOf)}</Muted>
               ) : null}
             </Appear>
           ) : null}

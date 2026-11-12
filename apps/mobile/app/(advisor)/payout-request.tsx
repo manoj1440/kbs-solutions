@@ -6,10 +6,7 @@ import { AppBar, Screen } from '@/components/ui';
 export default function AdvisorPayoutRequestScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   return (
-    <Screen
-      scroll
-      header={<AppBar title="Payout request" subtitle="Approvals, payment and card events" />}
-    >
+    <Screen scroll header={<AppBar title="Payout request" />}>
       <PayoutRequestDetail key={id} id={id} />
     </Screen>
   );

@@ -161,9 +161,9 @@ export default function AdvisorHome() {
             <Avatar name={name || 'Advisor'} size={40} />
             <View>
               <RNText accessibilityRole="header" className="font-medium text-lg text-ink">
-                {todayLabel()}
+                {name || 'Advisor'}
               </RNText>
-              <RNText className="font-normal text-sm text-[#737373]">{name || 'Advisor'}</RNText>
+              <RNText className="font-normal text-sm text-[#737373]">{todayLabel()}</RNText>
             </View>
           </PressableScale>
           <IconButton

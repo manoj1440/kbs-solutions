@@ -201,8 +201,7 @@ export default function Payouts() {
       }
     >
       <HeroHeader>
-        <RNText className="font-normal text-sm text-[#737373]">Payouts</RNText>
-        <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
+        <RNText accessibilityRole="header" className="font-medium text-xl text-ink">
           Earnings
         </RNText>
       </HeroHeader>
@@ -255,9 +254,11 @@ export default function Payouts() {
                       >
                         {label === 'Paid' ? formatInr(v.amountInr) : v.count}
                       </RNText>
-                      <Muted className="text-xs tabular-nums">
-                        {v.count} card{v.count === 1 ? '' : 's'}
-                      </Muted>
+                      {label === 'Paid' ? (
+                        <Muted className="text-xs tabular-nums">
+                          {v.count} card{v.count === 1 ? '' : 's'}
+                        </Muted>
+                      ) : null}
                     </View>
                   ) : (
                     <Skeleton className="h-5 w-20" />
@@ -266,13 +267,9 @@ export default function Payouts() {
               ))}
             </View>
             <View className="border-t border-line pt-3">
-              <MetaLine icon="git-branch-outline">
-                Activated cards include the ones already requested or paid
-              </MetaLine>
               {ledger ? (
                 <MetaLine icon="business-outline">
-                  Card activation from the bank MIS; KBS decides each payout amount · as of{' '}
-                  {formatDateTime(ledger.asOf)}
+                  Bank MIS · as of {formatDateTime(ledger.asOf)}
                 </MetaLine>
               ) : null}
             </View>
@@ -362,15 +359,13 @@ export default function Payouts() {
                     />
                     <View className="rounded-md bg-[#F1ECFB] px-2 py-0.5">
                       <RNText className="font-medium text-xs text-[#5B2BA8]">
-                        {row.triggerField} = “{row.rawActivation}”
+                        Activation: {row.rawActivation}
                       </RNText>
                     </View>
                   </View>
                   <Muted className="text-xs">
-                    application no. {row.bankReference?.value ?? '—'} · MIS {row.evidence.batchRef}
-                    {row.lastMatchedAt
-                      ? ` · last matched ${formatDateTime(row.lastMatchedAt)}`
-                      : ''}
+                    App no. {row.bankReference?.value ?? '—'} · MIS {row.evidence.batchRef}
+                    {row.lastMatchedAt ? ` · ${formatDateTime(row.lastMatchedAt)}` : ''}
                   </Muted>
                   {row.request ? (
                     <MetaLine icon="paper-plane-outline">Request {row.request.publicRef}</MetaLine>

@@ -33,6 +33,8 @@ env:
     element: "Card activation"
 - scrollUntilVisible:
     element: "Leads · .*"
+- scrollUntilVisible:
+    element: "Open lead .*"
 - tapOn:
     text: "Open lead .*"
     index: 0

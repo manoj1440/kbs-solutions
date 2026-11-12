@@ -257,7 +257,7 @@ function LeadView({ id }: { id: string }) {
       scroll
       refreshing={refreshing}
       onRefresh={() => void refresh()}
-      header={<AppBar title={l.customer.name} subtitle={`KBS ${l.kbsRef}`} />}
+      header={<AppBar title={l.customer.name} />}
     >
       {error ? <ErrorText>{error}</ErrorText> : null}
 
@@ -320,12 +320,7 @@ function LeadView({ id }: { id: string }) {
 
       {/* Bank status — MIS only */}
       <Appear index={1}>
-        <SectionCard
-          icon="business-outline"
-          tone="info"
-          title="Bank status (from MIS only)"
-          subtitle="Stage, decision and activation exactly as the bank reported"
-        >
+        <SectionCard icon="business-outline" tone="info" title="Bank status (from MIS only)">
           <StatusTrio stage={l.stage} decision={l.decision} activation={l.activation} />
           <ProvenanceChip provenance="BANK_MIS" asOf={l.lastMatchedAt} />
           <MetaLine icon={l.bankStatus.matched ? 'sync-outline' : 'hourglass-outline'}>
@@ -394,11 +389,7 @@ function LeadView({ id }: { id: string }) {
       {tab === 'overview' ? (
         <>
           <Appear index={3}>
-            <SectionCard
-              icon="person-outline"
-              title="Customer"
-              subtitle="Masked — full numbers are never shown"
-            >
+            <SectionCard icon="person-outline" title="Customer">
               <View>
                 <KeyValue label="Mobile" value={l.customer.mobileMasked} />
                 <KeyValue
@@ -434,11 +425,7 @@ function LeadView({ id }: { id: string }) {
           </Appear>
 
           <Appear index={4}>
-            <SectionCard
-              icon="link-outline"
-              title="Application link"
-              subtitle="Opening or sharing is KBS activity — it never sets a bank status"
-            >
+            <SectionCard icon="link-outline" title="Application link" subtitle="KBS activity">
               <Button
                 title="Open application link"
                 icon="open-outline"
@@ -534,7 +521,6 @@ function LeadView({ id }: { id: string }) {
               icon="chatbubble-ellipses-outline"
               tone="info"
               title="Bank reason / remarks"
-              subtitle="Named bank fields, verbatim"
             >
               <View>
                 {l.bankRemarks.remarks.map((f, i, a) => (

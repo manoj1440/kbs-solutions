@@ -1,13 +1,6 @@
 import { router } from 'expo-router';
-import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
-import {
-  Keyboard,
-  Text as RNText,
-  ScrollView,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { type PropsWithChildren, type ReactNode } from 'react';
+import { Text as RNText, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Appear, Icon, IconButton, type IconName, Screen } from '@/components/ui';
@@ -76,47 +69,37 @@ export function AuthShell({
   back = true,
 }: PropsWithChildren<{ title: string; subtitle: ReactNode; footer?: ReactNode; back?: boolean }>) {
   const insets = useSafeAreaInsets();
-  // F-818: while the keyboard is open the brand header collapses so the field and its button stay above the keyboard
-  const [keyboard, setKeyboard] = useState(false);
-  useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboard(true));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboard(false));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
   return (
     <Screen inset="none" statusBar="dark" padded={false}>
-      <View style={{ paddingTop: insets.top + 4, minHeight: keyboard ? undefined : '30%' }}>
-        <View className="h-12 flex-row items-center px-4">
+      {/* One compact header: back arrow with the title beside it, one line of context under it. The form starts right
+          below, so the field and its button stay above the keyboard without a second, collapsed layout. */}
+      <View style={{ paddingTop: insets.top + 4 }} className="px-4 pb-4">
+        <View className="min-h-12 flex-row items-center gap-3">
           {back && router.canGoBack() ? (
             <IconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
-          ) : null}
-        </View>
-        <Appear className={keyboard ? 'px-6 pb-6' : 'px-6 pb-8 pt-2'}>
-          {keyboard ? null : <LogoMark size={44} />}
+          ) : (
+            <LogoMark size={32} />
+          )}
           <RNText
             accessibilityRole="header"
-            className={
-              keyboard ? 'font-medium text-xl text-ink' : 'mt-5 font-medium text-2xl text-ink'
-            }
+            numberOfLines={1}
+            className="flex-1 font-medium text-xl text-ink"
           >
             {title}
           </RNText>
-          {keyboard ? null : typeof subtitle === 'string' ? (
-            <RNText className="mt-1.5 font-normal text-base text-[#525252]">{subtitle}</RNText>
-          ) : (
-            subtitle
-          )}
-        </Appear>
+        </View>
+        {typeof subtitle === 'string' ? (
+          <RNText className="mt-1 px-1 font-normal text-sm text-[#525252]">{subtitle}</RNText>
+        ) : subtitle ? (
+          <View className="mt-1 px-1">{subtitle}</View>
+        ) : null}
       </View>
       <View className="flex-1 rounded-t-3xl border-t border-line bg-white">
         <ScrollView
           className="flex-1"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          contentContainerClassName="gap-5 px-6 pt-8"
+          contentContainerClassName="gap-5 px-5 pt-6"
           contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 16 }}
         >
           {children}

@@ -405,7 +405,7 @@ export default function Welcome() {
           setPage(Math.round(e.nativeEvent.contentOffset.x / width))
         }
         renderItem={({ item, index }) => (
-          <View style={{ width }} className="flex-1 px-6 pt-5">
+          <View style={{ width }} className="flex-1 justify-center px-6">
             <Appear>{item.render(index === page)}</Appear>
           </View>
         )}
@@ -438,9 +438,7 @@ export default function Welcome() {
             </Pressable>
           </Link>
         ) : (
-          <View className="min-h-11 items-center justify-center">
-            <RNText className="font-normal text-xs text-[#737373]">Swipe to explore</RNText>
-          </View>
+          <View className="min-h-11" />
         )}
       </View>
     </Screen>

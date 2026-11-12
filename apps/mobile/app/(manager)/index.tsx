@@ -105,12 +105,8 @@ function MisFreshnessLine({ mis }: { mis: MisFreshness }) {
           </View>
         );
       })}
-      {none ? (
-        <Muted className="text-xs">
-          {applied.length
-            ? `+${none} bank${none === 1 ? '' : 's'} with no MIS yet`
-            : 'No bank MIS applied yet'}
-        </Muted>
+      {none && applied.length ? (
+        <Muted className="text-xs">{`+${none} bank${none === 1 ? '' : 's'} with no MIS yet`}</Muted>
       ) : null}
     </View>
   );

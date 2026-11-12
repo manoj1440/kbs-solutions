@@ -29,3 +29,11 @@ Actions: `Button` (`variant` default(graphite)|gold(accent)|secondary|outline|de
 Inputs: `Input` (`label`, `icon`, `prefix`, `error`, `hint`, `right`, `multiline`).
 Layout: `Screen`, `AppBar` (`title`, `subtitle`, `right`, `light`, `large`, `back`), `HeroHeader`, `StickyFooter`, `BottomSheet` (`open`, `onClose`, `title`, `footer`).
 Domain: `CreditCardArt` (`@/components/brand/credit-card-art`), `StatusTrio` / badges / `ProvenanceChip` / `PayoutStateBadge` (`@/components/status`), `LeadRow`, `TabBar` (`@/components/tab-bar`).
+
+## Headers and copy (session 25 pass)
+- **One compact header row everywhere.** Screens with a back arrow: the title sits beside the arrow (`AppBar`, `AuthShell`), never on a row of its own under it. Top-level tabs: `AppBar back={false} large` (or the same shape by hand) — title at `text-xl`, a count or meta on the right, no second line.
+- **A subtitle must carry data** (a count, a reference, a status). Never one that restates the screen ("Call desk", "Review the evidence before you decide").
+- **Say a thing once per screen.** Keep the short provenance tags REQ-20 asks for (`Bank MIS`, `KBS activity`, "as of …"); do not repeat the explanation in a callout, a section subtitle and a footnote. One reference per card — the lead reference is not shown in the header and again in the body.
+- **No developer wording in the UI.** `Activation: V + ACTIVE`, not `cardActivationStatus = "V + ACTIVE"`.
+- **A step's name appears once** (its card heading); the stepper shows only "Step n of m".
+- Screenshot tour for review: build with `EXPO_PUBLIC_QA_ALLOW_CAPTURE=1` and force a fresh bundle (`./gradlew :app:cleanCreateBundleReleaseJsAndAssets assembleRelease …`) — Gradle does not re-bundle for an env-only change. Never ship that build.

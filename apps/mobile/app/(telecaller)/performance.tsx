@@ -79,17 +79,7 @@ export default function PerformanceScreen() {
   );
   const a = p?.applications;
   return (
-    <Screen
-      scroll
-      header={
-        <AppBar
-          back={false}
-          large
-          title="My performance"
-          subtitle="Today, the last 30 days and your applications"
-        />
-      }
-    >
+    <Screen scroll header={<AppBar back={false} large title="My performance" />}>
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
       {!p && !error ? <SkeletonList rows={4} /> : null}
       {p && a ? (
@@ -167,10 +157,7 @@ export default function PerformanceScreen() {
                 value={String(a.AWAITING_REFERENCE)}
               />
             </View>
-            <Muted>
-              Bank results come only from the bank MIS upload. Add the application number so the MIS
-              can find the customer.
-            </Muted>
+            <Muted>Add the application number so the bank MIS can find the customer</Muted>
           </Appear>
 
           <Appear index={3} className="gap-3">

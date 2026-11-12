@@ -20,7 +20,6 @@ import {
   Appear,
   Avatar,
   Badge,
-  Callout,
   Card,
   EmptyState,
   ErrorState,
@@ -88,9 +87,7 @@ function ManagerAdvisorView({ id }: { id: string }) {
       scroll
       refreshing={loading && loaded}
       onRefresh={() => void load()}
-      header={
-        <AppBar title={row?.user.fullName || 'Advisor'} subtitle="Advisor · read-only evidence" />
-      }
+      header={<AppBar title={row?.user.fullName || 'Advisor'} />}
     >
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
       {!loaded ? <SkeletonList rows={4} /> : null}
@@ -170,9 +167,6 @@ function ManagerAdvisorView({ id }: { id: string }) {
 
           <Appear index={2} className="gap-3">
             <SectionHeader title="Bank results" />
-            <Callout kind="neutral">
-              Bank values are the latest accepted MIS only — never live bank status.
-            </Callout>
             <DistributionCard title="Current stage" icon="layers-outline" d={row.stage} />
             <DistributionCard title="Final decision" icon="flag-outline" d={row.decision} />
             <DistributionCard title="Card activation" icon="card-outline" d={row.activation} />

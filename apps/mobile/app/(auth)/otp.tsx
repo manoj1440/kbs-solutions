@@ -97,24 +97,9 @@ export default function OtpScreen() {
     <AuthShell
       title="OTP verification"
       subtitle={
-        <View className="mt-1.5 flex-row flex-wrap items-center gap-x-2 gap-y-1">
-          <RNText className="font-normal text-base text-[#525252]">
-            Enter the 6-digit OTP sent to
-          </RNText>
-          <View className="flex-row items-center gap-2">
-            <RNText className="font-medium text-base text-ink tabular-nums">{masked}</RNText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Edit mobile number"
-              onPress={() => router.back()}
-              hitSlop={10}
-              className="flex-row items-center gap-1 rounded-md bg-raised px-2 py-1"
-            >
-              <Icon name="create-outline" size={16} color={colors.subtle} />
-              <RNText className="font-medium text-xs text-ink">Edit</RNText>
-            </Pressable>
-          </View>
-        </View>
+        <RNText className="font-normal text-sm text-[#525252]">
+          Code sent to <RNText className="font-medium text-ink tabular-nums">{masked}</RNText>
+        </RNText>
       }
     >
       <Appear index={1}>
@@ -184,10 +169,6 @@ export default function OtpScreen() {
           disabled={busy || code.length !== BOXES}
           onPress={verify}
         />
-        <Muted className="text-center">
-          Didn&apos;t receive OTP?
-          {secondsLeft > 0 ? ' You can request a new one when the timer ends.' : ''}
-        </Muted>
       </View>
     </AuthShell>
   );

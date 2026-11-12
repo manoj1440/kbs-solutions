@@ -617,12 +617,7 @@ export default function OnboardingGate() {
       scroll
       header={
         <View className="border-b border-line bg-canvas pb-3">
-          <AppBar
-            title="Advisor onboarding"
-            subtitle="A few steps to start earning"
-            back={false}
-            right={signOutButton}
-          />
+          <AppBar title="Advisor onboarding" back={false} right={signOutButton} />
           <View className="px-4">
             <Stepper steps={stepperLabels} current={stepperIdx} />
           </View>

@@ -8,7 +8,6 @@ import {
   Appear,
   Badge,
   Button,
-  Callout,
   Card,
   Chip,
   EmptyState,
@@ -74,27 +73,20 @@ export default function CardCatalogue() {
 
   const header = (
     <View className="gap-3 pb-1">
-      <View>
-        <RNText accessibilityRole="header" className="font-medium text-2xl text-ink">
-          Card Catalogue
+      <View className="min-h-12 flex-row items-center gap-3">
+        <RNText accessibilityRole="header" className="flex-1 font-medium text-xl text-ink">
+          Cards
         </RNText>
-        <Muted>
-          {loaded
-            ? `${cards.length} card${cards.length === 1 ? '' : 's'}${pin ? ` available at ${pin}` : ''}`
-            : 'Loading cards…'}
-        </Muted>
+        {loaded ? (
+          <Muted className="tabular-nums">
+            {`${cards.length} card${cards.length === 1 ? '' : 's'}`}
+          </Muted>
+        ) : null}
       </View>
-      <Callout kind="info" icon="add-circle">
-        Pick a card to start a new lead
-      </Callout>
       <Input
         icon="location-outline"
         placeholder="Customer pincode"
-        hint={
-          pin
-            ? `Showing cards available at ${pin}`
-            : 'Enter the 6-digit pincode to see the cards available there'
-        }
+        hint={pin ? `Showing cards available at ${pin}` : undefined}
         value={pincode}
         keyboardType="number-pad"
         maxLength={6}
@@ -103,7 +95,7 @@ export default function CardCatalogue() {
       />
       <Input
         icon="search"
-        placeholder="Search cards, banks…"
+        placeholder="Search cards"
         value={q}
         onChangeText={setQ}
         onSubmitEditing={() => void load()}

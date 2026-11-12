@@ -195,11 +195,11 @@ export function PayoutRequestDetail({ id }: { id: string }) {
           </RNText>
         </View>
       </Appear>
-      <Appear index={1}>
-        <Callout kind="neutral">
-          A submitted request is not an approval; Accounts pays only after both approvals.
-        </Callout>
-      </Appear>
+      {r.state === 'PENDING_APPROVALS' ? (
+        <Appear index={1}>
+          <Callout kind="neutral">Paid only after both approvals</Callout>
+        </Appear>
+      ) : null}
       <ErrorText>{error}</ErrorText>
       <Appear index={2}>
         <Card className="gap-1">
@@ -346,8 +346,8 @@ export function PayoutRequestDetail({ id }: { id: string }) {
                 {/* provenance dot — Bank MIS */}
                 <View className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#5B2BA3]" />
                 <Muted className="flex-1 text-xs">
-                  MIS evidence: {i.triggerField} = “{i.triggerFieldValue}” · batch{' '}
-                  {i.evidence.batchRef} ({formatDateTime(i.evidence.uploadedAt)})
+                  Bank MIS: activation “{i.triggerFieldValue}” · {i.evidence.batchRef} ·{' '}
+                  {formatDateTime(i.evidence.uploadedAt)}
                 </Muted>
               </View>
               <View className="flex-row items-start gap-2">

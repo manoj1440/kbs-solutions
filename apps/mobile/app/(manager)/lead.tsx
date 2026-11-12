@@ -147,7 +147,7 @@ function ManagerLeadView({ id }: { id: string }) {
               <View className="flex-row items-center gap-3">
                 <Avatar name={l.customer.name} size={44} />
                 <View className="flex-1">
-                  <Muted className="text-xs">KBS {l.kbsRef}</Muted>
+                  <Muted className="text-xs">{l.kbsRef}</Muted>
                   <Text numberOfLines={1} className="font-medium text-lg">
                     {l.customer.name}
                   </Text>

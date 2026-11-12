@@ -14,7 +14,6 @@ import {
   IconCircle,
   Input,
   KeyValue,
-  Muted,
   Screen,
   StickyFooter,
   Text,
@@ -123,7 +122,7 @@ export default function CreateTelecaller() {
   return (
     <Screen
       scroll
-      header={<AppBar title="Create Telecaller" subtitle="Adds a Telecaller to your team" />}
+      header={<AppBar title="Create Telecaller" />}
       footer={
         <StickyFooter>
           <Button
@@ -137,13 +136,6 @@ export default function CreateTelecaller() {
         </StickyFooter>
       }
     >
-      <Appear>
-        <View className="rounded-xl bg-raised p-4">
-          <Muted className="text-sm text-[#525252]">
-            Only a name and mobile number are needed. The Telecaller reports to you.
-          </Muted>
-        </View>
-      </Appear>
       <Appear index={1}>
         <Card className="gap-4">
           <Input

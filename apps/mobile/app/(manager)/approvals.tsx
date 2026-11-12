@@ -135,7 +135,11 @@ export default function ManagerApprovals() {
           back={false}
           large
           title="Payout approvals"
-          subtitle={ready && rows.length ? `${rows.length} request(s)` : 'Advisor payout requests'}
+          subtitle={
+            ready && rows.length
+              ? `${rows.length} request${rows.length === 1 ? '' : 's'}`
+              : undefined
+          }
         />
       }
     >

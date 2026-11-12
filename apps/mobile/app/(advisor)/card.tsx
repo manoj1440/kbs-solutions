@@ -105,9 +105,6 @@ function CardDetail({ card, initialPincode }: { card: BrowseCard; initialPincode
               }
             />
           </View>
-          <Muted className="text-center text-xs">
-            Creates a KBS operational lead only; the bank status appears after the MIS upload.
-          </Muted>
         </StickyFooter>
       }
     >
@@ -228,12 +225,7 @@ function CardDetail({ card, initialPincode }: { card: BrowseCard; initialPincode
         ) : null}
 
         <Appear index={6}>
-          <SectionCard
-            icon="location-outline"
-            tone="success"
-            title="Sourcing availability"
-            subtitle="Pincodes KBS has set for this card"
-          >
+          <SectionCard icon="location-outline" tone="success" title="Sourcing availability">
             <View className="flex-row items-start gap-2">
               <View className="flex-1">
                 <Input

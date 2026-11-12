@@ -37,7 +37,7 @@ export function LeadRow({ row, onPress }: { row: LeadStatusRow; onPress: () => v
         <Ionicons name="chevron-forward" size={16} color={colors.subtle} />
       </View>
       <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
-        <Muted className="text-xs tabular-nums">KBS {row.kbsRef}</Muted>
+        <Muted className="text-xs tabular-nums">{row.kbsRef}</Muted>
         {ref ? (
           <View className="flex-row items-center gap-1.5">
             <Muted className="text-xs tabular-nums">Bank ref {ref}</Muted>
