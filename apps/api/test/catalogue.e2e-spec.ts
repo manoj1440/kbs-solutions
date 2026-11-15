@@ -75,13 +75,26 @@ describe('F-403 catalogue / F-404 bank pincode profiles', () => {
     await api().patch(`/api/v1/catalogue/cards/${cardId}`).set(auth(adminToken)).send({ description: 'Cashback on everyday spends. Subject to bank approval.', categoryKeys: ['SHOPPING'] }).expect(200);
     const pub = await api().post(`/api/v1/catalogue/cards/${cardId}/publish`).set(auth(adminToken)).set('idempotency-key', idem()).send({}).expect(201);
     expect(pub.body.data).toMatchObject({ status: 'PUBLISHED', version: 1, forbiddenPhraseOverride: null });
-    // second publish (after edits) increments version; override path is audited
-    await api().patch(`/api/v1/catalogue/cards/${cardId}`).set(auth(adminToken)).send({ eligibilityHighlights: 'Instant approval decision in minutes' }).expect(200);
-    await api().post(`/api/v1/catalogue/cards/${cardId}/publish`).set(auth(adminToken)).set('idempotency-key', idem()).send({}).expect(400);
-    const pub2 = await api().post(`/api/v1/catalogue/cards/${cardId}/publish`).set(auth(adminToken)).set('idempotency-key', idem()).send({ overrideReason: 'bank-approved wording for this campaign' }).expect(201);
+    // second publish (after edits) increments version
+    await api().patch(`/api/v1/catalogue/cards/${cardId}`).set(auth(adminToken)).send({ eligibilityHighlights: 'Decision usually within a few days' }).expect(200);
+    const pub2 = await api().post(`/api/v1/catalogue/cards/${cardId}/publish`).set(auth(adminToken)).set('idempotency-key', idem()).send({}).expect(201);
     expect(pub2.body.data.version).toBe(2);
-    expect(pub2.body.data.forbiddenPhraseOverride).toContain('bank-approved wording');
-    expect(await prisma.auditLog.count({ where: { action: 'card.publish', entityId: cardId } })).toBe(2);
+    // UAT-01: forbidden wording cannot be saved onto a live card — nothing is written
+    const live = await api().patch(`/api/v1/catalogue/cards/${cardId}`).set(auth(adminToken)).send({ eligibilityHighlights: 'Instant approval decision in minutes' }).expect(400);
+    expect(live.body.error.details.forbiddenPhrases).toEqual(['instant approval']);
+    expect((await prisma.creditCard.findUniqueOrThrow({ where: { id: cardId } })).eligibilityHighlights).toBe('Decision usually within a few days');
+    // the override path goes through a draft and an explicit reason, and is audited
+    await api().patch(`/api/v1/catalogue/cards/${cardId}`).set(auth(adminToken)).send({ active: false, eligibilityHighlights: 'Instant approval decision in minutes' }).expect(200);
+    await api().post(`/api/v1/catalogue/cards/${cardId}/publish`).set(auth(adminToken)).set('idempotency-key', idem()).send({}).expect(400);
+    const pub3 = await api().post(`/api/v1/catalogue/cards/${cardId}/publish`).set(auth(adminToken)).set('idempotency-key', idem()).send({ overrideReason: 'bank-approved wording for this campaign' }).expect(201);
+    expect(pub3.body.data.forbiddenPhraseOverride).toContain('bank-approved wording');
+    expect(await prisma.auditLog.count({ where: { action: 'card.publish', entityId: cardId } })).toBe(3);
+    // an override the Admin recorded stays valid for later edits of that card
+    await api().patch(`/api/v1/catalogue/cards/${cardId}`).set(auth(adminToken)).send({ annualFee: 1200 }).expect(200);
+    // UAT-01: "create and publish" with forbidden wording is refused and leaves no draft behind
+    const cardsBefore = await prisma.creditCard.count();
+    await api().post('/api/v1/catalogue/cards').set(auth(adminToken)).set('idempotency-key', idem()).send({ name: 'Bad Copy Card', description: 'Guaranteed approval for everyone', applyUrl: 'https://apply.example.com/bad', availability: 'ALL_INDIA', active: true }).expect(400);
+    expect(await prisma.creditCard.count()).toBe(cardsBefore);
     // non-admin cannot manage but can read
     const s = await setupManagerAndTelecaller(app, prisma, '20001');
     await api().get('/api/v1/catalogue/cards').set(auth(s.manager.accessToken)).expect(200);

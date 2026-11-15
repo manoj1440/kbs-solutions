@@ -1,0 +1,33 @@
+# UAT-01 S14 — Manager North (m1): team calling today 6 attempts / 5 connected; Advisors Arjun + Anita with exact paid amounts.
+appId: com.kbs.dsa
+env:
+  MOBILE: ${MOBILE || '9800000011'}
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${MOBILE}
+- tapOn: "Send code"
+- inputText: "000000"
+- assertVisible: "Team calling today"
+- assertVisible: "Call attempts"
+- tapOn: "Advisors"
+- assertVisible: "Arjun Advisor"
+- assertVisible: "Anita Advisor"
+- assertVisible: ".*paid 2 \\(₹3,000.00\\).*"
+- assertVisible: ".*paid 2 \\(₹2,500.50\\).*"
+- assertNotVisible: "Aman Advisor"
+- assertNotVisible: "Alok Advisor"
+- tapOn: "Approvals"
+- assertVisible: "Payout approvals"

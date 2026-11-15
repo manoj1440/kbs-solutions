@@ -63,6 +63,8 @@ describe('F-409 Pending Actions, follow-up tasks, lead remarks (VIEW-03)', () =>
     // it shows in the lead's operational events, separate from MIS
     const d = await api().get(`/api/v1/leads/${leadId}`).set(auth(advToken)).expect(200);
     expect(d.body.data.operationalEvents.find((e: { kind: string }) => e.kind === 'FOLLOW_UP_TASK')).toMatchObject({ provenance: 'KBS_OPERATIONAL', detail: expect.stringContaining('done') });
+    // UAT-01: screens print this text as is — the due time must be readable, not a raw UTC timestamp
+    expect(d.body.data.operationalEvents.find((e: { kind: string }) => e.kind === 'FOLLOW_UP_TASK').detail).not.toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/);
     expect(d.body.data.followUps).toHaveLength(1);
   });
 

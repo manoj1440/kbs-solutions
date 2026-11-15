@@ -13,6 +13,9 @@ export class S3StorageAdapter implements StorageProvider {
       region: opts.region,
       forcePathStyle: opts.forcePathStyle,
       credentials: opts.accessKeyId && opts.secretAccessKey ? { accessKeyId: opts.accessKeyId, secretAccessKey: opts.secretAccessKey } : undefined,
+      // UAT-01: an unreachable store used to hang the upload request for minutes (no socket timeout). Fail in seconds instead.
+      requestHandler: { connectionTimeout: 5_000, requestTimeout: 60_000 },
+      maxAttempts: 2,
     });
   }
   async put(input: { bucket: string; key: string; body: Buffer; contentType: string }) {

@@ -4,14 +4,46 @@
     {
       "name": "api",
       "runtimeExecutable": "fnm",
-      "runtimeArgs": ["exec", "--using=22", "pnpm", "--filter", "api", "dev"],
+      "runtimeArgs": [
+        "exec",
+        "--using=22",
+        "pnpm",
+        "--filter",
+        "api",
+        "dev"
+      ],
       "port": 4000
     },
     {
       "name": "web",
       "runtimeExecutable": "fnm",
-      "runtimeArgs": ["exec", "--using=22", "pnpm", "--filter", "web", "dev"],
+      "runtimeArgs": [
+        "exec",
+        "--using=22",
+        "pnpm",
+        "--filter",
+        "web",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "api-uat",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DATABASE_URL=postgresql://kbs:kbs@localhost:5432/kbs_uat",
+        "REDIS_URL=redis://localhost:6379/9",
+        "THROTTLE_LIMIT_PER_MIN=100000",
+        "S3_ENDPOINT=http://localhost:9000",
+        "fnm",
+        "exec",
+        "--using=22",
+        "pnpm",
+        "--filter",
+        "api",
+        "dev"
+      ],
+      "port": 4000
     }
   ]
 }

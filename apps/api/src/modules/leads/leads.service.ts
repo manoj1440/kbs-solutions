@@ -1,5 +1,5 @@
 import type { Prisma } from '@kbs/db';
-import { activationBucket, type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, decisionBucket, DEFAULT_BLANK_TOKENS, type DeclarationText, FILTER_AWAITING, FILTER_NOT_REPORTED, isBlankBankValue, isValidE164India, type LeadFilterOptions, type OperationalEvent, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, personaliseLink, RefPrefix, shareCodeOf, toE164India } from '@kbs/shared';
+import { activationBucket, type BankReferenceBody, bankRemarkFields, buildLeadStatusRow, decisionBucket, DEFAULT_BLANK_TOKENS, type DeclarationText, FILTER_AWAITING, FILTER_NOT_REPORTED, formatDateTime, isBlankBankValue, isValidE164India, type LeadFilterOptions, type OperationalEvent, type LeadDeclarationsBody, type LeadDetailsBody, type LeadDraftView, type LeadEmploymentBody, type LeadIncomeBody, type LeadListQuery, type LeadMobileBody, type LeadStatusRow, type LeadPanBody, type LeadPincodeBody, LEAD_STEPS, type LeadStep, makePublicRef, maskMobile, normalizePan, personaliseLink, RefPrefix, shareCodeOf, toE164India } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -517,7 +517,7 @@ export class LeadsService {
     const asc = [...l.linkages].sort((a, b) => a.at.getTime() - b.at.getTime());
     asc.forEach((x, n) => ev.push({ id: x.id, at: x.at.toISOString(), kind: n === 0 ? 'BANK_REFERENCE_ENTERED' : 'BANK_REFERENCE_CORRECTED', label: n === 0 ? 'Bank application reference entered' : 'Bank application reference corrected', detail: `${x.referenceKind} ${x.referenceValue} (${x.source.toLowerCase().replace(/_/g, ' ')})`, provenance: 'KBS_OPERATIONAL' }));
     for (const sh of l.shareActions) ev.push({ id: sh.id, at: sh.at.toISOString(), kind: 'SHARE_SENT', label: `${sh.kind.toLowerCase().replace(/_/g, ' ')} shared to ${sh.targetMobileMasked}`, detail: `handoff ${sh.handoffResult.toLowerCase()} · delivery ${sh.deliveryStatus.toLowerCase()}`, provenance: 'KBS_OPERATIONAL' });
-    for (const t of followUps) ev.push({ id: `task-${t.id}`, at: t.createdAt.toISOString(), kind: 'FOLLOW_UP_TASK', label: `Follow-up task: ${t.text}`, detail: `owner ${t.owner.fullName} · due ${t.dueAt.toISOString()}${t.doneAt ? ' · done' : ''}`, provenance: 'KBS_OPERATIONAL' });
+    for (const t of followUps) ev.push({ id: `task-${t.id}`, at: t.createdAt.toISOString(), kind: 'FOLLOW_UP_TASK', label: `Follow-up task: ${t.text}`, detail: `owner ${t.owner.fullName} · due ${formatDateTime(t.dueAt)}${t.doneAt ? ' · done' : ''}`, provenance: 'KBS_OPERATIONAL' });
     for (const r of remarks) ev.push({ id: `remark-${r.id}`, at: r.at.toISOString(), kind: 'OPERATIONAL_REMARK', label: `Operational remark by ${r.author.fullName}`, detail: r.text, provenance: 'KBS_OPERATIONAL' });
     return ev.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
   }

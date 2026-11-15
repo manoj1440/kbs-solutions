@@ -216,7 +216,7 @@ function ManagerAdvisorView({ id }: { id: string }) {
                 <View className="flex-row items-center justify-between gap-2">
                   <RNText className="font-medium text-xl text-ink">
                     {r.totalAmountInr != null
-                      ? formatInr(r.totalAmountInr, { decimals: 0 })
+                      ? formatInr(r.totalAmountInr)
                       : `${r.itemCount} card${r.itemCount === 1 ? '' : 's'}`}
                   </RNText>
                   <PayoutStateBadge state={r.state} />

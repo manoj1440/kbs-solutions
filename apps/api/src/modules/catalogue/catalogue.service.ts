@@ -201,6 +201,8 @@ export class CatalogueService {
     const catIds = await this.categoryIds(body.categoryKeys);
     const { categoryKeys: _k, applyUrl, availability, active, ...data } = body;
     void _k;
+    // UAT-01: check the copy before anything is written — a refused "create and publish" used to leave a draft behind
+    if (active === true) this.assertCopyAllowed({ name: data.name, description: data.description ?? null, benefits: data.benefits ?? [], eligibilityHighlights: data.eligibilityHighlights ?? null, disclosures: data.disclosures ?? null });
     const c = await this.prisma.client.creditCard.create({
       data: {
         ...data,
@@ -277,6 +279,18 @@ export class CatalogueService {
     const catIds = await this.categoryIds(body.categoryKeys);
     const { categoryKeys: _k, applyUrl, availability, active, ...data } = body;
     void _k;
+    // UAT-01: a card that is (or becomes) published must pass the copy check with its new wording — editing a live card
+    // used to skip it. An override the Admin already recorded through "publish with a reason" stays valid.
+    const staysOrBecomesPublished = active === true || (active === undefined && before.status === 'PUBLISHED');
+    if (staysOrBecomesPublished && !before.forbiddenPhraseOverride) {
+      this.assertCopyAllowed({
+        name: data.name ?? before.name,
+        description: data.description === undefined ? before.description : data.description,
+        benefits: data.benefits ?? before.benefits,
+        eligibilityHighlights: data.eligibilityHighlights === undefined ? before.eligibilityHighlights : data.eligibilityHighlights,
+        disclosures: data.disclosures === undefined ? before.disclosures : data.disclosures,
+      });
+    }
     await this.prisma.client.$transaction(async (tx) => {
       await tx.creditCard.update({ where: { id }, data });
       if (catIds) {
@@ -316,6 +330,17 @@ export class CatalogueService {
       .join(' \n ')
       .toLowerCase();
     return list.filter((p) => text.includes(p));
+  }
+
+  /** Refuses copy that promises approval (REQ-11 §11.3) before anything is saved. */
+  private assertCopyAllowed(card: Parameters<CatalogueService['forbiddenPhrases']>[0]) {
+    const hits = this.forbiddenPhrases(card);
+    if (hits.length)
+      throw new AppError(
+        'VALIDATION_FAILED',
+        `Copy contains forbidden phrases (${hits.join(', ')}). Remove them or publish with an explicit override reason.`,
+        { forbiddenPhrases: hits },
+      );
   }
 
   async publishCard(actor: Actor, id: string, body: PublishCardBody) {

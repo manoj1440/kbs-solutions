@@ -1,0 +1,28 @@
+# UAT-01 S14 — Advisor Aman (a3): nothing paid yet, 1 card to claim, 1 in progress (approved, awaiting payment).
+appId: com.kbs.dsa
+env:
+  MOBILE: ${MOBILE || '9800000033'}
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${MOBILE}
+- tapOn: "Send code"
+- inputText: "000000"
+- assertVisible: "Home"
+- assertVisible: "Aman Advisor"
+- assertVisible: "₹0.00"
+- assertVisible: "1 card to claim"
+- assertVisible: "1 in progress"
+- assertVisible: "Request payout"

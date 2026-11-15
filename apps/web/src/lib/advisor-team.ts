@@ -6,5 +6,5 @@ export { REPORTING_SOURCE_LABELS as REPORTING_LABEL } from '@kbs/shared';
 export const SOURCE_LABEL: Record<string, string> = { KBS_LEADS: 'KBS leads', BANK_MIS: 'bank', KBS_PAYOUT_LEDGER: 'payout ledger', ACCOUNTS_PAYMENT: 'Accounts payments' };
 
 export function inr(n: number | undefined): string {
-  return formatInr(n ?? 0, { decimals: 0 });
+  return formatInr(n ?? 0); // UAT-01: payout money is never rounded (₹2,500.50 used to read ₹2,501)
 }

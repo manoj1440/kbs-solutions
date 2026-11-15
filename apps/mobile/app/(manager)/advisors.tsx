@@ -76,9 +76,9 @@ function AdvisorCard({ r, index }: { r: AdvisorTeamRow; index: number }) {
           <Icon name="wallet-outline" size={16} color={colors.subtle} style={{ marginTop: 0 }} />
           <Muted className="flex-1 text-xs tabular-nums">
             Eligible {r.payouts.eligible.value} (
-            {formatInr(r.payouts.eligible.amountInr ?? 0, { decimals: 0 })}) · approved unpaid{' '}
+            {formatInr(r.payouts.eligible.amountInr ?? 0)}) · approved unpaid{' '}
             {r.payouts.approvedUnpaid.value} · paid {r.payouts.paid.value} (
-            {formatInr(r.payouts.paid.amountInr ?? 0, { decimals: 0 })})
+            {formatInr(r.payouts.paid.amountInr ?? 0)})
           </Muted>
         </View>
         {r.awaitingManagerApproval ? (

@@ -330,7 +330,7 @@ export default function ManagerHome() {
                         subtitle: r.publicRef,
                         right:
                           r.totalAmountInr != null
-                            ? formatInr(r.totalAmountInr, { decimals: 0 })
+                            ? formatInr(r.totalAmountInr)
                             : `${r.itemCount} card${r.itemCount === 1 ? '' : 's'}`,
                         onPress: () =>
                           router.push({

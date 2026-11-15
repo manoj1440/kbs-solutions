@@ -1,0 +1,40 @@
+# UAT-01 S14 — Advisor Arjun (a1): ₹3,000.00 earned on 2 paid cards, nothing left to claim, request Paid.
+appId: com.kbs.dsa
+env:
+  MOBILE: ${MOBILE || '9800000031'}
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${MOBILE}
+- tapOn: "Send code"
+- inputText: "000000"
+- assertVisible: "Home"
+- assertVisible: "Arjun Advisor"
+- assertVisible: "Total earnings"
+- assertVisible: "₹3,000.00"
+- assertVisible: "0 cards to claim"
+- tapOn: "Earnings"
+- assertVisible: "₹3,000.00"
+- assertVisible: ".*2 paid.*"
+- scrollUntilVisible:
+    element: "My requests"
+- assertVisible: ".*Paid.*"
+- tapOn: "Leads"
+- assertVisible: "My leads"
+- scrollUntilVisible:
+    element: "Lead One Customer"
+- scrollUntilVisible:
+    element: "V + ACTIVE"
+- assertNotVisible: "Lead Five Customer"

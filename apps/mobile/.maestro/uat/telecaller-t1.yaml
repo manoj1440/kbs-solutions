@@ -1,0 +1,31 @@
+# UAT-01 S14 — Telecaller Tara (t1): own queue, own stats (3 calls, 2 connected), official ID. No earnings anywhere.
+appId: com.kbs.dsa
+env:
+  MOBILE: ${MOBILE || '9800000021'}
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${MOBILE}
+- tapOn: "Send code"
+- inputText: "000000"
+- assertVisible: "Calling queue"
+- assertNotVisible: "Total earnings"
+- tapOn: "My stats"
+- assertVisible: "My performance"
+- assertVisible: "Calls"
+- assertNotVisible: ".*₹.*"
+- tapOn: "ID card"
+- assertVisible: "Official ID"
+- assertVisible: "Tara Telecaller"
