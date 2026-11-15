@@ -1,0 +1,30 @@
+# UAT-01 S20 (F-824) — Advisor Anita: her own Agent Code (issued by the Admin) with a share button; nobody has used it yet.
+appId: com.kbs.dsa
+env:
+  MOBILE: ${MOBILE || '9800000032'}
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${MOBILE}
+- tapOn: "Send code"
+- inputText: "000000"
+- assertVisible: "Home"
+- scrollUntilVisible:
+    element: "My team"
+- tapOn: "My team"
+- assertVisible: "My Agent Code"
+- assertVisible: "ANITA01"
+- assertVisible: "Share my code"
+- assertVisible: "Nobody has used your code yet"

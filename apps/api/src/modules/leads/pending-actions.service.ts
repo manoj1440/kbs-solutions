@@ -45,7 +45,7 @@ export class PendingActionsService {
 
   // ── follow-up tasks ──
   async createFollowUp(actor: Actor, leadId: string, body: CreateFollowUpTaskBody) {
-    await this.leads.assertCanRead(actor, leadId);
+    await this.leads.assertCanAnnotate(actor, leadId);
     const lead = await this.prisma.client.lead.findUniqueOrThrow({ where: { id: leadId }, select: { advisorUserId: true, publicRef: true } });
     const ownerUserId = body.ownerUserId ?? actor.userId;
     if (ownerUserId !== actor.userId) {
@@ -145,7 +145,7 @@ export class PendingActionsService {
 
   // ── lead operational remarks (REQ-14 §14.5): separate from bank remarks, never override MIS ──
   async addRemark(actor: Actor, leadId: string, body: RemarkBody) {
-    await this.leads.assertCanRead(actor, leadId);
+    await this.leads.assertCanAnnotate(actor, leadId);
     const rem = await this.prisma.client.operationalRemark.create({ data: { entityType: 'Lead', entityId: leadId, authorUserId: actor.userId, text: body.text }, include: { author: { select: { id: true, fullName: true } } } });
     RequestContextStore.audit({ entityId: rem.id, after: { leadId, text: body.text } });
     return rem;

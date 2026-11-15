@@ -30,16 +30,18 @@ function withState(codes: AgentCode[]): AgentCodeRow[] {
 
 /** F-106 Admin: Agent Codes and pending reporting changes (REQ-10 §10.4, gap-analysis B7). */
 export default async function AgentCodesPage() {
-  const [codes, pending, managers, admins] = await Promise.all([
+  const [codes, pending, managers, admins, advisorOwners] = await Promise.all([
     apiFetch<AgentCode[]>('/agent-codes'),
     apiFetch<PendingChange[]>('/hierarchy/pending'),
     apiFetch<OwnerOption[]>('/users?role=MANAGER&status=ACTIVE&pageSize=200'),
     apiFetch<OwnerOption[]>('/users?role=ADMIN&status=ACTIVE&pageSize=5'),
+    // F-824: an approved Advisor may hold a code too (Advisors who sign up with it report to that Advisor)
+    apiFetch<OwnerOption[]>('/users?role=ADVISOR&status=ACTIVE&pageSize=200'),
   ]);
   const rows = withState(codes.data);
   const active = rows.filter((c) => c.state === 'ACTIVE');
   const advisors = active.reduce((sum, c) => sum + c.activeAdvisors, 0);
-  const owners: OwnerOption[] = [...managers.data, ...admins.data].map((o) => ({
+  const owners: OwnerOption[] = [...managers.data, ...admins.data, ...advisorOwners.data].map((o) => ({
     id: o.id,
     fullName: o.fullName,
     role: o.role,

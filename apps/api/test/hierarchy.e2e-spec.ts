@@ -134,6 +134,61 @@ describe('F-106 Agent Codes and reporting hierarchy (FOS-02)', () => {
     await post(adv.user.id, a.managerId).expect(201);
     await post(adv.user.id, a.admin.user.id).expect(201);
     const bad = await post(adv.user.id, a.telecallerId).expect(400);
-    expect(bad.body.error.message).toBe('Reporting parent must be an active Manager or the Admin.');
+    expect(bad.body.error.message).toBe('Reporting parent must be an active Manager, Advisor or the Admin.'); // F-824 added Advisor
+  });
+  it('F-824: an approved Advisor has a code of their own; who signs up with it reports to them; no loops; their leads are readable one level down, read-only', async () => {
+    const api = () => request(app.getHttpServer());
+    const { admin, manager } = await setupManagerAndTelecaller(app, prisma, '27');
+    const approve = async (userId: string, fullName: string) => {
+      await prisma.user.update({ where: { id: userId }, data: { status: 'ACTIVE', fullName } });
+      await prisma.advisorProfile.update({ where: { userId }, data: { onboardingStep: 'COMPLETE' } });
+    };
+    const up = await registerAdvisor(app, prisma, '9555500011');
+    await api().post('/api/v1/me/agent-codes').set(auth(up.accessToken)).set('idempotency-key', idem()).expect(403); // onboarding not approved
+    await approve(up.user.id, 'Upline Advisor');
+    const mcode = (await api().post('/api/v1/agent-codes').set(auth(admin.accessToken)).set('idempotency-key', idem()).send({ ownerUserId: manager.user.id }).expect(201)).body.data.code;
+    await api().post('/api/v1/me/agent-code').set(auth(up.accessToken)).send({ code: mcode }).expect(201);
+    const own = (await api().post('/api/v1/me/agent-codes').set(auth(up.accessToken)).set('idempotency-key', idem()).expect(201)).body.data;
+    expect((await api().post('/api/v1/me/agent-codes').set(auth(up.accessToken)).set('idempotency-key', idem()).expect(201)).body.data.code).toBe(own.code);
+    // a Manager does not self-issue; the Admin can issue to an Advisor but not to a Telecaller
+    await api().post('/api/v1/me/agent-codes').set(auth(manager.accessToken)).set('idempotency-key', idem()).expect(403);
+
+    const down = await registerAdvisor(app, prisma, '9555500012');
+    const applied = (await api().post('/api/v1/me/agent-code').set(auth(down.accessToken)).send({ code: own.code }).expect(201)).body.data;
+    expect(applied).toMatchObject({ status: 'APPLIED', reportingParent: { id: up.user.id, role: 'ADVISOR' } });
+    await approve(down.user.id, 'Downline Advisor');
+    // no loops: own code, or the code of someone below
+    expect((await api().post('/api/v1/me/agent-code').set(auth(up.accessToken)).send({ code: own.code }).expect(400)).body.error.code).toBe('HIERARCHY_CODE_INVALID');
+    const downCode = (await api().post('/api/v1/me/agent-codes').set(auth(down.accessToken)).set('idempotency-key', idem()).expect(201)).body.data.code;
+    expect((await api().post('/api/v1/me/agent-code').set(auth(up.accessToken)).send({ code: downCode }).expect(400)).body.error.code).toBe('HIERARCHY_CODE_INVALID');
+    await api().post(`/api/v1/users/${up.user.id}/reporting`).set(auth(admin.accessToken)).set('idempotency-key', idem()).send({ parentUserId: down.user.id, reason: 'loop attempt' }).expect(400);
+
+    const bank = await prisma.bank.findFirstOrThrow({ where: { code: 'HDFC' } });
+    const card = await prisma.creditCard.findFirstOrThrow({ where: { bankId: bank.id } });
+    const lead = await prisma.lead.create({ data: { publicRef: 'KBS-L-DOWNLEAD', advisorUserId: down.user.id, reportingParentUserIdSnapshot: up.user.id, cardId: card.id, bankId: bank.id, customerFullName: 'Down Customer', customerMobile: '+919000000027', pincode: '302001', employmentType: 'SALARIED', annualIncomeItr: '500000', declarations: [], bureauAckAt: new Date(), idempotencyKey: 'lead-f824' } });
+
+    const team = (await api().get('/api/v1/me/team').set(auth(up.accessToken)).expect(200)).body.data;
+    expect(team.code.code).toBe(own.code);
+    expect(team.advisors).toMatchObject([{ id: down.user.id, fullName: 'Downline Advisor', leads: 1 }]);
+    // the referring Advisor reads the lead; their own list is unchanged; nothing can be added
+    const theirs = (await api().get(`/api/v1/leads?advisorId=${down.user.id}`).set(auth(up.accessToken)).expect(200)).body.data as Array<{ id: string; advisor: { fullName: string } }>;
+    expect(theirs).toMatchObject([{ id: lead.id, advisor: { fullName: 'Downline Advisor' } }]);
+    expect((await api().get('/api/v1/leads').set(auth(up.accessToken)).expect(200)).body.data).toHaveLength(0);
+    await api().get(`/api/v1/leads/${lead.id}`).set(auth(up.accessToken)).expect(200);
+    await api().get(`/api/v1/leads/${lead.id}/mis-history`).set(auth(up.accessToken)).expect(200);
+    await api().post(`/api/v1/leads/${lead.id}/remarks`).set(auth(up.accessToken)).set('idempotency-key', idem()).send({ text: 'not mine' }).expect(403);
+    await api().post(`/api/v1/leads/${lead.id}/bank-reference`).set(auth(up.accessToken)).set('idempotency-key', idem()).send({ referenceKind: 'APPLICATION_NO', referenceValue: 'X1' }).expect(404);
+    // not upwards, not sideways; the Manager above the line sees everyone below it
+    const side = await registerAdvisor(app, prisma, '9555500013');
+    await approve(side.user.id, 'Other Advisor');
+    await api().get(`/api/v1/leads/${lead.id}`).set(auth(side.accessToken)).expect(404);
+    expect((await api().get(`/api/v1/leads?advisorId=${down.user.id}`).set(auth(side.accessToken)).expect(200)).body.data).toHaveLength(0);
+    await api().get(`/api/v1/leads/${lead.id}`).set(auth(manager.accessToken)).expect(200);
+    const mgrTeam = (await api().get('/api/v1/users?role=ADVISOR').set(auth(manager.accessToken)).expect(200)).body.data as Array<{ id: string }>;
+    expect(mgrTeam.map((u) => u.id).sort()).toEqual([up.user.id, down.user.id].sort());
+    // a withdrawn code is not replaced by the Advisor themselves
+    const codeId = (await prisma.agentCode.findUniqueOrThrow({ where: { code: own.code } })).id;
+    await api().post(`/api/v1/agent-codes/${codeId}/revoke`).set(auth(admin.accessToken)).send({ reason: 'withdrawn' }).expect(201);
+    await api().post('/api/v1/me/agent-codes').set(auth(up.accessToken)).set('idempotency-key', idem()).expect(409);
   });
 });

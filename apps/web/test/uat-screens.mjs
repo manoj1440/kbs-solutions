@@ -17,7 +17,8 @@ const state = JSON.parse(readFileSync(join(OUT, 'state.json'), 'utf8'));
 const L = state.ids.leads;
 const R = state.ids.requests;
 const SELLS = process.argv.includes('--sells'); // the pages that need stage S15 (a Manager who sells, F-823)
-const STAGE = SELLS ? 'S16 Web screens — Manager sells' : 'S13 Web screens';
+const REFS = process.argv.includes('--referrals'); // the pages that need stage S18 (Advisor referral codes, F-824)
+const STAGE = REFS ? 'S19 Web screens — Advisor referral codes' : SELLS ? 'S16 Web screens — Manager sells' : 'S13 Web screens';
 const file = join(OUT, 'results.json');
 const results = (existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : []).filter((r) => r.stage !== STAGE);
 console.log(`\n━━ ${STAGE}`);
@@ -52,8 +53,9 @@ async function screen(page, id, title, path, { has = [], not = [], rows = [] } =
   const leaked = not.filter((t) => test(t, text)).map(String);
   const rowFail = [];
   for (const [name, ...vals] of rows) {
-    const row = await page.locator('tr, li, article, [data-slot="card"]', { hasText: name }).last().innerText().catch(() => '');
-    for (const val of vals) if (!test(val, row.replace(/ /g, ' '))) rowFail.push(`${name} → ${val}`);
+    // a name can also appear in other rows ("reports to …"), so: some row holding the name must hold every value
+    const texts = (await page.locator('tr, li, article, [data-slot="card"]', { hasText: name }).allInnerTexts().catch(() => [])).map((t) => t.replace(/\u00a0/g, ' '));
+    if (!texts.some((row) => vals.every((val) => test(val, row)))) rowFail.push(`${name} → ${vals.join(' + ')}`);
   }
   const broken = /Application error|Unhandled Runtime Error|Something went wrong/i.test(text);
   await page.screenshot({ path: join(shots, `${id}.png`), fullPage: true });
@@ -62,7 +64,7 @@ async function screen(page, id, title, path, { has = [], not = [], rows = [] } =
 }
 
 // ── Admin ──
-if (!SELLS) {
+if (!SELLS && !REFS) {
   const { ctx, page } = await as('9999999999');
   await screen(page, 'S13-A01', 'Admin home: ₹6,500.50 earned, 12 leads, 9 bank approved, 7 cards activated, team 3 / 2 / 5', '/admin', { has: ['₹6,500.50', 'Leads created', 'Bank approved', 'Cards activated', 'Calls connected'] });
   await screen(page, 'S13-A02', 'Admin → Managers: North ₹5,500.50 paid, South ₹1,500.00 approved-unpaid', '/admin/dashboards/managers', { has: ['Meera Manager North', 'Mohan Manager South'], rows: [['Meera Manager North', '5,500.50'], ['Mohan Manager South', '1,500']] });
@@ -81,7 +83,7 @@ if (!SELLS) {
   await ctx.close();
 }
 // ── Manager North ──
-if (!SELLS) {
+if (!SELLS && !REFS) {
   const { ctx, page } = await as('9800000011');
   await screen(page, 'S13-M01', 'Manager North → Advisors: Arjun ₹3,000 and Anita ₹2,500.50 only — no other team\'s Advisor', '/manager/advisors', { rows: [['Arjun Advisor', '3,000'], ['Anita Advisor', '2,500.50']], not: ['Aman Advisor', 'Alok Advisor'] });
   await screen(page, 'S13-M02', 'Manager North → Dashboard: team totals (7 leads, 6 calls, ₹5,500.50 paid)', '/manager/dashboard', { has: ['5,500.50'] });
@@ -96,7 +98,7 @@ if (!SELLS) {
   await ctx.close();
 }
 // ── Accounts ──
-if (!SELLS) {
+if (!SELLS && !REFS) {
   const { ctx, page } = await as('9800000001');
   await screen(page, 'S13-C01', 'Accounts: 1 awaiting payment (₹1,500.00), 3 paid (₹6,500.50)', '/accounts', { has: ['Awaiting payment', '1,500', '6,500.50', 'Aman Advisor'] });
   await screen(page, 'S13-C02', 'Accounts → Paid queue: the three paid requests', '/accounts?queue=paid', { has: ['Arjun Advisor', 'Anita Advisor', 'Alok Advisor'] });
@@ -126,6 +128,25 @@ if (SELLS) {
   {
     const { ctx, page } = await as('9800000001');
     await screen(page, 'S16-C01', "Accounts → Paid queue includes the Manager's request", '/accounts?queue=paid', { has: ['Mohan Manager South'] });
+    await ctx.close();
+  }
+}
+// ── F-824: Advisor referral codes (after stage S18) ──
+if (REFS) {
+  const RL = state.ids.rleads;
+  {
+    const { ctx, page } = await as('9999999999');
+    await screen(page, 'S19-A01', "Admin → Agent codes lists Advisors' codes with their owner (Anita's ANITA01 active, Arjun's withdrawn)", '/admin/agent-codes', { has: ['ANITA01', 'Anita Advisor', 'Arjun Advisor', 'Advisor'] });
+    await screen(page, 'S19-A02', "Admin → Bina's user page shows she reports to Arjun (an Advisor)", `/admin/users/${state.users.a6.id}`, { has: ['Bina Advisor', 'Arjun Advisor'] });
+    await screen(page, 'S19-A03', "Admin → Leads names Bina and Chetan as owners of their leads", '/admin/leads', { rows: [['Bina Lead One', 'Bina Advisor'], ['Chetan Lead One', 'Chetan Advisor']] });
+    await ctx.close();
+  }
+  {
+    const { ctx, page } = await as('9800000011');
+    await screen(page, 'S19-M01', "Manager North → Advisors table includes Bina and Chetan, each showing they report to Arjun", '/manager/advisors', { rows: [['Bina Advisor', 'reports to Arjun Advisor'], ['Chetan Advisor', 'reports to Arjun Advisor'], ['Arjun Advisor', 'reports to Meera Manager North']] });
+    await screen(page, 'S19-M02', "Manager North → Team leads filtered to Bina: her two leads", `/manager/leads?advisorId=${state.users.a6.id}`, { has: ['Bina Lead One', 'Bina Lead Two', '1–2 of 2'], not: ['Lead One Customer'] });
+    await screen(page, 'S19-M03', "Manager North → Bina's lead page: every detail, owner Bina", `/manager/leads/${RL.BL1}`, { has: ['Bina Advisor', 'Bina Lead One', 'UATB6001', 'V + ACTIVE', 'Salaried'], not: ['9600000031', 'ABCPB6001A'] });
+    await screen(page, 'S19-M04', "Manager North → Payout approvals includes Bina's and Chetan's requests (the Manager above their line approves)", '/manager/payouts/requests', { has: ['Bina Advisor', 'Chetan Advisor'] });
     await ctx.close();
   }
 }

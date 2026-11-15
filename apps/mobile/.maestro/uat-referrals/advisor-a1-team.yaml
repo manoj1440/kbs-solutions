@@ -1,0 +1,40 @@
+# UAT-01 S20 (F-824) — Advisor Arjun: "My team" lists the Advisors who joined with his code; their leads open read-only.
+appId: com.kbs.dsa
+env:
+  MOBILE: ${MOBILE || '9800000031'}
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${MOBILE}
+- tapOn: "Send code"
+- inputText: "000000"
+- assertVisible: "Home"
+- scrollUntilVisible:
+    element: "My team"
+- tapOn: "My team"
+- assertVisible: "My Agent Code"
+- assertVisible: "Advisors with my code · 2"
+- assertVisible: "Chetan Advisor"
+- tapOn: "Bina Advisor"
+- assertVisible: "Signed up with your code · read-only"
+- assertVisible: "Leads · 2"
+- scrollUntilVisible:
+    element: "Bina Lead One"
+- tapOn: "Bina Lead One"
+- assertVisible: "Advisor · Bina Advisor"
+- assertVisible: "V + ACTIVE"
+- assertNotVisible: ".*₹1,200.*"
+- scrollUntilVisible:
+    element: "Employment"

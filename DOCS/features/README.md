@@ -108,6 +108,7 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-821-web-redesign.md](./F-821-web-redesign.md) | F-821 Web redesign: flat canvas, labelled sidebar, orange primary, status dot, ink hero, Manrope | Web UX | DONE | F-817, F-820 |
 | [F-822-manager-leads-per-advisor.md](./F-822-manager-leads-per-advisor.md) | F-822 Manager: every lead per Advisor with full detail (Manager share is settled outside KBS) | Manager | DONE | F-315, F-408 |
 | [F-823-manager-sells.md](./F-823-manager-sells.md) | F-823 A Manager also sells: same lead flow as an Advisor, paid through KBS (Admin alone approves) | Manager | DONE | F-822, F-401, F-603 |
+| [F-824-advisor-referral-codes.md](./F-824-advisor-referral-codes.md) | F-824 An Advisor's own Agent Code: Advisors who join with it report to that Advisor, who reads their leads (share settled outside KBS) | Hierarchy | DONE | F-106, F-822 |
 | [F-901-ci-and-e2e.md](./F-901-ci-and-e2e.md) | F-901 CI hardening and end-to-end suites | Hardening | DONE | F-801, F-802 |
 | [F-902-malware-scanning.md](./F-902-malware-scanning.md) | F-902 Malware scanning adapter (ClamAV) | Hardening | DONE | F-108 |
 | [F-903-db-level-bank-status-protection.md](./F-903-db-level-bank-status-protection.md) | F-903 Database-level protection of bank-status tables | Hardening | DONE | F-505 |

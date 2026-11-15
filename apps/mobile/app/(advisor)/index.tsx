@@ -361,6 +361,26 @@ export default function AdvisorHome() {
           </PressableScale>
         </Appear>
 
+        {isManager ? null : (
+          <Appear index={4}>
+            <PressableScale
+              accessibilityLabel="My team"
+              onPress={() => router.push('/(advisor)/team' as never)}
+              className="rounded-2xl bg-white p-4"
+            >
+              <View className="flex-row items-center gap-4">
+                <View className="flex-1">
+                  <RNText className="font-medium text-base text-ink">My team</RNText>
+                  <RNText className="mt-1 font-normal text-sm text-[#525252]">
+                    Share your Agent Code and see the leads of Advisors who joined with it
+                  </RNText>
+                </View>
+                <Icon name="chevron-forward" size={16} color={colors.subtle} />
+              </View>
+            </PressableScale>
+          </Appear>
+        )}
+
         <Appear index={5} className="gap-3">
           <SectionHeader
             title="Recent activity"

@@ -222,11 +222,12 @@ export class AuthService {
     ]);
     if (!user || !session || session.revokedAt) throw new AppError('AUTH_SESSION_REVOKED', 'Session is no longer valid.', undefined, 'LOGIN_AGAIN');
     const role = user.role as Role;
-    const [teamUserIds, reportingParentUserId] = await Promise.all([
+    const [teamUserIds, referralUserIds, reportingParentUserId] = await Promise.all([
       role === 'MANAGER' ? this.hierarchy.teamUserIds(user.id) : Promise.resolve([]),
+      role === 'ADVISOR' ? this.hierarchy.directReportIds(user.id) : Promise.resolve([]), // F-824
       this.hierarchy.currentParentId(user.id),
     ]);
-    return { userId: user.id, role, status: user.status, sessionId, permissions: ROLE_PERMISSIONS[role], teamUserIds, reportingParentUserId };
+    return { userId: user.id, role, status: user.status, sessionId, permissions: ROLE_PERMISSIONS[role], teamUserIds, referralUserIds, reportingParentUserId };
   }
 
   private async issueRefresh(sessionId: string, familyId: string | null, replacesId?: string): Promise<string> {

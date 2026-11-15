@@ -300,7 +300,12 @@ export class LeadsService {
   // ── read (F-506 DTO shaping) ──
   /** `own` = only the caller's own leads (F-823: a Manager's selling workspace; their normal scope is team + own). */
   private scopeWhere(actor: Actor, advisorId?: string, own = false) {
-    if (actor.role === 'ADVISOR' || (own && actor.role === 'MANAGER')) return { advisorUserId: actor.userId };
+    if (own && actor.role === 'MANAGER') return { advisorUserId: actor.userId };
+    if (actor.role === 'ADVISOR') {
+      // F-824: own leads by default; with `advisorId`, the leads of an Advisor who signed up with their code (read-only)
+      if (!own && advisorId && advisorId !== actor.userId) return { advisorUserId: actor.referralUserIds.includes(advisorId) ? advisorId : '__none__' };
+      return { advisorUserId: actor.userId };
+    }
     if (actor.role === 'MANAGER') {
       const mine = [...actor.teamUserIds, actor.userId];
       return { advisorUserId: advisorId ? (mine.includes(advisorId) ? advisorId : '__none__') : { in: mine } };
@@ -455,14 +460,24 @@ export class LeadsService {
   /** Scope check shared with other modules that expose per-lead reads (e.g. MIS history). */
   async assertCanRead(actor: Actor, leadId: string) {
     const l = await this.prisma.client.lead.findUnique({ where: { id: leadId }, select: { advisorUserId: true } });
-    const ok = !!l && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId);
+    const ok = !!l && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(l.advisorUserId)));
     if (!ok) throw AppError.notFound('Lead');
+  }
+
+  /** Adding to a lead (remark, follow-up): the readers above, except an Advisor reading another Advisor's lead (F-824 is read-only). */
+  async assertCanAnnotate(actor: Actor, leadId: string) {
+    await this.assertCanRead(actor, leadId);
+    if (actor.role !== 'ADVISOR') return;
+    const l = await this.prisma.client.lead.findUnique({ where: { id: leadId }, select: { advisorUserId: true } });
+    if (l?.advisorUserId !== actor.userId) throw new AppError('RBAC_FORBIDDEN', 'You can read this lead but only its own Advisor can add to it.');
   }
 
   async detail(actor: Actor, id: string) {
     const l = await this.prisma.client.lead.findUnique({ where: { id }, include: { ...this.rowInclude, linkages: { orderBy: { at: 'desc' } }, linkInitiations: { orderBy: { at: 'desc' }, take: 20 }, shareActions: { orderBy: { at: 'desc' }, take: 20 } } });
     if (!l) throw AppError.notFound('Lead');
-    const ok = actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId;
+    // F-824: the Advisor whose code this lead's Advisor used may read it — no amounts, no changes
+    const referralView = actor.role === 'ADVISOR' && l.advisorUserId !== actor.userId && actor.referralUserIds.includes(l.advisorUserId);
+    const ok = actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId || referralView;
     if (!ok) throw AppError.notFound('Lead');
     const tokens = this.blankTokens();
     const matched = l.statusSnapshot !== null;
@@ -516,7 +531,7 @@ export class LeadsService {
         const req = e.requestItems[0]?.request ?? null;
         // rate-free payouts: money shows only once the request (priced by Admin) is paid. `amountInr` is the REQUEST's amount —
         // it can cover several cards (`request.cardCount`), so screens must say "for N cards", never present it as this lead's own.
-        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), amountInr: req?.state === 'PAID' ? Number(req.totalAmountInr) : null, eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null, cardCount: req.itemCount } : null };
+        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), amountInr: req?.state === 'PAID' && !referralView ? Number(req.totalAmountInr) : null, eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null, cardCount: req.itemCount } : null };
       }),
     };
   }

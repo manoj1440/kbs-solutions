@@ -3,10 +3,11 @@
 Plan and oracle: [uat-01-end-to-end-plan.md](./uat-01-end-to-end-plan.md). Every check: [uat-01-checks.md](./uat-01-checks.md).
 
 ## 1. Outcome
-**404 checks, 404 passed** on the last clean run (fresh database → every stage → web screens → app screens).
+**453 checks, 453 passed** on the last clean run (fresh database → every stage → web screens → app screens).
 Five product defects were found on the way, fixed, covered by tests, and the whole run repeated from a fresh database.
 Finding F-1 was decided by the owner the same day and closed by F-822 (14 checks). The owner then asked for a Manager
-to sell like an Advisor, paid through KBS: F-823, stages S15–S17 (50 checks).
+to sell like an Advisor, paid through KBS: F-823, stages S15–S17 (50 checks), and for an Advisor to give their own code
+to other Advisors: F-824, stages S18–S20 (49 checks).
 
 | Stage | Checks |
 |---|---|
@@ -21,8 +22,10 @@ to sell like an Advisor, paid through KBS: F-823, stages S15–S17 (50 checks).
 | S14 App screens (2 Advisors, Manager, Telecaller on the release APK) | 4 flows |
 | S15 Manager sells (details → Admin approval → 2 leads → bank file → payout with no Manager step → paid) | 39 |
 | S16 Web screens — Manager sells · S17 App screens — Manager sells | 9 · 2 flows |
+| S18 Advisor referral codes (own code → two Advisors join, two levels → their leads → read-only view → payouts via the Manager above) | 40 |
+| S19 Web screens — referral codes · S20 App screens — referral codes | 7 · 2 flows |
 
-Existing suites after the fixes: API unit 76, API e2e 184, web unit 24, mobile unit 17, typecheck + lint on all three — green.
+Existing suites after the fixes: API unit 76, API e2e 185, web unit 24, mobile unit 17, typecheck + lint on all three — green.
 
 ## 2. Who earned what (as the system reports it — equal at every level, to the paisa)
 | | Paid | Approved, unpaid | Claimable | Under review |
@@ -38,6 +41,8 @@ Existing suites after the fixes: API unit 76, API e2e 184, web unit 24, mobile u
 | Telecallers (3) | none | | | |
 | Managers on their Advisors' cards | none in KBS — settled outside (F-822) | | | |
 | Manager South on his **own** leads (stage S15, after the table above) | ₹2,000.00 · 1 card | — | — | — |
+| Bina (Advisor who joined with Arjun's code, stage S18) | ₹1,200.00 · 1 card | — | — | — |
+| Arjun for Bina's card | none in KBS — settled outside (F-824) | | | |
 
 Checked equal: Advisor's own app ↔ Manager's team table ↔ Admin's Managers / Advisors reports ↔ Admin home ↔ payout
 dashboard (also filtered by Manager) ↔ Accounts queues ↔ the payment records in the database.
@@ -48,6 +53,10 @@ organisation 12; 11 with a bank result, 9 approved, 2 declined, 7 cards active).
 
 ## 3. Findings for the owner (decisions, not defects)
 **F-1 is decided (owner, 2026-11-15):** the Manager's share is agreed and settled outside KBS; the product holds no Manager amount. The Manager must see every lead per Advisor with full detail — delivered in [F-822](../features/F-822-manager-leads-per-advisor.md). O-2 to O-4 stay as observations.
+
+**Follow-up request (owner, 2026-11-15):** an Advisor can give their own Agent Code to other Advisors, who then report to
+them — [F-824](../features/F-824-advisor-referral-codes.md). The share on those leads is treated like the Manager's:
+settled outside KBS, with the leads visible in full (engineering assumption, to be confirmed).
 
 **Follow-up decision (owner, 2026-11-15):** a Manager also creates leads with the same flow as an Advisor and is paid for
 them through KBS — [F-823](../features/F-823-manager-sells.md). The Admin alone approves a Manager's own request.
@@ -75,6 +84,8 @@ entry overrides it with `localhost`. Update that line if the everyday dev API sh
 Also fixed while testing F-823: a timing race in the API test `mis-jobs` (it failed about 1 run in 8 on a busy machine,
 with or without these changes). One rare test-harness error remains ("Parse Error: Expected HTTP/" from the HTTP test
 client, seen twice in about forty runs while the emulator was running); it is not tied to any feature.
+Once, the whole API suite was started straight after the emulator run: several tests failed and the run stalled; it
+passed in full (185 tests) on the next run and file by file, so this is recorded as a busy-machine effect, not explained further.
 
 ## 5. What this run did not cover
 - **Real outside providers.** SMS, calling / recording, Aadhaar and PAN ran on the local stand-ins. The real adapters

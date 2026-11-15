@@ -90,12 +90,16 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         await Promise.all([
           apiFetch<ParentOption[]>('/users?role=MANAGER&status=ACTIVE&pageSize=200'),
           ...(u.role === 'ADVISOR'
-            ? [apiFetch<ParentOption[]>('/users?role=ADMIN&status=ACTIVE&pageSize=5')]
+            ? [
+                apiFetch<ParentOption[]>('/users?role=ADMIN&status=ACTIVE&pageSize=5'),
+                // F-824: an Advisor may report to another Advisor (the API refuses a loop)
+                apiFetch<ParentOption[]>('/users?role=ADVISOR&status=ACTIVE&pageSize=200'),
+              ]
             : []),
         ])
       )
         .flatMap((r) => r.data)
-        .filter((p) => p.id !== u.reportingParent?.id)
+        .filter((p) => p.id !== u.reportingParent?.id && p.id !== u.id)
         .map((p) => ({ id: p.id, fullName: p.fullName, role: p.role }))
     : [];
   return (

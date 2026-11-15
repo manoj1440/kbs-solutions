@@ -2,7 +2,7 @@ import { ApplyAgentCodeBody, CreateAgentCodeBody, ReassignReportingBody, ReasonB
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
-import { Audited, CurrentActor, Idempotent, RequirePermission } from '../../common/decorators';
+import { Audited, CurrentActor, Idempotent, RequirePermission, RequireGates } from '../../common/decorators';
 
 import { AgentCodesService } from './agent-codes.service';
 
@@ -11,7 +11,7 @@ export class AgentCodesController {
   constructor(private readonly svc: AgentCodesService) {}
 
   @Get('agent-codes')
-  @RequirePermission('AGENT_CODE_MANAGE', 'USER_READ_TEAM')
+  @RequirePermission('AGENT_CODE_MANAGE', 'USER_READ_TEAM', 'AGENT_CODE_SELF')
   list(@CurrentActor() actor: Actor) {
     return this.svc.list(actor);
   }
@@ -22,6 +22,22 @@ export class AgentCodesController {
   @Audited({ action: 'agentCode.create', entityType: 'AgentCode', entityIdFrom: 'id' })
   create(@CurrentActor() actor: Actor, @Body() raw: unknown) {
     return this.svc.create(actor, CreateAgentCodeBody.parse(raw));
+  }
+
+  /** F-824: an approved Advisor's own code (created on first ask, the same one afterwards). */
+  @Post('me/agent-codes')
+  @RequirePermission('AGENT_CODE_SELF')
+  @RequireGates('onboarding')
+  @Audited({ action: 'agentCode.createOwn', entityType: 'AgentCode', entityIdFrom: 'id' })
+  createOwn(@CurrentActor() actor: Actor) {
+    return this.svc.createOwn(actor);
+  }
+
+  /** F-824: the Advisors who signed up with the caller's code. */
+  @Get('me/team')
+  @RequirePermission('AGENT_CODE_SELF')
+  myTeam(@CurrentActor() actor: Actor) {
+    return this.svc.myTeam(actor);
   }
 
   @Post('agent-codes/:id/revoke')

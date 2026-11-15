@@ -419,7 +419,7 @@ export class MisPipelineService {
   /** REQ-14 §14.6 history grouped by batch; scoped like any other per-lead read (own / team / all). */
   async leadHistory(actor: Actor, leadId: string) {
     const lead = await this.prisma.client.lead.findUnique({ where: { id: leadId }, select: { advisorUserId: true } });
-    const ok = !!lead && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(lead.advisorUserId)) || lead.advisorUserId === actor.userId);
+    const ok = !!lead && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(lead.advisorUserId)) || lead.advisorUserId === actor.userId || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(lead.advisorUserId))); // F-824
     if (!ok) throw AppError.notFound('Lead');
     const rows = await this.prisma.client.bankStatusHistory.findMany({ where: { leadId }, orderBy: [{ importedAt: 'desc' }, { field: 'asc' }], include: { batch: { select: { publicRef: true, uploadedAt: true, uploader: { select: { role: true } } } } } });
     const groups = new Map<string, { batchId: string; publicRef: string; importedAt: string; uploaderRole: string; changes: Array<{ field: string; oldValue: string | null; newValue: string | null; changeKind: string; reportedEventDate: string | null }> }>();

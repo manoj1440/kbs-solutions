@@ -141,6 +141,8 @@ export class PayoutRequestsService {
     // F-823: a Manager's own request has no Manager step — nobody approves their own request and a Manager reports to the
     // Admin, who approves it and sets the amount. It is stored with the requester as "Manager approver" (see noManagerStep).
     if (actor.role === 'MANAGER') managerApproverUserId = actor.userId;
+    // F-824: an Advisor who signed up with another Advisor's code is approved by the nearest Manager above that line
+    if (!managerApproverUserId) managerApproverUserId = await this.hierarchy.nearestManagerId(actor.userId);
     if (!managerApproverUserId) {
       const designated = this.config.getString('payouts.designatedApproverManagerUserId');
       const d = designated ? await this.prisma.client.user.findUnique({ where: { id: designated }, select: { id: true, role: true, status: true } }) : null;

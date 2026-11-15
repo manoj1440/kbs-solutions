@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 
-import { type ApplyAgentCodeBody, type CreateAgentCodeBody, type ReassignReportingBody } from '@kbs/shared';
+import { type ApplyAgentCodeBody, type CreateAgentCodeBody, maskMobile, type ReassignReportingBody } from '@kbs/shared';
 import { Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -45,9 +45,9 @@ export class AgentCodesService {
 
   async create(actor: Actor, body: CreateAgentCodeBody) {
     const owner = await this.prisma.client.user.findUnique({ where: { id: body.ownerUserId }, select: { id: true, role: true, status: true } });
-    // Codes may only point at a Manager or the Admin (REQ-10 §10.4 OPEN → restricted, see feature file).
-    if (!owner || (owner.role !== 'MANAGER' && owner.role !== 'ADMIN') || owner.status !== 'ACTIVE') {
-      throw new AppError('VALIDATION_FAILED', 'An Agent Code must belong to an active Manager or the Admin.');
+    // A code points at a Manager, the Admin, or — F-824, owner decision — an approved Advisor who brings in other Advisors.
+    if (!owner || (owner.role !== 'MANAGER' && owner.role !== 'ADMIN' && owner.role !== 'ADVISOR') || owner.status !== 'ACTIVE') {
+      throw new AppError('VALIDATION_FAILED', 'An Agent Code must belong to an active Manager, an approved Advisor or the Admin.');
     }
     const code = body.code ? this.normalise(body.code) : this.generate();
     const existing = await this.prisma.client.agentCode.findUnique({ where: { code } });
@@ -55,6 +55,48 @@ export class AgentCodesService {
     const created = await this.prisma.client.agentCode.create({ data: { code, ownerUserId: owner.id, expiresAt: body.expiresAt ?? null, createdByUserId: actor.userId } });
     RequestContextStore.audit({ entityId: created.id, after: { code: created.code, ownerUserId: owner.id, expiresAt: created.expiresAt } });
     return created;
+  }
+
+  /**
+   * F-824: an approved Advisor's own code, to give to other Advisors. One active code per Advisor — asking again
+   * returns it. The Admin can still issue or revoke codes for anyone (People → Agent codes).
+   */
+  async createOwn(actor: Actor) {
+    if (actor.role !== 'ADVISOR' || actor.status !== 'ACTIVE') throw new AppError('RBAC_FORBIDDEN', 'Only an approved Advisor has an Agent Code of their own.');
+    const existing = await this.prisma.client.agentCode.findFirst({ where: { ownerUserId: actor.userId, status: 'ACTIVE', OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }, orderBy: { createdAt: 'desc' } });
+    if (existing) return existing;
+    // a code the Admin withdrew is not replaced by the Advisor themselves
+    if (await this.prisma.client.agentCode.count({ where: { ownerUserId: actor.userId, status: 'REVOKED' } })) throw new AppError('CONFLICT', 'Your Agent Code was withdrawn by KBS. Ask the Admin for a new one.', undefined, 'CONTACT_ADMIN');
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = this.generate();
+      if (await this.prisma.client.agentCode.findUnique({ where: { code } })) continue;
+      const created = await this.prisma.client.agentCode.create({ data: { code, ownerUserId: actor.userId, createdByUserId: actor.userId } });
+      RequestContextStore.audit({ entityId: created.id, after: { code: created.code, ownerUserId: actor.userId, self: true } });
+      return created;
+    }
+    throw new AppError('CONFLICT', 'Could not generate a code. Please try again.');
+  }
+
+  /** F-824: the Advisors who signed up with the caller's code — who they are and how many leads each has. Read-only. */
+  async myTeam(actor: Actor) {
+    const [codes, people] = await Promise.all([
+      this.prisma.client.agentCode.findMany({ where: { ownerUserId: actor.userId }, orderBy: { createdAt: 'desc' }, select: { id: true, code: true, status: true, createdAt: true, revokedAt: true } }),
+      this.prisma.client.user.findMany({
+        where: { id: { in: actor.referralUserIds }, role: 'ADVISOR' },
+        select: { id: true, fullName: true, publicRef: true, status: true, mobile: true, createdAt: true, _count: { select: { leads: true } }, reportingAsChild: { where: { effectiveTo: null, status: 'ACTIVE' }, take: 1, select: { effectiveFrom: true } } },
+        orderBy: { fullName: 'asc' },
+      }),
+    ]);
+    return {
+      code: codes.find((c) => c.status === 'ACTIVE') ?? null,
+      advisors: people.map((u) => ({ id: u.id, fullName: u.fullName, publicRef: u.publicRef, status: u.status, mobileMasked: maskMobile(u.mobile), since: (u.reportingAsChild[0]?.effectiveFrom ?? u.createdAt).toISOString(), leads: u._count.leads })),
+    };
+  }
+
+  /** A reporting line must stay a line: nobody reports to themselves or to someone below them. */
+  private async assertNoLoop(childUserId: string, parentUserId: string) {
+    if (childUserId === parentUserId) throw new AppError('HIERARCHY_CODE_INVALID', 'You cannot use your own Agent Code.');
+    if ((await this.hierarchy.ancestorIds(parentUserId)).includes(childUserId)) throw new AppError('HIERARCHY_CODE_INVALID', 'This code belongs to someone who reports to you; it cannot be used. Your reporting person is unchanged.');
   }
 
   async revoke(id: string, reason: string) {
@@ -85,6 +127,7 @@ export class AgentCodesService {
     if (!c || c.status !== 'ACTIVE' || (c.expiresAt && c.expiresAt.getTime() < Date.now()) || c.owner.status !== 'ACTIVE') {
       throw new AppError('HIERARCHY_CODE_INVALID', 'This Agent Code is not valid or has been revoked. Your reporting person is unchanged.');
     }
+    await this.assertNoLoop(actor.userId, c.ownerUserId);
     const currentParentId = await this.hierarchy.currentParentId(actor.userId);
     if (currentParentId === c.ownerUserId) {
       return { status: 'APPLIED' as const, reportingParent: { id: c.owner.id, fullName: c.owner.fullName, role: c.owner.role } };
@@ -123,6 +166,7 @@ export class AgentCodesService {
       RequestContextStore.audit({ entityType: 'ReportingAssignment', entityId: id, after: { status: 'REJECTED' }, reason });
       return r;
     }
+    await this.assertNoLoop(pending.childUserId, pending.parentUserId); // the line may have changed since it was asked for
     const before = await this.hierarchy.currentParentId(pending.childUserId);
     const r = await this.prisma.client.$transaction(async (tx) => {
       await tx.reportingAssignment.updateMany({ where: { childUserId: pending.childUserId, status: 'ACTIVE', effectiveTo: null }, data: { effectiveTo: new Date(), status: 'CLOSED' } });
@@ -143,7 +187,9 @@ export class AgentCodesService {
     ]);
     if (!child || (child.role !== 'TELECALLER' && child.role !== 'ADVISOR')) throw AppError.notFound('User');
     if (child.role === 'TELECALLER' && (!parent || parent.role !== 'MANAGER' || parent.status !== 'ACTIVE')) throw new AppError('VALIDATION_FAILED', 'A Telecaller must report to an active Manager.', { field: 'parentUserId' });
-    if (!parent || (parent.role !== 'MANAGER' && parent.role !== 'ADMIN') || parent.status !== 'ACTIVE') throw new AppError('VALIDATION_FAILED', 'Reporting parent must be an active Manager or the Admin.');
+    // F-824: an Advisor may report to another Advisor (the one whose code they used)
+    if (!parent || (parent.role !== 'MANAGER' && parent.role !== 'ADMIN' && parent.role !== 'ADVISOR') || parent.status !== 'ACTIVE') throw new AppError('VALIDATION_FAILED', 'Reporting parent must be an active Manager, Advisor or the Admin.');
+    await this.assertNoLoop(childUserId, parent.id);
     const before = await this.hierarchy.currentParentId(childUserId);
     if (before === parent.id) throw new AppError('CONFLICT', 'Already reporting to this person.');
     const row = await this.switchParent(childUserId, parent.id, 'ADMIN_REASSIGNED', null, body.reason, actor.userId);

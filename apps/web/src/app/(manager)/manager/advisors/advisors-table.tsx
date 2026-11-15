@@ -34,7 +34,7 @@ export function AdvisorsTable({ rows, qs }: { rows: Row[]; qs: string }) {
                 {r.user.fullName || '(onboarding)'}
               </Link>
               <div className="font-mono text-2xs text-muted-foreground">
-                {r.user.publicRef} · {r.reporting ? `${REPORTING_LABEL[r.reporting.source] ?? r.reporting.source} ${r.reporting.agentCode ?? ''} · since ${formatDate(r.reporting.since)}` : 'No active reporting line'}
+                {r.user.publicRef} · {r.reporting ? `${REPORTING_LABEL[r.reporting.source] ?? r.reporting.source} ${r.reporting.agentCode ?? ''} · since ${formatDate(r.reporting.since)} · reports to ${r.reporting.parent.fullName}` : 'No active reporting line'}
               </div>
               <div className="mt-0.5">
                 <StatusDot tone={r.user.status === 'ACTIVE' ? 'emerald' : 'slate'}>{humanize(r.user.status)}</StatusDot>

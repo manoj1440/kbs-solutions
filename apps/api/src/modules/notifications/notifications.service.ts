@@ -112,7 +112,7 @@ export class NotificationsService {
       case 'Lead': {
         const l = await this.prisma.client.lead.findUnique({ where: { id: entityId }, select: { advisorUserId: true } });
         if (!l) return false;
-        return l.advisorUserId === actor.userId || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId));
+        return l.advisorUserId === actor.userId || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(l.advisorUserId)); // F-824
       }
       case 'PayoutRequest': {
         const r = await this.prisma.client.payoutRequest.findUnique({ where: { id: entityId }, select: { advisorUserId: true, managerApproverUserId: true, state: true } });

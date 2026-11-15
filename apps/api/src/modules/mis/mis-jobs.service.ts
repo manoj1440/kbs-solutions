@@ -101,7 +101,7 @@ export class MisJobsService implements OnModuleInit {
     const batch = await this.prisma.client.misImportBatch.findUniqueOrThrow({ where: { id: batchId }, select: { publicRef: true, jobRequestedByUserId: true } });
     const requester = batch.jobRequestedByUserId as string;
     const role = (await this.prisma.client.user.findUnique({ where: { id: requester }, select: { role: true } }))?.role ?? 'ADMIN';
-    const actor = { userId: requester, role, status: 'ACTIVE', sessionId: 'mis-job', permissions: [], teamUserIds: [], reportingParentUserId: null } as Actor;
+    const actor = { userId: requester, role, status: 'ACTIVE', sessionId: 'mis-job', permissions: [], teamUserIds: [], referralUserIds: [], reportingParentUserId: null } as Actor;
     let last = 0;
     const onProgress: MisProgress = async (phase, done, total) => {
       const t = Date.now();

@@ -6,7 +6,7 @@ import {
   formatDateTime,
 } from '@kbs/shared';
 import * as Linking from 'expo-linking';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
 
@@ -238,6 +238,19 @@ export default function Profile() {
           {msg ? <Callout kind="success">{msg}</Callout> : null}
           <ErrorText>{error}</ErrorText>
         </SectionCard>
+      </Appear>
+
+      {/* F-824: the Advisor's own Agent Code and the Advisors who signed up with it */}
+      <Appear index={3}>
+        <Card className="px-4 py-1">
+          <ListItem
+            icon="people-outline"
+            title="My team"
+            subtitle="Your Agent Code and the Advisors who joined with it"
+            onPress={() => router.push('/(advisor)/team' as never)}
+            last
+          />
+        </Card>
       </Appear>
 
       <Appear index={3}>
