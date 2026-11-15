@@ -24,8 +24,11 @@ export const DATE_BASIS = {
 export interface Scope {
   /** null = everyone (Admin without filters). */
   telecallerIds: string[] | null;
+  /** Lead owners in view: the team's Advisors plus the Manager, who may sell too (F-823). */
   advisorIds: string[] | null;
   label: string;
+  /** The Manager whose own leads are counted with the team (absent for Admin / all teams). */
+  selfSellerId?: string;
 }
 
 const m = (value: number, source: MetricSource, dateBasis: string, denominator?: { label: string; value: number }, amountInr?: number): Metric => ({ value, source, dateBasis, ...(denominator ? { denominator } : {}), ...(amountInr !== undefined ? { amountInr } : {}) });
@@ -47,7 +50,9 @@ export class DashboardMetricsService {
   async scope(actor: Actor, q: DashboardQuery): Promise<Scope> {
     let team: string[] | null = null;
     let label = 'All teams';
+    let selfSellerId: string | undefined;
     if (actor.role === 'MANAGER') {
+      selfSellerId = actor.userId;
       if (q.managerId && q.managerId !== actor.userId) throw AppError.notFound('Manager');
       team = actor.teamUserIds;
       label = 'My team';
@@ -57,13 +62,14 @@ export class DashboardMetricsService {
       if (!mgr || mgr.role !== 'MANAGER') throw AppError.notFound('Manager');
       team = await this.hierarchy.teamUserIds(q.managerId);
       label = `Team of ${mgr.fullName}`;
+      selfSellerId = q.managerId;
     }
     let telecallerIds: string[] | null = null;
     let advisorIds: string[] | null = null;
     if (team) {
       const users = await this.prisma.client.user.findMany({ where: { id: { in: team } }, select: { id: true, role: true } });
       telecallerIds = users.filter((u) => u.role === 'TELECALLER').map((u) => u.id);
-      advisorIds = users.filter((u) => u.role === 'ADVISOR').map((u) => u.id);
+      advisorIds = [...users.filter((u) => u.role === 'ADVISOR').map((u) => u.id), ...(selfSellerId ? [selfSellerId] : [])];
     }
     if (q.telecallerId) {
       if (telecallerIds && !telecallerIds.includes(q.telecallerId)) throw AppError.notFound('Telecaller');
@@ -73,7 +79,7 @@ export class DashboardMetricsService {
       if (advisorIds && !advisorIds.includes(q.advisorId)) throw AppError.notFound('Advisor');
       advisorIds = [q.advisorId];
     }
-    return { telecallerIds, advisorIds, label };
+    return { telecallerIds, advisorIds, label, selfSellerId };
   }
 
   private range(q: DashboardQuery) {

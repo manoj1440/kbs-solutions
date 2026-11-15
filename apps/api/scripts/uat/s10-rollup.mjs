@@ -73,7 +73,8 @@ eq('S10-C-03', 'Money actually transferred (payment records) = money shown as pa
 // ─────────── 5. WHO DOES NOT EARN ───────────
 eq('S10-N-01', 'Every claimable / paid card belongs to an Advisor — none to a Telecaller or a Manager (INV-05)', sql(`select distinct u.role from "PayoutEntitlement" e join "User" u on u.id = e."advisorUserId"`), 'ADVISOR');
 await denied('S10-N-02', 'A Telecaller has no earnings ledger (salaried, REQ-03)', () => get('/payouts/me/ledger', 't1'), 403);
-await denied('S10-N-03', 'A Manager has no earnings ledger of their own — the product pays Advisors only (finding F-1: no Manager share exists)', () => get('/payouts/me/ledger', 'm1'), 403);
+const mgrOwn = await get('/payouts/me/ledger', 'm1');
+check('S10-N-03', "A Manager's own earnings ledger holds only cards from leads they created themselves — empty here; their share on Advisors' cards is settled outside KBS", mgrOwn.rows.length === 0 && inr(mgrOwn.totals.paid.amountInr) === 0, JSON.stringify(mgrOwn.totals.paid));
 const t1perf = await get('/calling/me/performance', 't1');
 check('S10-N-04', "The Telecaller's interested customer got an activated card: counted in their performance (1 application, 1 activated), with no money attached", t1perf.applications.total === 1 && t1perf.applications.activated === 1 && !/amount|inr|payout/i.test(JSON.stringify(t1perf)), JSON.stringify(t1perf.applications));
 

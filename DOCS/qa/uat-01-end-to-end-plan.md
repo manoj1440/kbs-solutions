@@ -33,7 +33,7 @@ Admin (company owner)
 |---|---|---|
 | Advisor / FOS | **Yes** — the amount the Admin approved and Accounts paid, per request | REQ-17 |
 | Telecaller | **No** — "Monthly salary, no card-based payout claim"; a Telecaller's lead never creates a payout | REQ-03 §3.1, INV-05 |
-| Manager | **No** — the requirements give the Manager approval and team oversight only. There is no override / share of an Advisor's payout anywhere in the PRD, the data model or the screens | REQ-03, REQ-15, REQ-17 |
+| Manager | On Advisors' cards: **no** — settled outside KBS (owner decision, F-822). On leads the Manager creates **themselves: yes**, paid through KBS like an Advisor (owner decision, F-823) | REQ-03, REQ-15, REQ-17; F-822, F-823 |
 | Admin, Accounts | No | — |
 
 **Owner decision (2026-11-15): the Manager's share is settled outside KBS; the product only has to show the Manager every
@@ -140,6 +140,8 @@ consent confirmation to prove it is never allocated.
 | S10 Roll-up | read every ledger and dashboard | §3.2 table to the paisa at Advisor, Manager, Admin and Accounts level; calling totals per Telecaller = Manager team = Admin; lead funnel per Advisor = Manager = Admin |
 | S11 Access | every role tries the others' data and actions | 401 without token, 403 across roles and across teams, masked PAN / mobile / account everywhere, sensitive reveals logged, audit trail has each money action with actor |
 | S12 Follow-ups, ID, reporting change | lead remarks and follow-up tasks, official ID + public verification, Admin moves the Admin-direct Advisor under Manager South | operational items never touch bank status; what a change of reporting person does to team totals; history kept |
+| S15 Manager sells (F-823) | Manager South gives identity + bank details, Admin approves, two own leads, a third bank file, payout request with no Manager step, Admin approves ₹2,000.00, Accounts pays | selling closed until approved while team work stays open; own vs team scope; only own leads earn; no self-approval; Admin-only approval; roll-up counts the Manager's sales with the team |
+| S16 / S17 | the same on 9 web pages and 2 app flows | owner named on leads, four-step payout journey, "My sales" and "Back to team" |
 | S13 Web screens | Admin, Manager North and Accounts sign in on the web; 24 pages opened on the same data (run before S12) | the figures and names on screen equal the oracle; no other team's data; no full mobile / PAN / account on screen |
 | S14 App screens | release APK on the emulator, Maestro flows for two Advisors, Manager North and a Telecaller (run before S12) | earnings, claimable cards, team lists and "no rupee figure for a Telecaller" |
 

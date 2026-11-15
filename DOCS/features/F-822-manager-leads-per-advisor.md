@@ -7,6 +7,9 @@ A Manager does earn a share when their Advisor is paid, but **the amount is agre
 does not hold a Manager rate, ledger or payout. What the Manager needs from KBS is the evidence to work it out:
 **the leads of each Advisor, with all lead details.** Nothing else is to be built for this.
 
+Later the same day the owner added F-823: a Manager may also create leads themselves and is paid for those through KBS.
+That does not change this decision — an Advisor's card still never credits the Manager in KBS.
+
 ## What the Manager has
 | Where | What |
 |---|---|

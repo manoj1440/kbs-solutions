@@ -128,7 +128,10 @@ export class PayoutEligibilityService {
   // ── ledger reads (REQ-17 §17.9: available = eligible − reserved − paid) ──
   private scope(actor: Actor, advisorId?: string) {
     if (actor.role === 'ADVISOR') return { advisorUserId: actor.userId };
-    if (actor.role === 'MANAGER') return { advisorUserId: advisorId ? (actor.teamUserIds.includes(advisorId) ? advisorId : '__none__') : { in: actor.teamUserIds } };
+    if (actor.role === 'MANAGER') {
+      const mine = [...actor.teamUserIds, actor.userId]; // F-823: team + the Manager's own cards
+      return { advisorUserId: advisorId ? (mine.includes(advisorId) ? advisorId : '__none__') : { in: mine } };
+    }
     // RBAC-01: Accounts sees only card events whose request has both approvals
     if (actor.role === 'ACCOUNTS') return { ...(advisorId ? { advisorUserId: advisorId } : {}), requestItems: { some: { active: true, request: { state: { in: ['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'] as never[] } } } } };
     return advisorId ? { advisorUserId: advisorId } : {};

@@ -97,6 +97,8 @@ export const PayoutRequestListQuery = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
   state: z.enum(['PENDING_APPROVALS', 'APPROVED', 'REJECTED', 'CANCELLED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD']).optional(),
   advisorId: z.string().uuid().optional(),
+  /** Only the caller's own requests (a Manager's selling workspace). */
+  own: z.preprocess((v) => v === 'true' || v === '1' || v === true, z.boolean()).default(false),
   /** F-605 Accounts queues: awaiting = APPROVED; paid = PAID; exceptions = ON_HOLD, proof pending, payment exception or correction awaiting Admin. */
   queue: z.enum(['awaiting', 'paid', 'exceptions']).optional(),
   /** Only requests awaiting the actor's own approval. */

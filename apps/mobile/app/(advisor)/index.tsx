@@ -97,12 +97,12 @@ export default function AdvisorHome() {
     setError(null);
     // F-815 Today: own lists, so a failure shows on its row instead of blanking the home.
     const agenda = Promise.allSettled([
-      api.get<PendingAction[]>('/pending-actions'),
+      api.get<PendingAction[]>('/pending-actions?own=1'),
       api.get<Draft[]>('/leads/drafts'),
     ]);
     try {
       const [l, p, n] = await Promise.all([
-        api.get<LeadStatusRow[]>('/leads?pageSize=100'),
+        api.get<LeadStatusRow[]>('/leads?pageSize=100&own=1'),
         api.get<LedgerTotals>('/payouts/me/ledger'),
         api.get<NotificationRow[]>('/notifications?pageSize=10'),
       ]);
@@ -137,6 +137,8 @@ export default function AdvisorHome() {
   const claimable = totals?.available.count ?? 0;
   const inProgress = (totals?.requested.count ?? 0) + (totals?.approvedUnpaid.count ?? 0);
   const name = user?.fullName ?? '';
+  // F-823: a Manager sells with these same screens; their way out is back to the team workspace
+  const isManager = user?.role === 'MANAGER';
   const funnel: { label: string; value: number }[] = [
     { label: 'Leads', value: Math.max(leadTotal, leads.length) },
     { label: 'Applications', value: applications },
@@ -155,18 +157,35 @@ export default function AdvisorHome() {
       <HeroHeader>
         <View className="flex-row items-center justify-between">
           <PressableScale
-            accessibilityLabel="Open profile"
-            onPress={() => router.push('/(advisor)/profile' as never)}
-            className="flex-row items-center gap-3"
+            accessibilityLabel={isManager ? 'Back to team' : 'Open profile'}
+            onPress={() =>
+              isManager
+                ? router.replace('/(manager)' as never)
+                : router.push('/(advisor)/profile' as never)
+            }
+            className="flex-1 flex-row items-center gap-3"
           >
             <Avatar name={name || 'Advisor'} size={40} />
-            <View>
-              <RNText accessibilityRole="header" className="font-medium text-lg text-ink">
-                {name || 'Advisor'}
+            <View className="flex-1">
+              <RNText
+                numberOfLines={1}
+                accessibilityRole="header"
+                className="font-medium text-lg text-ink"
+              >
+                {isManager ? 'My sales' : name || 'Advisor'}
               </RNText>
-              <RNText className="font-normal text-sm text-[#737373]">{todayLabel()}</RNText>
+              <RNText numberOfLines={1} className="font-normal text-sm text-[#737373]">
+                {isManager ? 'Your own leads and earnings' : todayLabel()}
+              </RNText>
             </View>
           </PressableScale>
+          {isManager ? (
+            <IconButton
+              icon="people-outline"
+              label="Back to team"
+              onPress={() => router.replace('/(manager)' as never)}
+            />
+          ) : null}
           <IconButton
             icon="notifications-outline"
             label="Notifications"

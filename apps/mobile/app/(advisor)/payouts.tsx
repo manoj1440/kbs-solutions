@@ -113,7 +113,7 @@ export default function Payouts() {
     try {
       const [l, r] = await Promise.all([
         api.get<Ledger>('/payouts/me/ledger'),
-        api.get<Req[]>('/payouts/requests?pageSize=50'),
+        api.get<Req[]>('/payouts/requests?pageSize=50&own=1'),
       ]);
       setLedger(l.data);
       setRequests(r.data);

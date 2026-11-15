@@ -103,15 +103,15 @@ export class LeadsController {
 
   @Get('filters')
   @RequirePermission('LEAD_READ_OWN', 'LEAD_READ_TEAM', 'LEAD_READ_ALL')
-  filters(@CurrentActor() actor: Actor) {
-    return this.svc.filterOptions(actor);
+  filters(@CurrentActor() actor: Actor, @Query('own') own?: string) {
+    return this.svc.filterOptions(actor, own === '1' || own === 'true');
   }
 
   @Get('summary')
   @RequirePermission('LEAD_READ_OWN', 'LEAD_READ_TEAM', 'LEAD_READ_ALL')
-  summary(@CurrentActor() actor: Actor, @Query('advisorId') advisorId?: string) {
+  summary(@CurrentActor() actor: Actor, @Query('advisorId') advisorId?: string, @Query('own') own?: string) {
     // one Advisor's figures (a Manager only for their own team — anything else counts nothing)
-    return this.svc.summary(actor, advisorId && /^[0-9a-f-]{36}$/i.test(advisorId) ? advisorId : undefined);
+    return this.svc.summary(actor, advisorId && /^[0-9a-f-]{36}$/i.test(advisorId) ? advisorId : undefined, own === '1' || own === 'true');
   }
 
   @Get()

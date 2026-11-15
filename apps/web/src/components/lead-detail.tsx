@@ -72,7 +72,7 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-fg-2 hover:border-border-strong"
               >
                 <UserRound className="size-3.5 text-fg-3" aria-hidden="true" />
-                Advisor <span className="font-semibold text-foreground">{l.advisor.fullName}</span>
+                {l.advisor.role === 'MANAGER' ? 'Manager' : 'Advisor'} <span className="font-semibold text-foreground">{l.advisor.fullName}</span>
               </Link>
             ) : null}
           </>

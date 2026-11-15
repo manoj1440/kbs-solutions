@@ -1,0 +1,28 @@
+# UAT-01 S17 (F-823) — a Manager who has not given identity + bank details: "My sales" opens those steps, not the lead screens.
+appId: com.kbs.dsa
+env:
+  MOBILE: ${MOBILE || '9800000011'}
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${MOBILE}
+- tapOn: "Send code"
+- inputText: "000000"
+- assertVisible: "Team calling today"
+- tapOn: "My sales"
+- assertVisible: "Your details to sell cards"
+- assertNotVisible: "Total earnings"
+- tapOn: "Back to team"
+- assertVisible: "Team calling today"

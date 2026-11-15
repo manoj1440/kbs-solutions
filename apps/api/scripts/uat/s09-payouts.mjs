@@ -23,7 +23,7 @@ const ledger = async (k) => (await get('/payouts/me/ledger', k)).totals;
 await denied('S09-01', 'An Admin-direct Advisor cannot request a payout until a Manager approver is designated (the Manager step is never skipped)', () => request('a4', 'all'), [400, 409, 422, 503], 'CONFIG_MISSING');
 await put('/config/payouts.designatedApproverManagerUserId', A, { value: state.users.m1.id, reason: 'UAT-01: Manager North approves for Admin-direct Advisors' });
 await denied('S09-02', 'A Telecaller cannot request a payout', () => post('/payouts/requests', 't1', { all: true }), 403);
-await denied('S09-03', 'A Manager cannot request a payout', () => post('/payouts/requests', 'm1', { all: true }), 403);
+await denied('S09-03', 'A Manager with no activated card of their own has nothing to request — an Advisor\'s card is never the Manager\'s to claim', () => post('/payouts/requests', 'm1', { all: true }), [400, 409, 422]);
 
 // ── PR4 first: a3 claims L8 only (before the second bank file) ──
 const pr4 = await request('a3', ['L8']);

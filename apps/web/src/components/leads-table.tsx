@@ -77,6 +77,7 @@ export function LeadsTable({ rows, basePath, showAdvisor = false }: { rows: Lead
         row.original.advisor ? (
           <Link className="block truncate font-medium text-foreground hover:text-primary" href={basePath.startsWith('/manager') ? `/manager/advisors/${row.original.advisor.id}` : `/admin/users/${row.original.advisor.id}`}>
             {row.original.advisor.fullName}
+            {row.original.advisor.role === 'MANAGER' ? <span className="ml-1 text-2xs font-normal text-muted-foreground">Manager</span> : null}
           </Link>
         ) : (
           <span className="text-muted-foreground">—</span>

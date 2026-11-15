@@ -47,6 +47,8 @@ export interface PayoutRequestDto {
   state: string;
   advisor: { id: string; fullName: string };
   managerApprover: { id: string; fullName: string } | null;
+  /** false = requested by a Manager for their own leads: the Admin alone approves (F-823). */
+  managerStepRequired?: boolean;
   itemCount: number;
   totalAmountInr: number | null;
   submittedAt: string;
@@ -127,11 +129,10 @@ export async function PayoutRequestDetail({
         }
         subtitle={
           <>
-            Submitted {formatDateTime(r.submittedAt)} by {r.advisor.fullName} · Manager approver{' '}
-            {r.managerApprover?.fullName ?? '—'} ·{' '}
-            {r.approvals.order === 'MANAGER_FIRST'
-              ? 'Manager approves first, then Admin'
-              : 'either approver first'}
+            Submitted {formatDateTime(r.submittedAt)} by {r.advisor.fullName} ·{' '}
+            {r.managerStepRequired === false
+              ? "a Manager's own request — the Admin approves and sets the amount"
+              : `Manager approver ${r.managerApprover?.fullName ?? '—'} · ${r.approvals.order === 'MANAGER_FIRST' ? 'Manager approves first, then Admin' : 'either approver first'}`}
           </>
         }
       >
@@ -142,14 +143,20 @@ export async function PayoutRequestDetail({
           icon={UserCheck}
           tone="violet"
           title="Approvals"
-          description="Both the assigned Manager and the Admin must approve. One person never holds both."
+          description={
+            r.managerStepRequired === false
+              ? 'Requested by a Manager for their own leads: there is no Manager step, the Admin approves. Nobody approves their own request.'
+              : 'Both the assigned Manager and the Admin must approve. One person never holds both.'
+          }
         >
           <ol className="grid gap-0">
-            <ApprovalRow
-              label={`Manager (${r.managerApprover?.fullName ?? '—'})`}
-              a={r.approvals.manager}
-              pending={pending}
-            />
+            {r.managerStepRequired === false ? null : (
+              <ApprovalRow
+                label={`Manager (${r.managerApprover?.fullName ?? '—'})`}
+                a={r.approvals.manager}
+                pending={pending}
+              />
+            )}
             <ApprovalRow label="Admin" a={r.approvals.admin} pending={pending} last />
           </ol>
           <div className="mt-4 grid gap-2 empty:hidden">
@@ -220,16 +227,21 @@ function Journey({ r }: { r: PayoutRequestDto }) {
       : r.state === 'PENDING_APPROVALS'
         ? ['current', 'pending']
         : ['upcoming', '—'];
+  const ownRequest = r.managerStepRequired === false; // F-823: a Manager's own request — Admin approval only
   const bothApproved =
-    r.approvals.manager?.decision === 'APPROVED' && r.approvals.admin?.decision === 'APPROVED';
+    (ownRequest || r.approvals.manager?.decision === 'APPROVED') && r.approvals.admin?.decision === 'APPROVED';
   const steps: { title: string; state: StepState; detail: string; at?: string | null }[] = [
     { title: 'Submitted', state: 'done', detail: r.advisor.fullName, at: r.submittedAt },
-    {
-      title: 'Manager approval',
-      state: approval(r.approvals.manager)[0],
-      detail: approval(r.approvals.manager)[1],
-      at: r.approvals.manager?.at,
-    },
+    ...(ownRequest
+      ? []
+      : [
+          {
+            title: 'Manager approval',
+            state: approval(r.approvals.manager)[0],
+            detail: approval(r.approvals.manager)[1],
+            at: r.approvals.manager?.at,
+          },
+        ]),
     {
       title: 'Admin approval',
       state: approval(r.approvals.admin)[0],

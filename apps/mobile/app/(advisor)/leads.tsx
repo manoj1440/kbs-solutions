@@ -94,13 +94,13 @@ export default function Leads() {
     setLoading(true);
     setError(null);
     try {
-      const qs = new URLSearchParams({ pageSize: '100' });
+      const qs = new URLSearchParams({ pageSize: '100', own: '1' }); // own leads only (a Manager's default scope is their team too)
       if (q.trim()) qs.set('q', q.trim());
       for (const [k, v] of Object.entries(f)) if (v) qs.set(k, v);
       const [l, d, o] = await Promise.all([
         api.get<LeadStatusRow[]>(`/leads?${qs.toString()}`),
         api.get<Draft[]>('/leads/drafts'),
-        api.get<LeadFilterOptions>('/leads/filters'),
+        api.get<LeadFilterOptions>('/leads/filters?own=1'),
       ]);
       setRows(l.data);
       setTotal(typeof l.meta.total === 'number' ? l.meta.total : l.data.length);

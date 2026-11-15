@@ -115,7 +115,7 @@ export class PaymentsService {
     if (outcome === 'PAID') {
       const body = `${r.publicRef}: ${amount} paid on ${paidAt.toISOString().slice(0, 10)} (ref ${maskTransferReference(reference)}).`;
       await this.notifications.notify({ recipientUserId: r.advisorUserId, kind: 'PAYOUT_PAID', title: 'Payout paid', body, deepLink: link, dedupeKey: `payout:paid:${r.id}` });
-      await this.notifications.notify({ recipientUserId: r.managerApproverUserId, kind: 'PAYOUT_PAID', title: 'Payout paid', body, deepLink: link, dedupeKey: `payout:paid:${r.id}:mgr` });
+      if (r.managerApproverUserId !== r.advisorUserId) await this.notifications.notify({ recipientUserId: r.managerApproverUserId, kind: 'PAYOUT_PAID', title: 'Payout paid', body, deepLink: link, dedupeKey: `payout:paid:${r.id}:mgr` });
     } else if (outcome === 'ON_HOLD') {
       await this.notifications.notify({ recipientUserId: await this.hierarchy.adminUserId(), kind: 'PAYOUT_EXCEPTION', title: 'Payout payment exception', body: `${r.publicRef}: ${reason ?? 'payment held for review'}`, deepLink: link, dedupeKey: `payout:exception:${r.id}:${Date.now()}` });
       // REQ-19 §19.1 Accounts: "request/payment exception and pending proof"

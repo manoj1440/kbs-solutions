@@ -17,7 +17,13 @@ export default function AdvisorLayout() {
   // the retry state for an unreachable session lives on the entry screen
   if (status === 'loading') return unreachable ? <Redirect href="/" /> : null;
   if (!user || !gates) return <Redirect href="/(auth)/welcome" />;
-  const target = routeFor(user, gates);
+  // F-823: a Manager sells with the same screens once their identity and bank details are approved
+  const target =
+    user.role === 'MANAGER'
+      ? gates.onboarding.complete
+        ? '/(advisor)'
+        : '/(gates)/onboarding'
+      : routeFor(user, gates);
   if (target !== '/(advisor)') return <Redirect href={target as never} />;
   return (
     // F-818: the tab bar is glass — its blur target is this scope's ambient light

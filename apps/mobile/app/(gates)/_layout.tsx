@@ -13,7 +13,13 @@ export default function GatesLayout() {
   if (status === 'signed-out') return <Redirect href="/(auth)/welcome" />;
   if (status === 'loading' && unreachable) return <Redirect href="/" />;
   if (user && gates && segments[0] === '(gates)' && segments[1] && segments[2] !== 'assessment') {
-    const target = routeFor(user, gates);
+    // F-823: a Manager fills in identity + bank details here to open their selling workspace
+    const managerSelling = user.role === 'MANAGER' && segments[1] === 'onboarding';
+    const target = managerSelling
+      ? gates.onboarding.complete
+        ? '/(advisor)'
+        : '/(gates)/onboarding'
+      : routeFor(user, gates);
     if (target !== `/(gates)/${segments[1]}`) return <Redirect href={target as never} />;
   }
   return <Stack screenOptions={{ headerShown: false }} />;

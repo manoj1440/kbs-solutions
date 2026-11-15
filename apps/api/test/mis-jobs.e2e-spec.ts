@@ -90,6 +90,9 @@ describe('F-508 MIS preview/apply as background jobs (ADR-013, REQ-24 §24.1)', 
     await api().post(`/api/v1/mis/batches/${id}/apply`).set(auth(admin)).set('idempotency-key', idem()).expect(201);
     const failed = await waitFor(id, 'FAILED');
     expect(failed).toMatchObject({ stage: 'FAILED', job: { kind: 'APPLY', error: 'database went away' } });
+    // the job marks the batch FAILED first, then writes the audit entry and the notification: wait for them instead of
+    // racing the worker (this assertion failed about 1 run in 8 on a busy machine)
+    for (let i = 0; i < 40 && (await prisma.notification.count({ where: { dedupeKey: { startsWith: `mis:failed:${id}` } } })) === 0; i++) await new Promise((r) => setTimeout(r, 50));
     expect(await prisma.auditLog.count({ where: { action: 'misBatch.jobFailed', entityId: id } })).toBe(1);
     expect(await prisma.notification.count({ where: { dedupeKey: { startsWith: `mis:failed:${id}` } } })).toBe(1);
     spy.mockRestore();

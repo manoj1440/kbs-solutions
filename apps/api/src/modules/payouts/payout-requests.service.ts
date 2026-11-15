@@ -31,6 +31,12 @@ type PaymentRow = { id: string; state: string; paidAt: Date; amountInr: unknown;
  * F-604 — dual approval (Manager + Admin as two distinct records), rejection releases items, cancel authority.
  * The partial unique index `PayoutRequestItem_one_active_per_entitlement_idx` is the last line of defence.
  */
+/**
+ * F-823: a Manager's own payout request carries no Manager step. It is stored with the requester as its own
+ * "Manager approver" — a marker that can never be a real approval, because nobody approves their own request.
+ */
+export const noManagerStep = (r: { advisorUserId: string; managerApproverUserId: string }) => r.advisorUserId === r.managerApproverUserId;
+
 @Injectable()
 export class PayoutRequestsService {
   constructor(
@@ -124,7 +130,7 @@ export class PayoutRequestsService {
 
   // ── F-603 request creation (atomic reservation) ──
   async create(actor: Actor, body: CreatePayoutRequestBody, idempotencyKey: string) {
-    if (actor.role !== 'ADVISOR') throw new AppError('RBAC_FORBIDDEN', 'Only Advisors request payouts.');
+    if (actor.role !== 'ADVISOR' && actor.role !== 'MANAGER') throw new AppError('RBAC_FORBIDDEN', 'Only Advisors and Managers request payouts.');
     const existing = await this.prisma.client.payoutRequest.findUnique({ where: { idempotencyKey }, select: { id: true } });
     if (existing) return this.get(actor, existing.id);
     await this.eligibility.releaseHolds({ advisorUserId: actor.userId });
@@ -132,6 +138,9 @@ export class PayoutRequestsService {
     const parentId = await this.hierarchy.currentParentId(actor.userId);
     const parent = parentId ? await this.prisma.client.user.findUnique({ where: { id: parentId }, select: { id: true, role: true, status: true } }) : null;
     let managerApproverUserId: string | null = parent && parent.role === 'MANAGER' && parent.status === 'ACTIVE' ? parent.id : null;
+    // F-823: a Manager's own request has no Manager step — nobody approves their own request and a Manager reports to the
+    // Admin, who approves it and sets the amount. It is stored with the requester as "Manager approver" (see noManagerStep).
+    if (actor.role === 'MANAGER') managerApproverUserId = actor.userId;
     if (!managerApproverUserId) {
       const designated = this.config.getString('payouts.designatedApproverManagerUserId');
       const d = designated ? await this.prisma.client.user.findUnique({ where: { id: designated }, select: { id: true, role: true, status: true } }) : null;
@@ -163,8 +172,15 @@ export class PayoutRequestsService {
       return req;
     });
     RequestContextStore.audit({ entityId: created.id, after: { publicRef: created.publicRef, itemCount: created.itemCount, totalAmountInr: Number(created.totalAmountInr), managerApproverUserId } });
-    const body_ = `${created.publicRef}: ${created.itemCount} activated card(s). Awaiting Manager approval, then Admin sets the amount.`;
-    await this.notifications.notify({ recipientUserId: managerApproverUserId, kind: 'PAYOUT_APPROVAL_REQUIRED', title: 'Payout request needs your approval', body: body_, deepLink: { entityType: 'PayoutRequest', entityId: created.id }, dedupeKey: `payout:approval:${created.id}:manager` });
+    const ownRequest = noManagerStep(created);
+    const body_ = ownRequest ? `${created.publicRef}: ${created.itemCount} activated card(s). Awaiting the Admin, who approves and sets the amount.` : `${created.publicRef}: ${created.itemCount} activated card(s). Awaiting Manager approval, then Admin sets the amount.`;
+    if (ownRequest) {
+      for (const adm of await this.prisma.client.user.findMany({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true } })) {
+        await this.notifications.notify({ recipientUserId: adm.id, kind: 'PAYOUT_APPROVAL_REQUIRED', title: 'Payout request ready for your approval', body: `${created.publicRef}: requested by a Manager for their own leads. Enter the amount to approve it.`, deepLink: { entityType: 'PayoutRequest', entityId: created.id }, dedupeKey: `payout:approval:${created.id}:admin-ready:${adm.id}` });
+      }
+    } else {
+      await this.notifications.notify({ recipientUserId: managerApproverUserId, kind: 'PAYOUT_APPROVAL_REQUIRED', title: 'Payout request needs your approval', body: body_, deepLink: { entityType: 'PayoutRequest', entityId: created.id }, dedupeKey: `payout:approval:${created.id}:manager` });
+    }
     // Admin is notified when the Manager approves (Manager-first): only then can Admin act on it
     await this.notifications.notify({ recipientUserId: actor.userId, kind: 'PAYOUT_SUBMITTED', title: 'Payout request submitted', body: `${body_} A submitted request is not yet an approval.`, deepLink: { entityType: 'PayoutRequest', entityId: created.id }, dedupeKey: `payout:submitted:${created.id}` });
     return this.get(actor, created.id);
@@ -186,10 +202,11 @@ export class PayoutRequestsService {
     const approver = await this.prisma.client.user.findUnique({ where: { id: r.managerApproverUserId }, select: { id: true, fullName: true } });
     const manager = r.approvals.find((a) => a.approverRole === 'MANAGER') ?? null;
     const admin = r.approvals.find((a) => a.approverRole === 'ADMIN') ?? null;
-    const outstanding = r.state === 'PENDING_APPROVALS' ? (['MANAGER', 'ADMIN'] as const).filter((role) => !r.approvals.some((a) => a.approverRole === role && a.decision === 'APPROVED')) : [];
+    const own = noManagerStep(r); // F-823: requested by a Manager for their own leads → Admin approval only
+    const outstanding = r.state === 'PENDING_APPROVALS' ? (own ? (['ADMIN'] as const) : (['MANAGER', 'ADMIN'] as const)).filter((role) => !r.approvals.some((a) => a.approverRole === role && a.decision === 'APPROVED')) : [];
     const order = 'MANAGER_FIRST'; // user decision: the Manager approves first, then Admin sets the amount
-    const myRole = actor.role === 'ADMIN' ? 'ADMIN' : actor.userId === r.managerApproverUserId ? 'MANAGER' : null;
-    const canApprove = r.state === 'PENDING_APPROVALS' && myRole !== null && !r.approvals.some((a) => a.approverRole === myRole) && !(myRole === 'ADMIN' && order === 'MANAGER_FIRST' && !manager) && !(myRole === 'MANAGER' && manager !== null);
+    const myRole = actor.role === 'ADMIN' ? 'ADMIN' : !own && actor.userId === r.managerApproverUserId ? 'MANAGER' : null;
+    const canApprove = r.state === 'PENDING_APPROVALS' && myRole !== null && !r.approvals.some((a) => a.approverRole === myRole) && !(myRole === 'ADMIN' && order === 'MANAGER_FIRST' && !manager && !own) && !(myRole === 'MANAGER' && manager !== null);
     // prior requests / payments for the same leads (REQ-17 §17.4 evidence)
     const leadIds = r.items.map((i) => i.entitlement.leadId);
     const prior = leadIds.length ? await this.prisma.client.payoutRequestItem.findMany({ where: { entitlement: { leadId: { in: leadIds } }, requestId: { not: r.id } }, include: { request: { select: { id: true, publicRef: true, state: true, submittedAt: true } }, entitlement: { select: { leadId: true } } } }) : [];
@@ -198,7 +215,9 @@ export class PayoutRequestsService {
       publicRef: r.publicRef,
       state: r.state,
       advisor: r.advisor,
-      managerApprover: approver,
+      managerApprover: own ? null : approver,
+      /** false = requested by a Manager for their own leads: the Admin alone approves (F-823). */
+      managerStepRequired: !own,
       itemCount: r.itemCount,
       // set by Admin's approval; the Advisor sees it once paid
       totalAmountInr: actor.role === 'ADVISOR' && r.state !== 'PAID' ? null : admin?.decision === 'APPROVED' ? Number(r.totalAmountInr) : null,
@@ -289,8 +308,8 @@ export class PayoutRequestsService {
 
   async list(actor: Actor, q: PayoutRequestListQuery) {
     const scope =
-      actor.role === 'ADVISOR' ? { advisorUserId: actor.userId } : actor.role === 'MANAGER' ? { OR: [{ managerApproverUserId: actor.userId }, { advisorUserId: { in: actor.teamUserIds } }] } : actor.role === 'ACCOUNTS' ? { state: { in: ['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'] as never[] } } : {};
-    const awaiting = q.awaitingMe ? (actor.role === 'ADMIN' ? { state: 'PENDING_APPROVALS' as const, AND: [{ approvals: { none: { approverRole: 'ADMIN' as const } } }, { approvals: { some: { approverRole: 'MANAGER' as const, decision: 'APPROVED' as const } } }] } : { state: 'PENDING_APPROVALS' as const, managerApproverUserId: actor.userId, approvals: { none: { approverRole: 'MANAGER' as const } } }) : {};
+      actor.role === 'ADVISOR' || (q.own && actor.role === 'MANAGER') ? { advisorUserId: actor.userId } : actor.role === 'MANAGER' ? { OR: [{ managerApproverUserId: actor.userId }, { advisorUserId: { in: [...actor.teamUserIds, actor.userId] } }] } : actor.role === 'ACCOUNTS' ? { state: { in: ['APPROVED', 'PAYMENT_RECORDED_PENDING_PROOF', 'PAID', 'ON_HOLD'] as never[] } } : {};
+    const awaiting = q.awaitingMe ? (actor.role === 'ADMIN' ? { state: 'PENDING_APPROVALS' as const, AND: [{ approvals: { none: { approverRole: 'ADMIN' as const } } }, { OR: [{ approvals: { some: { approverRole: 'MANAGER' as const, decision: 'APPROVED' as const } } }, { advisor: { role: 'MANAGER' as const } }] }] } : { state: 'PENDING_APPROVALS' as const, managerApproverUserId: actor.userId, advisorUserId: { not: actor.userId }, approvals: { none: { approverRole: 'MANAGER' as const } } }) : {};
     const queue = q.queue ? PAYMENT_QUEUE_WHERE[q.queue] : {};
     const where = { AND: [scope, awaiting, queue, q.state ? { state: q.state } : {}, q.advisorId ? { advisorUserId: q.advisorId } : {}] };
     const [rows, total] = await Promise.all([
@@ -310,12 +329,13 @@ export class PayoutRequestsService {
     const r = await this.prisma.client.payoutRequest.findUnique({ where: { id }, include: { approvals: true, items: { where: { active: true }, select: { entitlementId: true } } } });
     if (!r || !this.canSee(actor, r)) throw AppError.notFound('Payout request');
     if (r.state !== 'PENDING_APPROVALS') throw new AppError('PAYOUT_STATE_INVALID', `Request is ${r.state}; approvals are closed.`);
-    const role: 'MANAGER' | 'ADMIN' | null = actor.role === 'ADMIN' ? 'ADMIN' : actor.userId === r.managerApproverUserId ? 'MANAGER' : null;
+    const own = noManagerStep(r);
+    const role: 'MANAGER' | 'ADMIN' | null = actor.role === 'ADMIN' ? 'ADMIN' : !own && actor.userId === r.managerApproverUserId ? 'MANAGER' : null;
     if (!role) throw new AppError('RBAC_FORBIDDEN', 'Only the assigned Manager approver or the Admin can decide this request.');
     if (r.advisorUserId === actor.userId) throw new AppError('RBAC_FORBIDDEN', 'You cannot approve your own request.');
     if (r.approvals.some((a) => a.approverUserId === actor.userId)) throw new AppError('PAYOUT_APPROVAL_DUPLICATE', 'You have already recorded a decision on this request; one person never holds both approvals.');
     if (r.approvals.some((a) => a.approverRole === role)) throw new AppError('PAYOUT_APPROVAL_DUPLICATE', `${role} approval already recorded.`);
-    if (role === 'ADMIN' && !r.approvals.some((a) => a.approverRole === 'MANAGER' && a.decision === 'APPROVED')) throw new AppError('PAYOUT_STATE_INVALID', 'The Manager approves first; then Admin sets the amount.');
+    if (role === 'ADMIN' && !own && !r.approvals.some((a) => a.approverRole === 'MANAGER' && a.decision === 'APPROVED')) throw new AppError('PAYOUT_STATE_INVALID', 'The Manager approves first; then Admin sets the amount.');
     if (role === 'ADMIN' && body.decision === 'APPROVED' && !body.amountInr) throw new AppError('VALIDATION_FAILED', 'Enter the amount to transfer to approve this request.');
     const entitlementIds = r.items.map((i) => i.entitlementId);
     // an MIS correction after submission puts items UNDER_REVIEW: approving would send unpayable events to Accounts
@@ -349,7 +369,7 @@ export class PayoutRequestsService {
         return 'REJECTED' as const;
       }
       const all = await tx.payoutApproval.findMany({ where: { requestId: id, decision: 'APPROVED' } });
-      const both = all.some((a) => a.approverRole === 'MANAGER') && all.some((a) => a.approverRole === 'ADMIN');
+      const both = (own || all.some((a) => a.approverRole === 'MANAGER')) && all.some((a) => a.approverRole === 'ADMIN');
       if (both) {
         await tx.payoutRequest.update({ where: { id }, data: { state: 'APPROVED' } });
         await tx.outboxEvent.create({ data: { type: 'payouts.request.approved', payload: { requestId: id, jobId: `payouts.request.approved:${id}` } } });
@@ -361,9 +381,9 @@ export class PayoutRequestsService {
     if (outcome === 'REJECTED') {
       await this.notifications.notify({ recipientUserId: r.advisorUserId, kind: 'PAYOUT_DECISION', title: 'Payout request rejected', body: `${r.publicRef} was rejected by ${role.toLowerCase()}: ${body.reason}. The card events are available to request again.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:decision:${id}:${role}` });
     } else if (outcome === 'APPROVED') {
-      await this.notifications.notify({ recipientUserId: r.advisorUserId, kind: 'PAYOUT_DECISION', title: 'Payout request approved by both approvers', body: `${r.publicRef} is approved and queued for Accounts payment. You will see the amount once it is paid.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:decision:${id}:both` });
+      await this.notifications.notify({ recipientUserId: r.advisorUserId, kind: 'PAYOUT_DECISION', title: own ? 'Payout request approved' : 'Payout request approved by both approvers', body: `${r.publicRef} is approved and queued for Accounts payment. You will see the amount once it is paid.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:decision:${id}:both` });
       for (const acct of await this.prisma.client.user.findMany({ where: { role: 'ACCOUNTS', status: 'ACTIVE' }, select: { id: true } })) {
-        await this.notifications.notify({ recipientUserId: acct.id, kind: 'PAYOUT_READY_FOR_PAYMENT', title: 'Payout ready for payment', body: `${r.publicRef} (${amount ?? '—'}) has both approvals.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:ready:${id}:${acct.id}` });
+        await this.notifications.notify({ recipientUserId: acct.id, kind: 'PAYOUT_READY_FOR_PAYMENT', title: 'Payout ready for payment', body: `${r.publicRef} (${amount ?? '—'}) ${own ? 'is approved by the Admin (requested by a Manager for their own leads)' : 'has both approvals'}.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:ready:${id}:${acct.id}` });
       }
     } else {
       // Manager-first: this is the moment the request becomes actionable for Admin

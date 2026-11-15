@@ -189,4 +189,37 @@ describe('F-603 payout requests + reservation / F-604 dual approval (PAY-02, PAY
     expect(await prisma.payoutEntitlement.findUniqueOrThrow({ where: { id: corrected.id } })).toMatchObject({ state: 'UNDER_REVIEW', currentRequestId: null });
     expect(await prisma.payoutEntitlementEvent.count({ where: { entitlementId: corrected.id, requestId: req.id, toState: 'ELIGIBLE_AVAILABLE' } })).toBe(0); // no false "released" event
   });
+  it("F-823: a Manager's own request has no Manager step — the Admin alone approves and sets the amount; nobody approves their own", async () => {
+    const card = await prisma.creditCard.findFirstOrThrow({ where: { bankId: hdfcId } });
+    // selling is closed until the Manager's identity + bank details are approved; reading stays open
+    const blocked = await api().post('/api/v1/leads/drafts').set(auth(managerToken)).set('idempotency-key', idem()).send({ cardId: card.id }).expect(403);
+    expect(blocked.body.error.code).toBe('GATE_ONBOARDING_INCOMPLETE');
+    await api().get('/api/v1/leads').set(auth(managerToken)).expect(200);
+    await prisma.advisorProfile.create({ data: { userId: managerId, onboardingStep: 'COMPLETE' } });
+    const open = await api().post('/api/v1/leads/drafts').set(auth(managerToken)).set('idempotency-key', idem()).send({ cardId: card.id });
+    expect(open.body.error?.code).not.toBe('GATE_ONBOARDING_INCOMPLETE'); // past the gate (declarations / link config decide the rest)
+    expect(open.body.error?.code).not.toBe('RBAC_FORBIDDEN');
+
+    const e = await entitlement(managerId, 'APP-M01', 0);
+    const ledger = (await api().get('/api/v1/payouts/me/ledger').set(auth(managerToken)).expect(200)).body.data;
+    expect(ledger.totals.available.count).toBe(1);
+    const r = (await api().post('/api/v1/payouts/requests').set(auth(managerToken)).set('idempotency-key', idem()).send({ entitlementIds: [e.id] }).expect(201)).body.data;
+    expect(r).toMatchObject({ state: 'PENDING_APPROVALS', managerStepRequired: false, managerApprover: null });
+    expect(r.approvals.outstanding).toEqual(['ADMIN']);
+    // the requester can never approve; their own request is not in their approval list; the Admin sees it at once
+    await api().post(`/api/v1/payouts/requests/${r.id}/approvals`).set(auth(managerToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(403);
+    const mine = (await api().get('/api/v1/payouts/requests?awaitingMe=true').set(auth(managerToken)).expect(200)).body.data as Array<{ id: string }>;
+    expect(mine.some((x) => x.id === r.id)).toBe(false);
+    const adminQueue = (await api().get('/api/v1/payouts/requests?awaitingMe=true').set(auth(adminToken)).expect(200)).body.data as Array<{ id: string }>;
+    expect(adminQueue.some((x) => x.id === r.id)).toBe(true);
+    await api().get(`/api/v1/payouts/requests/${r.id}`).set(auth(accountsToken)).expect(404);
+    await api().post(`/api/v1/payouts/requests/${r.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED' }).expect(400); // amount required
+    const done = (await api().post(`/api/v1/payouts/requests/${r.id}/approvals`).set(auth(adminToken)).set('idempotency-key', idem()).send({ decision: 'APPROVED', amountInr: 2000 }).expect(201)).body.data;
+    expect(done).toMatchObject({ state: 'APPROVED', totalAmountInr: 2000 });
+    expect((await prisma.payoutApproval.findMany({ where: { requestId: r.id } })).map((a) => a.approverRole)).toEqual(['ADMIN']);
+    await api().get(`/api/v1/payouts/requests/${r.id}`).set(auth(accountsToken)).expect(200);
+    // only their own requests in the selling workspace
+    const own = (await api().get('/api/v1/payouts/requests?own=1').set(auth(managerToken)).expect(200)).body.data as Array<{ id: string }>;
+    expect(own.map((x) => x.id)).toEqual([r.id]);
+  });
 });

@@ -66,7 +66,7 @@ export interface LeadStatusRowInput {
   possibleCollision?: boolean;
   blankTokens?: readonly string[];
   /** The Advisor (FOS) who owns the lead — shown to Managers and the Admin so leads read per Advisor. */
-  advisor?: { id: string; fullName: string; publicRef: string } | null;
+  advisor?: { id: string; fullName: string; publicRef: string; role?: string } | null;
 }
 
 /** Authorised next actions for a row — real actions only, never "move to next stage" (REQ-14 §14.2 row 13). */
@@ -91,8 +91,8 @@ export interface LeadStatusRow {
   bankReference: { kind: string; value: string; status: string } | null;
   possibleCollision: boolean;
   actions: LeadAction[];
-  /** Owning Advisor (FOS). */
-  advisor: { id: string; fullName: string; publicRef: string } | null;
+  /** Who owns the lead: an Advisor (FOS), or a Manager selling themselves (F-823) — `role` says which. */
+  advisor: { id: string; fullName: string; publicRef: string; role?: string } | null;
 }
 
 const iso = (d: Date | string | null | undefined): string | null => (d == null ? null : typeof d === 'string' ? d : d.toISOString());

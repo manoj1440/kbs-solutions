@@ -7,7 +7,7 @@ import {
   type OnboardingView,
 } from '@kbs/shared';
 import * as ImagePicker from 'expo-image-picker';
-import { Redirect, useFocusEffect } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Linking, Text as RNText, View } from 'react-native';
 
@@ -59,7 +59,17 @@ const STEP_ICONS: Record<string, IconName> = {
   AWAITING_REVIEW: 'hourglass',
   COMPLETE: 'checkmark-circle',
 };
-const PROGRESS = ['PERSONAL', 'CONSENT', 'IDENTITY', 'BANK', 'CHEQUE', 'AGENT_CODE', 'REVIEW'];
+const ADVISOR_PROGRESS = [
+  'PERSONAL',
+  'CONSENT',
+  'IDENTITY',
+  'BANK',
+  'CHEQUE',
+  'AGENT_CODE',
+  'REVIEW',
+];
+// F-823: a Manager who sells gives the same details, without an Agent Code (they report to the Admin)
+const MANAGER_PROGRESS = ADVISOR_PROGRESS.filter((s) => s !== 'AGENT_CODE');
 
 /**
  * F-401 / F-402: resumable onboarding wizard (S06–S07 happen in (auth)). The server decides the current step; this screen
@@ -88,6 +98,9 @@ export default function OnboardingGate() {
     actionUrl?: string;
   } | null>(null);
   const [codeCheck, setCodeCheck] = useState<'valid' | 'invalid' | null>(null);
+  const isManager = user?.role === 'MANAGER';
+  const PROGRESS = isManager ? MANAGER_PROGRESS : ADVISOR_PROGRESS;
+  const title = isManager ? 'Your details to sell cards' : 'Advisor onboarding';
 
   const load = useCallback(async () => {
     try {
@@ -126,7 +139,15 @@ export default function OnboardingGate() {
     }
   };
 
-  const signOutButton = (
+  const signOutButton = isManager ? (
+    <Button
+      title="Back to team"
+      size="sm"
+      variant="ghost"
+      icon="people-outline"
+      onPress={() => router.replace('/(manager)' as never)}
+    />
+  ) : (
     <Button
       title="Sign out"
       size="sm"
@@ -137,14 +158,12 @@ export default function OnboardingGate() {
   );
 
   // approved by KBS: leave the gate for the Advisor home (Refresh re-fetches gates)
-  if (user && gates?.onboarding.complete) return <Redirect href={routeFor(user, gates) as never} />;
+  if (user && gates?.onboarding.complete)
+    return <Redirect href={(isManager ? '/(advisor)' : routeFor(user, gates)) as never} />;
 
   if (!v) {
     return (
-      <Screen
-        scroll
-        header={<AppBar title="Advisor onboarding" back={false} right={signOutButton} />}
-      >
+      <Screen scroll header={<AppBar title={title} back={false} right={signOutButton} />}>
         {error ? (
           <ErrorState
             message={error}
@@ -548,12 +567,25 @@ export default function OnboardingGate() {
                   label="Bank"
                   value={`${v.bank?.bankName ?? ''} ·••••${v.bank?.accountLast4 ?? ''} · ${v.bank?.ifsc ?? ''}`}
                 />
-                <KeyValue label="Cheque" value={v.cheque?.originalName ?? 'missing'} />
-                <KeyValue label="Reporting to" value={v.reportingParent?.fullName ?? 'KBS'} last />
+                <KeyValue
+                  label="Cheque"
+                  value={v.cheque?.originalName ?? 'missing'}
+                  last={isManager}
+                />
+                {isManager ? null : (
+                  <KeyValue
+                    label="Reporting to"
+                    value={v.reportingParent?.fullName ?? 'KBS'}
+                    last
+                  />
+                )}
               </View>
               <View>
                 <RNText className="mb-1 font-medium text-sm text-[#525252]">Make changes</RNText>
-                {['PERSONAL', 'BANK', 'CHEQUE', 'AGENT_CODE'].map((s, i, arr) => (
+                {(isManager
+                  ? ['PERSONAL', 'BANK', 'CHEQUE']
+                  : ['PERSONAL', 'BANK', 'CHEQUE', 'AGENT_CODE']
+                ).map((s, i, arr) => (
                   <ListItem
                     key={s}
                     icon={STEP_ICONS[s]}
@@ -564,9 +596,11 @@ export default function OnboardingGate() {
                 ))}
               </View>
               <Muted className="text-center text-xs">
-                {v.requiresAdminReview
-                  ? 'KBS reviews every new Advisor before activation.'
-                  : 'Your account activates immediately after submission.'}
+                {isManager
+                  ? 'KBS reviews these details before you can create leads of your own.'
+                  : v.requiresAdminReview
+                    ? 'KBS reviews every new Advisor before activation.'
+                    : 'Your account activates immediately after submission.'}
               </Muted>
             </>
           ),
@@ -590,7 +624,7 @@ export default function OnboardingGate() {
               </View>
               <Text className="text-center text-base">
                 Submitted {v.submittedAt ? formatDateTime(v.submittedAt) : ''}. You will be notified
-                when your account is ready.
+                when {isManager ? 'you can start creating leads' : 'your account is ready'}.
               </Text>
             </>
           ),
@@ -617,7 +651,7 @@ export default function OnboardingGate() {
       scroll
       header={
         <View className="border-b border-line bg-canvas pb-3">
-          <AppBar title="Advisor onboarding" back={false} right={signOutButton} />
+          <AppBar title={title} back={false} right={signOutButton} />
           <View className="px-4">
             <Stepper steps={stepperLabels} current={stepperIdx} />
           </View>

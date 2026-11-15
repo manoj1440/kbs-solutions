@@ -74,6 +74,8 @@ export const LeadListQuery = z.object({
   /** Customer name, mobile (any format) or KBS / bank reference. */
   q: z.string().trim().max(80).optional(),
   advisorId: z.string().uuid().optional(),
+  /** Only the caller's own leads (a Manager's selling workspace; an Advisor's list is always their own). */
+  own: z.preprocess((v) => v === 'true' || v === '1' || v === true, z.boolean()).default(false),
   bankId: z.string().uuid().optional(),
   cardId: z.string().uuid().optional(),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),

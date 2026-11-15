@@ -273,6 +273,24 @@ export default function ManagerHome() {
                 />
               </View>
 
+              {/* F-823: a Manager also sells — the same lead and earnings screens as an Advisor */}
+              <PressableScale
+                accessibilityLabel="My sales"
+                onPress={() => router.push('/(advisor)' as never)}
+                className="mt-4 flex-row items-center gap-3 rounded-2xl bg-white px-4 py-3"
+              >
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-raised">
+                  <Icon name="card-outline" size={20} color={colors.ink} />
+                </View>
+                <View className="flex-1">
+                  <RNText className="font-medium text-base text-ink">My sales</RNText>
+                  <RNText className="font-normal text-sm text-[#737373]">
+                    Create leads and see your own earnings
+                  </RNText>
+                </View>
+                <Icon name="chevron-forward" size={18} color={colors.subtle} />
+              </PressableScale>
+
               <HeroCard className="mt-5">
                 <View className="flex-row items-center justify-between">
                   <RNText className="font-medium text-md text-white">Team calling today</RNText>

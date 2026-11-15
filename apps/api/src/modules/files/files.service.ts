@@ -25,7 +25,7 @@ const UPLOAD_ROLES: Record<FilePurpose, ReadonlyArray<Actor['role']>> = {
   TRAINING_VIDEO: ['ADMIN'],
   CARD_IMAGE: ['ADMIN'],
   BENEFIT_PDF: ['ADMIN'],
-  CHEQUE: ['ADVISOR', 'ADMIN'],
+  CHEQUE: ['ADVISOR', 'MANAGER', 'ADMIN'], // F-823: a Manager who sells also files a cancelled cheque
   PAYMENT_PROOF: ['ACCOUNTS', 'ADMIN'],
   ID_CARD: ['ADMIN'],
   RECORDING: ['ADMIN'],

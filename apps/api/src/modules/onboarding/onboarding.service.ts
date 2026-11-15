@@ -44,8 +44,16 @@ export class OnboardingService {
   ) {}
 
   private async profile(userId: string) {
-    const p = await this.prisma.client.advisorProfile.findUnique({ where: { userId }, include: { user: { select: { id: true, fullName: true, email: true, status: true, role: true } }, chequeFile: { select: { id: true, originalName: true } } } });
-    if (!p || p.user.role !== 'ADVISOR') throw AppError.notFound('Onboarding profile');
+    const include = { user: { select: { id: true, fullName: true, email: true, status: true, role: true } }, chequeFile: { select: { id: true, originalName: true } } } as const;
+    let p = await this.prisma.client.advisorProfile.findUnique({ where: { userId }, include });
+    if (!p) {
+      // F-823: a Manager who starts selling gets a payee profile on first use (an Advisor gets theirs at sign-up)
+      const u = await this.prisma.client.user.findUnique({ where: { id: userId }, select: { role: true, status: true } });
+      if (u?.role !== 'MANAGER' || u.status !== 'ACTIVE') throw AppError.notFound('Onboarding profile');
+      await this.prisma.client.advisorProfile.upsert({ where: { userId }, create: { userId, onboardingStep: 'PERSONAL' }, update: {} });
+      p = await this.prisma.client.advisorProfile.findUnique({ where: { userId }, include });
+    }
+    if (!p || (p.user.role !== 'ADVISOR' && p.user.role !== 'MANAGER')) throw AppError.notFound('Onboarding profile');
     return p;
   }
 
@@ -226,7 +234,8 @@ export class OnboardingService {
     const f = await this.prisma.client.storedFile.findUnique({ where: { id: body.fileId } });
     if (!f || f.purpose !== 'CHEQUE' || f.uploadedByUserId !== actor.userId) throw new AppError('VALIDATION_FAILED', 'Upload the cancelled cheque (purpose CHEQUE) first.');
     await this.prisma.client.advisorProfile.update({ where: { userId: actor.userId }, data: { chequeFileId: f.id } });
-    await this.advance(actor.userId, 'CHEQUE', 'AGENT_CODE');
+    // an Agent Code attaches an Advisor to a reporting person — a Manager has none to enter (F-823)
+    await this.advance(actor.userId, 'CHEQUE', p.user.role === 'MANAGER' ? 'REVIEW' : 'AGENT_CODE');
     RequestContextStore.audit({ entityId: actor.userId, after: { chequeFileId: f.id } });
     return this.view(actor);
   }
@@ -235,6 +244,7 @@ export class OnboardingService {
   async agentCode(actor: Actor, body: OnboardingAgentCodeBody) {
     const p = await this.profile(actor.userId);
     this.assertEditable(p, 'AGENT_CODE');
+    if (body.code && p.user.role === 'MANAGER') throw new AppError('VALIDATION_FAILED', 'Agent Codes are for Advisors; a Manager reports to the Admin.');
     if (body.code) await this.agentCodes.apply(actor, { code: body.code });
     await this.advance(actor.userId, 'AGENT_CODE', 'REVIEW');
     return this.view(actor);
@@ -251,7 +261,7 @@ export class OnboardingService {
     if (requiresReview) {
       await this.prisma.client.advisorProfile.update({ where: { userId: actor.userId }, data: { submittedAt: now, onboardingStep: 'AWAITING_REVIEW', reviewOutcome: null, reviewReason: null } });
       const adminId = await this.hierarchy.adminUserId();
-      await this.notifications.notify({ recipientUserId: adminId, kind: 'ONBOARDING_ISSUE', title: 'Advisor onboarding awaiting review', body: `${p.user.fullName} submitted onboarding for review.`, deepLink: { entityType: 'AdvisorProfile', entityId: p.id }, dedupeKey: `onboarding:submitted:${p.id}:${now.getTime()}` });
+      await this.notifications.notify({ recipientUserId: adminId, kind: 'ONBOARDING_ISSUE', title: p.user.role === 'MANAGER' ? 'Manager payee details awaiting review' : 'Advisor onboarding awaiting review', body: `${p.user.fullName} submitted ${p.user.role === 'MANAGER' ? 'identity and bank details to sell cards' : 'onboarding'} for review.`, deepLink: { entityType: 'AdvisorProfile', entityId: p.id }, dedupeKey: `onboarding:submitted:${p.id}:${now.getTime()}` });
     } else {
       await this.activate(actor.userId, p.id, null, 'auto-activated (onboarding.requiresAdminReview=false)');
       await this.prisma.client.advisorProfile.update({ where: { userId: actor.userId }, data: { submittedAt: now } });
@@ -261,18 +271,20 @@ export class OnboardingService {
   }
 
   private async activate(userId: string, profileId: string, reviewerId: string | null, reason: string) {
+    const wasPending = (await this.prisma.client.user.findUnique({ where: { id: userId }, select: { status: true } }))?.status === 'PENDING_ONBOARDING';
     await this.prisma.client.$transaction([
       this.prisma.client.advisorProfile.update({ where: { id: profileId }, data: { onboardingStep: 'COMPLETE', reviewedByUserId: reviewerId, reviewedAt: new Date(), reviewOutcome: 'APPROVED', reviewReason: reason } }),
-      this.prisma.client.user.update({ where: { id: userId }, data: { status: 'ACTIVE' } }),
-      this.prisma.client.userLifecycleEvent.create({ data: { userId, eventType: 'ACTIVATED', actorUserId: reviewerId, reason } }),
+      // only an Advisor is waiting to be activated; a Manager is already an active user (F-823)
+      this.prisma.client.user.updateMany({ where: { id: userId, status: 'PENDING_ONBOARDING' }, data: { status: 'ACTIVE' } }),
+      ...(wasPending ? [this.prisma.client.userLifecycleEvent.create({ data: { userId, eventType: 'ACTIVATED', actorUserId: reviewerId, reason } })] : []),
     ]);
     await this.notifications.notify({ recipientUserId: userId, kind: 'ONBOARDING_APPROVED', title: 'Welcome to KBS Solutions', body: 'Your onboarding is approved. You can now browse cards and create leads.', dedupeKey: `onboarding:approved:${profileId}` });
   }
 
   // ── Admin review (F-401 §8) ──
   async reviewQueue() {
-    const rows = await this.prisma.client.advisorProfile.findMany({ where: { onboardingStep: 'AWAITING_REVIEW' }, orderBy: { submittedAt: 'asc' }, include: { user: { select: { id: true, publicRef: true, fullName: true, email: true, mobile: true } } } });
-    return rows.map((p) => ({ profileId: p.id, userId: p.user.id, publicRef: p.user.publicRef, fullName: p.user.fullName, email: p.user.email, submittedAt: p.submittedAt?.toISOString() ?? null, identityStatus: p.identityStatus, bankName: p.bankName, accountLast4: p.bankAccountLast4 }));
+    const rows = await this.prisma.client.advisorProfile.findMany({ where: { onboardingStep: 'AWAITING_REVIEW' }, orderBy: { submittedAt: 'asc' }, include: { user: { select: { id: true, publicRef: true, fullName: true, email: true, mobile: true, role: true } } } });
+    return rows.map((p) => ({ profileId: p.id, userId: p.user.id, publicRef: p.user.publicRef, fullName: p.user.fullName, role: p.user.role, email: p.user.email, submittedAt: p.submittedAt?.toISOString() ?? null, identityStatus: p.identityStatus, bankName: p.bankName, accountLast4: p.bankAccountLast4 }));
   }
 
   async reviewDetail(actor: Actor, userId: string, reveal?: 'bank') {
@@ -289,7 +301,7 @@ export class OnboardingService {
 
   async review(actor: Actor, userId: string, body: OnboardingReviewBody) {
     const p = await this.profile(userId);
-    if (p.onboardingStep !== 'AWAITING_REVIEW') throw new AppError('CONFLICT', 'This Advisor is not awaiting review.');
+    if (p.onboardingStep !== 'AWAITING_REVIEW') throw new AppError('CONFLICT', 'These details are not awaiting review.');
     if (body.decision === 'APPROVE') {
       if (p.identityStatus !== 'VERIFIED') throw new AppError('CONFLICT', 'Identity is not verified; cannot approve.');
       await this.activate(userId, p.id, actor.userId, body.reason ?? 'approved by Admin');

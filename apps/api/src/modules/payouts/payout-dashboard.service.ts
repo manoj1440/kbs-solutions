@@ -83,7 +83,7 @@ export class PayoutDashboardService {
     const confirmed = await this.prisma.client.externalPayment.aggregate({ where: { state: { in: ['VERIFIED', 'EXCEPTION'] }, request: { state: 'PAID', ...reqWhere, ...paidReqRange } }, _sum: { amountInr: true }, _count: { _all: true } });
 
     // Dual-approval backlog + aging (by submittedAt, IST days)
-    const pending = await this.prisma.client.payoutRequest.findMany({ where: { state: 'PENDING_APPROVALS', ...reqWhere }, select: { submittedAt: true, totalAmountInr: true, approvals: { select: { approverRole: true, decision: true } } } });
+    const pending = await this.prisma.client.payoutRequest.findMany({ where: { state: 'PENDING_APPROVALS', ...reqWhere }, select: { submittedAt: true, totalAmountInr: true, advisor: { select: { role: true } }, approvals: { select: { approverRole: true, decision: true } } } });
     const now = Date.now();
     const aging = { d0_7: 0, d8_14: 0, d15_30: 0, d31plus: 0 };
     let awaitingManager = 0;
@@ -94,7 +94,8 @@ export class PayoutDashboardService {
       else if (age <= 14) aging.d8_14 += 1;
       else if (age <= 30) aging.d15_30 += 1;
       else aging.d31plus += 1;
-      if (!r.approvals.some((a) => a.approverRole === 'MANAGER' && a.decision === 'APPROVED')) awaitingManager += 1;
+      // F-823: a Manager's own request has no Manager step — it waits for the Admin from the start
+      if (r.advisor.role !== 'MANAGER' && !r.approvals.some((a) => a.approverRole === 'MANAGER' && a.decision === 'APPROVED')) awaitingManager += 1;
       else if (!r.approvals.some((a) => a.approverRole === 'ADMIN' && a.decision === 'APPROVED')) awaitingAdmin += 1; // Manager-first: Admin's turn only after the Manager approved
     }
     const missingProof = await this.prisma.client.payoutRequest.count({ where: { state: 'PAYMENT_RECORDED_PENDING_PROOF', ...reqWhere } });

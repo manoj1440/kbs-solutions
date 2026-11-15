@@ -32,7 +32,7 @@ export default function PendingActions() {
     setLoading(true);
     setError(null);
     try {
-      setItems((await api.get<PendingAction[]>('/pending-actions')).data);
+      setItems((await api.get<PendingAction[]>('/pending-actions?own=1')).data);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load pending actions.');
     } finally {

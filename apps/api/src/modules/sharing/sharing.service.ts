@@ -91,7 +91,7 @@ export class SharingService {
       if (!body.cardId) throw new AppError('VALIDATION_FAILED', 'cardId is required for an application link.');
       const card = await this.prisma.client.creditCard.findUnique({ where: { id: body.cardId }, include: { bank: true } });
       if (!card || card.status !== 'PUBLISHED') throw new AppError('VALIDATION_FAILED', 'Card is not published.');
-      const link = await this.catalogue.effectiveLink(card.id, actor.role === 'ADVISOR' ? 'ADVISOR' : 'TELECALLER');
+      const link = await this.catalogue.effectiveLink(card.id, actor.role === 'TELECALLER' ? 'TELECALLER' : 'ADVISOR');
       if (!link) throw new AppError('CONFLICT', 'No application link is effective for this card right now.');
       linkVersion = link.version;
       assetVersionRef = `link:${link.id}:v${link.version}`;

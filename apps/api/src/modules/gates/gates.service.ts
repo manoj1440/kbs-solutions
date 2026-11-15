@@ -53,6 +53,12 @@ export class GatesService {
   }
 
   private async onboarding(actor: Pick<Actor, 'userId' | 'role'>): Promise<Gates['onboarding']> {
+    // F-823: a Manager may also sell. Their payee profile (identity + bank) never blocks sign-in or team work
+    // (`required: false`); `complete` tells the app and the guard whether the selling workspace is open.
+    if (actor.role === 'MANAGER') {
+      const m = await this.prisma.client.advisorProfile.findUnique({ where: { userId: actor.userId }, select: { onboardingStep: true } });
+      return { required: false, complete: m?.onboardingStep === 'COMPLETE', step: m?.onboardingStep ?? 'PERSONAL' };
+    }
     if (actor.role !== 'ADVISOR') return { required: false, complete: true, step: null };
     const p = await this.prisma.client.advisorProfile.findUnique({ where: { userId: actor.userId }, select: { onboardingStep: true } });
     const step = p?.onboardingStep ?? 'PERSONAL';

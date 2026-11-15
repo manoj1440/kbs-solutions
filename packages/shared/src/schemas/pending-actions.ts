@@ -22,6 +22,8 @@ export type CreateFollowUpTaskBody = z.infer<typeof CreateFollowUpTaskBody>;
 export const PendingActionsQuery = z.object({
   includeDone: z.preprocess((v) => v === 'true' || v === '1', z.boolean()).default(false),
   leadId: z.string().uuid().optional(),
+  /** Only the caller's own leads (a Manager's selling workspace). */
+  own: z.preprocess((v) => v === 'true' || v === '1' || v === true, z.boolean()).default(false),
 });
 export type PendingActionsQuery = z.infer<typeof PendingActionsQuery>;
 

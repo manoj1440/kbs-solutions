@@ -10,13 +10,14 @@ import { chromium } from '@playwright/test';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, '../../api/scripts/uat/.out');
-const shots = process.argv[2] ?? join(OUT, 'screens');
+const shots = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? join(OUT, 'screens');
 mkdirSync(shots, { recursive: true });
 const BASE = process.env.UAT_WEB_URL ?? 'http://localhost:3000';
 const state = JSON.parse(readFileSync(join(OUT, 'state.json'), 'utf8'));
 const L = state.ids.leads;
 const R = state.ids.requests;
-const STAGE = 'S13 Web screens';
+const SELLS = process.argv.includes('--sells'); // the pages that need stage S15 (a Manager who sells, F-823)
+const STAGE = SELLS ? 'S16 Web screens — Manager sells' : 'S13 Web screens';
 const file = join(OUT, 'results.json');
 const results = (existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : []).filter((r) => r.stage !== STAGE);
 console.log(`\n━━ ${STAGE}`);
@@ -61,7 +62,7 @@ async function screen(page, id, title, path, { has = [], not = [], rows = [] } =
 }
 
 // ── Admin ──
-{
+if (!SELLS) {
   const { ctx, page } = await as('9999999999');
   await screen(page, 'S13-A01', 'Admin home: ₹6,500.50 earned, 12 leads, 9 bank approved, 7 cards activated, team 3 / 2 / 5', '/admin', { has: ['₹6,500.50', 'Leads created', 'Bank approved', 'Cards activated', 'Calls connected'] });
   await screen(page, 'S13-A02', 'Admin → Managers: North ₹5,500.50 paid, South ₹1,500.00 approved-unpaid', '/admin/dashboards/managers', { has: ['Meera Manager North', 'Mohan Manager South'], rows: [['Meera Manager North', '5,500.50'], ['Mohan Manager South', '1,500']] });
@@ -80,7 +81,7 @@ async function screen(page, id, title, path, { has = [], not = [], rows = [] } =
   await ctx.close();
 }
 // ── Manager North ──
-{
+if (!SELLS) {
   const { ctx, page } = await as('9800000011');
   await screen(page, 'S13-M01', 'Manager North → Advisors: Arjun ₹3,000 and Anita ₹2,500.50 only — no other team\'s Advisor', '/manager/advisors', { rows: [['Arjun Advisor', '3,000'], ['Anita Advisor', '2,500.50']], not: ['Aman Advisor', 'Alok Advisor'] });
   await screen(page, 'S13-M02', 'Manager North → Dashboard: team totals (7 leads, 6 calls, ₹5,500.50 paid)', '/manager/dashboard', { has: ['5,500.50'] });
@@ -95,13 +96,38 @@ async function screen(page, id, title, path, { has = [], not = [], rows = [] } =
   await ctx.close();
 }
 // ── Accounts ──
-{
+if (!SELLS) {
   const { ctx, page } = await as('9800000001');
   await screen(page, 'S13-C01', 'Accounts: 1 awaiting payment (₹1,500.00), 3 paid (₹6,500.50)', '/accounts', { has: ['Awaiting payment', '1,500', '6,500.50', 'Aman Advisor'] });
   await screen(page, 'S13-C02', 'Accounts → Paid queue: the three paid requests', '/accounts?queue=paid', { has: ['Arjun Advisor', 'Anita Advisor', 'Alok Advisor'] });
   await screen(page, 'S13-C03', 'Accounts → request PR4: payee, approvals and amount; the account number is masked until revealed', `/accounts/requests/${R.PR4}`, { has: ['Aman Advisor', '1,500', 'Mohan Manager South'], not: ['111122223333'] });
   await screen(page, 'S13-C04', 'Accounts is kept out of leads and the Admin area', '/admin/leads', { not: ['Lead One Customer'] });
   await ctx.close();
+}
+// ── F-823: a Manager who sells (after stage S15) ──
+if (SELLS) {
+  const M = state.ids.mleads;
+  {
+    const { ctx, page } = await as('9999999999');
+    await screen(page, 'S16-A01', "Admin → Leads lists the Manager's own leads, named with the Manager as owner", '/admin/leads', { rows: [['Manager Lead One', 'Mohan Manager South'], ['Lead Eight Customer', 'Aman Advisor']] });
+    await screen(page, 'S16-A02', "Admin → the Manager's lead page names the Manager as its owner; bank fields as in the file", `/admin/leads/${M.ML1}`, { has: ['Mohan Manager South', 'Manager Lead One', 'UATM2001', 'V + ACTIVE'], not: ['9600000021', 'ABCPM2001A'] });
+    await screen(page, 'S16-A03', "Admin → the Manager's payout request: no Manager step, approved by the Admin, ₹2,000.00 paid", `/admin/payouts/requests/${R.PRM}`, { has: ["a Manager's own request", 'there is no Manager step', 'KBS Owner', '2,000', 'Paid'], not: ['Manager approval', '222233334441'] });
+    await screen(page, 'S16-A04', 'Admin → Advisors report includes the selling Manager with ₹2,000.00 paid', '/admin/dashboards/advisors', { rows: [['Mohan Manager South', '2,000']] });
+    await screen(page, 'S16-A05', 'Admin → Payout requests lists the request with the others', '/admin/payouts/requests', { has: ['Mohan Manager South', '2,000'] });
+    await ctx.close();
+  }
+  {
+    const { ctx, page } = await as('9800000012');
+    await screen(page, 'S16-M01', "Manager South → Team leads shows their team's leads and their own, each with its owner", '/manager/leads', { rows: [['Manager Lead One', 'Mohan Manager South'], ['Lead Eight Customer', 'Aman Advisor']], not: ['Lead One Customer'] });
+    await screen(page, 'S16-M02', 'Manager South → Advisors table has a row for the Manager\'s own sales (2 leads, ₹2,000.00 paid)', '/manager/advisors', { rows: [['Mohan Manager South', '2,000.00']] });
+    await screen(page, 'S16-M03', "Manager South → their own request is visible to them but offers no approve button", `/manager/payouts/requests/${R.PRM}`, { has: ['2,000', "a Manager's own request"], not: [/^Approve$/m] });
+    await ctx.close();
+  }
+  {
+    const { ctx, page } = await as('9800000001');
+    await screen(page, 'S16-C01', "Accounts → Paid queue includes the Manager's request", '/accounts?queue=paid', { has: ['Mohan Manager South'] });
+    await ctx.close();
+  }
 }
 await browser.close();
 const mine = results.filter((r) => r.stage === STAGE);

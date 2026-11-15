@@ -42,7 +42,8 @@ export interface Distribution {
 
 // ── F-315 Manager Advisor drill-down (`GET /dashboards/manager/advisors`) ──
 export interface AdvisorTeamRow {
-  user: { id: string; fullName: string; publicRef: string; status: string; mobileMasked: string | null; joinedAt: string };
+  /** `role` is MANAGER for a Manager's own row (they may sell too, F-823); otherwise ADVISOR. */
+  user: { id: string; fullName: string; publicRef: string; status: string; mobileMasked: string | null; joinedAt: string; role?: string };
   reporting: { source: string; since: string; parent: { id: string; fullName: string }; agentCode: string | null } | null;
   leads: { created: Metric; misMatched: Metric; awaitingMis: Metric };
   stage: Distribution;

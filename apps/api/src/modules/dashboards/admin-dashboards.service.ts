@@ -206,7 +206,7 @@ export class AdminDashboardsService {
     const startToday = istStart(istDay(now));
     const due = { doneAt: null, dueAt: { lt: new Date(startToday.getTime() + DAY) } };
     // Manager-first: a request waits for Admin only once the Manager approved it
-    const awaitingAdmin = { state: 'PENDING_APPROVALS' as const, AND: [{ approvals: { none: { approverRole: 'ADMIN' as const } } }, { approvals: { some: { approverRole: 'MANAGER' as const, decision: 'APPROVED' as const } } }] };
+    const awaitingAdmin = { state: 'PENDING_APPROVALS' as const, AND: [{ approvals: { none: { approverRole: 'ADMIN' as const } } }, { OR: [{ approvals: { some: { approverRole: 'MANAGER' as const, decision: 'APPROVED' as const } } }, { advisor: { role: 'MANAGER' as const } }] }] }; // F-823: a Manager's own request has no Manager step
     const [fuCount, fuOverdue, fu, onbCount, onb, payCount, pay, unmatched, conflicts] = await Promise.all([
       this.prisma.client.followUpTask.count({ where: due }),
       this.prisma.client.followUpTask.count({ where: { doneAt: null, dueAt: { lt: startToday } } }),
@@ -266,7 +266,10 @@ export class AdminDashboardsService {
 
   async advisors(actor: Actor, q: DashboardQuery) {
     this.assertAdmin(actor);
-    const people = q.advisorId ? await this.prisma.client.user.findMany({ where: { id: q.advisorId, role: 'ADVISOR' }, select: { id: true, fullName: true, publicRef: true, status: true } }) : await this.users('ADVISOR', q);
+    // F-823: lead owners — Advisors, and Managers who have leads of their own
+    const sel = { id: true, fullName: true, publicRef: true, status: true, role: true } as const;
+    const team = q.managerId ? [...(await this.hierarchy.teamUserIds(q.managerId)), q.managerId] : null;
+    const people = await this.prisma.client.user.findMany({ where: { ...(q.advisorId ? { id: q.advisorId } : team ? { id: { in: team } } : {}), OR: [{ role: 'ADVISOR' }, { role: 'MANAGER', leads: { some: {} } }] }, select: sel, orderBy: { fullName: 'asc' } });
     const rows = [];
     for (const u of people) {
       const a = await this.metrics.advisors({ telecallerIds: [], advisorIds: [u.id], label: u.fullName }, q);
@@ -282,7 +285,7 @@ export class AdminDashboardsService {
   async teamAdvisors(actor: Actor, q: DashboardQuery): Promise<AdvisorTeamResponse> {
     const scope = await this.metrics.scope(actor, q);
     const people = await this.prisma.client.user.findMany({
-      where: { role: 'ADVISOR', ...(scope.advisorIds ? { id: { in: scope.advisorIds } } : {}) },
+      where: { OR: [{ role: 'ADVISOR' }, { role: 'MANAGER', leads: { some: {} } }], ...(scope.advisorIds ? { id: { in: scope.advisorIds } } : {}) }, // F-823: a Manager with leads of their own is a row too
       select: {
         id: true,
         fullName: true,
@@ -290,13 +293,14 @@ export class AdminDashboardsService {
         status: true,
         mobile: true,
         createdAt: true,
+        role: true,
         reportingAsChild: { where: { effectiveTo: null, status: 'ACTIVE' }, orderBy: { effectiveFrom: 'desc' }, take: 1, select: { source: true, effectiveFrom: true, parent: { select: { id: true, fullName: true } }, agentCode: { select: { code: true } } } },
       },
       orderBy: { fullName: 'asc' },
     });
     const ids = people.map((p) => p.id);
     const awaiting = ids.length
-      ? await this.prisma.client.payoutRequest.groupBy({ by: ['advisorUserId'], where: { advisorUserId: { in: ids }, state: 'PENDING_APPROVALS', approvals: { none: { approverRole: 'MANAGER' } } }, _count: { _all: true } })
+      ? await this.prisma.client.payoutRequest.groupBy({ by: ['advisorUserId'], where: { advisorUserId: { in: ids }, state: 'PENDING_APPROVALS', approvals: { none: { approverRole: 'MANAGER' } }, advisor: { role: 'ADVISOR' } }, _count: { _all: true } })
       : [];
     const awaitingMap = new Map(awaiting.map((a) => [a.advisorUserId, a._count._all]));
     const rows = [];
@@ -304,7 +308,7 @@ export class AdminDashboardsService {
       const a = await this.metrics.advisors({ telecallerIds: [], advisorIds: [u.id], label: u.fullName }, q);
       const r = u.reportingAsChild[0];
       rows.push({
-        user: { id: u.id, fullName: u.fullName, publicRef: u.publicRef, status: u.status, mobileMasked: maskMobile(u.mobile), joinedAt: u.createdAt.toISOString() },
+        user: { id: u.id, fullName: u.fullName, publicRef: u.publicRef, status: u.status, mobileMasked: maskMobile(u.mobile), joinedAt: u.createdAt.toISOString(), role: u.role },
         reporting: r ? { source: r.source, since: r.effectiveFrom.toISOString(), parent: r.parent, agentCode: r.agentCode?.code ?? null } : null,
         leads: a.leads,
         stage: a.stage,
@@ -325,7 +329,7 @@ export class AdminDashboardsService {
     for (const u of managers) {
       const scope = await this.metrics.scope(actor, { ...q, managerId: u.id });
       const d = await this.metrics.compute(scope, { ...q, managerId: u.id });
-      rows.push({ user: u, telecallers: scope.telecallerIds?.length ?? 0, advisors: scope.advisorIds?.length ?? 0, calls: { attempts: d.calling.calls.attempts, connected: d.calling.calls.connected }, shares: d.calling.shares.total, leads: d.advisors.leads, payouts: { eligible: d.advisors.payouts.eligible, approvedUnpaid: d.advisors.payouts.approvedUnpaid, paid: d.advisors.payouts.paid } });
+      rows.push({ user: u, telecallers: scope.telecallerIds?.length ?? 0, advisors: (scope.advisorIds?.length ?? 0) - (scope.selfSellerId ? 1 : 0), calls: { attempts: d.calling.calls.attempts, connected: d.calling.calls.connected }, shares: d.calling.shares.total, leads: d.advisors.leads, payouts: { eligible: d.advisors.payouts.eligible, approvedUnpaid: d.advisors.payouts.approvedUnpaid, paid: d.advisors.payouts.paid } });
     }
     return { rows, meta: await this.metrics.meta(q) };
   }

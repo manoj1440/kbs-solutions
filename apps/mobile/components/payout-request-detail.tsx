@@ -31,6 +31,8 @@ export interface PayoutRequestDto {
   state: string;
   advisor: { id: string; fullName: string };
   managerApprover: { id: string; fullName: string } | null;
+  /** false = requested by a Manager for their own leads: the Admin alone approves (F-823). */
+  managerStepRequired?: boolean;
   itemCount: number;
   /** Set by Admin's approval; null until then (and for the Advisor until paid). */
   totalAmountInr: number | null;
@@ -206,10 +208,16 @@ export function PayoutRequestDetail({ id }: { id: string }) {
           <RNText accessibilityRole="header" className="font-medium text-base text-ink">
             Approvals
           </RNText>
-          {row(
-            `Manager (${r.managerApprover?.fullName ?? '—'})`,
-            r.approvals.manager,
-            r.state === 'PENDING_APPROVALS',
+          {r.managerStepRequired === false ? (
+            <Muted className="text-xs">
+              Your own request as a Manager: the Admin approves and sets the amount.
+            </Muted>
+          ) : (
+            row(
+              `Manager (${r.managerApprover?.fullName ?? '—'})`,
+              r.approvals.manager,
+              r.state === 'PENDING_APPROVALS',
+            )
           )}
           {row('Admin', r.approvals.admin, r.state === 'PENDING_APPROVALS', true)}
           {r.state === 'CANCELLED' ? (

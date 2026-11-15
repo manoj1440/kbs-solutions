@@ -1,0 +1,37 @@
+# UAT-01 S17 (F-823) — Manager South sells: "My sales" → the Advisor screens with their own figures → back to the team.
+appId: com.kbs.dsa
+env:
+  MOBILE: ${MOBILE || '9800000012'}
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started.*"
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn:
+    text: "Next.*"
+    optional: true
+- tapOn: "Let's Login.*"
+- tapOn: "98765 43210"
+- inputText: ${MOBILE}
+- tapOn: "Send code"
+- inputText: "000000"
+- assertVisible: "Team calling today"
+- tapOn: "My sales"
+- assertVisible: "Total earnings"
+- assertVisible: "₹2,000.00"
+- assertVisible: "0 cards to claim"
+- tapOn: "Leads"
+- assertVisible: "My leads"
+- scrollUntilVisible:
+    element: "Manager Lead One"
+- assertNotVisible: "Lead Eight Customer"
+- tapOn: "Earnings"
+- assertVisible: "₹2,000.00"
+- tapOn: "Home"
+- tapOn: "Back to team"
+- assertVisible: "Team calling today"

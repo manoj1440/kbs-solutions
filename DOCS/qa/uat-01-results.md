@@ -3,9 +3,10 @@
 Plan and oracle: [uat-01-end-to-end-plan.md](./uat-01-end-to-end-plan.md). Every check: [uat-01-checks.md](./uat-01-checks.md).
 
 ## 1. Outcome
-**354 checks, 354 passed** on the last clean run (fresh database → every stage → web screens → app screens).
+**404 checks, 404 passed** on the last clean run (fresh database → every stage → web screens → app screens).
 Five product defects were found on the way, fixed, covered by tests, and the whole run repeated from a fresh database.
-Finding F-1 was decided by the owner the same day and closed by F-822 (the last 14 checks).
+Finding F-1 was decided by the owner the same day and closed by F-822 (14 checks). The owner then asked for a Manager
+to sell like an Advisor, paid through KBS: F-823, stages S15–S17 (50 checks).
 
 | Stage | Checks |
 |---|---|
@@ -18,8 +19,10 @@ Finding F-1 was decided by the owner the same day and closed by F-822 (the last 
 | S12 Follow-ups, official ID, reporting change | 18 |
 | S13 Web screens (Admin, Manager, Accounts — 28 pages) | 28 |
 | S14 App screens (2 Advisors, Manager, Telecaller on the release APK) | 4 flows |
+| S15 Manager sells (details → Admin approval → 2 leads → bank file → payout with no Manager step → paid) | 39 |
+| S16 Web screens — Manager sells · S17 App screens — Manager sells | 9 · 2 flows |
 
-Existing suites after the fixes: API unit 76, API e2e 183, web unit 24, mobile unit 17, typecheck + lint on all three — green.
+Existing suites after the fixes: API unit 76, API e2e 184, web unit 24, mobile unit 17, typecheck + lint on all three — green.
 
 ## 2. Who earned what (as the system reports it — equal at every level, to the paisa)
 | | Paid | Approved, unpaid | Claimable | Under review |
@@ -32,7 +35,9 @@ Existing suites after the fixes: API unit 76, API e2e 183, web unit 24, mobile u
 | **Manager South — team total** | — | **₹1,500.00** | 1 | 1 |
 | **Organisation (Admin)** | **₹6,500.50** · 3 requests · 5 cards | **₹1,500.00** | 1 | 1 |
 | Accounts | 3 paid = ₹6,500.50 transferred | 1 awaiting = ₹1,500.00 | | |
-| Telecallers (3), Managers' own earning | none | | | |
+| Telecallers (3) | none | | | |
+| Managers on their Advisors' cards | none in KBS — settled outside (F-822) | | | |
+| Manager South on his **own** leads (stage S15, after the table above) | ₹2,000.00 · 1 card | — | — | — |
 
 Checked equal: Advisor's own app ↔ Manager's team table ↔ Admin's Managers / Advisors reports ↔ Admin home ↔ payout
 dashboard (also filtered by Manager) ↔ Accounts queues ↔ the payment records in the database.
@@ -43,6 +48,9 @@ organisation 12; 11 with a bank result, 9 approved, 2 declined, 7 cards active).
 
 ## 3. Findings for the owner (decisions, not defects)
 **F-1 is decided (owner, 2026-11-15):** the Manager's share is agreed and settled outside KBS; the product holds no Manager amount. The Manager must see every lead per Advisor with full detail — delivered in [F-822](../features/F-822-manager-leads-per-advisor.md). O-2 to O-4 stay as observations.
+
+**Follow-up decision (owner, 2026-11-15):** a Manager also creates leads with the same flow as an Advisor and is paid for
+them through KBS — [F-823](../features/F-823-manager-sells.md). The Admin alone approves a Manager's own request.
 
 | # | Finding | What it means |
 |---|---|---|
@@ -63,6 +71,10 @@ organisation 12; 11 with a bank result, 9 approved, 2 declined, 7 cards active).
 Also noted, not a product defect: the local `apps/api/.env` points the file store at an old LAN address
 (`S3_ENDPOINT=http://192.168.0.148:9000`); the machine's address has changed, which is how B-1 showed up. The UAT launch
 entry overrides it with `localhost`. Update that line if the everyday dev API should upload files again.
+
+Also fixed while testing F-823: a timing race in the API test `mis-jobs` (it failed about 1 run in 8 on a busy machine,
+with or without these changes). One rare test-harness error remains ("Parse Error: Expected HTTP/" from the HTTP test
+client, seen twice in about forty runs while the emulator was running); it is not tied to any feature.
 
 ## 5. What this run did not cover
 - **Real outside providers.** SMS, calling / recording, Aadhaar and PAN ran on the local stand-ins. The real adapters

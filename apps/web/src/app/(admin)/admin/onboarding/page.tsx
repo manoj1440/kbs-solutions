@@ -14,6 +14,8 @@ interface Row {
   userId: string;
   publicRef: string;
   fullName: string;
+  /** MANAGER = a Manager's identity and bank details to sell cards themselves (F-823) */
+  role?: string;
   email: string | null;
   submittedAt: string | null;
   identityStatus: string;
@@ -66,6 +68,7 @@ export default async function OnboardingQueuePage() {
                       <Link className="font-semibold break-words text-foreground hover:text-stone-900" href={`/admin/onboarding/${r.userId}`}>
                         {r.fullName || '(no name)'}
                       </Link>
+                      {r.role === 'MANAGER' ? <Badge variant="secondary" className="ml-2 align-middle">Manager · wants to sell cards</Badge> : null}
                       <div className="font-mono text-2xs text-muted-foreground">{r.publicRef}</div>
                       {r.email ? (
                         <div className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">

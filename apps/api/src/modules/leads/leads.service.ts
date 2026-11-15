@@ -54,7 +54,7 @@ interface RowSource {
   bank: { id: string; code: string; displayName: string };
   statusSnapshot: (Record<string, unknown> & { productCode: string | null; lastMatchedAt: Date; lastMatchedBatch: { publicRef: string } }) | null;
   linkages: Array<{ referenceKind: string; referenceValue: string; verificationStatus: string }>;
-  advisor: { id: string; fullName: string; publicRef: string };
+  advisor: { id: string; fullName: string; publicRef: string; role: string };
 }
 
 /**
@@ -100,7 +100,7 @@ export class LeadsService {
   }
 
   async createDraft(actor: Actor, cardId: string): Promise<LeadDraftView> {
-    if (actor.role !== 'ADVISOR') throw new AppError('RBAC_FORBIDDEN', 'Only Advisors create leads.');
+    if (actor.role !== 'ADVISOR' && actor.role !== 'MANAGER') throw new AppError('RBAC_FORBIDDEN', 'Only Advisors and Managers create leads.'); // F-823
     if (this.declarations().length === 0) throw new AppError('CONFIG_MISSING', 'Lead creation is blocked until KBS configures the customer declarations (leads.declarations).', undefined, 'CONTACT_ADMIN');
     const card = await this.prisma.client.creditCard.findUnique({ where: { id: cardId }, include: { bank: true } });
     if (!card || card.status !== 'PUBLISHED' || !card.bank.active) throw new AppError('VALIDATION_FAILED', 'Card is not available.');
@@ -298,9 +298,13 @@ export class LeadsService {
   }
 
   // ── read (F-506 DTO shaping) ──
-  private scopeWhere(actor: Actor, advisorId?: string) {
-    if (actor.role === 'ADVISOR') return { advisorUserId: actor.userId };
-    if (actor.role === 'MANAGER') return { advisorUserId: advisorId ? (actor.teamUserIds.includes(advisorId) ? advisorId : '__none__') : { in: actor.teamUserIds } };
+  /** `own` = only the caller's own leads (F-823: a Manager's selling workspace; their normal scope is team + own). */
+  private scopeWhere(actor: Actor, advisorId?: string, own = false) {
+    if (actor.role === 'ADVISOR' || (own && actor.role === 'MANAGER')) return { advisorUserId: actor.userId };
+    if (actor.role === 'MANAGER') {
+      const mine = [...actor.teamUserIds, actor.userId];
+      return { advisorUserId: advisorId ? (mine.includes(advisorId) ? advisorId : '__none__') : { in: mine } };
+    }
     return advisorId ? { advisorUserId: advisorId } : {};
   }
 
@@ -313,7 +317,7 @@ export class LeadsService {
     bank: { select: { id: true, code: true, displayName: true } },
     statusSnapshot: { include: { lastMatchedBatch: { select: { publicRef: true } } } },
     linkages: { where: { supersededAt: null }, take: 1 },
-    advisor: { select: { id: true, fullName: true, publicRef: true } },
+    advisor: { select: { id: true, fullName: true, publicRef: true, role: true } },
   } as const;
 
   /** Reviewed product-code crosswalks for the banks in view (REQ-14 §14.2 row 2). */
@@ -345,7 +349,7 @@ export class LeadsService {
 
   /** F-408 search + filters. `q` matches customer name, mobile (any Indian format) or a KBS / bank reference — never status text. */
   private listWhere(actor: Actor, q: LeadListQuery): Prisma.LeadWhereInput {
-    const and: Prisma.LeadWhereInput[] = [this.scopeWhere(actor, q.advisorId)];
+    const and: Prisma.LeadWhereInput[] = [this.scopeWhere(actor, q.advisorId, q.own)];
     if (q.q) {
       const or: Prisma.LeadWhereInput[] = [{ customerFullName: { contains: q.q, mode: 'insensitive' } }, { publicRef: { contains: q.q.toUpperCase() } }, { linkages: { some: { referenceValue: q.q } } }];
       if (isValidE164India(q.q)) or.push({ customerMobile: toE164India(q.q) });
@@ -409,8 +413,8 @@ export class LeadsService {
   }
 
   /** F-810: scope-aware cumulative counts for the compact leads browser tiles (bank-verbatim values, INV-02). */
-  async summary(actor: Actor, advisorId?: string) {
-    const scope = this.scopeWhere(actor, advisorId);
+  async summary(actor: Actor, advisorId?: string, own = false) {
+    const scope = this.scopeWhere(actor, advisorId, own);
     const tokens = this.blankTokens();
     const [total, snaps] = await Promise.all([
       this.prisma.client.lead.count({ where: scope }),
@@ -433,13 +437,13 @@ export class LeadsService {
   }
 
   /** Distinct filter values within the actor's scope — verbatim bank values, never a fixed list (REQ-14 §14.1). */
-  async filterOptions(actor: Actor): Promise<LeadFilterOptions> {
-    const scope = this.scopeWhere(actor);
+  async filterOptions(actor: Actor, own = false): Promise<LeadFilterOptions> {
+    const scope = this.scopeWhere(actor, undefined, own);
     const [banks, cards, snaps, owners] = await Promise.all([
       this.prisma.client.lead.findMany({ where: scope, distinct: ['bankId'], select: { bank: { select: { id: true, code: true, displayName: true } } }, orderBy: { bank: { displayName: 'asc' } } }),
       this.prisma.client.lead.findMany({ where: scope, distinct: ['cardId'], select: { card: { select: { id: true, name: true, bankId: true } } }, orderBy: { card: { name: 'asc' } } }),
       this.prisma.client.bankStatusSnapshot.findMany({ where: { lead: scope }, select: { currentStage: true, finalDecision: true, cardActivationStatus: true } }),
-      actor.role === 'ADVISOR' ? Promise.resolve([]) : this.prisma.client.lead.findMany({ where: scope, distinct: ['advisorUserId'], select: { advisor: { select: { id: true, fullName: true } } } }),
+      actor.role === 'ADVISOR' || own ? Promise.resolve([]) : this.prisma.client.lead.findMany({ where: scope, distinct: ['advisorUserId'], select: { advisor: { select: { id: true, fullName: true } } } }),
     ]);
     const tokens = this.blankTokens();
     const distinct = (vals: (string | null)[]) => [...new Set(vals.filter((v): v is string => typeof v === 'string' && !isBlankBankValue(v, tokens)).map((v) => v.trim()))].sort();

@@ -49,8 +49,10 @@ export class PolicyGuard implements CanActivate {
         );
       }
     }
-    if (required.includes('onboarding') && g.onboarding.required && !g.onboarding.complete) {
-      throw new AppError('GATE_ONBOARDING_INCOMPLETE', 'Finish your onboarding to continue.', { onboarding: g.onboarding }, 'CONTINUE_ONBOARDING');
+    // F-823: a Manager reads freely; creating / sharing a lead of their own needs their payee profile approved first
+    const managerSelling = actor.role === 'MANAGER' && req.method !== 'GET';
+    if (required.includes('onboarding') && (g.onboarding.required || managerSelling) && !g.onboarding.complete) {
+      throw new AppError('GATE_ONBOARDING_INCOMPLETE', managerSelling ? 'Complete your identity and bank details (My sales) before creating leads.' : 'Finish your onboarding to continue.', { onboarding: g.onboarding }, 'CONTINUE_ONBOARDING');
     }
     return true;
   }

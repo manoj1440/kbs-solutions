@@ -37,9 +37,9 @@ export class PendingActionsService {
     return out;
   }
 
-  private leadScope(actor: Actor) {
-    if (actor.role === 'ADVISOR') return { advisorUserId: actor.userId };
-    if (actor.role === 'MANAGER') return { advisorUserId: { in: actor.teamUserIds } };
+  private leadScope(actor: Actor, own = false) {
+    if (actor.role === 'ADVISOR' || (own && actor.role === 'MANAGER')) return { advisorUserId: actor.userId };
+    if (actor.role === 'MANAGER') return { advisorUserId: { in: [...actor.teamUserIds, actor.userId] } }; // F-823: team + the Manager's own leads
     return {};
   }
 
@@ -74,9 +74,9 @@ export class PendingActionsService {
 
   // ── pending actions (REQ-11 §11.10) ──
   async list(actor: Actor, q: PendingActionsQuery): Promise<PendingAction[]> {
-    const scope = { ...this.leadScope(actor), ...(q.leadId ? { id: q.leadId } : {}) };
+    const scope = { ...this.leadScope(actor, q.own), ...(q.leadId ? { id: q.leadId } : {}) };
     const tasks = await this.prisma.client.followUpTask.findMany({
-      where: { leadId: { not: null }, lead: scope, ...(q.includeDone ? {} : { doneAt: null }), ...(actor.role === 'ADVISOR' ? { ownerUserId: actor.userId } : {}) },
+      where: { leadId: { not: null }, lead: scope, ...(q.includeDone ? {} : { doneAt: null }), ...(actor.role === 'ADVISOR' || q.own ? { ownerUserId: actor.userId } : {}) },
       include: { owner: { select: { id: true, fullName: true, role: true } }, lead: { select: { id: true, publicRef: true, customerFullName: true, card: { select: { name: true } }, bank: { select: { code: true, displayName: true } } } } },
       orderBy: { dueAt: 'asc' },
     });

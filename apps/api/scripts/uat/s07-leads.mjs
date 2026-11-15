@@ -68,7 +68,7 @@ await patch(`/leads/drafts/${dPin.id}/details`, 'a1', { fullName: 'Pincode Test 
 await patch(`/leads/drafts/${dPin.id}/pan`, 'a1', { pan: 'ABCPA9090Z' });
 await denied('S07-11', 'A card that is not offered at the customer\'s pincode is refused (Travel at 400001)', () => patch(`/leads/drafts/${dPin.id}/pincode`, 'a1', { pincode: '400001', city: 'Mumbai', state: 'Maharashtra', locationConfirmed: true }), [400, 409, 422]);
 await denied('S07-12', 'A Telecaller cannot create leads', () => post('/leads/drafts', 't1', { cardId: C.rewards }), 403);
-await denied('S07-13', 'A Manager cannot create leads', () => post('/leads/drafts', 'm1', { cardId: C.rewards }), 403);
+await denied('S07-13', 'A Manager cannot create leads until their own identity and bank details are approved (F-823, stage S15)', () => post('/leads/drafts', 'm1', { cardId: C.rewards }), 403, 'GATE_ONBOARDING_INCOMPLETE');
 await denied('S07-14', 'A draft (unpublished) card cannot be used for a lead', async () => { const d = await post('/leads/drafts', 'a1', { cardId: C.draft }); await fill('a1', d.id, 'Draft Card Customer', '9600000091', 'ABCPA9091Y', '302001'); await post(`/leads/drafts/${d.id}/submit`, 'a1', {}); }, [400, 404, 409, 422]);
 
 // ── the other eleven ──
