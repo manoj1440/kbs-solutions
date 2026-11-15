@@ -1,5 +1,6 @@
 // S18 — F-824: an Advisor has an Agent Code of their own. Advisors who sign up with it report to that Advisor, who can
-// read their leads in full. The share on those leads is settled outside KBS: nothing is credited to the referring Advisor.
+// read their leads in full. When the bank activates one of their cards, the referring Advisor gets a payable share of
+// their own on it (owner decision: paid through KBS) — requested, approved, priced by the Admin and paid like any card.
 import { beginStage, check, eq, denied, get, login, post, put, patch, upload, call, state, save, sql, inr, PNG } from './lib.mjs';
 import { importMis } from './mis.mjs';
 
@@ -81,6 +82,15 @@ await importMis(A, [
   { 'Application No': 'UATB6001', CUSTOMER_NAME: 'Bina Lead One', CURRENT_STAGE: 'Card Issued', FINAL_DECISION: 'Approved', 'Card Activation Staus': 'V + ACTIVE' },
   { 'Application No': 'UATC7001', CUSTOMER_NAME: 'Chetan Lead One', CURRENT_STAGE: 'Card Issued', FINAL_DECISION: 'Approved', 'Card Activation Staus': 'ACTIVE' },
 ], 'uat-mis-4-referrals.xlsx');
+// ── the referral share: created with the activation, one level up, follows the bank like the card's own payout ──
+const shares = () => sql(`select p."fullName" || ' on ' || l."customerFullName" || ' · ' || e.state from "PayoutEntitlement" e join "Lead" l on l.id = e."leadId" join "User" p on p.id = e."advisorUserId" where e.kind='REFERRAL' order by 1`).split('\n');
+const onLead = (id) => sql(`select e.kind || ':' || e.state from "PayoutEntitlement" e where e."leadId"='${id}' order by 1`).split('\n');
+eq('S18-41', "When the bank activates the two cards, the Advisor each lead's Advisor joined under gets a claimable share of their own: Arjun on Bina's card, Bina on Chetan's — one level only, nothing for Arjun on Chetan's", shares(), ['Arjun Advisor on Bina Lead One · ELIGIBLE_AVAILABLE', 'Bina Advisor on Chetan Lead One · ELIGIBLE_AVAILABLE']);
+const chetanRow = { 'Application No': 'UATC7001', CUSTOMER_NAME: 'Chetan Lead One', CURRENT_STAGE: 'Card Issued', FINAL_DECISION: 'Approved' };
+await importMis(A, [{ ...chetanRow, 'Card Activation Staus': 'INACTIVE' }], 'uat-mis-5-referral-reversal.xlsx');
+eq('S18-42', "If the bank takes an activation back, the card's own payout and the share on it both go under review", onLead(R.CL1), ['OWN:UNDER_REVIEW', 'REFERRAL:UNDER_REVIEW']);
+await importMis(A, [{ ...chetanRow, 'Card Activation Staus': 'ACTIVE' }], 'uat-mis-6-referral-active-again.xlsx');
+eq('S18-43', '…and both are claimable again when the bank reports the card active — still one of each, no duplicates', onLead(R.CL1), ['OWN:ELIGIBLE_AVAILABLE', 'REFERRAL:ELIGIBLE_AVAILABLE']);
 await login('a1', U.a1.mobile);
 
 // ── what the referring Advisor sees ──
@@ -112,7 +122,7 @@ check('S18-20', "Arjun can only read Bina's leads — he cannot enter a referenc
 eq('S18-21', "Chetan signed up with Bina's code, not Arjun's: Arjun cannot list or open Chetan's leads", [(await call('GET', `/leads?advisorId=${U.a7.id}`, { as: 'a1', raw: true })).data.length, await get(`/leads/${R.CL1}`, 'a1').then(() => 'visible', (e) => e.status)], [0, 404]);
 eq('S18-22', "Another Advisor of the same Manager (Anita) sees nothing of Bina's", [(await call('GET', `/leads?advisorId=${U.a6.id}`, { as: 'a2', raw: true })).data.filter((l) => l.advisor.fullName === 'Bina Advisor').length, await get(`/leads/${R.BL1}`, 'a2').then(() => 'visible', (e) => e.status)], [0, 404]);
 await denied('S18-23', "It does not work upwards: Bina cannot open Arjun's leads", () => get(`/leads/${state.ids.leads.L1}`, 'a6'), [403, 404]);
-check('S18-24', "Arjun sees no payout amount on Bina's lead and has no access to her earnings", full.payouts.every((p) => p.amountInr === null) && (await get(`/payouts/ledger/${U.a6.id}`, 'a1').then(() => false, (e) => [403, 404].includes(e.status))), JSON.stringify(full.payouts));
+check('S18-24', "On Bina's lead Arjun sees only his own share (no amount before it is paid) — not Bina's payout — and he has no access to her earnings", full.payouts.length === 1 && full.payouts[0].kind === 'REFERRAL' && full.payouts[0].payee?.fullName === 'Arjun Advisor' && full.payouts[0].amountInr === null && (await get(`/payouts/ledger/${U.a6.id}`, 'a1').then(() => false, (e) => [403, 404].includes(e.status))), JSON.stringify(full.payouts));
 
 // ── the Manager above the line sees everyone below it ──
 await login('m1', U.m1.mobile);
@@ -123,13 +133,16 @@ eq('S18-26', "…and the team's lead total grows by their 3 leads", v((await get
 eq('S18-27', "Manager North can open their leads; Manager South cannot", [await get(`/leads/${R.CL1}`, 'm1').then(() => 'visible', (e) => e.status), await get(`/leads/${R.BL1}`, 'm2').then(() => 'visible', (e) => e.status)], ['visible', 404]);
 
 // ── payouts: approved by the nearest Manager above, never by the referring Advisor ──
-const pr6 = await post('/payouts/requests', 'a6', { all: true });
+const binaLedger = await get('/payouts/me/ledger', 'a6');
+const label = (r) => (r.kind === 'REFERRAL' ? `share · ${r.customer} · lead of ${r.sourceAdvisor?.fullName}` : `own · ${r.customer}`);
+eq('S18-44', "Bina's Earnings hold two claimable items: her own card, and her share on Chetan's card, named as his lead", binaLedger.rows.filter((r) => r.state === 'ELIGIBLE_AVAILABLE').map(label).sort(), ['own · Bina Lead One', 'share · Chetan Lead One · lead of Chetan Advisor']);
+const pr6 = await post('/payouts/requests', 'a6', { entitlementIds: binaLedger.rows.filter((r) => r.kind === 'OWN').map((r) => r.entitlementId) });
 const pr7 = await post('/payouts/requests', 'a7', { all: true });
 state.ids.requests.PR6 = pr6.id;
 state.ids.requests.PR7 = pr7.id;
 save();
 eq('S18-28', "Both requests go to Manager North for the Manager approval — the nearest Manager above the line, two levels up for Chetan", [pr6.managerApprover?.fullName, pr7.managerApprover?.fullName, pr6.managerStepRequired], ['Meera Manager North', 'Meera Manager North', true]);
-eq('S18-29', "The referring Advisor can neither see nor approve the request", [await get(`/payouts/requests/${pr6.id}`, 'a1').then(() => 'visible', (e) => e.status), await post(`/payouts/requests/${pr6.id}/approvals`, 'a1', { decision: 'APPROVED' }).then(() => 'ALLOWED', (e) => (e.status === 403 || e.status === 404 ? 'refused' : e.status))], [404, 'refused']);
+eq('S18-29', "The referring Advisor can neither see nor approve the request for Bina's own card", [await get(`/payouts/requests/${pr6.id}`, 'a1').then(() => 'visible', (e) => e.status), await post(`/payouts/requests/${pr6.id}/approvals`, 'a1', { decision: 'APPROVED' }).then(() => 'ALLOWED', (e) => (e.status === 403 || e.status === 404 ? 'refused' : e.status))], [404, 'refused']);
 await post(`/payouts/requests/${pr6.id}/approvals`, 'm1', { decision: 'APPROVED' });
 await post(`/payouts/requests/${pr6.id}/approvals`, A, { decision: 'APPROVED', amountInr: 1200 });
 const proof = await upload('payment_proof', 'acc', PNG, 'bina-transfer.png');
@@ -138,11 +151,31 @@ await post(`/payouts/requests/${pr7.id}/approvals`, 'm1', { decision: 'APPROVED'
 const pr7a = await post(`/payouts/requests/${pr7.id}/approvals`, A, { decision: 'APPROVED', amountInr: 800 });
 check('S18-30', "Bina's request is paid ₹1,200.00; Chetan's is approved for ₹800.00 and waits for Accounts", paid.state === 'PAID' && pr7a.state === 'APPROVED', `${paid.state} / ${pr7a.state}`);
 eq('S18-31', "Bina's own earnings show ₹1,200.00", inr((await get('/payouts/me/ledger', 'a6')).totals.paid.amountInr), 1200);
+
+// ── the referring Advisor's share, paid through KBS ──
 await login('a1', U.a1.mobile);
 const after = await get('/payouts/me/ledger', 'a1');
-eq('S18-32', "Nothing is credited to Arjun in KBS for Bina's card: his ledger is exactly as before (the share is settled outside)", { paid: inr(after.totals.paid.amountInr), rows: after.rows.length, available: after.totals.available.count }, { paid: inr(before.arjun.totals.paid.amountInr), rows: before.arjun.rows.length, available: before.arjun.totals.available.count });
-eq('S18-33', "Every claimable or paid card still belongs to the person who created the lead", sql(`select count(*) from "PayoutEntitlement" e join "Lead" l on l.id = e."leadId" where l."advisorUserId" <> e."advisorUserId"`), '0');
-eq('S18-34', 'Organisation paid total rises by exactly ₹1,200.00', amt((await get('/dashboards/admin/home', A)).business.payouts.paid), inr(before.org + 1200));
+const arjunShare = after.rows.filter((r) => r.kind === 'REFERRAL');
+eq('S18-32', "Arjun's Earnings gain exactly one claimable item — his share on Bina's activated card, named as her lead — and nothing for Chetan's; his paid total is untouched so far",
+  { paid: inr(after.totals.paid.amountInr), rows: after.rows.length, available: after.totals.available.count, share: arjunShare.map(label) },
+  { paid: inr(before.arjun.totals.paid.amountInr), rows: before.arjun.rows.length + 1, available: before.arjun.totals.available.count + 1, share: ['share · Bina Lead One · lead of Bina Advisor'] });
+const pra = await post('/payouts/requests', 'a1', { entitlementIds: arjunShare.map((r) => r.entitlementId) });
+state.ids.requests.PRA = pra.id;
+save();
+eq('S18-45', "Arjun requests his share: it goes to his own Manager (North), and the request item says it is a referral share on Bina's lead", [pra.managerApprover?.fullName, pra.items.map((i) => `${i.kind} · ${i.sourceAdvisor?.fullName} · ${i.lead.customerFullName}`)], ['Meera Manager North', ['REFERRAL · Bina Advisor · Bina Lead One']]);
+eq('S18-46', "Bina can neither see nor approve Arjun's share request", [await get(`/payouts/requests/${pra.id}`, 'a6').then(() => 'visible', (e) => e.status), await post(`/payouts/requests/${pra.id}/approvals`, 'a6', { decision: 'APPROVED' }).then(() => 'ALLOWED', (e) => (e.status === 403 || e.status === 404 ? 'refused' : e.status))], [404, 'refused']);
+await post(`/payouts/requests/${pra.id}/approvals`, 'm1', { decision: 'APPROVED' });
+await post(`/payouts/requests/${pra.id}/approvals`, A, { decision: 'APPROVED', amountInr: 300 });
+const proofA = await upload('payment_proof', 'acc', PNG, 'arjun-share-transfer.png');
+const paidA = await post(`/payouts/requests/${pra.id}/payment`, 'acc', { paidAt: new Date(Date.now() - 60000).toISOString(), amountInr: 300, transferReference: 'UATUTR00A1S', method: 'UPI', proofFileId: proofA.id });
+eq('S18-47', "Manager North approves it, the Admin sets ₹300.00 and Accounts pays it with proof: Arjun's earnings rise by exactly ₹300.00", [paidA.state, inr((await get('/payouts/me/ledger', 'a1')).totals.paid.amountInr)], ['PAID', inr(before.arjun.totals.paid.amountInr + 300)]);
+eq('S18-51', "The Admin's view of Arjun's share request raises no \"earlier request for the same lead\" warning: Bina's card payout on that lead is a different payable, not a repeat", (await get(`/payouts/requests/${pra.id}`, A)).items.map((i) => i.priorRequests.length), [0]);
+const binaAfter = await get('/payouts/me/ledger', 'a6');
+eq('S18-48', "Paying Arjun's share changes nothing for Bina: her card stays paid at ₹1,200.00 and her share on Chetan's card is still hers to claim", { paid: inr(binaAfter.totals.paid.amountInr), available: binaAfter.totals.available.count }, { paid: 1200, available: 1 });
+const seen = async (as) => (await get(`/leads/${R.BL1}`, as)).payouts.map((p) => `${p.kind} · ${p.payee?.fullName} · ${p.amountInr}`).sort();
+eq('S18-49', "On Bina's lead the Admin sees both payouts with who is paid — Bina ₹1,200.00 for the card, Arjun ₹300.00 as referral share; each Advisor sees only their own", { admin: await seen(A), bina: await seen('a6'), arjun: await seen('a1') }, { admin: ['OWN · Bina Advisor · 1200', 'REFERRAL · Arjun Advisor · 300'], bina: ['OWN · Bina Advisor · 1200'], arjun: ['REFERRAL · Arjun Advisor · 300'] });
+eq('S18-33', "Every payable item is either the lead's own Advisor's, or a referral share of the Advisor that Advisor reported to when the lead was created — nothing else", sql(`select count(*) from "PayoutEntitlement" e join "Lead" l on l.id = e."leadId" join "User" p on p.id = e."advisorUserId" where (e.kind='OWN' and l."advisorUserId" <> e."advisorUserId") or (e.kind='REFERRAL' and (e."advisorUserId" <> l."reportingParentUserIdSnapshot" or e."advisorUserId" = l."advisorUserId" or p.role <> 'ADVISOR'))`), '0');
+eq('S18-34', 'Organisation paid total rises by exactly ₹1,500.00 (₹1,200.00 + ₹300.00)', amt((await get('/dashboards/admin/home', A)).business.payouts.paid), inr(before.org + 1500));
 
 // ── the Admin stays in control of codes and lines ──
 const adminCodes = await get('/agent-codes', A);
@@ -154,6 +187,8 @@ await denied('S18-37', 'A code cannot be issued to a Telecaller', () => post('/a
 await post(`/users/${U.a7.id}/reporting`, A, { parentUserId: U.a1.id, reason: 'TEST: Chetan now works with Arjun directly' });
 await login('a1', U.a1.mobile);
 eq('S18-38', "The Admin can move an Advisor under another Advisor; Arjun's team is then Bina and Chetan", (await get('/me/team', 'a1')).advisors.map((x) => x.fullName), ['Bina Advisor', 'Chetan Advisor']);
+await login('a6', U.a6.mobile);
+eq('S18-50', "Moving Chetan later does not move the share on a lead created while he reported to Bina: it stays Bina's, and she can still open that lead (read-only)", [shares()[1], await get(`/leads/${R.CL1}`, 'a6').then(() => 'visible', (e) => e.status), await post(`/leads/${R.CL1}/remarks`, 'a6', { text: 'TEST: not my lead' }).then(() => 'ALLOWED', (e) => e.status)], ['Bina Advisor on Chetan Lead One · ELIGIBLE_AVAILABLE', 'visible', 403]);
 await post(`/agent-codes/${arjunCode.id}/revoke`, A, { reason: 'TEST: code withdrawn' });
 const afterRevoke = { valid: (await get(`/agent-codes/validate?code=${code1.code}`, 'a1')).valid, stillReports: sql(`select p."fullName" from "ReportingAssignment" r join "User" p on p.id = r."parentUserId" where r."childUserId"='${U.a6.id}' and r.status='ACTIVE' and r."effectiveTo" is null`) };
 eq('S18-39', 'When the Admin withdraws the code it stops working for new sign-ups; Advisors already attached stay attached', afterRevoke, { valid: false, stillReports: 'Arjun Advisor' });

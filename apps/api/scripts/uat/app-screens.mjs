@@ -15,7 +15,7 @@ const TITLES = {
   'manager-m1': 'Manager North in the app: team calling card; Advisors list shows Arjun paid 2 (₹3,000.00) and Anita paid 2 (₹2,500.50), no other team',
   'telecaller-t1': 'Telecaller Tara in the app: calling queue, own stats, official ID — and no rupee figure anywhere',
   'manager-m2-sells': 'Manager South in the app: "My sales" opens the selling screens — ₹2,000.00 earned, own leads only — and "Back to team" returns to the team',
-  'advisor-a1-team': 'Advisor Arjun in the app: "My team" lists Bina and Chetan; Bina\'s 2 leads open read-only with her name, bank result and no rupee figure',
+  'advisor-a1-team': 'Advisor Arjun in the app: ₹3,300.00 earned; "My team" lists Bina and Chetan; Bina\'s lead opens read-only showing only his own referral share (₹300.00, not her ₹1,200.00); Earnings lists it as a team share on Bina\'s lead',
   'advisor-a2-code': 'Advisor Anita in the app: "My team" shows her Agent Code ANITA01 with a share button and an empty team',
   'manager-m1-not-yet': 'Manager North (has not given their details): "My sales" opens the identity and bank steps, with a way back to the team',
 };

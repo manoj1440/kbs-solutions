@@ -328,6 +328,12 @@ enum RuleStatus {
   RETIRED
 }
 
+/// F-824: OWN = the lead's own Advisor (or selling Manager); REFERRAL = the Advisor they reported to when the lead was created.
+enum PayoutEntitlementKind {
+  OWN
+  REFERRAL
+}
+
 enum PayoutEntitlementState {
   PENDING_HOLD
   ELIGIBLE_AVAILABLE
@@ -1625,6 +1631,8 @@ model PayoutEntitlement {
   bankId                  String
   cardId                  String
   eventKey                String                 @unique
+  /// F-824: `advisorUserId` is always the payee. For REFERRAL it is not the lead's owner.
+  kind                    PayoutEntitlementKind  @default(OWN)
   /// null since payouts became rate-free: activation makes it claimable, Admin prices the request
   ruleId                  String?
   ruleVersion             Int?
@@ -1653,6 +1661,7 @@ model PayoutEntitlement {
 
   @@index([advisorUserId, state])
   @@index([leadId])
+  @@index([leadId, kind])
   @@index([state, eligibleAt])
 }
 

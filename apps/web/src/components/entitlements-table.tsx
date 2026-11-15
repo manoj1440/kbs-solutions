@@ -17,6 +17,10 @@ export interface EntitlementDto {
   triggerFieldValue: string;
   rule: { id: string; name: string; version: number } | null;
   lead: { id: string; publicRef: string; customerFullName: string };
+  /** F-824: REFERRAL = a share on a lead of `sourceAdvisor`, an Advisor who joined with the payee's code */
+  kind?: string;
+  sourceAdvisor?: { id: string; fullName: string } | null;
+
   advisor: { id: string; fullName: string };
   bank: { code: string; displayName: string };
   card: string;
@@ -50,6 +54,7 @@ export function EntitlementsTable({ rows, leadBase }: { rows: EntitlementDto[]; 
             {row.original.lead.publicRef}
           </Link>
           <div className="text-2xs text-muted-foreground">{row.original.lead.customerFullName}</div>
+          {row.original.kind === 'REFERRAL' ? <div className="text-2xs font-medium text-fg-2">Referral share · lead of {row.original.sourceAdvisor?.fullName ?? 'a team Advisor'}</div> : null}
         </>
       ),
     }),

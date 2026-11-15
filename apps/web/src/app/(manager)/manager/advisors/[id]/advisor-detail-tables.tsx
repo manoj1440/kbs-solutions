@@ -160,6 +160,7 @@ export function AdvisorEntitlementsTable({ rows }: { rows: EntitlementDto[] }) {
             </Link>
             <div className="text-xs text-muted-foreground">
               {row.original.bank.displayName} · {row.original.card}
+              {row.original.kind === 'REFERRAL' ? ` · referral share, lead of ${row.original.sourceAdvisor?.fullName ?? 'a team Advisor'}` : ''}
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
 import { Paginated } from '../../common/interceptors/response-envelope.interceptor';
+import { holdsShareOnLead } from '../../common/lead-access';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { PUSH_PROVIDER, type PushProvider } from '../../providers/ports';
 
@@ -112,7 +113,7 @@ export class NotificationsService {
       case 'Lead': {
         const l = await this.prisma.client.lead.findUnique({ where: { id: entityId }, select: { advisorUserId: true } });
         if (!l) return false;
-        return l.advisorUserId === actor.userId || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(l.advisorUserId)); // F-824
+        return l.advisorUserId === actor.userId || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(l.advisorUserId)) || (await holdsShareOnLead(this.prisma.client, actor, entityId)); // F-824
       }
       case 'PayoutRequest': {
         const r = await this.prisma.client.payoutRequest.findUnique({ where: { id: entityId }, select: { advisorUserId: true, managerApproverUserId: true, state: true } });

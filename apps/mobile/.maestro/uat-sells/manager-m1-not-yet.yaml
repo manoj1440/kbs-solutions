@@ -19,6 +19,7 @@ env:
 - tapOn: "98765 43210"
 - inputText: ${MOBILE}
 - tapOn: "Send code"
+- assertVisible: "Enter the code"
 - inputText: "000000"
 - assertVisible: "Team calling today"
 - tapOn: "My sales"

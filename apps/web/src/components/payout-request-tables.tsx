@@ -16,6 +16,10 @@ export interface RequestItem {
   entitlementState: string;
   warnings: string[];
   lead: { id: string; publicRef: string; customerFullName: string };
+  /** F-824: REFERRAL = a share on a lead of `sourceAdvisor`, an Advisor who joined with the payee's code */
+  kind?: string;
+  sourceAdvisor?: { id: string; fullName: string } | null;
+
   bank: { code: string; displayName: string };
   card: string;
   triggerField: string;
@@ -73,6 +77,7 @@ export function RequestItemsTable({ rows, leadBase }: { rows: RequestItem[]; lea
             <span className="font-mono text-xs font-semibold">{row.original.lead.publicRef}</span>
           )}
           <div className="text-2xs text-muted-foreground">{row.original.lead.customerFullName}</div>
+          {row.original.kind === 'REFERRAL' ? <div className="text-2xs font-medium text-fg-2">Referral share · lead of {row.original.sourceAdvisor?.fullName ?? 'a team Advisor'}</div> : null}
         </>
       ),
     }),

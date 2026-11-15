@@ -139,6 +139,9 @@ if (REFS) {
     await screen(page, 'S19-A01', "Admin → Agent codes lists Advisors' codes with their owner (Anita's ANITA01 active, Arjun's withdrawn)", '/admin/agent-codes', { has: ['ANITA01', 'Anita Advisor', 'Arjun Advisor', 'Advisor'] });
     await screen(page, 'S19-A02', "Admin → Bina's user page shows she reports to Arjun (an Advisor)", `/admin/users/${state.users.a6.id}`, { has: ['Bina Advisor', 'Arjun Advisor'] });
     await screen(page, 'S19-A03', "Admin → Leads names Bina and Chetan as owners of their leads", '/admin/leads', { rows: [['Bina Lead One', 'Bina Advisor'], ['Chetan Lead One', 'Chetan Advisor']] });
+    await screen(page, 'S19-A04', "Admin → Bina's lead shows both payouts and who is paid: the card payout to Bina, the referral share to Arjun", `/admin/leads/${RL.BL1}`, { has: ['Card payout · Bina Advisor', 'Referral share · Arjun Advisor', '1,200', '300'] });
+    await screen(page, 'S19-A05', "Admin → Arjun's share request: one item marked as a referral share on Bina's lead, paid ₹300.00", `/admin/payouts/requests/${state.ids.requests.PRA}`, { has: ['Arjun Advisor', 'Referral share · lead of Bina Advisor', 'Bina Lead One', '300', 'Meera Manager North'] });
+    await screen(page, 'S19-A06', "Admin → Entitlement ledger marks the two referral shares with the lead's Advisor", '/admin/payouts/entitlements', { has: ['Referral share · lead of Bina Advisor', 'Referral share · lead of Chetan Advisor'] });
     await ctx.close();
   }
   {
@@ -147,6 +150,7 @@ if (REFS) {
     await screen(page, 'S19-M02', "Manager North → Team leads filtered to Bina: her two leads", `/manager/leads?advisorId=${state.users.a6.id}`, { has: ['Bina Lead One', 'Bina Lead Two', '1–2 of 2'], not: ['Lead One Customer'] });
     await screen(page, 'S19-M03', "Manager North → Bina's lead page: every detail, owner Bina", `/manager/leads/${RL.BL1}`, { has: ['Bina Advisor', 'Bina Lead One', 'UATB6001', 'V + ACTIVE', 'Salaried'], not: ['9600000031', 'ABCPB6001A'] });
     await screen(page, 'S19-M04', "Manager North → Payout approvals includes Bina's and Chetan's requests (the Manager above their line approves)", '/manager/payouts/requests', { has: ['Bina Advisor', 'Chetan Advisor'] });
+    await screen(page, 'S19-M05', "Manager North → Arjun's share request reads as a referral share on Bina's lead", `/manager/payouts/requests/${state.ids.requests.PRA}`, { has: ['Arjun Advisor', 'Referral share · lead of Bina Advisor', 'Bina Lead One'] });
     await ctx.close();
   }
 }

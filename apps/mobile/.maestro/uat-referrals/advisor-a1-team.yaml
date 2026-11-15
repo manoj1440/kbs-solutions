@@ -1,4 +1,5 @@
-# UAT-01 S20 (F-824) — Advisor Arjun: "My team" lists the Advisors who joined with his code; their leads open read-only.
+# UAT-01 S20 (F-824) — Advisor Arjun: "My team" lists the Advisors who joined with his code; their leads open read-only;
+# his share on Bina's activated card is paid through KBS (₹300.00 on top of his own ₹3,000.00).
 appId: com.kbs.dsa
 env:
   MOBILE: ${MOBILE || '9800000031'}
@@ -19,8 +20,10 @@ env:
 - tapOn: "98765 43210"
 - inputText: ${MOBILE}
 - tapOn: "Send code"
+- assertVisible: "Enter the code"
 - inputText: "000000"
 - assertVisible: "Home"
+- assertVisible: "₹3,300.00"
 - scrollUntilVisible:
     element: "My team"
 - tapOn: "My team"
@@ -38,3 +41,17 @@ env:
 - assertNotVisible: ".*₹1,200.*"
 - scrollUntilVisible:
     element: "Employment"
+- scrollUntilVisible:
+    element: "Payouts on this lead"
+- scrollUntilVisible:
+    element: "Referral share · Arjun Advisor"
+- assertVisible: ".*₹300.00.*"
+- assertNotVisible: ".*Card payout.*"
+- back
+- back
+- back
+- tapOn: "Earnings"
+- assertVisible: "₹3,300.00"
+- assertVisible: ".*3 paid.*"
+- scrollUntilVisible:
+    element: "Team share · lead of Bina Advisor"

@@ -81,12 +81,18 @@ check('S06-14', 'The number is on the do-not-contact list (2 active entries now)
 const c6 = await dial('t2', r22, { seconds: 20 });
 await outcome('t2', r22, { callAttemptId: c6.id, outcome: 'COMPLETED_NO_FURTHER', remarks: 'TEST: already has the card' });
 
-// reassignment by the Manager keeps the history
-if (r23) {
-  await denied('S06-15', 'A Manager cannot move a customer to another Manager\'s Telecaller', () => post(`/calling/records/${r23}/reassign`, 'm1', { toTelecallerUserId: state.users.t3.id, reason: 'TEST: wrong team' }), [400, 403, 404, 409]);
-  await post(`/calling/records/${r23}/reassign`, 'm1', { toTelecallerUserId: state.users.t1.id, reason: 'TEST: balance workload' });
-  const moved = await get(`/calling/records/${r23}`, 't1');
-  check('S06-16', 'After a reassignment the new Telecaller can open the customer and the old one cannot', !!moved.id && (await call('GET', `/calling/records/${r23}`, { as: 't2' }).then(() => false, (e) => [403, 404].includes(e.status))), '');
+// reassignment by the Manager keeps the history. The 4 / 3 / 3 rebalance leaves the spare, untouched customer with either
+// Telecaller of Manager North, so move whichever has it — and end with the same split (Tara 4, Tarun 3) both ways.
+const spare = r23 ? { id: r23, from: 't2', to: 't1' } : Q.t1[3] ? { id: Q.t1[3], from: 't1', to: 't2' } : null;
+if (!spare) {
+  check('S06-15', "A Manager cannot move a customer to another Manager's Telecaller", false, 'no spare customer to reassign in this allocation');
+  check('S06-16', 'After a reassignment the new Telecaller can open the customer and the old one cannot', false, 'no spare customer to reassign in this allocation');
+} else {
+  await denied('S06-15', 'A Manager cannot move a customer to another Manager\'s Telecaller', () => post(`/calling/records/${spare.id}/reassign`, 'm1', { toTelecallerUserId: state.users.t3.id, reason: 'TEST: wrong team' }), [400, 403, 404, 409]);
+  await post(`/calling/records/${spare.id}/reassign`, 'm1', { toTelecallerUserId: state.users[spare.to].id, reason: 'TEST: balance workload' });
+  const moved = await get(`/calling/records/${spare.id}`, spare.to);
+  check('S06-16', 'After a reassignment the new Telecaller can open the customer and the old one cannot', !!moved.id && (await call('GET', `/calling/records/${spare.id}`, { as: spare.from }).then(() => false, (e) => [403, 404].includes(e.status))), `${spare.from} → ${spare.to}`);
+  if (spare.from === 't1') await post(`/calling/records/${spare.id}/reassign`, 'm1', { toTelecallerUserId: state.users.t1.id, reason: 'TEST: back to the first caller' });
 }
 
 // ── t3: office network off → blocked; Manager grants work-from-home → allowed ──

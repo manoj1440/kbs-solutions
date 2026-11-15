@@ -6,6 +6,7 @@ import type { Actor } from '../../common/actor';
 import { CryptoService } from '../../common/crypto/crypto.service';
 import { AppError } from '../../common/errors/app-error';
 import { Paginated } from '../../common/interceptors/response-envelope.interceptor';
+import { holdsShareOnLead } from '../../common/lead-access';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { PAN_PROVIDER, type PanVerificationProvider } from '../../providers/ports';
@@ -460,7 +461,7 @@ export class LeadsService {
   /** Scope check shared with other modules that expose per-lead reads (e.g. MIS history). */
   async assertCanRead(actor: Actor, leadId: string) {
     const l = await this.prisma.client.lead.findUnique({ where: { id: leadId }, select: { advisorUserId: true } });
-    const ok = !!l && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(l.advisorUserId)));
+    const ok = !!l && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(l.advisorUserId)) || (await holdsShareOnLead(this.prisma.client, actor, leadId)));
     if (!ok) throw AppError.notFound('Lead');
   }
 
@@ -475,9 +476,9 @@ export class LeadsService {
   async detail(actor: Actor, id: string) {
     const l = await this.prisma.client.lead.findUnique({ where: { id }, include: { ...this.rowInclude, linkages: { orderBy: { at: 'desc' } }, linkInitiations: { orderBy: { at: 'desc' }, take: 20 }, shareActions: { orderBy: { at: 'desc' }, take: 20 } } });
     if (!l) throw AppError.notFound('Lead');
-    // F-824: the Advisor whose code this lead's Advisor used may read it — no amounts, no changes
+    // F-824: the Advisor whose code this lead's Advisor used may read it, and so may whoever is paid a share on it — no changes
     const referralView = actor.role === 'ADVISOR' && l.advisorUserId !== actor.userId && actor.referralUserIds.includes(l.advisorUserId);
-    const ok = actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId || referralView;
+    const ok = actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(l.advisorUserId)) || l.advisorUserId === actor.userId || referralView || (await holdsShareOnLead(this.prisma.client, actor, id));
     if (!ok) throw AppError.notFound('Lead');
     const tokens = this.blankTokens();
     const matched = l.statusSnapshot !== null;
@@ -485,7 +486,7 @@ export class LeadsService {
     const [followUps, remarks, payouts] = await Promise.all([
       this.prisma.client.followUpTask.findMany({ where: { leadId: id }, orderBy: { dueAt: 'asc' }, include: { owner: { select: { id: true, fullName: true } } } }),
       this.prisma.client.operationalRemark.findMany({ where: { entityType: 'Lead', entityId: id }, orderBy: { at: 'desc' }, include: { author: { select: { id: true, fullName: true } } } }),
-      this.prisma.client.payoutEntitlement.findMany({ where: { leadId: id }, orderBy: { eligibleAt: 'asc' }, include: { requestItems: { where: { active: true }, take: 1, include: { request: { select: { id: true, publicRef: true, state: true, paidAt: true, totalAmountInr: true, itemCount: true, approvals: { select: { approverRole: true, decision: true } } } } } } } }),
+      this.prisma.client.payoutEntitlement.findMany({ where: { leadId: id, ...(actor.role === 'ADVISOR' ? { advisorUserId: actor.userId } : {}) }, orderBy: { eligibleAt: 'asc' }, include: { advisor: { select: { id: true, fullName: true } }, requestItems: { where: { active: true }, take: 1, include: { request: { select: { id: true, publicRef: true, state: true, paidAt: true, totalAmountInr: true, itemCount: true, approvals: { select: { approverRole: true, decision: true } } } } } } } }),
     ]);
     const row = this.toRow({ ...l, linkages: current ? [current] : [] }, await this.crosswalks([l]), tokens);
     const s = l.statusSnapshot;
@@ -526,12 +527,15 @@ export class LeadsService {
       referenceHistory: l.linkages.map((x) => ({ id: x.id, kind: x.referenceKind, value: x.referenceValue, status: x.verificationStatus, source: x.source, at: x.at.toISOString(), supersededAt: x.supersededAt?.toISOString() ?? null })),
       linkActivity: l.linkInitiations.map((i) => ({ id: i.id, action: i.action, linkVersion: i.linkVersion, at: i.at.toISOString(), label: i.action === 'SHARED' ? 'Application link shared (KBS activity)' : 'Application link opened (KBS activity)', provenance: 'KBS_OPERATIONAL' })),
       shares: l.shareActions.map((s) => ({ id: s.id, kind: s.kind, at: s.at.toISOString(), handoffResult: s.handoffResult, deliveryStatus: s.deliveryStatus })),
-      /** Advisor earnings for this lead, same position wording as the payout ledger (F-603). Paid events can never be claimed again. */
+      /**
+       * Payable items on this lead, same position wording as the payout ledger (F-603). An Advisor sees only their own item:
+       * the lead's Advisor their card (OWN), the Advisor they joined under their share (REFERRAL, F-824) — never each other's.
+       */
       payouts: payouts.map((e) => {
         const req = e.requestItems[0]?.request ?? null;
         // rate-free payouts: money shows only once the request (priced by Admin) is paid. `amountInr` is the REQUEST's amount —
         // it can cover several cards (`request.cardCount`), so screens must say "for N cards", never present it as this lead's own.
-        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), amountInr: req?.state === 'PAID' && !referralView ? Number(req.totalAmountInr) : null, eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null, cardCount: req.itemCount } : null };
+        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), kind: e.kind, payee: e.advisor, amountInr: req?.state === 'PAID' ? Number(req.totalAmountInr) : null, eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null, cardCount: req.itemCount } : null };
       }),
     };
   }

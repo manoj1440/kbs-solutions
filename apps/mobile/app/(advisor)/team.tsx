@@ -37,8 +37,8 @@ interface Team {
 }
 
 /**
- * F-824: an Advisor's own Agent Code and the Advisors who signed up with it. Their leads are readable in full;
- * any share on them is settled with KBS outside the app — nothing here is an amount.
+ * F-824: an Advisor's own Agent Code and the Advisors who signed up with it. Their leads are readable in full; the
+ * share on their activated cards is claimed from Earnings like any other payout (the Admin sets the amount).
  */
 export default function MyTeamScreen() {
   const [team, setTeam] = useState<Team | null>(null);
@@ -163,8 +163,8 @@ export default function MyTeamScreen() {
               </Card>
             )}
             <Muted className="px-1 text-xs">
-              Any share on their leads is settled with KBS directly. The app shows the leads, not an
-              amount.
+              When the bank reports one of their cards as activated, your share appears in Earnings.
+              You request it like your own cards; KBS sets the amount when it approves.
             </Muted>
           </Appear>
         </>

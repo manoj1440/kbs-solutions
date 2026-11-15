@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
 import { AppError } from '../../common/errors/app-error';
+import { holdsShareOnLead } from '../../common/lead-access';
 import { RequestContextStore } from '../../common/request-context';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
@@ -419,7 +420,7 @@ export class MisPipelineService {
   /** REQ-14 §14.6 history grouped by batch; scoped like any other per-lead read (own / team / all). */
   async leadHistory(actor: Actor, leadId: string) {
     const lead = await this.prisma.client.lead.findUnique({ where: { id: leadId }, select: { advisorUserId: true } });
-    const ok = !!lead && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(lead.advisorUserId)) || lead.advisorUserId === actor.userId || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(lead.advisorUserId))); // F-824
+    const ok = !!lead && (actor.role === 'ADMIN' || actor.role === 'ACCOUNTS' || (actor.role === 'MANAGER' && actor.teamUserIds.includes(lead.advisorUserId)) || lead.advisorUserId === actor.userId || (actor.role === 'ADVISOR' && actor.referralUserIds.includes(lead.advisorUserId)) || (await holdsShareOnLead(this.prisma.client, actor, leadId))); // F-824
     if (!ok) throw AppError.notFound('Lead');
     const rows = await this.prisma.client.bankStatusHistory.findMany({ where: { leadId }, orderBy: [{ importedAt: 'desc' }, { field: 'asc' }], include: { batch: { select: { publicRef: true, uploadedAt: true, uploader: { select: { role: true } } } } } });
     const groups = new Map<string, { batchId: string; publicRef: string; importedAt: string; uploaderRole: string; changes: Array<{ field: string; oldValue: string | null; newValue: string | null; changeKind: string; reportedEventDate: string | null }> }>();

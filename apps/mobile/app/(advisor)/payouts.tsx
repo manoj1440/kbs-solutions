@@ -36,6 +36,9 @@ import { api } from '@/lib/api';
 import { withBank } from '@/lib/cards';
 
 interface LedgerRow {
+  /** F-824: REFERRAL = a share on a lead of `sourceAdvisor`, an Advisor who joined with the payee's code */
+  kind?: string;
+  sourceAdvisor?: { id: string; fullName: string } | null;
   entitlementId: string;
   state: string;
   position: LedgerPosition;
@@ -348,6 +351,11 @@ export default function Payouts() {
                       <Muted numberOfLines={1} className="text-xs">
                         {row.kbsRef} · {withBank(row.bank, row.card)}
                       </Muted>
+                      {row.kind === 'REFERRAL' ? (
+                        <Muted numberOfLines={1} className="text-xs">
+                          Team share · lead of {row.sourceAdvisor?.fullName ?? 'your team'}
+                        </Muted>
+                      ) : null}
                     </View>
                   </View>
                   <View className="flex-row flex-wrap items-center gap-2">

@@ -52,6 +52,8 @@ export interface PayoutRequestDto {
     entitlementState: string;
     warnings: string[];
     lead: { id: string; publicRef: string; customerFullName: string };
+    kind?: string;
+    sourceAdvisor?: { id: string; fullName: string } | null;
     bank: { code: string; displayName: string };
     card: string;
     triggerField: string;
@@ -347,6 +349,11 @@ export function PayoutRequestDetail({ id }: { id: string }) {
                 <Muted numberOfLines={1} className="text-xs">
                   {i.lead.publicRef} · {withBank(i.bank, i.card)}
                 </Muted>
+                {i.kind === 'REFERRAL' ? (
+                  <Muted numberOfLines={1} className="text-xs">
+                    Team share · lead of {i.sourceAdvisor?.fullName ?? 'a team Advisor'}
+                  </Muted>
+                ) : null}
               </View>
             </View>
             <View className="gap-1.5 rounded-lg bg-raised p-3">

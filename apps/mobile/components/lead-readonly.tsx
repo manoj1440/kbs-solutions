@@ -59,6 +59,9 @@ interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   annualIncomeItr?: number | null;
   payouts?: {
     entitlementId: string;
+    /** F-824: OWN = the lead's Advisor; REFERRAL = the share of the Advisor they joined under */
+    kind?: string;
+    payee?: { id: string; fullName: string };
     position: string;
     amountInr: number | null;
     request: { publicRef: string; paidAt: string | null; cardCount?: number } | null;
@@ -226,15 +229,15 @@ export function ReadOnlyLeadView({ id }: { id: string }) {
           {l.payouts?.length ? (
             <Appear index={3}>
               <Card className="gap-1 pb-2">
-                <Text className="mb-1 font-medium text-base">Advisor payout for this lead</Text>
+                <Text className="mb-1 font-medium text-base">Payouts on this lead</Text>
                 {l.payouts.map((p, i) => (
                   <KeyValue
                     key={p.entitlementId}
-                    label={p.position}
+                    label={`${p.kind === 'REFERRAL' ? 'Referral share' : 'Card payout'}${p.payee ? ` · ${p.payee.fullName}` : ''}`}
                     value={
                       p.request
-                        ? `${p.request.publicRef}${p.amountInr != null ? ` · ${formatInr(p.amountInr)}${(p.request.cardCount ?? 1) > 1 ? ` for ${p.request.cardCount} cards` : ''}` : ''}`
-                        : 'Not requested yet'
+                        ? `${p.position} · ${p.request.publicRef}${p.amountInr != null ? ` · ${formatInr(p.amountInr)}${(p.request.cardCount ?? 1) > 1 ? ` for ${p.request.cardCount} cards` : ''}` : ''}`
+                        : `${p.position} · not requested yet`
                     }
                     last={i === (l.payouts?.length ?? 0) - 1}
                   />

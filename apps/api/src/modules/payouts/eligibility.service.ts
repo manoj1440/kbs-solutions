@@ -54,24 +54,55 @@ export class PayoutEligibilityService {
     const reviewed = await this.reviewLead(leadId, batchId, snap, tokens);
     const value = this.activation(snap, tokens);
     if (!value || activationBucket(value) !== 'active' || !lead.linkages[0]) return { created: [], reviewed }; // no uniquely identified application → nothing (REQ-28 P0)
-    const existing = await this.prisma.client.payoutEntitlement.findFirst({ where: { leadId }, orderBy: { createdAt: 'asc' } });
+    const misRow = await this.prisma.client.misRow.findFirst({ where: { batchId, matchedLeadId: leadId }, select: { id: true } });
+    const created: string[] = [];
+    const existing = await this.prisma.client.payoutEntitlement.findFirst({ where: { leadId, kind: 'OWN' }, orderBy: { createdAt: 'asc' } });
     if (existing) {
       // a correction that reports it active again re-opens a reviewed entitlement; any other state stays as it is
-      if (existing.state === 'UNDER_REVIEW') {
-        // still an active item of a request → back to RESERVED, or that request could never be approved or paid
-        const inRequest = await this.prisma.client.payoutRequestItem.findFirst({ where: { entitlementId: existing.id, active: true }, select: { id: true } });
-        await this.transition(existing.id, existing.state, inRequest ? 'RESERVED' : 'ELIGIBLE_AVAILABLE', { batchId, reason: `MIS again reports card activation "${value}"` });
-      }
-      return { created: [], reviewed };
+      if (existing.state === 'UNDER_REVIEW') await this.reopen(existing.id, batchId, value);
+    } else {
+      const parent = (await this.hierarchy.currentParentId(lead.advisorUserId)) ?? (await this.hierarchy.adminUserId());
+      const ent = await this.prisma.client.payoutEntitlement.create({
+        data: { leadId, advisorUserId: lead.advisorUserId, reportingParentSnapshot: parent, bankId: lead.bankId, cardId: lead.cardId, eventKey: `lead:${leadId}:activation`, evidenceBatchId: batchId, evidenceMisRowId: misRow?.id ?? null, triggerFieldValue: value, eligibleAt: new Date(), state: 'ELIGIBLE_AVAILABLE' },
+      });
+      await this.prisma.client.payoutEntitlementEvent.create({ data: { entitlementId: ent.id, fromState: null, toState: 'ELIGIBLE_AVAILABLE', batchId, reason: `Card activated: cardActivationStatus = "${value}"` } });
+      await this.notifications.notify({ recipientUserId: lead.advisorUserId, kind: 'PAYOUT_ELIGIBLE', title: 'Card activated — request your payout', body: `${lead.publicRef}: the bank reports the card as activated. You can request the payout now.`, deepLink: { entityType: 'Lead', entityId: leadId }, dedupeKey: `payout:eligible:${ent.id}` });
+      created.push(ent.id);
     }
-    const misRow = await this.prisma.client.misRow.findFirst({ where: { batchId, matchedLeadId: leadId }, select: { id: true } });
-    const parent = (await this.hierarchy.currentParentId(lead.advisorUserId)) ?? (await this.hierarchy.adminUserId());
+    const referral = await this.ensureReferral(lead, batchId, value, misRow?.id ?? null);
+    if (referral) created.push(referral);
+    return { created, reviewed };
+  }
+
+  /** An entitlement the bank put under review is active again: back into its request if it is still an item of one. */
+  private async reopen(entitlementId: string, batchId: string, value: string) {
+    // still an active item of a request → back to RESERVED, or that request could never be approved or paid
+    const inRequest = await this.prisma.client.payoutRequestItem.findFirst({ where: { entitlementId, active: true }, select: { id: true } });
+    await this.transition(entitlementId, 'UNDER_REVIEW', inRequest ? 'RESERVED' : 'ELIGIBLE_AVAILABLE', { batchId, reason: `MIS again reports card activation "${value}"` });
+  }
+
+  /**
+   * F-824 (owner decision: pay through KBS): the Advisor this lead's Advisor reported to WHEN THE LEAD WAS CREATED gets
+   * a claimable share on the same activated card — one level, an Advisor only (a Manager's share is settled outside
+   * KBS, F-822). It is a payable item of its own: requested, approved and paid like any other, priced by the Admin.
+   * Returns the id when one was created.
+   */
+  private async ensureReferral(lead: { id: string; publicRef: string; advisorUserId: string; reportingParentUserIdSnapshot: string; bankId: string; cardId: string }, batchId: string, value: string, misRowId: string | null): Promise<string | null> {
+    const existing = await this.prisma.client.payoutEntitlement.findFirst({ where: { leadId: lead.id, kind: 'REFERRAL' } });
+    if (existing) {
+      if (existing.state === 'UNDER_REVIEW') await this.reopen(existing.id, batchId, value);
+      return null;
+    }
+    if (lead.reportingParentUserIdSnapshot === lead.advisorUserId) return null;
+    const referrer = await this.prisma.client.user.findUnique({ where: { id: lead.reportingParentUserIdSnapshot }, select: { id: true, role: true } });
+    if (referrer?.role !== 'ADVISOR') return null;
+    const [parent, owner] = await Promise.all([this.hierarchy.currentParentId(referrer.id), this.prisma.client.user.findUnique({ where: { id: lead.advisorUserId }, select: { fullName: true } })]);
     const ent = await this.prisma.client.payoutEntitlement.create({
-      data: { leadId, advisorUserId: lead.advisorUserId, reportingParentSnapshot: parent, bankId: lead.bankId, cardId: lead.cardId, eventKey: `lead:${leadId}:activation`, evidenceBatchId: batchId, evidenceMisRowId: misRow?.id ?? null, triggerFieldValue: value, eligibleAt: new Date(), state: 'ELIGIBLE_AVAILABLE' },
+      data: { kind: 'REFERRAL', leadId: lead.id, advisorUserId: referrer.id, reportingParentSnapshot: parent ?? (await this.hierarchy.adminUserId()), bankId: lead.bankId, cardId: lead.cardId, eventKey: `lead:${lead.id}:referral`, evidenceBatchId: batchId, evidenceMisRowId: misRowId, triggerFieldValue: value, eligibleAt: new Date(), state: 'ELIGIBLE_AVAILABLE' },
     });
-    await this.prisma.client.payoutEntitlementEvent.create({ data: { entitlementId: ent.id, fromState: null, toState: 'ELIGIBLE_AVAILABLE', batchId, reason: `Card activated: cardActivationStatus = "${value}"` } });
-    await this.notifications.notify({ recipientUserId: lead.advisorUserId, kind: 'PAYOUT_ELIGIBLE', title: 'Card activated — request your payout', body: `${lead.publicRef}: the bank reports the card as activated. You can request the payout now.`, deepLink: { entityType: 'Lead', entityId: leadId }, dedupeKey: `payout:eligible:${ent.id}` });
-    return { created: [ent.id], reviewed };
+    await this.prisma.client.payoutEntitlementEvent.create({ data: { entitlementId: ent.id, fromState: null, toState: 'ELIGIBLE_AVAILABLE', batchId, reason: `Referral share: card activated on a lead of ${owner?.fullName ?? 'a team Advisor'} (cardActivationStatus = "${value}")` } });
+    await this.notifications.notify({ recipientUserId: referrer.id, kind: 'PAYOUT_ELIGIBLE', title: 'Team card activated — request your share', body: `${lead.publicRef} (${owner?.fullName ?? 'your team'}): the bank reports the card as activated. Your share can be requested now.`, deepLink: { entityType: 'Lead', entityId: lead.id }, dedupeKey: `payout:eligible:${ent.id}` });
+    return ent.id;
   }
 
   /** Correction handling: the bank no longer reports the card active → open entitlements go UNDER_REVIEW; PAID ones raise an exception event. */
@@ -142,7 +173,7 @@ export class PayoutEligibilityService {
     await this.releaseHolds(scope.advisorUserId ? { advisorUserId: scope.advisorUserId } : {});
     const where = { ...scope, ...(q.state ? { state: q.state as never } : {}), ...(q.bankId ? { bankId: q.bankId } : {}), ...(q.leadId ? { leadId: q.leadId } : {}) };
     const [rows, total, groups] = await Promise.all([
-      this.prisma.client.payoutEntitlement.findMany({ where, orderBy: [{ eligibleAt: 'desc' }], skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: { lead: { select: { id: true, publicRef: true, customerFullName: true } }, bank: { select: { code: true, displayName: true } }, card: { select: { name: true } }, rule: { select: { name: true, triggerField: true } }, evidenceBatch: { select: { publicRef: true, uploadedAt: true } }, advisor: { select: { id: true, fullName: true } } } }),
+      this.prisma.client.payoutEntitlement.findMany({ where, orderBy: [{ eligibleAt: 'desc' }], skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: { lead: { select: { id: true, publicRef: true, customerFullName: true, advisor: { select: { id: true, fullName: true } } } }, bank: { select: { code: true, displayName: true } }, card: { select: { name: true } }, rule: { select: { name: true, triggerField: true } }, evidenceBatch: { select: { publicRef: true, uploadedAt: true } }, advisor: { select: { id: true, fullName: true } } } }),
       this.prisma.client.payoutEntitlement.count({ where }),
       this.prisma.client.payoutEntitlement.groupBy({ by: ['state'], where: { ...scope, ...(q.bankId ? { bankId: q.bankId } : {}) }, _count: { _all: true }, _sum: { amountInr: true } }),
     ]);
@@ -162,6 +193,8 @@ export class PayoutEligibilityService {
         rule: e.rule ? { id: e.ruleId, name: e.rule.name, version: e.ruleVersion } : null,
         lead: e.lead,
         advisor: e.advisor,
+        kind: e.kind, // F-824: REFERRAL = `advisor` is paid a share on a lead of `sourceAdvisor`
+        sourceAdvisor: e.kind === 'REFERRAL' ? e.lead.advisor : null,
         bank: e.bank,
         card: e.card.name,
         evidence: { batchRef: e.evidenceBatch.publicRef, uploadedAt: e.evidenceBatch.uploadedAt.toISOString() },

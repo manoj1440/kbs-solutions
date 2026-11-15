@@ -19,6 +19,7 @@ env:
 - tapOn: "98765 43210"
 - inputText: ${MOBILE}
 - tapOn: "Send code"
+- assertVisible: "Enter the code"
 - inputText: "000000"
 - assertVisible: "Team calling today"
 - assertVisible: "Call attempts"
@@ -41,5 +42,5 @@ env:
     element: "Employment"
 - assertVisible: "Annual income \\(ITR\\)"
 - scrollUntilVisible:
-    element: "Advisor payout for this lead"
+    element: "Payouts on this lead"
 - assertVisible: ".*₹3,000.00 for 2 cards.*"

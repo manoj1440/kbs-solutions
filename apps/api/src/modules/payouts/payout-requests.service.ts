@@ -17,7 +17,7 @@ import { PAYMENT_QUEUE_WHERE } from './payment-queues';
 
 const requestInclude = {
   advisor: { select: { id: true, fullName: true } },
-  items: { where: { active: true }, include: { entitlement: { include: { lead: { select: { id: true, publicRef: true, customerFullName: true } }, bank: { select: { code: true, displayName: true } }, card: { select: { name: true } }, rule: { select: { name: true, triggerField: true } }, evidenceBatch: { select: { publicRef: true, uploadedAt: true } } } } } },
+  items: { where: { active: true }, include: { entitlement: { include: { lead: { select: { id: true, publicRef: true, customerFullName: true, advisor: { select: { id: true, fullName: true } } } }, bank: { select: { code: true, displayName: true } }, card: { select: { name: true } }, rule: { select: { name: true, triggerField: true } }, evidenceBatch: { select: { publicRef: true, uploadedAt: true } } } } } },
   approvals: { include: { approver: { select: { id: true, fullName: true, role: true } } }, orderBy: { at: 'asc' as const } },
   payments: { orderBy: { createdAt: 'asc' as const }, include: { recordedBy: { select: { id: true, fullName: true } } } },
 } as const;
@@ -85,7 +85,7 @@ export class PayoutRequestsService {
       where: { advisorUserId },
       orderBy: [{ eligibleAt: 'desc' }],
       include: {
-        lead: { select: { id: true, publicRef: true, customerFullName: true, linkages: { where: { supersededAt: null }, take: 1, select: { referenceKind: true, referenceValue: true, verificationStatus: true } }, statusSnapshot: { select: { lastMatchedAt: true } } } },
+        lead: { select: { id: true, publicRef: true, customerFullName: true, advisor: { select: { id: true, fullName: true } }, linkages: { where: { supersededAt: null }, take: 1, select: { referenceKind: true, referenceValue: true, verificationStatus: true } }, statusSnapshot: { select: { lastMatchedAt: true } } } },
         bank: { select: { code: true, displayName: true } },
         card: { select: { name: true } },
         rule: { select: { name: true, triggerField: true } },
@@ -100,6 +100,8 @@ export class PayoutRequestsService {
         entitlementId: e.id,
         state: e.state,
         position,
+        kind: e.kind,
+        sourceAdvisor: e.kind === 'REFERRAL' ? e.lead.advisor : null,
         kbsRef: e.lead.publicRef,
         customer: e.lead.customerFullName,
         leadId: e.lead.id,
@@ -211,7 +213,7 @@ export class PayoutRequestsService {
     const canApprove = r.state === 'PENDING_APPROVALS' && myRole !== null && !r.approvals.some((a) => a.approverRole === myRole) && !(myRole === 'ADMIN' && order === 'MANAGER_FIRST' && !manager && !own) && !(myRole === 'MANAGER' && manager !== null);
     // prior requests / payments for the same leads (REQ-17 §17.4 evidence)
     const leadIds = r.items.map((i) => i.entitlement.leadId);
-    const prior = leadIds.length ? await this.prisma.client.payoutRequestItem.findMany({ where: { entitlement: { leadId: { in: leadIds } }, requestId: { not: r.id } }, include: { request: { select: { id: true, publicRef: true, state: true, submittedAt: true } }, entitlement: { select: { leadId: true } } } }) : [];
+    const prior = leadIds.length ? await this.prisma.client.payoutRequestItem.findMany({ where: { entitlement: { leadId: { in: leadIds } }, requestId: { not: r.id } }, include: { request: { select: { id: true, publicRef: true, state: true, submittedAt: true } }, entitlement: { select: { leadId: true, kind: true } } } }) : [];
     return {
       id: r.id,
       publicRef: r.publicRef,
@@ -233,6 +235,9 @@ export class PayoutRequestsService {
         entitlementId: i.entitlementId,
         amountSnapshotInr: actor.role === 'ADVISOR' ? 0 : Number(i.amountSnapshotInr),
         entitlementState: i.entitlement.state,
+        // F-824: OWN = the requester's own lead; REFERRAL = their share on a lead of an Advisor who joined with their code
+        kind: i.entitlement.kind,
+        sourceAdvisor: i.entitlement.kind === 'REFERRAL' ? i.entitlement.lead.advisor : null,
         warnings: [...(i.entitlement.state === 'UNDER_REVIEW' ? ['Entitlement is under review after an MIS correction'] : []), ...(i.entitlement.reviewReason ? [i.entitlement.reviewReason] : [])],
         lead: i.entitlement.lead,
         bank: i.entitlement.bank,
@@ -242,7 +247,8 @@ export class PayoutRequestsService {
         rule: i.entitlement.rule ? { name: i.entitlement.rule.name, version: i.entitlement.ruleVersion } : null,
         evidence: { batchRef: i.entitlement.evidenceBatch.publicRef, uploadedAt: i.entitlement.evidenceBatch.uploadedAt.toISOString() },
         eligibleAt: i.entitlement.eligibleAt.toISOString(),
-        priorRequests: prior.filter((p) => p.entitlement.leadId === i.entitlement.leadId).map((p) => ({ id: p.request.id, publicRef: p.request.publicRef, state: p.request.state, submittedAt: p.request.submittedAt.toISOString() })),
+        // same lead AND same kind: the card's own payout and the referral share on it are two different payables (F-824), not a repeat
+        priorRequests: prior.filter((p) => p.entitlement.leadId === i.entitlement.leadId && p.entitlement.kind === i.entitlement.kind).map((p) => ({ id: p.request.id, publicRef: p.request.publicRef, state: p.request.state, submittedAt: p.request.submittedAt.toISOString() })),
       })),
       ...(await this.paymentSection(r, actor)),
       snapshot: r.snapshot,
