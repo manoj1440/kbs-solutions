@@ -54,6 +54,7 @@ interface RowSource {
   bank: { id: string; code: string; displayName: string };
   statusSnapshot: (Record<string, unknown> & { productCode: string | null; lastMatchedAt: Date; lastMatchedBatch: { publicRef: string } }) | null;
   linkages: Array<{ referenceKind: string; referenceValue: string; verificationStatus: string }>;
+  advisor: { id: string; fullName: string; publicRef: string };
 }
 
 /**
@@ -312,6 +313,7 @@ export class LeadsService {
     bank: { select: { id: true, code: true, displayName: true } },
     statusSnapshot: { include: { lastMatchedBatch: { select: { publicRef: true } } } },
     linkages: { where: { supersededAt: null }, take: 1 },
+    advisor: { select: { id: true, fullName: true, publicRef: true } },
   } as const;
 
   /** Reviewed product-code crosswalks for the banks in view (REQ-14 §14.2 row 2). */
@@ -337,6 +339,7 @@ export class LeadsService {
       bankReference: l.linkages[0] ? { kind: l.linkages[0].referenceKind, value: l.linkages[0].referenceValue, status: l.linkages[0].verificationStatus } : null,
       possibleCollision: l.possibleCollision,
       blankTokens,
+      advisor: l.advisor,
     });
   }
 
@@ -406,8 +409,8 @@ export class LeadsService {
   }
 
   /** F-810: scope-aware cumulative counts for the compact leads browser tiles (bank-verbatim values, INV-02). */
-  async summary(actor: Actor) {
-    const scope = this.scopeWhere(actor);
+  async summary(actor: Actor, advisorId?: string) {
+    const scope = this.scopeWhere(actor, advisorId);
     const tokens = this.blankTokens();
     const [total, snaps] = await Promise.all([
       this.prisma.client.lead.count({ where: scope }),
@@ -432,15 +435,17 @@ export class LeadsService {
   /** Distinct filter values within the actor's scope — verbatim bank values, never a fixed list (REQ-14 §14.1). */
   async filterOptions(actor: Actor): Promise<LeadFilterOptions> {
     const scope = this.scopeWhere(actor);
-    const [banks, cards, snaps] = await Promise.all([
+    const [banks, cards, snaps, owners] = await Promise.all([
       this.prisma.client.lead.findMany({ where: scope, distinct: ['bankId'], select: { bank: { select: { id: true, code: true, displayName: true } } }, orderBy: { bank: { displayName: 'asc' } } }),
       this.prisma.client.lead.findMany({ where: scope, distinct: ['cardId'], select: { card: { select: { id: true, name: true, bankId: true } } }, orderBy: { card: { name: 'asc' } } }),
       this.prisma.client.bankStatusSnapshot.findMany({ where: { lead: scope }, select: { currentStage: true, finalDecision: true, cardActivationStatus: true } }),
+      actor.role === 'ADVISOR' ? Promise.resolve([]) : this.prisma.client.lead.findMany({ where: scope, distinct: ['advisorUserId'], select: { advisor: { select: { id: true, fullName: true } } } }),
     ]);
     const tokens = this.blankTokens();
     const distinct = (vals: (string | null)[]) => [...new Set(vals.filter((v): v is string => typeof v === 'string' && !isBlankBankValue(v, tokens)).map((v) => v.trim()))].sort();
     return { banks: banks.filter((b) => b.bank.code !== DEFAULT_BANK_CODE).map((b) => ({ id: b.bank.id, displayName: b.bank.displayName })), // the hidden internal bank is never a filter
-       cards: cards.map((c) => c.card), stages: distinct(snaps.map((x) => x.currentStage)), decisions: distinct(snaps.map((x) => x.finalDecision)), activations: distinct(snaps.map((x) => x.cardActivationStatus)) };
+       cards: cards.map((c) => c.card), stages: distinct(snaps.map((x) => x.currentStage)), decisions: distinct(snaps.map((x) => x.finalDecision)), activations: distinct(snaps.map((x) => x.cardActivationStatus)),
+       advisors: owners.map((o) => o.advisor).sort((a, b) => a.fullName.localeCompare(b.fullName)) };
   }
 
   /** Scope check shared with other modules that expose per-lead reads (e.g. MIS history). */
@@ -461,7 +466,7 @@ export class LeadsService {
     const [followUps, remarks, payouts] = await Promise.all([
       this.prisma.client.followUpTask.findMany({ where: { leadId: id }, orderBy: { dueAt: 'asc' }, include: { owner: { select: { id: true, fullName: true } } } }),
       this.prisma.client.operationalRemark.findMany({ where: { entityType: 'Lead', entityId: id }, orderBy: { at: 'desc' }, include: { author: { select: { id: true, fullName: true } } } }),
-      this.prisma.client.payoutEntitlement.findMany({ where: { leadId: id }, orderBy: { eligibleAt: 'asc' }, include: { requestItems: { where: { active: true }, take: 1, include: { request: { select: { id: true, publicRef: true, state: true, paidAt: true, totalAmountInr: true, approvals: { select: { approverRole: true, decision: true } } } } } } } }),
+      this.prisma.client.payoutEntitlement.findMany({ where: { leadId: id }, orderBy: { eligibleAt: 'asc' }, include: { requestItems: { where: { active: true }, take: 1, include: { request: { select: { id: true, publicRef: true, state: true, paidAt: true, totalAmountInr: true, itemCount: true, approvals: { select: { approverRole: true, decision: true } } } } } } } }),
     ]);
     const row = this.toRow({ ...l, linkages: current ? [current] : [] }, await this.crosswalks([l]), tokens);
     const s = l.statusSnapshot;
@@ -505,8 +510,9 @@ export class LeadsService {
       /** Advisor earnings for this lead, same position wording as the payout ledger (F-603). Paid events can never be claimed again. */
       payouts: payouts.map((e) => {
         const req = e.requestItems[0]?.request ?? null;
-        // rate-free payouts: money shows only once the request (priced by Admin) is paid
-        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), amountInr: req?.state === 'PAID' ? Number(req.totalAmountInr) : null, eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null } : null };
+        // rate-free payouts: money shows only once the request (priced by Admin) is paid. `amountInr` is the REQUEST's amount —
+        // it can cover several cards (`request.cardCount`), so screens must say "for N cards", never present it as this lead's own.
+        return { entitlementId: e.id, state: e.state, position: PayoutRequestsService.position(e.state, req), amountInr: req?.state === 'PAID' ? Number(req.totalAmountInr) : null, eligibleAt: e.eligibleAt.toISOString(), request: req ? { id: req.id, publicRef: req.publicRef, state: req.state, paidAt: req.paidAt?.toISOString() ?? null, cardCount: req.itemCount } : null };
       }),
     };
   }

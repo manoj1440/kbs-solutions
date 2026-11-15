@@ -50,7 +50,7 @@ export function LeadsLayoutToggle({ className }: { className?: string }) {
  * the expandable panel shows the remarks preview and raw bank values. There is no "next stage" action (§14.2 row 13).
  * F-813: renders through the common `DataTable` (TanStack v9).
  */
-export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath: string }) {
+export function LeadsTable({ rows, basePath, showAdvisor = false }: { rows: LeadStatusRow[]; basePath: string; /** F-822: an Advisor column (Manager / Admin lists not already filtered to one Advisor) */ showAdvisor?: boolean }) {
   const [fullTable] = useFullTable();
   const columns = c.columns([
     c.accessor((r) => r.customer.name, {
@@ -69,6 +69,18 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
           </div>
         </div>
       ),
+    }),
+    c.accessor((r) => r.advisor?.fullName ?? '', {
+      id: 'advisor',
+      header: 'Advisor',
+      cell: ({ row }) =>
+        row.original.advisor ? (
+          <Link className="block truncate font-medium text-foreground hover:text-primary" href={basePath.startsWith('/manager') ? `/manager/advisors/${row.original.advisor.id}` : `/admin/users/${row.original.advisor.id}`}>
+            {row.original.advisor.fullName}
+          </Link>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     }),
     c.accessor((r) => r.card.name, {
       id: 'bankCard',
@@ -195,8 +207,9 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
     }),
   ]);
   const columnVisibility: ColumnVisibilityState = fullTable
-    ? {}
+    ? { advisor: showAdvisor }
     : {
+        advisor: showAdvisor,
         kbsRef: false,
         bankApplicationNo: false,
         bankApplicationReference: false,
@@ -212,7 +225,7 @@ export function LeadsTable({ rows, basePath }: { rows: LeadStatusRow[]; basePath
         data={rows}
         getRowId={(row) => row.id}
         responsive={fullTable ? false : 'compact'}
-        className={fullTable ? 'min-w-[1800px]' : 'lead-overview-table'}
+        className={fullTable ? 'min-w-[1800px]' : showAdvisor ? 'lead-overview-table with-advisor' : 'lead-overview-table'}
         containerClassName="rounded-none! border-0! lg:h-full lg:overflow-y-auto"
         initialSorting={[{ id: 'leadCreatedAt', desc: true }]}
         columnVisibility={columnVisibility}

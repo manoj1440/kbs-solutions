@@ -86,6 +86,10 @@ async function screen(page, id, title, path, { has = [], not = [], rows = [] } =
   await screen(page, 'S13-M02', 'Manager North → Dashboard: team totals (7 leads, 6 calls, ₹5,500.50 paid)', '/manager/dashboard', { has: ['5,500.50'] });
   await screen(page, 'S13-M03', 'Manager North → Team calling: Tara and Tarun only', '/manager/calling', { has: ['Tara Telecaller', 'Tarun Telecaller'], not: ['Tina Telecaller'] });
   await screen(page, 'S13-M04', 'Manager North → Team leads: 7 leads, none from another team', '/manager/leads', { has: ['Lead One Customer', 'Lead Seven Customer'], not: ['Lead Eight Customer', 'Lead Eleven Customer'] });
+  await screen(page, 'S13-M07', 'Manager North → Team leads has an Advisor column and an Advisor filter', '/manager/leads', { has: ['All advisors'], rows: [['Lead One Customer', 'Arjun Advisor'], ['Lead Five Customer', 'Anita Advisor']] });
+  await screen(page, 'S13-M08', "Manager North → one Advisor's leads: Arjun's 4 leads and his own figures in the tiles", `/manager/leads?advisorId=${state.users.a1.id}`, { has: ['Lead One Customer', 'Lead Four Customer', '1–4 of 4'], not: ['Lead Five Customer'] });
+  await screen(page, 'S13-M09', "Manager North → Advisor page lists the Advisor's leads with a link to all of them", `/manager/advisors/${state.users.a1.id}`, { has: ['Leads · 4', 'All 4 leads', 'Lead Two Customer', 'TXN ACTIVE - Rs 100'] });
+  await screen(page, 'S13-M10', 'Manager North → lead page: Advisor named, customer details (masked mobile and PAN, place, employment, income), bank fields, history, payout', `/manager/leads/${L.L2}`, { has: ['Arjun Advisor', 'Lead Two Customer', '110001', 'Salaried', '6,00,000', 'UATA1002', 'TXN ACTIVE - Rs 100', 'Bank status history', 'Paid'], not: ['9600000002', 'ABCPA1002B'] });
   await screen(page, 'S13-M05', 'Manager North → Payout approvals: their team\'s requests and the one approved as designated approver', '/manager/payouts/requests', { has: ['Arjun Advisor', 'Anita Advisor', 'Alok Advisor'], not: ['Aman Advisor'] });
   await screen(page, 'S13-M06', 'A Manager is kept out of the Admin area', '/admin/config', { not: ['Launch gates'] });
   await ctx.close();

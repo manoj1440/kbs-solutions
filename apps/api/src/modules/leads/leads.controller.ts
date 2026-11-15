@@ -109,8 +109,9 @@ export class LeadsController {
 
   @Get('summary')
   @RequirePermission('LEAD_READ_OWN', 'LEAD_READ_TEAM', 'LEAD_READ_ALL')
-  summary(@CurrentActor() actor: Actor) {
-    return this.svc.summary(actor);
+  summary(@CurrentActor() actor: Actor, @Query('advisorId') advisorId?: string) {
+    // one Advisor's figures (a Manager only for their own team — anything else counts nothing)
+    return this.svc.summary(actor, advisorId && /^[0-9a-f-]{36}$/i.test(advisorId) ? advisorId : undefined);
   }
 
   @Get()

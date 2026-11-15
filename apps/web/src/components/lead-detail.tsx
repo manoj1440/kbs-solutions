@@ -1,4 +1,5 @@
 import { formatDateTime, formatInr, type LeadStatusRow, type MisHistoryGroup, type OperationalEvent } from '@kbs/shared';
+import Link from 'next/link';
 import { FileClock, Hash, Landmark, MessageSquareText, UserRound, Wallet } from 'lucide-react';
 
 import { CreditCardArt } from '@/components/card-art';
@@ -58,10 +59,23 @@ export async function LeadDetail({ id, backHref }: { id: string; backHref: strin
           </>
         }
         meta={
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-fg-2">
-            <Hash className="size-3.5 text-fg-3" aria-hidden="true" />
-            KBS Lead ID <code className="font-mono font-semibold text-foreground">{l.kbsRef}</code>
-          </span>
+          <>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-fg-2">
+              <Hash className="size-3.5 text-fg-3" aria-hidden="true" />
+              KBS Lead ID <code className="font-mono font-semibold text-foreground">{l.kbsRef}</code>
+            </span>
+            {/* F-822: whose lead this is — a Manager reads leads per Advisor */}
+            {l.advisor ? (
+              <Link
+                href={backHref.startsWith('/manager') ? `/manager/advisors/${l.advisor.id}` : `/admin/users/${l.advisor.id}`}
+                prefetch={false}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-fg-2 hover:border-border-strong"
+              >
+                <UserRound className="size-3.5 text-fg-3" aria-hidden="true" />
+                Advisor <span className="font-semibold text-foreground">{l.advisor.fullName}</span>
+              </Link>
+            ) : null}
+          </>
         }
       >
         <section

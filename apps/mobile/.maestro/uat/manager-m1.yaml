@@ -29,5 +29,17 @@ env:
 - assertVisible: ".*paid 2 \\(₹2,500.50\\).*"
 - assertNotVisible: "Aman Advisor"
 - assertNotVisible: "Alok Advisor"
-- tapOn: "Approvals"
-- assertVisible: "Payout approvals"
+# F-822: every lead of an Advisor, with full detail
+- tapOn: "Arjun Advisor"
+- scrollUntilVisible:
+    element: "Leads · 4"
+- scrollUntilVisible:
+    element: "Lead Two Customer"
+- tapOn: "Lead Two Customer"
+- assertVisible: "Advisor · Arjun Advisor"
+- scrollUntilVisible:
+    element: "Employment"
+- assertVisible: "Annual income \\(ITR\\)"
+- scrollUntilVisible:
+    element: "Advisor payout for this lead"
+- assertVisible: ".*₹3,000.00 for 2 cards.*"

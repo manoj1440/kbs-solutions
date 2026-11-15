@@ -92,6 +92,8 @@ export interface LeadFilterOptions {
   stages: string[];
   decisions: string[];
   activations: string[];
+  /** Advisors with leads in the viewer's scope (Manager: own team; Admin: all; Advisor: empty). */
+  advisors: { id: string; fullName: string }[];
 }
 export interface OperationalEvent {
   id: string;

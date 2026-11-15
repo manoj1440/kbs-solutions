@@ -3,8 +3,9 @@
 Plan and oracle: [uat-01-end-to-end-plan.md](./uat-01-end-to-end-plan.md). Every check: [uat-01-checks.md](./uat-01-checks.md).
 
 ## 1. Outcome
-**340 checks, 340 passed** on the last clean run (fresh database → every stage → web screens → app screens).
-Four product defects were found on the way, fixed, covered by tests, and the whole run repeated from a fresh database.
+**354 checks, 354 passed** on the last clean run (fresh database → every stage → web screens → app screens).
+Five product defects were found on the way, fixed, covered by tests, and the whole run repeated from a fresh database.
+Finding F-1 was decided by the owner the same day and closed by F-822 (the last 14 checks).
 
 | Stage | Checks |
 |---|---|
@@ -12,13 +13,13 @@ Four product defects were found on the way, fixed, covered by tests, and the who
 | S05 Calling list · S06 Calling desk | 16 · 26 |
 | S07 Leads · S08 Bank MIS 1 | 24 · 27 |
 | S09 Payouts (incl. second MIS, exception + correction) | 61 |
-| S10 Roll-up (earnings + performance at every level) | 52 |
+| S10 Roll-up (earnings + performance at every level + leads per Advisor) | 62 |
 | S11 Access, sessions, privacy, audit, notifications | 28 |
 | S12 Follow-ups, official ID, reporting change | 18 |
-| S13 Web screens (Admin, Manager, Accounts — 24 pages) | 24 |
+| S13 Web screens (Admin, Manager, Accounts — 28 pages) | 28 |
 | S14 App screens (2 Advisors, Manager, Telecaller on the release APK) | 4 flows |
 
-Existing suites after the fixes: API unit 76, API e2e 182, web unit 24, mobile unit 17, typecheck + lint on all three — green.
+Existing suites after the fixes: API unit 76, API e2e 183, web unit 24, mobile unit 17, typecheck + lint on all three — green.
 
 ## 2. Who earned what (as the system reports it — equal at every level, to the paisa)
 | | Paid | Approved, unpaid | Claimable | Under review |
@@ -41,6 +42,8 @@ talk time, outcomes, shares, customer-list counts, and leads (Arjun 4, Anita 3, 
 organisation 12; 11 with a bank result, 9 approved, 2 declined, 7 cards active).
 
 ## 3. Findings for the owner (decisions, not defects)
+**F-1 is decided (owner, 2026-11-15):** the Manager's share is agreed and settled outside KBS; the product holds no Manager amount. The Manager must see every lead per Advisor with full detail — delivered in [F-822](../features/F-822-manager-leads-per-advisor.md). O-2 to O-4 stay as observations.
+
 | # | Finding | What it means |
 |---|---|---|
 | **F-1** | **A Manager earns nothing in the product.** Only Advisors have payouts; the requirements give the Manager approval and oversight only (REQ-03, REQ-15, REQ-17). There is no rate, share or ledger for a Manager, and none for a Telecaller (salaried by REQ-03 / INV-05). | If a Manager should receive a share when their Advisor is paid, it has to be specified and built: basis (per card or % of the Advisor's amount), who sets it, who approves, whether Accounts pays it with proof, what happens on a reversal, and whose it is after an Advisor changes Manager (see O-2). |
@@ -54,6 +57,7 @@ organisation 12; 11 with a bank result, 9 approved, 2 declined, 7 cards active).
 | B-1 | An upload hung for minutes when the file store was unreachable (the request never returned). | Connection (5 s) and request (60 s) timeouts on the S3 client, 2 attempts. | `s3-storage.adapter.spec.ts` |
 | B-2 | Card copy rule (no "guaranteed / instant approval") had two holes: "create and publish" was refused **but left a draft behind**, so each retry from the web form created another card; and forbidden wording could be **edited onto a card that was already offered** with no check. | The wording is checked before anything is written, on create and on edit of a published card. An override recorded through "publish with a reason" stays valid. | `catalogue.e2e-spec.ts` CARD-01, UAT S01-08b/c |
 | B-3 | The Manager's Advisors table (web) and the Manager's app screens rounded payout money to whole rupees: ₹2,500.50 showed as **₹2,501**. | Payout amounts always show paise. | UAT S13-M01, app flow `manager-m1` |
+| B-5 | On the Advisor's lead screen a paid amount read as that lead's own: two leads paid in one ₹3,000.00 request each showed "₹3,000.00". | It is the request's amount; it now reads "₹3,000.00 for 2 cards" (Advisor and Manager lead screens). | UAT S10-V-08, app flow `manager-m1` |
 | B-4 | A follow-up's due time in the lead activity list showed as a raw timestamp (`2026-11-15T09:17:53.665Z`) on web and app. | Formatted as date and time (IST). | `pending-actions.e2e-spec.ts`, UAT S12-02b |
 
 Also noted, not a product defect: the local `apps/api/.env` points the file store at an old LAN address

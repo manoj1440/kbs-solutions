@@ -36,6 +36,9 @@ Admin (company owner)
 | Manager | **No** — the requirements give the Manager approval and team oversight only. There is no override / share of an Advisor's payout anywhere in the PRD, the data model or the screens | REQ-03, REQ-15, REQ-17 |
 | Admin, Accounts | No | — |
 
+**Owner decision (2026-11-15): the Manager's share is settled outside KBS; the product only has to show the Manager every
+lead per Advisor with full detail (F-822, checks S10-V, S13-M07…M10).**
+
 So "an amount also goes to the Manager under whom the FOS works" **is not a feature of this product today**. What the
 hierarchy does carry is *attribution*: an Advisor's leads, activated cards and paid amounts roll up to their Manager's
 team totals and to the Admin's organisation totals. This plan proves that roll-up to the paisa and reports the missing

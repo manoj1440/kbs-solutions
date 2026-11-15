@@ -20,6 +20,7 @@ import {
   Appear,
   Avatar,
   Badge,
+  Button,
   Card,
   EmptyState,
   ErrorState,
@@ -54,6 +55,10 @@ export default function ManagerAdvisorScreen() {
 function ManagerAdvisorView({ id }: { id: string }) {
   const [row, setRow] = useState<AdvisorTeamRow | null>(null);
   const [leads, setLeads] = useState<LeadStatusRow[]>([]);
+  // F-822: every lead of the Advisor is reachable — 20 at a time, with the real total
+  const [leadTotal, setLeadTotal] = useState(0);
+  const [leadPage, setLeadPage] = useState(1);
+  const [moreBusy, setMoreBusy] = useState(false);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -69,6 +74,8 @@ function ManagerAdvisorView({ id }: { id: string }) {
       ]);
       setRow(d.data.rows[0] ?? null);
       setLeads(l.data);
+      setLeadTotal(typeof l.meta.total === 'number' ? l.meta.total : l.data.length);
+      setLeadPage(1);
       setRequests(r.data);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Could not load this Advisor.');
@@ -77,6 +84,19 @@ function ManagerAdvisorView({ id }: { id: string }) {
       setLoaded(true);
     }
   }, [id]);
+  const loadMoreLeads = useCallback(async () => {
+    setMoreBusy(true);
+    try {
+      const next = leadPage + 1;
+      const l = await api.get<LeadStatusRow[]>(`/leads?advisorId=${id}&pageSize=20&page=${next}`);
+      setLeads((cur) => [...cur, ...l.data.filter((x) => !cur.some((c) => c.id === x.id))]);
+      setLeadPage(next);
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Could not load more leads.');
+    } finally {
+      setMoreBusy(false);
+    }
+  }, [id, leadPage]);
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -189,7 +209,7 @@ function ManagerAdvisorView({ id }: { id: string }) {
           </Appear>
 
           <Appear index={3} className="gap-3">
-            <SectionHeader title={`Leads · ${leads.length}`} />
+            <SectionHeader title={`Leads · ${leadTotal}`} />
             {leads.map((l) => (
               <LeadRow
                 key={l.id}
@@ -199,6 +219,15 @@ function ManagerAdvisorView({ id }: { id: string }) {
             ))}
             {leads.length === 0 ? (
               <EmptyState compact icon="document-text-outline" title="No leads yet" />
+            ) : null}
+            {leads.length < leadTotal ? (
+              <Button
+                variant="outline"
+                size="sm"
+                title={moreBusy ? 'Loading…' : `Show more leads (${leads.length} of ${leadTotal})`}
+                disabled={moreBusy}
+                onPress={() => void loadMoreLeads()}
+              />
             ) : null}
           </Appear>
 

@@ -1,6 +1,7 @@
 import {
   ApiClientError,
   formatDateTime,
+  formatInr,
   type LeadStatusRow,
   type MisHistoryGroup,
   type OperationalEvent,
@@ -53,7 +54,15 @@ interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
   bankStatus: { matched: boolean; lastMatchedBatchRef: string | null };
   bankRemarks: { remarks: RemarkField[]; kyc: RemarkField[] };
   bankReference: { value: string | null; status?: string; label?: string };
-  advisor?: { fullName: string } | null;
+  panVerificationStatus?: string;
+  employmentType?: string | null;
+  annualIncomeItr?: number | null;
+  payouts?: {
+    entitlementId: string;
+    position: string;
+    amountInr: number | null;
+    request: { publicRef: string; paidAt: string | null; cardCount?: number } | null;
+  }[];
 }
 const CHANGE_LABEL: Record<string, string> = {
   SET: 'set',
@@ -155,6 +164,11 @@ function ManagerLeadView({ id }: { id: string }) {
                     {withBank(l.bank, l.card.name)} · created {formatDateTime(l.leadCreatedAt)} (KBS
                     activity)
                   </Muted>
+                  {l.advisor ? (
+                    <Muted numberOfLines={1} className="text-xs">
+                      Advisor · {l.advisor.fullName}
+                    </Muted>
+                  ) : null}
                 </View>
               </View>
               <StatusTrio stage={l.stage} decision={l.decision} activation={l.activation} />
@@ -180,7 +194,24 @@ function ManagerLeadView({ id }: { id: string }) {
             <Card className="gap-1 pb-2">
               <Text className="mb-1 font-medium text-base">Customer</Text>
               <KeyValue label="Mobile" value={l.customer.mobileMasked ?? '—'} />
-              {l.customerPanMasked ? <KeyValue label="PAN" value={l.customerPanMasked} /> : null}
+              {l.customerPanMasked ? (
+                <KeyValue
+                  label="PAN"
+                  value={`${l.customerPanMasked}${l.panVerificationStatus ? ` · ${l.panVerificationStatus.toLowerCase().replace(/_/g, ' ')}` : ''}`}
+                />
+              ) : null}
+              {l.employmentType ? (
+                <KeyValue
+                  label="Employment"
+                  value={l.employmentType.toLowerCase().replace(/_/g, ' ')}
+                />
+              ) : null}
+              {l.annualIncomeItr != null ? (
+                <KeyValue
+                  label="Annual income (ITR)"
+                  value={formatInr(l.annualIncomeItr, { decimals: 0 })}
+                />
+              ) : null}
               <KeyValue
                 label="Location"
                 value={`${l.pincode} · ${l.city ?? '—'}, ${l.state ?? '—'}`}
@@ -192,6 +223,26 @@ function ManagerLeadView({ id }: { id: string }) {
               />
             </Card>
           </Appear>
+
+          {l.payouts?.length ? (
+            <Appear index={3}>
+              <Card className="gap-1 pb-2">
+                <Text className="mb-1 font-medium text-base">Advisor payout for this lead</Text>
+                {l.payouts.map((p, i) => (
+                  <KeyValue
+                    key={p.entitlementId}
+                    label={p.position}
+                    value={
+                      p.request
+                        ? `${p.request.publicRef}${p.amountInr != null ? ` · ${formatInr(p.amountInr)}${(p.request.cardCount ?? 1) > 1 ? ` for ${p.request.cardCount} cards` : ''}` : ''}`
+                        : 'Not requested yet'
+                    }
+                    last={i === (l.payouts?.length ?? 0) - 1}
+                  />
+                ))}
+              </Card>
+            </Appear>
+          ) : null}
 
           <Appear index={3} className="gap-4">
             <Fields

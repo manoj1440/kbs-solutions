@@ -94,7 +94,7 @@ interface LeadDetail extends Omit<LeadStatusRow, 'bankReference'> {
     position: string;
     /** Set once the payout request is paid (Admin decides the amount). */
     amountInr: number | null;
-    request: { publicRef: string; paidAt: string | null } | null;
+    request: { publicRef: string; paidAt: string | null; cardCount?: number } | null;
   }[];
 }
 interface RemarkField {
@@ -347,7 +347,12 @@ function LeadView({ id }: { id: string }) {
             {l.payouts.map((p) => (
               <KeyValue
                 key={p.entitlementId}
-                label={p.amountInr != null ? formatInr(p.amountInr) : 'Card activated'}
+                // the amount belongs to the paid request; when that request covered several cards, say so (it is not per lead)
+                label={
+                  p.amountInr != null
+                    ? `${formatInr(p.amountInr)}${(p.request?.cardCount ?? 1) > 1 ? ` for ${p.request?.cardCount} cards` : ''}`
+                    : 'Card activated'
+                }
                 value={
                   <View className="items-end gap-1">
                     <Badge

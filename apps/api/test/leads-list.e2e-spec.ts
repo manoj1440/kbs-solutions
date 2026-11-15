@@ -4,7 +4,7 @@ import request from 'supertest';
 
 import type { PrismaService } from '../src/infra/prisma/prisma.service';
 
-import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase } from './helpers';
+import { ADMIN_MOBILE, auth, bootTestApp, idem, loginAs, resetDatabase, setupManagerAndTelecaller } from './helpers';
 import { hdfcWorkbook, XLSX_TYPE } from './mis-fixture';
 
 describe('F-408 My Leads search / filters / detail sections / MIS history (FOS-06, VIEW-01, MIS-02/05/06)', () => {
@@ -151,5 +151,25 @@ describe('F-408 My Leads search / filters / detail sections / MIS history (FOS-0
     expect(adv1).toMatchObject({ total: 3, matched: 2, awaitingMis: 1, approved: 2 });
     const adv2 = (await api().get('/api/v1/leads/summary').set(auth(adv2Token)).expect(200)).body.data;
     expect(adv2).toMatchObject({ total: 1, matched: 0, awaitingMis: 1 });
+  });
+  it('F-822: a Manager / the Admin reads leads per Advisor — owner on every row, Advisor filter options, per-Advisor summary', async () => {
+    const adv1 = await prisma.user.findUniqueOrThrow({ where: { mobile: '+919555999101' } });
+    const rows = (await api().get('/api/v1/leads?pageSize=50').set(auth(adminToken)).expect(200)).body.data as Array<{ advisor: { id: string; fullName: string } | null }>;
+    expect(rows).toHaveLength(4);
+    expect(rows.every((r) => r.advisor && r.advisor.fullName.startsWith('Adv '))).toBe(true);
+    const detail = (await api().get(`/api/v1/leads/${ids.old}`).set(auth(adminToken)).expect(200)).body.data;
+    expect(detail.advisor).toMatchObject({ id: adv1.id, fullName: 'Adv One' });
+    const f = (await api().get('/api/v1/leads/filters').set(auth(adminToken)).expect(200)).body.data;
+    expect(f.advisors.map((a: { fullName: string }) => a.fullName)).toEqual(['Adv One', 'Adv Two']);
+    // an Advisor gets no list of other Advisors
+    expect((await api().get('/api/v1/leads/filters').set(auth(adv1Token)).expect(200)).body.data.advisors).toEqual([]);
+    // summary narrowed to one Advisor equals that Advisor's own summary
+    const one = (await api().get(`/api/v1/leads/summary?advisorId=${adv1.id}`).set(auth(adminToken)).expect(200)).body.data;
+    expect(one).toMatchObject({ total: 3, matched: 2, awaitingMis: 1, approved: 2 });
+    // a Manager asking for an Advisor outside their team counts nothing and sees no Advisor options
+    const other = await setupManagerAndTelecaller(app, prisma, '82201');
+    const none = (await api().get(`/api/v1/leads/summary?advisorId=${adv1.id}`).set(auth(other.manager.accessToken)).expect(200)).body.data;
+    expect(none.total).toBe(0);
+    expect((await api().get('/api/v1/leads/filters').set(auth(other.manager.accessToken)).expect(200)).body.data.advisors).toEqual([]);
   });
 });

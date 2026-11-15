@@ -73,7 +73,7 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
   const [list, filters, summary] = await Promise.all([
     apiFetch<LeadStatusRow[]>(`/leads?${qs.toString()}`),
     apiFetch<LeadFilterOptions>('/leads/filters'),
-    apiFetch<Summary>('/leads/summary').then((r) => r.data),
+    apiFetch<Summary>(`/leads/summary${sp.advisorId ? `?advisorId=${sp.advisorId}` : ''}`).then((r) => r.data), // F-822: one Advisor's figures when filtered
   ]);
   const total = Number(list.meta.total ?? 0);
   const page = Number(sp.page ?? '1');
@@ -84,13 +84,14 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
     q.set('page', String(p));
     return `${basePath}?${q.toString()}`;
   };
-  const filtered = Boolean(sp.q || sp.bankId || sp.cardId || sp.stage || sp.decision || sp.activation || sp.from || sp.to || sp.misFreshness || sp.actionable);
+  const advisors = filters.data.advisors ?? [];
+  const filtered = Boolean(sp.advisorId || sp.q || sp.bankId || sp.cardId || sp.stage || sp.decision || sp.activation || sp.from || sp.to || sp.misFreshness || sp.actionable);
   const advanced = (['from', 'to', 'stage', 'decision', 'activation', 'misFreshness', 'actionable'] as const).filter((k) => sp[k]).length;
   return (
     <div className="flex flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
       <h1 className="sr-only">{title}</h1>
       <StatStrip cols={6}>
-        <MiniStat label="Leads" value={summary.total.toLocaleString('en-IN')} hint={filtered ? `${total} match the filters` : `${summary.matched} with a bank status`} tone="sky" />
+        <MiniStat label="Leads" value={summary.total.toLocaleString('en-IN')} hint={filtered && total !== summary.total ? `${total} match the filters` : `${summary.matched} with a bank status`} tone="sky" />
         <MiniStat label="Approved" value={summary.approved} hint="Bank decision = approved" tone="emerald" />
         <MiniStat label="Declined" value={summary.declined} hint="Bank decision = declined/rejected" tone="rose" />
         <MiniStat label="In process" value={summary.inProcess} hint="Decision reported, not final" tone="amber" />
@@ -103,6 +104,16 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
         <Form action={basePath} aria-label="Search & filters" className="border-b border-border-subtle">
           <div className="flex flex-wrap items-center gap-2 p-3">
             <input aria-label="Search" name="q" className={cn(selectClass, 'h-9 min-w-44 flex-[2_1_12rem]')} defaultValue={sp.q ?? ''} placeholder="Name, mobile, KBS-L-…, bank application no." />
+{advisors.length ? (
+              <select aria-label="Advisor" name="advisorId" className={cn(selectClass, 'h-9 min-w-36 flex-[1_1_9rem]')} defaultValue={sp.advisorId ?? ''}>
+                <option value="">All advisors</option>
+                {advisors.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.fullName}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             <select aria-label="Card" name="cardId" className={cn(selectClass, 'h-9 min-w-32 flex-[1_1_8rem]')} defaultValue={sp.cardId ?? ''}>
               <option value="">All cards</option>
               {filters.data.cards.map((c) => (
@@ -182,10 +193,9 @@ export async function LeadsBrowser({ basePath, sp, title }: { basePath: string; 
               ))}
             </div>
           </details>
-          {sp.advisorId ? <input type="hidden" name="advisorId" value={sp.advisorId} /> : null}
         </Form>
         <div className="min-h-0 flex-1">
-          <LeadsTable rows={list.data} basePath={basePath} />
+          <LeadsTable rows={list.data} basePath={basePath} showAdvisor={!sp.advisorId} />
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-4 py-2 text-xs">
           <span className="text-muted-foreground tabular-nums">

@@ -272,11 +272,11 @@ export default async function ManagerAdvisorPage({
       <SectionCard
         icon={ListChecks}
         tone="sky"
-        title="Recent leads"
-        description={`Latest ${leads.data.length} of ${Number(leads.meta.total ?? leads.data.length)} · stage, decision and activation shown separately.`}
+        title={`Leads · ${Number(leads.meta.total ?? leads.data.length)}`}
+        description={`${leads.data.length < Number(leads.meta.total ?? 0) ? `Latest ${leads.data.length} shown · ` : ''}open a lead for every detail; stage, decision and activation are shown separately.`}
         actions={
           <Button asChild size="sm" variant="outline">
-            <Link href={`/manager/leads?advisorId=${id}`}>All leads with filters</Link>
+            <Link href={`/manager/leads?advisorId=${id}`}>All {Number(leads.meta.total ?? leads.data.length)} leads</Link>
           </Button>
         }
         flush={leads.data.length > 0}

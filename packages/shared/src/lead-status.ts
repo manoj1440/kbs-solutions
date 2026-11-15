@@ -65,6 +65,8 @@ export interface LeadStatusRowInput {
   bankReference: { kind: string; value: string; status: string } | null;
   possibleCollision?: boolean;
   blankTokens?: readonly string[];
+  /** The Advisor (FOS) who owns the lead — shown to Managers and the Admin so leads read per Advisor. */
+  advisor?: { id: string; fullName: string; publicRef: string } | null;
 }
 
 /** Authorised next actions for a row — real actions only, never "move to next stage" (REQ-14 §14.2 row 13). */
@@ -89,6 +91,8 @@ export interface LeadStatusRow {
   bankReference: { kind: string; value: string; status: string } | null;
   possibleCollision: boolean;
   actions: LeadAction[];
+  /** Owning Advisor (FOS). */
+  advisor: { id: string; fullName: string; publicRef: string } | null;
 }
 
 const iso = (d: Date | string | null | undefined): string | null => (d == null ? null : typeof d === 'string' ? d : d.toISOString());
@@ -132,6 +136,7 @@ export function buildLeadStatusRow(i: LeadStatusRowInput): LeadStatusRow {
   actions.push('SHARE_APPLICATION_LINK');
   return {
     id: i.id,
+    advisor: i.advisor ?? null,
     kbsRef: i.publicRef,
     customer: { name: i.customerFullName, mobileMasked: i.customerMobile ? maskMobile(i.customerMobile) : null },
     bank: i.bank,

@@ -483,6 +483,22 @@ select:not([multiple]):not([size]) {
   width: 14%;
 }
 
+/* F-822: with the Advisor column (Manager / Admin lists) */
+.lead-overview-table.with-advisor th:nth-child(1) {
+  width: 19%;
+}
+.lead-overview-table.with-advisor th:nth-child(2) {
+  width: 13%;
+}
+.lead-overview-table.with-advisor th:nth-child(3) {
+  width: 17%;
+}
+.lead-overview-table.with-advisor th:nth-child(4),
+.lead-overview-table.with-advisor th:nth-child(5),
+.lead-overview-table.with-advisor th:nth-child(6) {
+  width: 13%;
+}
+
 .lead-overview-table td > span {
   flex-wrap: wrap;
 }
