@@ -44,11 +44,30 @@ export class AppExceptionFilter implements ExceptionFilter {
       const code =
         status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'RBAC_FORBIDDEN' : status === 404 ? 'NOT_FOUND' : status === 429 ? 'RATE_LIMITED' : status === 400 ? 'VALIDATION_FAILED' : 'INTERNAL';
       const details = typeof resp === 'object' && resp && 'errors' in resp ? (resp as { errors: unknown }).errors : undefined;
-      body = { error: { code, message, details }, meta: { requestId } };
+      body = { error: { code, message, details, recovery: status === HttpStatus.SERVICE_UNAVAILABLE ? 'RETRY_LATER' : undefined }, meta: { requestId } };
     } else {
-      this.logger.error({ requestId, err: exception instanceof Error ? { name: exception.name, message: exception.message, stack: isProd ? undefined : exception.stack } : exception });
+      this.logger.error({ requestId, err: describeUnknownError(exception, isProd) });
       if (!isProd && exception instanceof Error) body.error.details = { name: exception.name, message: exception.message };
     }
     res.status(status).json(body);
   }
+}
+
+/**
+ * F-908 S10: what an unexpected error contributes to the log. Database and library messages often quote the values
+ * that failed (names, mobiles, PAN), so deployed environments log only the error's class, its machine code (Prisma
+ * `P2002` …), the model / fields involved and the stack frames — never the message.
+ */
+export function describeUnknownError(exception: unknown, deployed: boolean): Record<string, unknown> {
+  if (!(exception instanceof Error)) return { type: typeof exception };
+  const e = exception as Error & { code?: unknown; meta?: { modelName?: unknown; target?: unknown } };
+  const frames = (e.stack ?? '').split('\n').filter((l) => /^\s+at /.test(l)).slice(0, 10).map((l) => l.trim());
+  return {
+    name: e.name,
+    code: typeof e.code === 'string' ? e.code : undefined,
+    model: typeof e.meta?.modelName === 'string' ? e.meta.modelName : undefined,
+    target: Array.isArray(e.meta?.target) ? e.meta.target.filter((t) => typeof t === 'string') : undefined,
+    frames,
+    ...(deployed ? {} : { message: e.message }),
+  };
 }

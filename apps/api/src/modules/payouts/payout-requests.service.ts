@@ -334,27 +334,34 @@ export class PayoutRequestsService {
 
   // ── F-604 dual approval ──
   async decide(actor: Actor, id: string, body: PayoutApprovalBody) {
-    const r = await this.prisma.client.payoutRequest.findUnique({ where: { id }, include: { approvals: true, items: { where: { active: true }, select: { entitlementId: true } } } });
-    if (!r || !this.canSee(actor, r)) throw AppError.notFound('Payout request');
-    if (r.state !== 'PENDING_APPROVALS') throw new AppError('PAYOUT_STATE_INVALID', `Request is ${r.state}; approvals are closed.`);
-    const own = noManagerStep(r);
-    const role: 'MANAGER' | 'ADMIN' | null = actor.role === 'ADMIN' ? 'ADMIN' : !own && actor.userId === r.managerApproverUserId ? 'MANAGER' : null;
-    if (!role) throw new AppError('RBAC_FORBIDDEN', 'Only the assigned Manager approver or the Admin can decide this request.');
-    if (r.advisorUserId === actor.userId) throw new AppError('RBAC_FORBIDDEN', 'You cannot approve your own request.');
-    if (r.approvals.some((a) => a.approverUserId === actor.userId)) throw new AppError('PAYOUT_APPROVAL_DUPLICATE', 'You have already recorded a decision on this request; one person never holds both approvals.');
-    if (r.approvals.some((a) => a.approverRole === role)) throw new AppError('PAYOUT_APPROVAL_DUPLICATE', `${role} approval already recorded.`);
-    if (role === 'ADMIN' && !own && !r.approvals.some((a) => a.approverRole === 'MANAGER' && a.decision === 'APPROVED')) throw new AppError('PAYOUT_STATE_INVALID', 'The Manager approves first; then Admin sets the amount.');
-    if (role === 'ADMIN' && body.decision === 'APPROVED' && !body.amountInr) throw new AppError('VALIDATION_FAILED', 'Enter the amount to transfer to approve this request.');
-    const entitlementIds = r.items.map((i) => i.entitlementId);
-    // an MIS correction after submission puts items UNDER_REVIEW: approving would send unpayable events to Accounts
-    if (body.decision === 'APPROVED') {
-      const notReserved = await this.prisma.client.payoutEntitlement.count({ where: { id: { in: entitlementIds }, state: { not: 'RESERVED' } } });
-      if (notReserved) throw new AppError('PAYOUT_STATE_INVALID', `${notReserved} card event(s) in ${r.publicRef} are under review after a bank MIS correction. Reject the request with a reason (the Advisor can request the rest again) or wait for the next MIS.`);
-    }
-    const outcome = await this.prisma.client.$transaction(async (tx) => {
+    // F-908 S2: every check and write runs under the same row lock payments and cancel take, so a decision can never
+    // land on a request that was cancelled, rejected or paid a moment earlier.
+    const { r, role, own, outcome } = await this.prisma.client.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "PayoutRequest" WHERE id = ${id} FOR UPDATE`;
+      const r = await tx.payoutRequest.findUnique({ where: { id }, include: { approvals: true, items: { where: { active: true }, select: { entitlementId: true } } } });
+      if (!r || !this.canSee(actor, r)) throw AppError.notFound('Payout request');
+      if (r.state !== 'PENDING_APPROVALS') throw new AppError('PAYOUT_STATE_INVALID', `Request is ${r.state}; approvals are closed.`);
+      const own = noManagerStep(r);
+      const role: 'MANAGER' | 'ADMIN' | null = actor.role === 'ADMIN' ? 'ADMIN' : !own && actor.userId === r.managerApproverUserId ? 'MANAGER' : null;
+      if (!role) throw new AppError('RBAC_FORBIDDEN', 'Only the assigned Manager approver or the Admin can decide this request.');
+      if (r.advisorUserId === actor.userId) throw new AppError('RBAC_FORBIDDEN', 'You cannot approve your own request.');
+      if (r.approvals.some((a) => a.approverUserId === actor.userId)) throw new AppError('PAYOUT_APPROVAL_DUPLICATE', 'You have already recorded a decision on this request; one person never holds both approvals.');
+      if (r.approvals.some((a) => a.approverRole === role)) throw new AppError('PAYOUT_APPROVAL_DUPLICATE', `${role} approval already recorded.`);
+      if (role === 'ADMIN' && !own && !r.approvals.some((a) => a.approverRole === 'MANAGER' && a.decision === 'APPROVED')) throw new AppError('PAYOUT_STATE_INVALID', 'The Manager approves first; then Admin sets the amount.');
+      if (role === 'ADMIN' && body.decision === 'APPROVED' && !body.amountInr) throw new AppError('VALIDATION_FAILED', 'Enter the amount to transfer to approve this request.');
+      const entitlementIds = r.items.map((i) => i.entitlementId);
+      // an MIS correction after submission puts items UNDER_REVIEW: approving would send unpayable events to Accounts
+      if (body.decision === 'APPROVED') {
+        const notReserved = await tx.payoutEntitlement.count({ where: { id: { in: entitlementIds }, state: { not: 'RESERVED' } } });
+        if (notReserved) throw new AppError('PAYOUT_STATE_INVALID', `${notReserved} card event(s) in ${r.publicRef} are under review after a bank MIS correction. Reject the request with a reason (the Advisor can request the rest again) or wait for the next MIS.`);
+      }
+      const stillPending = async (data: { state?: 'REJECTED' | 'APPROVED'; totalAmountInr?: number }) => {
+        const n = await tx.payoutRequest.updateMany({ where: { id, state: 'PENDING_APPROVALS' }, data });
+        if (n.count !== 1) throw new AppError('PAYOUT_STATE_INVALID', `${r.publicRef} changed while you were deciding; reload it.`);
+      };
       await tx.payoutApproval.create({ data: { requestId: id, approverRole: role, approverUserId: actor.userId, decision: body.decision, reason: body.reason ?? null } });
       if (role === 'ADMIN' && body.decision === 'APPROVED') {
-        await tx.payoutRequest.update({ where: { id }, data: { totalAmountInr: body.amountInr } });
+        await stillPending({ totalAmountInr: body.amountInr });
         // rate-free payouts: split the approved amount across the request's cards (paise-exact) so every per-card total —
         // dashboards, ledgers, bank/card mix — adds up to what Admin approved. Advisor-facing views never show the split.
         const paise = Math.round((body.amountInr as number) * 100);
@@ -367,22 +374,22 @@ export class PayoutRequestsService {
         }
       }
       if (body.decision === 'REJECTED') {
-        await tx.payoutRequest.update({ where: { id }, data: { state: 'REJECTED' } });
+        await stillPending({ state: 'REJECTED' });
         await tx.payoutRequestItem.updateMany({ where: { requestId: id, active: true }, data: { active: false } });
         // only RESERVED items go back to the claimable pool; UNDER_REVIEW ones stay in review but leave the request
-        const released = (await tx.payoutEntitlement.findMany({ where: { id: { in: entitlementIds }, state: 'RESERVED' }, select: { id: true } })).map((e) => e.id);
-        await tx.payoutEntitlement.updateMany({ where: { id: { in: released } }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null } });
-        await tx.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, currentRequestId: id }, data: { currentRequestId: null } });
+        const released = (await tx.payoutEntitlement.findMany({ where: { id: { in: entitlementIds }, state: 'RESERVED', currentRequestId: id }, select: { id: true } })).map((e) => e.id);
+        await tx.payoutEntitlement.updateMany({ where: { id: { in: released }, state: 'RESERVED', currentRequestId: id }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null } });
+        await tx.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, currentRequestId: id, state: { not: 'PAID' } }, data: { currentRequestId: null } });
         await tx.payoutEntitlementEvent.createMany({ data: released.map((e) => ({ entitlementId: e, fromState: 'RESERVED' as const, toState: 'ELIGIBLE_AVAILABLE' as const, requestId: id, actorUserId: actor.userId, reason: `released: ${role} rejected ${r.publicRef} — ${body.reason ?? ''}` })) });
-        return 'REJECTED' as const;
+        return { r, role, own, outcome: 'REJECTED' as const };
       }
       const all = await tx.payoutApproval.findMany({ where: { requestId: id, decision: 'APPROVED' } });
       const both = (own || all.some((a) => a.approverRole === 'MANAGER')) && all.some((a) => a.approverRole === 'ADMIN');
       if (both) {
-        await tx.payoutRequest.update({ where: { id }, data: { state: 'APPROVED' } });
+        await stillPending({ state: 'APPROVED' });
         await tx.outboxEvent.create({ data: { type: 'payouts.request.approved', payload: { requestId: id, jobId: `payouts.request.approved:${id}` } } });
       }
-      return both ? ('APPROVED' as const) : ('PENDING_APPROVALS' as const);
+      return { r, role, own, outcome: both ? ('APPROVED' as const) : ('PENDING_APPROVALS' as const) };
     });
     RequestContextStore.audit({ entityId: id, before: { state: 'PENDING_APPROVALS' }, after: { state: outcome, role, decision: body.decision }, reason: body.reason });
     const amount = body.amountInr ? `₹${body.amountInr.toLocaleString('en-IN')}` : null; // Admin's approval carries it
@@ -407,25 +414,31 @@ export class PayoutRequestsService {
 
   /** Advisor: before any approval (config); Admin: any time before PAID. Releases items. */
   async cancel(actor: Actor, id: string, reason: string) {
-    const r = await this.prisma.client.payoutRequest.findUnique({ where: { id }, include: { approvals: true, payments: { select: { id: true, state: true } }, items: { where: { active: true }, select: { entitlementId: true } } } });
-    if (!r || !this.canSee(actor, r)) throw AppError.notFound('Payout request');
-    if (['PAID', 'CANCELLED', 'REJECTED'].includes(r.state)) throw new AppError('PAYOUT_STATE_INVALID', `Request is ${r.state}.`);
-    const isAdvisor = r.advisorUserId === actor.userId;
-    if (actor.role !== 'ADMIN' && !isAdvisor) throw new AppError('RBAC_FORBIDDEN', 'Only the requesting Advisor or the Admin can cancel.');
-    if (isAdvisor && actor.role !== 'ADMIN') {
-      if (!this.config.getBool('payouts.advisorCanCancelBeforeApproval')) throw new AppError('RBAC_FORBIDDEN', 'Advisor cancellation is disabled.');
-      if (r.state !== 'PENDING_APPROVALS' || r.approvals.length > 0) throw new AppError('PAYOUT_STATE_INVALID', 'The request already has an approval decision; ask Admin to cancel.');
-    }
-    if (r.payments.some((p) => LIVE.includes(p.state))) throw new AppError('PAYOUT_STATE_INVALID', 'A payment record exists; resolve it as an exception instead.');
-    const entitlementIds = r.items.map((i) => i.entitlementId);
-    const released = (await this.prisma.client.payoutEntitlement.findMany({ where: { id: { in: entitlementIds }, state: 'RESERVED' }, select: { id: true } })).map((e) => e.id);
-    await this.prisma.client.$transaction([
-      this.prisma.client.payoutRequest.update({ where: { id }, data: { state: 'CANCELLED', cancelledAt: new Date(), cancelledByUserId: actor.userId, cancelReason: reason } }),
-      this.prisma.client.payoutRequestItem.updateMany({ where: { requestId: id, active: true }, data: { active: false } }),
-      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: released } }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null, amountInr: 0 } }),
-      this.prisma.client.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, currentRequestId: id }, data: { currentRequestId: null, amountInr: 0 } }),
-      this.prisma.client.payoutEntitlementEvent.createMany({ data: released.map((e) => ({ entitlementId: e, fromState: 'RESERVED' as const, toState: 'ELIGIBLE_AVAILABLE' as const, requestId: id, actorUserId: actor.userId, reason: `released: ${r.publicRef} cancelled — ${reason}` })) }),
-    ]);
+    // F-908 S2: lock the request row (the lock payment recording takes) and re-check everything inside it, so a cancel
+    // racing a payment either sees the payment and refuses, or commits first and the payment then finds it CANCELLED.
+    const { r, isAdvisor } = await this.prisma.client.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "PayoutRequest" WHERE id = ${id} FOR UPDATE`;
+      const r = await tx.payoutRequest.findUnique({ where: { id }, include: { approvals: true, payments: { select: { id: true, state: true } }, items: { where: { active: true }, select: { entitlementId: true } } } });
+      if (!r || !this.canSee(actor, r)) throw AppError.notFound('Payout request');
+      if (['PAID', 'CANCELLED', 'REJECTED'].includes(r.state)) throw new AppError('PAYOUT_STATE_INVALID', `Request is ${r.state}.`);
+      const isAdvisor = r.advisorUserId === actor.userId;
+      if (actor.role !== 'ADMIN' && !isAdvisor) throw new AppError('RBAC_FORBIDDEN', 'Only the requesting Advisor or the Admin can cancel.');
+      if (isAdvisor && actor.role !== 'ADMIN') {
+        if (!this.config.getBool('payouts.advisorCanCancelBeforeApproval')) throw new AppError('RBAC_FORBIDDEN', 'Advisor cancellation is disabled.');
+        if (r.state !== 'PENDING_APPROVALS' || r.approvals.length > 0) throw new AppError('PAYOUT_STATE_INVALID', 'The request already has an approval decision; ask Admin to cancel.');
+      }
+      if (r.payments.some((p) => LIVE.includes(p.state))) throw new AppError('PAYOUT_STATE_INVALID', 'A payment record exists; resolve it as an exception instead.');
+      const entitlementIds = r.items.map((i) => i.entitlementId);
+      const moved = await tx.payoutRequest.updateMany({ where: { id, state: r.state }, data: { state: 'CANCELLED', cancelledAt: new Date(), cancelledByUserId: actor.userId, cancelReason: reason } });
+      if (moved.count !== 1) throw new AppError('PAYOUT_STATE_INVALID', `${r.publicRef} changed while you were cancelling; reload it.`);
+      await tx.payoutRequestItem.updateMany({ where: { requestId: id, active: true }, data: { active: false } });
+      // only card events still RESERVED for this request go back to the pool — never PAID ones
+      const released = (await tx.payoutEntitlement.findMany({ where: { id: { in: entitlementIds }, state: 'RESERVED', currentRequestId: id }, select: { id: true } })).map((e) => e.id);
+      await tx.payoutEntitlement.updateMany({ where: { id: { in: released }, state: 'RESERVED', currentRequestId: id }, data: { state: 'ELIGIBLE_AVAILABLE', currentRequestId: null, amountInr: 0 } });
+      await tx.payoutEntitlement.updateMany({ where: { id: { in: entitlementIds }, currentRequestId: id, state: { not: 'PAID' } }, data: { currentRequestId: null, amountInr: 0 } });
+      await tx.payoutEntitlementEvent.createMany({ data: released.map((e) => ({ entitlementId: e, fromState: 'RESERVED' as const, toState: 'ELIGIBLE_AVAILABLE' as const, requestId: id, actorUserId: actor.userId, reason: `released: ${r.publicRef} cancelled — ${reason}` })) });
+      return { r, isAdvisor };
+    });
     RequestContextStore.audit({ entityId: id, before: { state: r.state }, after: { state: 'CANCELLED' }, reason });
     if (!isAdvisor) await this.notifications.notify({ recipientUserId: r.advisorUserId, kind: 'PAYOUT_DECISION', title: 'Payout request cancelled by Admin', body: `${r.publicRef}: ${reason}. The card events are available again.`, deepLink: { entityType: 'PayoutRequest', entityId: id }, dedupeKey: `payout:cancel:${id}` });
     return this.get(actor, id);

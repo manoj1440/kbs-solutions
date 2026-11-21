@@ -104,8 +104,8 @@ describe('F-312 official ID / F-311 WhatsApp sharing (WA-01, WA-02)', () => {
     const list = await api().get(`/api/v1/calling/records/${rec}/shares`).set(auth(team.manager.accessToken)).expect(200);
     expect(list.body.data.map((s: { kind: string }) => s.kind).sort()).toEqual(['APPLICATION_LINK', 'APPLICATION_LINK', 'BENEFIT_PDF', 'OFFICE_ID']); // link shared twice above
     expect(list.body.data.every((s: { deliveryStatus: string }) => s.deliveryStatus === 'UNKNOWN')).toBe(true);
-    // delivery webhook never touches hand-off rows
-    await api().post('/api/v1/webhooks/whatsapp/delivery').send({ providerMessageId: 'x', status: 'DELIVERED' }).expect(201);
+    // delivery webhook does not exist while sharing is hand-off (F-908 S10a)
+    await api().post('/api/v1/webhooks/whatsapp/delivery').send({ providerMessageId: 'x', status: 'DELIVERED' }).expect(404);
     expect(await prisma.shareAction.count({ where: { deliveryStatus: 'DELIVERED' } })).toBe(0);
     // suppressed customer / another Telecaller's record refused
     const other = await setupManagerAndTelecaller(app, prisma, '50003');

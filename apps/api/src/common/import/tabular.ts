@@ -1,6 +1,53 @@
 import { parse } from 'csv-parse/sync';
 import ExcelJS from 'exceljs';
 
+import { AppError } from '../errors/app-error';
+
+/** F-908 S10: largest workbook (as uploaded) we open at all — twice the default upload maximum, so a raised `files.maxUploadMb` still works. */
+export const MAX_WORKBOOK_BYTES = 50 * 1024 * 1024;
+/** F-908 S10: largest total unzipped size. exceljs materialises everything, so a zip bomb must be refused before load. */
+export const MAX_WORKBOOK_UNZIPPED_BYTES = 150 * 1024 * 1024;
+
+/**
+ * Sum of the uncompressed sizes declared in the zip central directory, read without inflating anything.
+ * Returns null when the size cannot be read cheaply (ZIP64, which some bank export tools write, or an unreadable
+ * directory): the caller then relies on the compressed-size cap alone, as before F-908.
+ */
+export function declaredUnzippedBytes(body: Buffer): number | null {
+  // End of central directory: signature 0x06054b50, within the last 64 KiB + 22 bytes
+  const from = Math.max(0, body.length - 65_557);
+  let eocd = -1;
+  for (let i = body.length - 22; i >= from; i--) {
+    if (body.readUInt32LE(i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) return null;
+  const entries = body.readUInt16LE(eocd + 10);
+  let p = body.readUInt32LE(eocd + 16);
+  if (entries === 0xffff || p === 0xffffffff) return null; // ZIP64
+  let total = 0;
+  for (let n = 0; n < entries; n++) {
+    if (p + 46 > body.length || body.readUInt32LE(p) !== 0x02014b50) return null;
+    const size = body.readUInt32LE(p + 24);
+    if (size === 0xffffffff) return null;
+    total += size;
+    p += 46 + body.readUInt16LE(p + 28) + body.readUInt16LE(p + 30) + body.readUInt16LE(p + 32);
+  }
+  return total;
+}
+
+export function assertWorkbookSafe(body: Buffer, limits: { maxBytes?: number; maxUnzippedBytes?: number } = {}): void {
+  const maxBytes = limits.maxBytes ?? MAX_WORKBOOK_BYTES;
+  const maxUnzipped = limits.maxUnzippedBytes ?? MAX_WORKBOOK_UNZIPPED_BYTES;
+  if (body.length > maxBytes) throw new AppError('FILE_TOO_LARGE', `Workbooks must be at most ${Math.round(maxBytes / 1024 / 1024)} MB.`);
+  const unzipped = declaredUnzippedBytes(body);
+  if (unzipped !== null && unzipped > maxUnzipped) {
+    throw new AppError('FILE_TOO_LARGE', 'This workbook expands to more data than we can read in one import. Split it into smaller files, or save it as CSV.');
+  }
+}
+
 /** A parsed sheet: exact headers as written and every cell as text (leading zeros preserved — REQ-07 §7.3). */
 export interface ParsedSheet {
   name: string;
@@ -24,6 +71,7 @@ export function cellToText(v: ExcelJS.CellValue): string {
 }
 
 export async function parseWorkbook(body: Buffer, opts: { sheetName?: string; maxRows?: number } = {}): Promise<{ sheets: string[]; sheet: ParsedSheet }> {
+  assertWorkbookSafe(body);
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(body as unknown as ArrayBuffer);
   const names = wb.worksheets.map((w) => w.name);

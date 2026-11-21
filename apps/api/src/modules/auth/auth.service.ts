@@ -18,6 +18,8 @@ import { UsersService } from '../users/users.service';
 import { TokenService } from './token.service';
 
 const MASTER_CODE_ALLOWED_ENVS = new Set(['development', 'test', 'staging']);
+/** pg advisory-lock namespace that serialises OTP sends per mobile (F-908 S4). */
+const OTP_SEND_LOCK_NS = 90801;
 
 /** ADR-015: a used refresh token is accepted again only within this window, and only while its successor is unused. */
 export const REFRESH_REUSE_GRACE_MS = 30_000;
@@ -46,29 +48,37 @@ export class AuthService {
     const cooldown = this.config.getInt('auth.otp.resendCooldownSec') ?? 60;
     const hourAgo = new Date(Date.now() - 3_600_000);
 
-    const [lastForMobile, sendsMobile, sendsIp] = await Promise.all([
-      this.prisma.client.otpChallenge.findFirst({ where: { mobile }, orderBy: { createdAt: 'desc' } }),
-      this.prisma.client.otpChallenge.count({ where: { mobile, createdAt: { gte: hourAgo } } }),
-      this.prisma.client.otpChallenge.count({ where: { ip, createdAt: { gte: hourAgo } } }),
-    ]);
-    if (lastForMobile && Date.now() - lastForMobile.createdAt.getTime() < cooldown * 1000) {
-      // the real time left (not the full cooldown), so clients can run a live countdown and re-enable the button themselves
-      const retryAfterSec = Math.max(1, Math.ceil((cooldown * 1000 - (Date.now() - lastForMobile.createdAt.getTime())) / 1000));
-      throw new AppError('AUTH_OTP_RESEND_TOO_SOON', `Please wait ${retryAfterSec} second${retryAfterSec === 1 ? '' : 's'} before requesting another code.`, { retryAfterSec, cooldownSec: cooldown }, 'RETRY_LATER');
-    }
-    if (sendsMobile >= (this.config.getInt('auth.otp.maxSendsPerMobilePerHour') ?? 10) || sendsIp >= (this.config.getInt('auth.otp.maxSendsPerIpPerHour') ?? 30)) {
-      throw new AppError('AUTH_OTP_RATE_LIMITED', 'Too many code requests. Try again later.', undefined, 'RETRY_LATER');
-    }
-    if (await this.isLocked(mobile)) throw new AppError('AUTH_OTP_LOCKED', 'Too many wrong attempts. Try again later.', undefined, 'RETRY_LATER');
-
     const user = await this.prisma.client.user.findUnique({ where: { mobile }, select: { id: true, status: true } });
     const eligible =
       body.purpose === 'ADVISOR_SIGNUP' ? user === null : user !== null && (user.status === 'ACTIVE' || user.status === 'PENDING_ONBOARDING');
     const code = this.crypto.randomOtp();
-    const challenge = await this.prisma.client.otpChallenge.create({
-      data: { mobile, purpose: body.purpose, codeHash: '', phantom: !eligible, expiresAt: new Date(Date.now() + expirySec * 1000), ip },
+    // F-908 S4: the cooldown / hourly caps and the new challenge are one atomic step per mobile. Without the advisory
+    // lock a parallel burst passes every count before any challenge exists and sends one SMS per request. A request that
+    // finds another send for the same number in flight is answered "too soon" at once instead of queueing on the lock.
+    const challenge = await this.prisma.client.$transaction(async (tx) => {
+      const [lock] = await tx.$queryRaw<Array<{ ok: boolean }>>`SELECT pg_try_advisory_xact_lock(${OTP_SEND_LOCK_NS}::int, hashtext(${mobile})) AS ok`;
+      if (!lock?.ok) {
+        throw new AppError('AUTH_OTP_RESEND_TOO_SOON', `Please wait ${cooldown} seconds before requesting another code.`, { retryAfterSec: cooldown, cooldownSec: cooldown }, 'RETRY_LATER');
+      }
+      const [lastForMobile, sendsMobile, sendsIp] = await Promise.all([
+        tx.otpChallenge.findFirst({ where: { mobile }, orderBy: { createdAt: 'desc' } }),
+        tx.otpChallenge.count({ where: { mobile, createdAt: { gte: hourAgo } } }),
+        tx.otpChallenge.count({ where: { ip, createdAt: { gte: hourAgo } } }),
+      ]);
+      if (lastForMobile && Date.now() - lastForMobile.createdAt.getTime() < cooldown * 1000) {
+        // the real time left (not the full cooldown), so clients can run a live countdown and re-enable the button themselves
+        const retryAfterSec = Math.max(1, Math.ceil((cooldown * 1000 - (Date.now() - lastForMobile.createdAt.getTime())) / 1000));
+        throw new AppError('AUTH_OTP_RESEND_TOO_SOON', `Please wait ${retryAfterSec} second${retryAfterSec === 1 ? '' : 's'} before requesting another code.`, { retryAfterSec, cooldownSec: cooldown }, 'RETRY_LATER');
+      }
+      if (sendsMobile >= (this.config.getInt('auth.otp.maxSendsPerMobilePerHour') ?? 10) || sendsIp >= (this.config.getInt('auth.otp.maxSendsPerIpPerHour') ?? 30)) {
+        throw new AppError('AUTH_OTP_RATE_LIMITED', 'Too many code requests. Try again later.', undefined, 'RETRY_LATER');
+      }
+      if (await this.isLocked(mobile, tx)) throw new AppError('AUTH_OTP_LOCKED', 'Too many wrong attempts. Try again later.', undefined, 'RETRY_LATER');
+      const created = await tx.otpChallenge.create({
+        data: { mobile, purpose: body.purpose, codeHash: '', phantom: !eligible, expiresAt: new Date(Date.now() + expirySec * 1000), ip },
+      });
+      return tx.otpChallenge.update({ where: { id: created.id }, data: { codeHash: this.crypto.hashOtp(code, created.id) } });
     });
-    await this.prisma.client.otpChallenge.update({ where: { id: challenge.id }, data: { codeHash: this.crypto.hashOtp(code, challenge.id) } });
     if (eligible) {
       try {
         await this.otp.send(mobile, code);
@@ -89,14 +99,26 @@ export class AuthService {
     if (await this.isLocked(ch.mobile)) throw new AppError('AUTH_OTP_LOCKED', 'Too many wrong attempts. Try again later.', undefined, 'RETRY_LATER');
     const maxAttempts = this.config.getInt('auth.otp.maxAttempts') ?? 5;
 
+    // F-908 S1: reserve an attempt atomically BEFORE comparing, so parallel guesses can never evaluate more than
+    // maxAttempts codes on one challenge; a refused reservation means the challenge is spent or used up.
+    const reserved = await this.prisma.client.otpChallenge.updateMany({ where: { id: ch.id, consumedAt: null, attempts: { lt: maxAttempts } }, data: { attempts: { increment: 1 } } });
+    if (reserved.count === 0) {
+      const now = await this.prisma.client.otpChallenge.findUnique({ where: { id: ch.id }, select: { consumedAt: true } });
+      if (!now || now.consumedAt) throw new AppError('AUTH_OTP_INVALID', 'This code is not valid.', undefined, 'LOGIN_AGAIN');
+      throw new AppError('AUTH_OTP_LOCKED', 'Too many wrong attempts. Try again later.', undefined, 'RETRY_LATER');
+    }
+
     const masterOk = Boolean(this.env.OTP_DEV_MASTER_CODE) && MASTER_CODE_ALLOWED_ENVS.has(this.env.NODE_ENV) && body.code === this.env.OTP_DEV_MASTER_CODE;
     const ok = !ch.phantom && (masterOk || this.crypto.safeEqual(ch.codeHash, this.crypto.hashOtp(body.code, ch.id)));
     if (!ok) {
-      const updated = await this.prisma.client.otpChallenge.update({ where: { id: ch.id }, data: { attempts: { increment: 1 } } });
-      if (updated.attempts >= maxAttempts) await this.lock(ch.mobile);
+      const after = await this.prisma.client.otpChallenge.findUnique({ where: { id: ch.id }, select: { attempts: true } });
+      if ((after?.attempts ?? maxAttempts) >= maxAttempts) await this.lock(ch.mobile);
       throw new AppError('AUTH_OTP_INVALID', 'This code is not valid.');
     }
-    await this.prisma.client.otpChallenge.update({ where: { id: ch.id }, data: { consumedAt: new Date() } });
+    // consume exactly once (one code → one session); the right code gives its reserved attempt back, so a sign-in
+    // that succeeds on the last try does not leave the number looking locked
+    const consumed = await this.prisma.client.otpChallenge.updateMany({ where: { id: ch.id, consumedAt: null }, data: { consumedAt: new Date(), attempts: { decrement: 1 } } });
+    if (consumed.count === 0) throw new AppError('AUTH_OTP_INVALID', 'This code is not valid.', undefined, 'LOGIN_AGAIN');
 
     let user = await this.prisma.client.user.findUnique({ where: { mobile: ch.mobile } });
     if (ch.purpose === 'ADVISOR_SIGNUP') {
@@ -244,8 +266,8 @@ export class AuthService {
   private lockKey(mobile: string) {
     return `otp:lock:${mobile}`;
   }
-  private async isLocked(mobile: string): Promise<boolean> {
-    const lock = await this.prisma.client.otpChallenge.findFirst({
+  private async isLocked(mobile: string, db: Pick<PrismaService['client'], 'otpChallenge'> = this.prisma.client): Promise<boolean> {
+    const lock = await db.otpChallenge.findFirst({
       where: { mobile, attempts: { gte: this.config.getInt('auth.otp.maxAttempts') ?? 5 }, createdAt: { gte: new Date(Date.now() - (this.config.getInt('auth.otp.lockMinutes') ?? 15) * 60_000) } },
       select: { id: true },
     });

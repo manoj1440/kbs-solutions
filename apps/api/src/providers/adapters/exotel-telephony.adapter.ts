@@ -106,10 +106,18 @@ export class ExotelTelephonyAdapter implements TelephonyProvider {
 
   async fetchRecording(recordingRef: string) {
     const url = new URL(recordingRef);
-    // Exotel-hosted links need the account credentials; pre-signed S3 links must not get them
-    const headers: Record<string, string> = url.hostname.endsWith('exotel.com') || url.hostname.endsWith('exotel.in') ? { authorization: this.auth } : {};
+    // F-908 S6: https only. Exotel-hosted links need the account credentials, but only on Exotel's exact domains
+    // (`evilexotel.com` used to match); pre-signed bucket links are fetched without them.
+    if (url.protocol !== 'https:') throw new Error('EXOTEL_RECORDING_URL_REFUSED');
+    const headers: Record<string, string> = isExotelHost(url.hostname) ? { authorization: this.auth } : {};
     const res = await fetch(url, { headers });
     if (!res.ok) throw new Error(`EXOTEL_RECORDING_${res.status}`);
     return { body: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get('content-type') ?? 'audio/mpeg' };
   }
+}
+
+/** Exact Exotel domains or their subdomains — never a look-alike such as `evilexotel.com`. */
+export function isExotelHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/\.$/, '');
+  return ['exotel.com', 'exotel.in'].some((d) => h === d || h.endsWith(`.${d}`));
 }

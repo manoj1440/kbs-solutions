@@ -18,6 +18,11 @@ export const EnvSchema = z.object({
   /** F-508: where long jobs run — BullMQ queue (worker mode) or detached in this process. Default: queue in production. */
   JOBS_DISPATCH: z.enum(['queue', 'local']).optional(),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
+  /**
+   * F-908 S3: shared secret the web app's server-side proxy sends in `x-kbs-proxy-secret`. A request carrying it is
+   * trusted for one more X-Forwarded-For hop, so web visitors are rate-limited by their own IP, not the proxy's.
+   */
+  TRUSTED_PROXY_SECRET: z.string().min(24).optional().or(z.literal('')),
   WEB_ORIGIN: z.string().default('http://localhost:3000'),
   /** Externally reachable API base (provider webhooks / redirect links). */
   API_PUBLIC_URL: z.string().default('http://localhost:4000'),
@@ -27,7 +32,7 @@ export const EnvSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
   DATA_ENCRYPTION_KEY: z.string().min(40), // base64 of 32 bytes
-  OTP_PEPPER: z.string().min(8).default('dev-pepper-change-me'),
+  OTP_PEPPER: z.string().min(8).default('dev-pepper-change-me'), // production refuses the default (assertProductionProviders)
   /** `console` prints the code to the log (dev only). `msg91` sends a real SMS — runbook 07. */
   OTP_PROVIDER: z.enum(['console', 'msg91']).default('console'),
   /** MSG91 transactional SMS (Send SMS / flow API). Host only — no scheme, no path. */
@@ -51,6 +56,8 @@ export const EnvSchema = z.object({
   /** Random secret added to the status-callback URL; callbacks without it are refused. */
   EXOTEL_WEBHOOK_TOKEN: z.string().optional(),
   WHATSAPP_PROVIDER: z.enum(['handoff', 'mock-business']).default('handoff'),
+  /** F-908 S10: secret the WhatsApp Business provider sends in `x-kbs-webhook-token`; unset = the delivery webhook is off. */
+  WHATSAPP_WEBHOOK_TOKEN: z.string().min(24).optional().or(z.literal('')),
   /** `cashfree` = Aadhaar via DigiLocker through Cashfree Secure ID — runbook 09. */
   KYC_PROVIDER: z.enum(['mock', 'cashfree']).default('mock'),
   /** `cashfree` = Cashfree Secure ID PAN verification — runbook 09. */
@@ -90,6 +97,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Invalid environment:\n  ${issues}`);
   }
   assertMasterCodeAllowed(parsed.data);
+  assertProductionProviders(parsed.data);
   assertOtpProviderConfigured(parsed.data);
   assertVerificationProvidersConfigured(parsed.data);
   if (parsed.data.TELEPHONY_PROVIDER === 'exotel') {
@@ -107,6 +115,27 @@ export function assertMasterCodeAllowed(env: Pick<Env, 'NODE_ENV' | 'OTP_DEV_MAS
   if (env.NODE_ENV === 'staging' && /^(\d)\1{5}$|^123456$/.test(code)) {
     throw new Error('OTP_DEV_MASTER_CODE in staging must be a secret code, not a guessable one');
   }
+}
+
+export const DEFAULT_OTP_PEPPER = 'dev-pepper-change-me';
+
+/**
+ * F-908 S8: production must run real providers and a real secret. Staging deliberately runs mock / noop providers
+ * (no contracts yet), so the check is production-only. Messages name the variable, never a value.
+ */
+export function assertProductionProviders(
+  env: Pick<Env, 'NODE_ENV' | 'OTP_PEPPER' | 'KYC_PROVIDER' | 'PAN_PROVIDER' | 'TELEPHONY_PROVIDER' | 'STORAGE_PROVIDER' | 'SCAN_PROVIDER'>,
+): void {
+  if (env.NODE_ENV !== 'production') return;
+  const problems = [
+    env.OTP_PEPPER === DEFAULT_OTP_PEPPER ? 'OTP_PEPPER is the development default' : '',
+    env.KYC_PROVIDER === 'mock' ? 'KYC_PROVIDER=mock' : '',
+    env.PAN_PROVIDER === 'mock' ? 'PAN_PROVIDER=mock' : '',
+    env.TELEPHONY_PROVIDER === 'mock' ? 'TELEPHONY_PROVIDER=mock' : '',
+    env.STORAGE_PROVIDER === 'memory' ? 'STORAGE_PROVIDER=memory' : '',
+    env.SCAN_PROVIDER === 'noop' ? 'SCAN_PROVIDER=noop' : '',
+  ].filter(Boolean);
+  if (problems.length) throw new Error(`NODE_ENV=production refuses to start: ${problems.join(', ')}`);
 }
 
 /** A real SMS provider without its keys must stop the boot in every environment — never a login screen that cannot send. */

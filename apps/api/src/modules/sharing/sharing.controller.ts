@@ -1,10 +1,15 @@
+import { timingSafeEqual } from 'node:crypto';
+
 import { ShareBody } from '@kbs/shared';
-import { Body, Controller, Get, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Inject, Param, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { z } from 'zod';
 
 import type { Actor } from '../../common/actor';
 import { Audited, CurrentActor, Idempotent, Public, RequireGates, RequirePermission } from '../../common/decorators';
+import { AppError } from '../../common/errors/app-error';
+import { ENV, type Env } from '../../config/env';
+import { WHATSAPP_PROVIDER, type WhatsAppProvider } from '../../providers/ports';
 
 import { SharingService } from './sharing.service';
 
@@ -13,7 +18,11 @@ const DeliveryBody = z.object({ providerMessageId: z.string().min(1), status: z.
 /** F-311 WhatsApp sharing (hand-off or business API) + redirect resolver. */
 @Controller()
 export class SharingController {
-  constructor(private readonly svc: SharingService) {}
+  constructor(
+    private readonly svc: SharingService,
+    @Inject(ENV) private readonly env: Pick<Env, 'WHATSAPP_WEBHOOK_TOKEN'>,
+    @Inject(WHATSAPP_PROVIDER) private readonly whatsapp: Pick<WhatsAppProvider, 'mode'>,
+  ) {}
 
   @Post('share')
   @RequirePermission('SHARE_SEND')
@@ -39,9 +48,18 @@ export class SharingController {
     res.redirect(302, url);
   }
 
+  /**
+   * F-908 S10: the provider proves itself with `x-kbs-webhook-token` (= WHATSAPP_WEBHOOK_TOKEN). With the hand-off
+   * provider, or no secret configured, the webhook does not exist (404) — nobody can forge delivery statuses.
+   */
   @Public()
   @Post('webhooks/whatsapp/delivery')
-  delivery(@Body() raw: unknown) {
+  delivery(@Headers('x-kbs-webhook-token') token: string | undefined, @Body() raw: unknown) {
+    const secret = this.env.WHATSAPP_WEBHOOK_TOKEN;
+    if (this.whatsapp.mode !== 'BUSINESS_API' || !secret) throw AppError.notFound('Route');
+    const a = Buffer.from(token ?? '');
+    const b2 = Buffer.from(secret);
+    if (a.length !== b2.length || !timingSafeEqual(a, b2)) throw new AppError('AUTH_REQUIRED', 'Webhook token missing or wrong.');
     const b = DeliveryBody.parse(raw);
     return this.svc.applyDelivery(b.providerMessageId, b.status);
   }

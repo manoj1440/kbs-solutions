@@ -69,7 +69,7 @@ describe('F-110 background jobs, outbox relay and worker mode (REQ-24 §24.1)', 
     expect((await jobs.queues.files.getJob(jobId))?.data).toEqual({ n: 1 }); // first write wins
   });
 
-  it('F-110: an unroutable event is retried then dead-lettered after 5 attempts and surfaced in /ops/jobs and /health', async () => {
+  it('F-110: an unroutable event is retried then dead-lettered after 5 attempts and surfaced in /ops/jobs (public /health shows only status and commit, F-908)', async () => {
     const type = `unknown.${run}`;
     const ev = await prisma.outboxEvent.create({ data: { type, payload: {} } });
     for (let i = 0; i < 7; i++) await outbox.relay();
@@ -79,8 +79,8 @@ describe('F-110 background jobs, outbox relay and worker mode (REQ-24 §24.1)', 
     const ops = (await request(app.getHttpServer()).get('/api/v1/ops/jobs').set(auth(admin)).expect(200)).body.data;
     expect(ops.outbox.deadLettered).toBeGreaterThanOrEqual(1);
     const health = (await request(app.getHttpServer()).get('/api/v1/health').expect(200)).body.data;
-    expect(health.outbox.deadLettered).toBeGreaterThanOrEqual(1);
-    expect(Object.keys(health.queues)).toEqual(expect.arrayContaining(['training', 'misImport', 'notifications', 'files', 'payouts', 'maintenance']));
+    expect(health).not.toHaveProperty('outbox');
+    expect(health).not.toHaveProperty('queues');
   });
 
   it('F-110: on-demand relay is Admin-only and audited; maintenance jobs run by name', async () => {

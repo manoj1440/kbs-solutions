@@ -1,6 +1,7 @@
 import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule, ThrottlerStorageService } from '@nestjs/throttler';
+import type { Request } from 'express';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AppExceptionFilter } from './common/errors/app-exception.filter';
@@ -9,16 +10,21 @@ import { PolicyGuard } from './common/guards/policy.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
+import { loggableQuery, loggableUrl } from './common/log-url';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { RedisThrottlerStorage } from './common/throttle/redis-throttler.storage';
+import { throttleTracker } from './common/throttle/throttle-tracker';
 import { CoreModule } from './config/core.module';
 import { ENV, type Env } from './config/env';
 import { loadEnv } from './config/env';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { RedisModule } from './infra/redis/redis.module';
+import { RedisService } from './infra/redis/redis.service';
 import { AccessPolicyModule } from './modules/access-policy/access-policy.module';
 import { AuditInterceptor } from './modules/audit/audit.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TokenService } from './modules/auth/token.service';
 import { CallingListModule } from './modules/calling-list/calling-list.module';
 import { CallsModule } from './modules/calls/calls.module';
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
@@ -35,6 +41,7 @@ import { MisModule } from './modules/mis/mis.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { PayoutsModule } from './modules/payouts/payouts.module';
+import { PrivacyModule } from './modules/privacy/privacy.module';
 import { RetentionModule } from './modules/retention/retention.module';
 import { SharingModule } from './modules/sharing/sharing.module';
 import { TrainingModule } from './modules/training/training.module';
@@ -46,6 +53,8 @@ export const LOG_REDACT_PATHS = [
   'req.headers.authorization',
   'req.headers.cookie',
   'req.headers["idempotency-key"]',
+  'req.headers["x-kbs-proxy-secret"]',
+  'req.headers["x-kbs-webhook-token"]',
   'res.headers["set-cookie"]',
   '*.mobile',
   '*.pan',
@@ -70,10 +79,27 @@ export const LOG_REDACT_PATHS = [
         transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty', options: { singleLine: true } } : undefined,
         autoLogging: process.env.NODE_ENV !== 'test',
         customProps: (req) => ({ requestId: (req.headers['x-request-id'] as string | undefined) ?? undefined }),
+        // F-908 S6: pino-http logs `url` and `query`; webhook secrets travel in the query string
+        serializers: {
+          req: (req: { url?: string; query?: Record<string, unknown> }) => {
+            req.url = loggableUrl(req.url);
+            req.query = loggableQuery(req.query);
+            return req;
+          },
+        },
       },
     }),
-    // per-IP request budget; perf/acceptance environments may raise it (F-905), production keeps the default
-    ThrottlerModule.forRootAsync({ inject: [ENV], useFactory: (env: Env) => [{ name: 'global', ttl: 60_000, limit: env.THROTTLE_LIMIT_PER_MIN }] }),
+    // F-908 S3: request budget per signed-in user (else per client IP), counted in Redis so every instance and restart
+    // shares it; perf/acceptance environments may raise it (F-905), production keeps the default. Tests keep the
+    // in-process store so parallel suites never share counters.
+    ThrottlerModule.forRootAsync({
+      inject: [ENV, RedisService, TokenService],
+      useFactory: (env: Env, redis: RedisService, tokens: TokenService) => ({
+        throttlers: [{ name: 'global', ttl: 60_000, limit: env.THROTTLE_LIMIT_PER_MIN }],
+        storage: env.NODE_ENV === 'test' ? new ThrottlerStorageService() : new RedisThrottlerStorage(redis.client, new ThrottlerStorageService()),
+        getTracker: (req: Record<string, unknown>) => throttleTracker(req as unknown as Request, { hops: env.TRUST_PROXY_HOPS, proxySecret: env.TRUSTED_PROXY_SECRET || undefined }, tokens),
+      }),
+    }),
     CoreModule,
     PrismaModule,
     RedisModule,
@@ -91,6 +117,7 @@ export const LOG_REDACT_PATHS = [
     CallingListModule,
     CatalogueModule,
     CallsModule,
+    PrivacyModule,
     IdCardsModule,
     SharingModule,
     OnboardingModule,
@@ -116,6 +143,7 @@ export const LOG_REDACT_PATHS = [
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     const env = loadEnv();
-    consumer.apply(new RequestIdMiddleware(env.TRUST_PROXY_HOPS).use.bind(new RequestIdMiddleware(env.TRUST_PROXY_HOPS))).forRoutes('*path');
+    const mw = new RequestIdMiddleware({ hops: env.TRUST_PROXY_HOPS, proxySecret: env.TRUSTED_PROXY_SECRET || undefined });
+    consumer.apply(mw.use.bind(mw)).forRoutes('*path');
   }
 }

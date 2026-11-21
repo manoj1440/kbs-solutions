@@ -1,4 +1,4 @@
-import { ExotelTelephonyAdapter } from './exotel-telephony.adapter';
+import { ExotelTelephonyAdapter, isExotelHost } from './exotel-telephony.adapter';
 
 const cfg = { host: 'api.exotel.com', accountSid: 'kbs1', apiKey: 'key', apiToken: 'tok', callerId: '08012345678', webhookToken: 'secret-123' };
 const ok = { token: 'secret-123' };
@@ -65,5 +65,21 @@ describe('ExotelTelephonyAdapter', () => {
     expect(r.body.toString()).toBe('ID3audio');
     expect(seen[0]?.authorization).toMatch(/^Basic /);
     expect(seen[1]?.authorization).toBeUndefined();
+  });
+
+  it('SEC-06: look-alike hosts never get credentials and plain http is refused', async () => {
+    const seen: Array<Record<string, string>> = [];
+    global.fetch = jest.fn(async (_u: URL, init: RequestInit) => {
+      seen.push((init.headers ?? {}) as Record<string, string>);
+      return new Response(Buffer.from('x'), { status: 200 });
+    }) as unknown as typeof fetch;
+    const a = new ExotelTelephonyAdapter(cfg);
+    await a.fetchRecording('https://evilexotel.com/rec.mp3');
+    await a.fetchRecording('https://exotel.com.attacker.net/rec.mp3');
+    await a.fetchRecording('https://api.in.exotel.in/rec.mp3');
+    expect(seen.map((h) => Boolean(h.authorization))).toEqual([false, false, true]);
+    await expect(a.fetchRecording('http://recordings.exotel.com/rec.mp3')).rejects.toThrow('EXOTEL_RECORDING_URL_REFUSED');
+    expect(isExotelHost('EXOTEL.COM')).toBe(true);
+    expect(isExotelHost('notexotel.in')).toBe(false);
   });
 });
