@@ -16,7 +16,9 @@ const PAGE = 500;
  * - an open lead follow-up task whose `dueAt` has passed notifies the task owner (the Advisor).
  * Dedupe keys carry the due timestamp, so one scheduled follow-up notifies once and a rescheduled one notifies again.
  * Never for hidden / suppressed / do-not-contact customers, declined or completed records, or non-ACTIVE users.
- * Text carries the customer name only — never the mobile (REQ-21 §21.1).
+ * Text never carries customer data (REQ-21 §21.1, F-908 D6): push goes through Expo/FCM outside India, so a lead is named by its
+ * reference (`KBS-L-…`) and a calling record not at all. The customer's name is shown only inside the app, behind the deep link.
+ * The Advisor's free-text task note is left out too, because it may contain a name.
  */
 @Injectable()
 export class FollowUpDueService implements OnModuleInit {
@@ -63,7 +65,7 @@ export class FollowUpDueService implements OnModuleInit {
         orderBy: { id: 'asc' },
         take: PAGE,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-        select: { id: true, fullName: true, mobile: true, nextFollowUpAt: true, assignedTelecallerUserId: true, assignedTelecaller: { select: { fullName: true } } },
+        select: { id: true, mobile: true, nextFollowUpAt: true, assignedTelecallerUserId: true, assignedTelecaller: { select: { fullName: true } } },
       });
       if (!rows.length) break;
       cursor = rows[rows.length - 1].id;
@@ -79,12 +81,12 @@ export class FollowUpDueService implements OnModuleInit {
       for (const r of due) {
         const telecallerId = r.assignedTelecallerUserId as string;
         const at = (r.nextFollowUpAt as Date).getTime();
-        const title = `Follow-up due: ${r.fullName}`;
+        const title = 'Follow-up call due';
         await this.notifications.notify({
           recipientUserId: telecallerId,
           kind: 'FOLLOW_UP_DUE',
           title,
-          body: `Your follow-up call with ${r.fullName} is due now.`,
+          body: 'A follow-up call in your calling list is due now. Open it to see the details.',
           deepLink: { entityType: 'CallingRecord', entityId: r.id },
           sourceRef: { callingRecordId: r.id, dueAt: (r.nextFollowUpAt as Date).toISOString() },
           dedupeKey: `followup-due:record:${r.id}:${at}:${telecallerId}`,
@@ -95,7 +97,7 @@ export class FollowUpDueService implements OnModuleInit {
             recipientUserId: managerId,
             kind: 'FOLLOW_UP_DUE',
             title,
-            body: `${r.assignedTelecaller?.fullName ?? 'Your Telecaller'} has a follow-up call with ${r.fullName} due now.`,
+            body: `${r.assignedTelecaller?.fullName ?? 'Your Telecaller'} has a follow-up call due now.`,
             // Managers open the Telecaller's page (its follow-up list); they have no calling-record screen
             deepLink: { entityType: 'User', entityId: telecallerId },
             sourceRef: { callingRecordId: r.id, telecallerUserId: telecallerId, dueAt: (r.nextFollowUpAt as Date).toISOString() },
@@ -119,7 +121,7 @@ export class FollowUpDueService implements OnModuleInit {
         orderBy: { id: 'asc' },
         take: PAGE,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-        select: { id: true, text: true, dueAt: true, ownerUserId: true, lead: { select: { id: true, publicRef: true, customerFullName: true, customerMobile: true } } },
+        select: { id: true, dueAt: true, ownerUserId: true, lead: { select: { id: true, publicRef: true, customerMobile: true } } },
       });
       if (!rows.length) break;
       cursor = rows[rows.length - 1].id;
@@ -130,8 +132,8 @@ export class FollowUpDueService implements OnModuleInit {
         await this.notifications.notify({
           recipientUserId: t.ownerUserId,
           kind: 'FOLLOW_UP_DUE',
-          title: `Follow-up due: ${t.lead.customerFullName}`,
-          body: `${t.text} · lead ${t.lead.publicRef}`,
+          title: `Follow-up due: lead ${t.lead.publicRef}`,
+          body: `Your follow-up task on lead ${t.lead.publicRef} is due now. Open the lead to see it.`,
           deepLink: { entityType: 'Lead', entityId: t.lead.id },
           sourceRef: { followUpTaskId: t.id, leadId: t.lead.id, dueAt: t.dueAt.toISOString() },
           dedupeKey: `followup-due:task:${t.id}:${t.dueAt.getTime()}`,

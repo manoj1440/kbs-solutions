@@ -327,6 +327,13 @@ export const PayoutEntitlementState = {
 } as const;
 export type PayoutEntitlementState = (typeof PayoutEntitlementState)[keyof typeof PayoutEntitlementState];
 
+/** OWN = the seller's own card; REFERRAL = the referring Advisor's share of it (F-824). */
+export const PayoutEntitlementKind = {
+  OWN: 'OWN',
+  REFERRAL: 'REFERRAL',
+} as const;
+export type PayoutEntitlementKind = (typeof PayoutEntitlementKind)[keyof typeof PayoutEntitlementKind];
+
 export const PayoutRequestState = {
   PENDING_APPROVALS: 'PENDING_APPROVALS',
   APPROVED: 'APPROVED',
@@ -404,5 +411,24 @@ export const NotificationKind = {
   PAYOUT_EXCEPTION: 'PAYOUT_EXCEPTION',
   SECURITY_EVENT: 'SECURITY_EVENT',
   ANNOUNCEMENT: 'ANNOUNCEMENT',
+  /** F-908: a new data-principal request for the Admin queue. */
+  DATA_REQUEST: 'DATA_REQUEST',
 } as const;
 export type NotificationKind = (typeof NotificationKind)[keyof typeof NotificationKind];
+
+/** F-908 data-principal requests (DPDP Act 2023 ss.11-13). */
+export const DataRequestType = {
+  ACCESS: 'ACCESS',
+  CORRECTION: 'CORRECTION',
+  ERASURE: 'ERASURE',
+  GRIEVANCE: 'GRIEVANCE',
+} as const;
+export type DataRequestType = (typeof DataRequestType)[keyof typeof DataRequestType];
+
+export const DataRequestStatus = {
+  OPEN: 'OPEN',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  REJECTED: 'REJECTED',
+} as const;
+export type DataRequestStatus = (typeof DataRequestStatus)[keyof typeof DataRequestStatus];

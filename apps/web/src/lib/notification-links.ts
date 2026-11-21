@@ -8,6 +8,7 @@ export function notificationHref(area: WebArea, entityType: string, id: string, 
   switch (area) {
     case 'admin':
       if (entityType === 'Lead') return `/admin/leads/${id}`;
+      if (entityType === 'DataRequest') return `/admin/privacy-requests/${id}`;
       if (entityType === 'PayoutRequest') return `/admin/payouts/requests/${id}`;
       if (entityType === 'MisImportBatch') return `/admin/mis/batches/${id}`;
       if (entityType === 'User') return targetRole === 'ADVISOR' ? `/admin/onboarding/${id}` : `/admin/users/${id}`;

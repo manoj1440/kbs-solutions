@@ -422,6 +422,22 @@ enum NotificationKind {
   PAYOUT_EXCEPTION
   SECURITY_EVENT
   ANNOUNCEMENT
+  DATA_REQUEST
+}
+
+/// F-908 data-principal requests (DPDP Act 2023 ss.11-13).
+enum DataRequestType {
+  ACCESS
+  CORRECTION
+  ERASURE
+  GRIEVANCE
+}
+
+enum DataRequestStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
 }
 
 // ───────────────────────────── 1. identity, roles, hierarchy ─────────────────────────────
@@ -477,6 +493,8 @@ model User {
   pincodeBatchesUploaded     BankPincodeBatch[]
   followUpTasks              FollowUpTask[]
   configChanges              SystemConfigHistory[]
+  dataRequests               DataRequest[]               @relation("DataRequestRequester")
+  dataRequestsHandled        DataRequest[]               @relation("DataRequestHandler")
 
   @@index([role, status])
 }
@@ -1879,4 +1897,36 @@ model OutboxEvent {
   lastError   String?
 
   @@index([processedAt, createdAt])
+}
+
+// ───────────────────────────── 12. data-principal rights (F-908) ─────────────────────────────
+
+/// F-908: a signed-in user's access / correction / erasure / grievance request. Staff carry it out by hand (there is no
+/// automatic anonymiser while F-904 retention periods are blocked) and nothing is ever hard-deleted. At most one OPEN or
+/// IN_PROGRESS request per user and type (partial unique index `DataRequest_one_active_per_type_idx`, migration only).
+model DataRequest {
+  id              String            @id @default(uuid(7))
+  publicRef       String            @unique
+  requesterUserId String
+  type            DataRequestType
+  status          DataRequestStatus @default(OPEN)
+  /// what the user asked for, in their words (≤ 2000 chars)
+  details         String?
+  /// staff working note — never shown to the requester
+  staffNote       String?
+  /// shown to the requester; required to close (COMPLETED / REJECTED)
+  resolutionNote  String?
+  handledByUserId String?
+  /// internal target: createdAt + DATA_REQUEST_TARGET_DAYS
+  dueAt           DateTime
+  closedAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  requester User  @relation("DataRequestRequester", fields: [requesterUserId], references: [id])
+  handledBy User? @relation("DataRequestHandler", fields: [handledByUserId], references: [id])
+
+  @@index([requesterUserId, createdAt])
+  @@index([status, createdAt])
+  @@index([type, status])
 }

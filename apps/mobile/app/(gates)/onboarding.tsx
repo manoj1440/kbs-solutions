@@ -18,6 +18,7 @@ import {
   Button,
   Callout,
   Card,
+  ChoiceRow,
   ErrorState,
   ErrorText,
   Icon,
@@ -97,6 +98,7 @@ export default function OnboardingGate() {
     /** the provider's own page (DigiLocker); when present nothing is typed here */
     actionUrl?: string;
   } | null>(null);
+  const [consent, setConsent] = useState({ identity: false, terms: false });
   const [codeCheck, setCodeCheck] = useState<'valid' | 'invalid' | null>(null);
   const isManager = user?.role === 'MANAGER';
   const PROGRESS = isManager ? MANAGER_PROGRESS : ADVISOR_PROGRESS;
@@ -234,6 +236,7 @@ export default function OnboardingGate() {
           ),
         };
       case 'CONSENT':
+        // F-908: two separate, unticked consents; continue only when both are given
         return {
           body: (
             <>
@@ -241,24 +244,47 @@ export default function OnboardingGate() {
                 KBS Solutions will verify your identity through an authorised provider and keep only
                 the verification result — never your identity number, documents or images.
               </Text>
+              <View className="gap-3">
+                <ChoiceRow
+                  multi
+                  label="I agree to KBS verifying my identity with DigiLocker and my PAN and bank details"
+                  selected={consent.identity}
+                  onPress={() => setConsent((c) => ({ ...c, identity: !c.identity }))}
+                />
+                <ChoiceRow
+                  multi
+                  label="I have read the privacy notice and accept the terms of use"
+                  sub={`Privacy notice ${v.privacyNoticeVersion}`}
+                  selected={consent.terms}
+                  onPress={() => setConsent((c) => ({ ...c, terms: !c.terms }))}
+                />
+              </View>
+              <Button
+                title="Read the privacy notice"
+                variant="ghost"
+                icon="document-text-outline"
+                onPress={() => router.push('/privacy' as never)}
+              />
               <Callout kind="neutral" icon="lock-closed">
-                {`Privacy notice ${v.privacyNoticeVersion}. Your bank details and cancelled cheque are used only for payouts and are visible to authorised KBS staff, with every access logged.`}
+                Your bank details and cancelled cheque are used only for payouts and are visible to
+                authorised KBS staff, with every access logged.
               </Callout>
             </>
           ),
           action: (
             <Button
-              title="I consent and accept the terms"
+              title="Continue"
               size="lg"
-              icon="checkmark-circle"
+              iconRight="arrow-forward"
               loading={busy}
-              disabled={busy}
+              disabled={busy || !consent.identity || !consent.terms}
               onPress={() =>
                 void run(() =>
                   api.put('/onboarding/me/consent', {
                     privacyNoticeVersion: v.privacyNoticeVersion,
-                    identityConsent: true,
-                    termsAccepted: true,
+                    identityConsent: consent.identity,
+                    termsAccepted: consent.terms,
+                    scopes: ['IDENTITY_VERIFICATION', 'PRIVACY_NOTICE_AND_TERMS'],
                   }),
                 )
               }

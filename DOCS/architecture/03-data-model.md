@@ -94,7 +94,7 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 
 ## 8. Advisor onboarding & leads
 
-`AdvisorProfile(userId unique, onboardingStep, identityVerification(status, provider, providerRef, verifiedAt, method), panVerification?(status…), bankAccountEncrypted, bankAccountLast4, ifsc, accountHolderName, chequeFileId?, consentRecords jsonb[], submittedAt, reviewedByUserId?, reviewedAt?, reviewOutcome?)`
+`AdvisorProfile(userId unique, onboardingStep, identityVerification(status, provider, providerRef, verifiedAt, method), panVerification?(status…), bankAccountEncrypted, bankAccountLast4, ifsc, accountHolderName, chequeFileId?, consentRecords jsonb[], submittedAt, reviewedByUserId?, reviewedAt?, reviewOutcome?)` — F-908 consent record: `{privacyNoticeVersion, identityConsent, termsAccepted, scopes[IDENTITY_VERIFICATION, PRIVACY_NOTICE_AND_TERMS], at, ipHash (HMAC-SHA-256 with OTP_PEPPER), userAgent (≤256, from the session)}`; records made before F-908 carry a raw `ip` instead and stay readable.
 `Lead(id, publicRef KBS-L-…, advisorUserId, reportingParentUserIdSnapshot, cardId, bankId, customer: fullName, mobile, panEncrypted, panLast4, panVerificationStatus, pincode, city?, state?, employmentType enum(SALARIED, SELF_EMPLOYED, SELF_EMPLOYED_PROFESSIONAL), annualIncomeItr decimal, declarations jsonb, bureauAckAt, createdAt, idempotencyKey unique)`
 `LeadLinkInitiation(leadId, applicationLinkId, linkVersion, action(SHARED, OPENED), at, byUserId)`
 `BankApplicationLinkage(id, leadId, bankId, referenceKind(APPLICATION_NO, APPLICATION_REFERENCE_NUMBER, OTHER), referenceValue (exact string), source(ADVISOR_ENTERED, ADMIN_ENTERED, ISSUER_CALLBACK, MIS_RESOLVED_BY_ADMIN), verificationStatus(UNVERIFIED, VERIFIED_BY_MIS_MATCH, REJECTED), enteredByUserId, at)` unique `(bankId, referenceKind, referenceValue)`.
@@ -130,9 +130,13 @@ Conventions: PK `id` UUIDv7 (`String @id @default(uuid(7))`), `createdAt`/`updat
 `OutboxEvent(id, type, payload jsonb, createdAt, processedAt?, attempts)`.
 `PushDevice(id, userId, sessionId?, token unique (Expo push token), platform, createdAt, lastSeenAt, revokedAt?)` — F-701 push targets; revoked on logout.
 
+## 11a. Data-principal rights (F-908)
+
+`DataRequest(id, publicRef KBS-DR-…, requesterUserId → User, type(ACCESS, CORRECTION, ERASURE, GRIEVANCE), status(OPEN, IN_PROGRESS, COMPLETED, REJECTED), details? (≤2000, the user's words), staffNote? (staff only), resolutionNote? (shown to the user; required to close), handledByUserId? → User, dueAt (createdAt + 30 days, code constant DATA_REQUEST_TARGET_DAYS), closedAt?, createdAt, updatedAt)` — partial unique `(requesterUserId, type) WHERE status IN (OPEN, IN_PROGRESS)`: one active request per user and type. Erasure is carried out by staff; nothing is hard-deleted. `NotificationKind.DATA_REQUEST` tells the Admin (reference and type only) and the requester when it closes.
+
 ## 12. Cross-cutting invariants enforced in DB
 
-- Partial unique: one `ADMIN` user; one open `ReportingAssignment` per child; one `RESERVED/PAID` request item per entitlement; one live `ExternalPayment` per request; one live `ExternalPayment` per `transferReferenceKey` (duplicate bank reference refused); one `CORRECTION_PENDING` per request.
+- Partial unique: one `ADMIN` user; one open `ReportingAssignment` per child; one `RESERVED/PAID` request item per entitlement; one live `ExternalPayment` per request; one live `ExternalPayment` per `transferReferenceKey` (duplicate bank reference refused); one `CORRECTION_PENDING` per request; one active `DataRequest` per user and type (F-908).
 - `BankStatusSnapshot` and `BankStatusHistory` have no update path outside MIS apply (application-level guard now; DB trigger in hardening feature F-903).
 - `ContactSuppression.mobile` checked by unique index + service before any `CallAttempt` insert.
 - Batch `checksum` unique per bank/profile → identical re-upload returns the earlier batch (REQ-13 §13.6 row 9).

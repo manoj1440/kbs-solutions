@@ -9,7 +9,22 @@ import { IFSC_REGEX } from '../normalize';
 export const OnboardingPersonalBody = z.object({ fullName: z.string().trim().min(2).max(120), email: z.string().trim().email().max(200) }).strict();
 export type OnboardingPersonalBody = z.infer<typeof OnboardingPersonalBody>;
 
-export const OnboardingConsentBody = z.object({ privacyNoticeVersion: z.string().min(1).max(40), identityConsent: z.literal(true), termsAccepted: z.literal(true) }).strict();
+/**
+ * F-908: consent is unbundled into two separately ticked scopes. `identityConsent` and `termsAccepted` stay required
+ * (each is its own tick box); `scopes` names them explicitly and is optional so app versions already in the field keep
+ * working — when it is absent both scopes are recorded from the two booleans.
+ */
+export const CONSENT_SCOPES = ['IDENTITY_VERIFICATION', 'PRIVACY_NOTICE_AND_TERMS'] as const;
+export type ConsentScope = (typeof CONSENT_SCOPES)[number];
+export const OnboardingConsentBody = z
+  .object({
+    privacyNoticeVersion: z.string().min(1).max(40),
+    identityConsent: z.literal(true),
+    termsAccepted: z.literal(true),
+    scopes: z.array(z.enum(CONSENT_SCOPES)).min(1).max(CONSENT_SCOPES.length).optional(),
+  })
+  .strict()
+  .refine((b) => !b.scopes || CONSENT_SCOPES.every((s) => b.scopes?.includes(s)), { message: 'Both consents are needed to continue.', path: ['scopes'] });
 export type OnboardingConsentBody = z.infer<typeof OnboardingConsentBody>;
 
 /** Provider payload is opaque to KBS; the schema forbids the obvious PII carriers by name. */

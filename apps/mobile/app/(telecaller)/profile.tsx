@@ -19,6 +19,17 @@ export default function Profile() {
           title: 'Notifications',
           onPress: () => router.push('/(telecaller)/notifications' as never),
         },
+        {
+          icon: 'shield-checkmark-outline',
+          title: 'Your data',
+          subtitle: 'Download your data, correct it or ask to delete your account',
+          onPress: () => router.push('/your-data' as never),
+        },
+        {
+          icon: 'document-text-outline',
+          title: 'Privacy notice',
+          onPress: () => router.push('/privacy' as never),
+        },
       ]}
     />
   );

@@ -253,6 +253,24 @@ export default function Profile() {
         </Card>
       </Appear>
 
+      {/* F-908: data rights and the privacy notice */}
+      <Appear index={3}>
+        <Card className="px-4 py-1">
+          <ListItem
+            icon="shield-checkmark-outline"
+            title="Your data"
+            subtitle="Download your data, correct it or ask to delete your account"
+            onPress={() => router.push('/your-data' as never)}
+          />
+          <ListItem
+            icon="document-text-outline"
+            title="Privacy notice"
+            onPress={() => router.push('/privacy' as never)}
+            last
+          />
+        </Card>
+      </Appear>
+
       <Appear index={3}>
         <Card className="px-4 py-1">
           <ListItem

@@ -75,7 +75,7 @@ export const CONFIG_KEYS: readonly ConfigKeyDefinition[] = [
   def('files.presignExpirySec', ConfigValueType.INT, 300, 'Presigned download URL validity.'),
   // onboarding / leads
   def('onboarding.requiresAdminReview', ConfigValueType.BOOL, true, 'Advisor account activates only after Admin review (REQ-10 §10.1).'),
-  def('onboarding.privacyNoticeVersion', ConfigValueType.STRING, 'v1-draft', 'Version label of the privacy notice Advisors consent to at signup (REQ-21 §21.4); bump when the text changes.'),
+  def('onboarding.privacyNoticeVersion', ConfigValueType.STRING, 'v1-draft', 'Version label of the privacy notice Advisors consent to at signup (REQ-21 §21.4); bump when the text changes. Must equal PRIVACY_NOTICE.version and be a KBS-approved (non-draft) version before production (F-908).', true),
   def('onboarding.collectAdvisorPan', ConfigValueType.BOOL, false, 'Collect Advisor PAN during onboarding (REQ-10 §10.3 OPEN).'),
   def('leads.allowUnverifiedPan', ConfigValueType.BOOL, false, 'Allow lead submission when PAN verification is unavailable (REQ-11 §11.4 OPEN).'),
   def('leads.declarations', ConfigValueType.JSON, [], 'Versioned declaration texts the customer must accept (REQ-11 §11.4). Empty = lead creation blocked.', true),
@@ -95,7 +95,7 @@ export const CONFIG_KEYS: readonly ConfigKeyDefinition[] = [
   // idcard, ux, support, audit
   def('idcard.fields', ConfigValueType.JSON, ['fullName', 'employeeCode', 'role', 'issuedAt', 'verifyUrl'], 'Fields rendered on the official ID card (REQ-08 §8.4 OPEN).'),
   def('ux.timezone', ConfigValueType.STRING, 'Asia/Kolkata', 'Display timezone.'),
-  def('support.contact', ConfigValueType.STRING, null, 'Support contact shown in profiles.'),
+  def('support.contact', ConfigValueType.STRING, null, 'Support contact shown in profiles and the app (DPDP s.8(10): a way to reach KBS about personal data) (F-908).', true),
   def('audit.exportEnabled', ConfigValueType.BOOL, false, 'Allow audit export downloads (policy OPEN).'),
   // mobile app updates (F-819) — versions are app.json `version` (e.g. 0.2.0); downloadUrl is the Play Store / App Store / APK link
   def('app.android.minVersion', ConfigValueType.STRING, '0.0.0', 'Oldest Android app version allowed to run. Older installs are blocked with an "Update required" screen.'),

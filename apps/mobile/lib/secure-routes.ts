@@ -32,6 +32,8 @@ export const PROTECTED_ROUTES: ReadonlySet<string> = new Set([
   '(manager)/lead',
   // Onboarding gate collects identity and bank details
   '(gates)/onboarding',
+  // F-908: own data download (masked bank details, lead references) and requests
+  '/your-data',
 ]);
 
 export function routeKey(segments: readonly string[]): string {

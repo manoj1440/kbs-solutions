@@ -1,4 +1,4 @@
-import { AdvisorProfileView, maskMobile, type OnboardingAgentCodeBody, type OnboardingBankBody, type OnboardingChequeBody, type OnboardingConsentBody, type OnboardingIdentityCompleteBody, type OnboardingPersonalBody, type OnboardingReviewBody, type OnboardingStepName, type OnboardingView, ONBOARDING_STEPS } from '@kbs/shared';
+import { AdvisorProfileView, CONSENT_SCOPES, type ConsentScope, maskMobile, type OnboardingAgentCodeBody, type OnboardingBankBody, type OnboardingChequeBody, type OnboardingConsentBody, type OnboardingIdentityCompleteBody, type OnboardingPersonalBody, type OnboardingReviewBody, type OnboardingStepName, type OnboardingView, ONBOARDING_STEPS } from '@kbs/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { Actor } from '../../common/actor';
@@ -21,9 +21,18 @@ interface ConsentRecord {
   privacyNoticeVersion: string;
   identityConsent: boolean;
   termsAccepted: boolean;
+  /** F-908: the separately ticked scopes. Absent on records made before the consent was unbundled. */
+  scopes?: ConsentScope[];
   at: string;
-  ip: string | null;
+  /** Raw IP: only on records made before F-908. Kept readable, never written again. */
+  ip?: string | null;
+  /** F-908: peppered SHA-256 of the client IP (proves the same network without storing the address). */
+  ipHash?: string | null;
+  /** F-908: user agent of the session that consented, truncated to 256 characters. */
+  userAgent?: string | null;
 }
+
+const USER_AGENT_MAX = 256;
 
 /**
  * F-401: resumable, server-ordered Advisor onboarding. Each step may be (re)submitted while the profile has not been submitted;
@@ -131,7 +140,14 @@ export class OnboardingService {
     this.assertEditable(p, 'CONSENT');
     const current = this.config.getString('onboarding.privacyNoticeVersion') ?? 'v1-draft';
     if (body.privacyNoticeVersion !== current) throw new AppError('VALIDATION_FAILED', `Please accept the current privacy notice (${current}).`, { privacyNoticeVersion: current });
-    const rec: ConsentRecord = { privacyNoticeVersion: body.privacyNoticeVersion, identityConsent: true, termsAccepted: true, at: new Date().toISOString(), ip: RequestContextStore.get()?.ip ?? null };
+    // F-908: both scopes are ticked separately in the app; old app versions send only the two booleans (both required)
+    const scopes: ConsentScope[] = body.scopes ? CONSENT_SCOPES.filter((sc) => body.scopes?.includes(sc)) : [...CONSENT_SCOPES];
+    const ip = RequestContextStore.get()?.ip ?? null;
+    // HMAC-SHA-256 with the server's OTP pepper (hashOtp is that HMAC); a fixed context label keeps it apart from OTP hashes
+    const ipHash = ip ? this.crypto.hashOtp(ip, 'consent-ip') : null;
+    const session = await this.prisma.client.session.findUnique({ where: { id: actor.sessionId }, select: { userAgent: true } });
+    const userAgent = session?.userAgent ? session.userAgent.slice(0, USER_AGENT_MAX) : null;
+    const rec: ConsentRecord = { privacyNoticeVersion: body.privacyNoticeVersion, identityConsent: true, termsAccepted: true, scopes, at: new Date().toISOString(), ipHash, userAgent };
     const records = ((p.consentRecords as ConsentRecord[] | null) ?? []).concat(rec);
     await this.prisma.client.advisorProfile.update({ where: { userId: actor.userId }, data: { consentRecords: records as unknown as object[] } });
     await this.advance(actor.userId, 'CONSENT', 'IDENTITY');

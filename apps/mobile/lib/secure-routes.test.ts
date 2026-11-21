@@ -16,6 +16,7 @@ describe('F-302 screen-capture policy (REQ-09 §9.3)', () => {
       ['(manager)', 'advisor'],
       ['(manager)', 'lead'],
       ['(gates)', 'onboarding'],
+      ['your-data'],
     ]) {
       expect(isProtectedRoute(s)).toBe(true);
     }
@@ -32,6 +33,7 @@ describe('F-302 screen-capture policy (REQ-09 §9.3)', () => {
       ['(gates)', 'network-blocked'],
       ['(telecaller)', 'notifications'],
       ['(manager)', 'notifications'],
+      ['privacy'],
     ]) {
       expect(isProtectedRoute(s)).toBe(false);
     }

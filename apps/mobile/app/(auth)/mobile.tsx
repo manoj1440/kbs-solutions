@@ -120,6 +120,15 @@ export default function MobileScreen() {
             </Muted>
           </View>
         ) : null}
+        {/* F-908: the notice is readable before any data is given */}
+        <Link href={'/privacy' as never} asChild>
+          <Pressable accessibilityRole="link" className="min-h-11 justify-center px-2">
+            <Muted className="text-center text-sm">
+              By continuing you agree to the terms.{' '}
+              <RNText className="font-medium text-brand">Read the privacy notice</RNText>
+            </Muted>
+          </Pressable>
+        </Link>
       </View>
       <View className="mt-2 items-center">
         {signup ? (

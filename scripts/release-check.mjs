@@ -6,7 +6,8 @@
  *   API_URL=https://api.kbs.example/api/v1 ADMIN_TOKEN=<admin access token> API_ENV_FILE=/secure/api.env \
  *     node scripts/release-check.mjs [--profile=production|preview]
  *
- * Nothing is changed; it only reads /health, /config/launch-gates, the API env file and apps/mobile/eas.json.
+ * Nothing is changed; it only reads /health, /config/launch-gates, the API env file, apps/mobile/eas.json and the
+ * built @kbs/shared legal module (company facts, privacy notice version).
  */
 import { existsSync, readFileSync } from 'node:fs';
 
@@ -76,8 +77,22 @@ if (base && token) {
   }
 } else check('live', 'API_URL and ADMIN_TOKEN provided (launch gates)', false, 'set API_URL and ADMIN_TOKEN');
 
-// 4. Manual evidence the script cannot see
-const manual = ['A worker process runs with WORKER_MODE=1 (outbox relay, MIS background jobs — F-110 / F-508)', 'Maestro flows pass on the release APK (apps/mobile/.maestro)', 'SEC-02 protected screens verified on Android 12+ (F-302)', 'k6 thresholds approved by KBS recorded (DOCS/perf/01-baseline-results.md)', 'DPDP/compliance sign-offs recorded (launch gates above)'];
+// 4. Legal facts and the privacy notice (F-908, DPDP Act 2023): read from the built @kbs/shared package
+const sharedDist = new URL('../packages/shared/dist/index.js', import.meta.url);
+if (existsSync(sharedDist)) {
+  try {
+    const shared = await import(sharedDist.href);
+    const missing = shared.missingCompanyFacts();
+    check('legal', 'company legal facts filled (packages/shared/src/legal/company.ts)', missing.length === 0, missing.length ? `missing: ${missing.join(', ')}` : '');
+    const version = shared.PRIVACY_NOTICE?.version ?? '';
+    check('legal', 'privacy notice approved (version is not a draft)', version && !/draft/i.test(version), `PRIVACY_NOTICE.version = ${version || 'unset'}; owner approves the wording, then bump it with onboarding.privacyNoticeVersion`);
+  } catch (e) {
+    check('legal', '@kbs/shared legal module readable', false, e.message);
+  }
+} else check('legal', '@kbs/shared is built (legal facts + privacy notice)', false, 'run `pnpm --filter @kbs/shared build` first');
+
+// 5. Manual evidence the script cannot see
+const manual = ['A worker process runs with WORKER_MODE=1 (outbox relay, MIS background jobs — F-110 / F-508)', 'Maestro flows pass on the release APK (apps/mobile/.maestro)', 'SEC-02 protected screens verified on Android 12+ (F-302)', 'k6 thresholds approved by KBS recorded (DOCS/perf/01-baseline-results.md)', 'DPDP/compliance sign-offs recorded (launch gates above)', 'Data processing agreements signed with every processor listed in the privacy notice (F-908)', 'Incident-response owners and CERT-In contact named (DOCS/runbooks/10-incident-response.md)'];
 
 const w = Math.max(...results.map((r) => r.name.length));
 for (const r of results) console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.area.padEnd(11)} ${r.name.padEnd(w)}  ${r.ok ? '' : r.detail}`);

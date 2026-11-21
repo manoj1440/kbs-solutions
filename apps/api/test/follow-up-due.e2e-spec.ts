@@ -44,12 +44,13 @@ describe('Follow-up due notifications (REQ-19 §19.1)', () => {
     const mgr = await due({ recipientUserId: team.managerId });
     expect(tc).toHaveLength(1);
     expect(mgr).toHaveLength(1);
-    expect(tc[0]).toMatchObject({ title: 'Follow-up due: Asha Due', deepLink: { entityType: 'CallingRecord', entityId: rec.id } });
-    expect(mgr[0]).toMatchObject({ title: 'Follow-up due: Asha Due', deepLink: { entityType: 'User', entityId: team.telecallerId } });
-    // name only — the customer mobile never appears (REQ-21 §21.1)
+    expect(tc[0]).toMatchObject({ title: 'Follow-up call due', deepLink: { entityType: 'CallingRecord', entityId: rec.id } });
+    expect(mgr[0]).toMatchObject({ title: 'Follow-up call due', deepLink: { entityType: 'User', entityId: team.telecallerId } });
+    // no customer data in the text — push leaves India through Expo/FCM (REQ-21 §21.1, F-908 D6)
     for (const n of [...tc, ...mgr]) {
       expect(containsSensitive(`${n.title} ${n.body}`)).toBe(false);
       expect(`${n.title} ${n.body}`).not.toContain('9555694001');
+      expect(`${n.title} ${n.body}`).not.toContain('Asha');
     }
     expect(await due({ callingRecordId: future.id })).toHaveLength(0);
 
@@ -132,8 +133,12 @@ describe('Follow-up due notifications (REQ-19 §19.1)', () => {
     await svc.run();
     const mine = await due({ recipientUserId: adv.id });
     expect(mine).toHaveLength(1);
-    expect(mine[0]).toMatchObject({ title: 'Follow-up due: Lead Customer', body: `Collect address proof · lead ${l.publicRef}`, deepLink: { entityType: 'Lead', entityId: l.id }, dedupeKey: `followup-due:task:${task.id}:${past.getTime()}` });
+    expect(mine[0]).toMatchObject({ title: `Follow-up due: lead ${l.publicRef}`, deepLink: { entityType: 'Lead', entityId: l.id }, dedupeKey: `followup-due:task:${task.id}:${past.getTime()}` });
+    expect(mine[0].body).toContain(l.publicRef);
+    // the lead reference only: no customer name, mobile or free-text note (F-908 D6)
     expect(`${mine[0].title} ${mine[0].body}`).not.toContain('9555694021');
+    expect(`${mine[0].title} ${mine[0].body}`).not.toContain('Lead Customer');
+    expect(`${mine[0].title} ${mine[0].body}`).not.toContain('Collect address proof');
 
     // deactivated owner → nothing new, even for a new due time
     await prisma.user.update({ where: { id: adv.id }, data: { status: 'DEACTIVATED' } });

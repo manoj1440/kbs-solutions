@@ -15,3 +15,4 @@ export * from './schemas';
 export * from './config-keys';
 export * from './app-version';
 export * from './client';
+export * from './legal';
