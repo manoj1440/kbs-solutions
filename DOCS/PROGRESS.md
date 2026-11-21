@@ -2,7 +2,25 @@
 
 > Update this file at the end of every session (see AGENTS.md §3). Newest entry first. Keep "Current state" accurate: a new chat must be able to resume from it alone.
 
-## Current state (as of 2026-11-15, session 28)
+## Current state (as of 2026-11-21, session 29)
+
+- **Session 29, newest (F-908 launch audit: security, polish, DPDP).** This was a user request: "deep analysis, implement, commit and push after verify". Three read-only audits ran first, then the owner made three decisions:
+  - a data-rights request queue, with no automatic anonymiser yet;
+  - legal facts kept as `null` in `packages/shared/src/legal/company.ts`;
+  - push notifications show the lead reference instead of the customer name.
+
+  Four parallel workstreams then implemented the result. Full detail is in `DOCS/features/F-908-launch-audit-hardening.md` §6.
+  - **Security:** fixed the OTP verify and send races, the payout cancel/approve race that could pay twice (PAY-20 to PAY-24), and moved throttling to Redis with per-user counting. Also: an upload memory cap, the Exotel token kept out of logs plus an exact host check, production boot checks, idempotency lock release, a closed WhatsApp webhook, and a trimmed `/health`.
+  - **Web:** noindex everywhere, security headers, titles on every page, the brand favicon, `global-error.tsx`, fixes for swallowed errors and double submits, and the login page now works on small phones.
+  - **DPDP:** new `/privacy`, `/terms` and `/grievance` pages (notice text in `@kbs/shared`, also rendered in the app), unbundled Advisor consent with a hashed IP, a `DataRequest` queue (API `/privacy/*`, admin `/admin/privacy-requests`, app "Your data" screen, web account panel), a nightly purge of operational records, `DOCS/runbooks/10-incident-response.md` and `DOCS/architecture/06-data-inventory.md`.
+  - **Also fixed:** a red baseline test from session 28 (`PayoutEntitlementKind` was missing from `@kbs/shared`).
+  - **Tests:** e2e 212/212.
+  - **Next:**
+    - The owner fills `COMPANY` (legal entity and Grievance Officer) and approves the notice wording, then bumps `PRIVACY_NOTICE.version` and `onboarding.privacyNoticeVersion` together.
+    - Wire `x-kbs-proxy-secret` at the edge (see F-908 §6).
+    - Enforce the CSP after watching report-only output.
+    - Production database in India.
+
 
 - **Session 28, newest (F-824 follow-up, owner decision "pay through KBS"):** the referring Advisor's share is now **paid through KBS**. `PayoutEntitlement.kind` = `OWN` | `REFERRAL` (additive migration `20261115160000_referral_entitlement_kind`; Render applies it at start). On activation `EligibilityService.ensureReferral` gives the Advisor the lead's Advisor reported to **at lead creation** (`Lead.reportingParentUserIdSnapshot`, Advisor only, one level) a claimable item of their own; it is requested, approved by the payee's nearest Manager, priced by the Admin and paid by Accounts like any card, and follows bank reversals with the card's own payout. Ledger rows / request items / entitlement list carry `kind` + `sourceAdvisor`; an Advisor sees only their own item on a lead; a payee (and their Manager) can read the lead whatever today's reporting line is (`common/lead-access.ts`). Prior-request warnings compare same lead **and** same kind. Nothing back-filled: older activated leads get the share when a bank file reporting them active is next applied. UAT-01 from a fresh database: **468/468** (S18 51, S19 11 web pages, S20 2 app flows); API e2e 189 (`referral-share` spec). The Manager's share on Advisors' cards is unchanged: outside KBS (F-822).
 

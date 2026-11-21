@@ -116,3 +116,4 @@ Each feature file is the unit of work: small enough for one session, fully trace
 | [F-905-performance-acceptance.md](./F-905-performance-acceptance.md) | F-905 Performance acceptance harness | Hardening | DONE | F-505, F-307 |
 | [F-906-android-release.md](./F-906-android-release.md) | F-906 Android APK build and release checklist | Hardening | DONE | F-802, F-302 |
 | [F-907-staging-deploy-cicd.md](./F-907-staging-deploy-cicd.md) | F-907 Staging deployment on free tiers + CI/CD | Hardening | DONE | F-901, F-906, F-819 |
+| [F-908-launch-audit-hardening.md](./F-908-launch-audit-hardening.md) | F-908 Launch audit: security, polish, DPDP | Hardening | DONE (owner facts pending) | F-904, F-907 |
