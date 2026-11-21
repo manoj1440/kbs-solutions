@@ -84,7 +84,8 @@ jobs:
 
   web-e2e:
     name: Web Playwright smoke (Admin, 1280 + 390 px)
-    runs-on: ubuntu-latest
+    # Playwright's chromium installer does not support ubuntu-latest (26.04) yet; unpin when it does.
+    runs-on: ubuntu-24.04
     needs: verify
     services:
       postgres:
