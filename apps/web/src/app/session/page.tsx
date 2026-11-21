@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 
 import { SessionHop } from './session-hop';
 
-export const metadata = { title: 'Restoring your session · KBS Solutions' };
+export const metadata = { title: 'Restoring your session' };
 
 /** F-804: silent session refresh hop (see proxy.ts). */
 export default function SessionPage() {

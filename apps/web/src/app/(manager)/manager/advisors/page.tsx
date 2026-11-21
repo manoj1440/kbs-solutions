@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 import { AdvisorsTable } from './advisors-table';
 
-export const metadata = { title: 'Advisors · KBS Solutions' };
+export const metadata = { title: 'Advisors' };
 
 /**
  * F-315 → F-811: the Manager's Advisors with their leads, real bank results and payout position (REQ-15 §15.1).

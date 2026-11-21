@@ -82,6 +82,8 @@ export function NotificationCentre({ area }: { area: WebArea }) {
   const [total, setTotal] = useState(0);
   const [unread, setUnread] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [marking, setMarking] = useState(false);
+  const [markErr, setMarkErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setMsg(null);
@@ -132,20 +134,29 @@ export function NotificationCentre({ area }: { area: WebArea }) {
           size="sm"
           variant="outline"
           className="ml-auto h-9"
-          disabled={!unread}
+          disabled={!unread || marking}
           onClick={async () => {
+            setMarking(true);
+            setMarkErr(null);
             try {
               await clientApi.post('/notifications/read-all', {});
               await load();
-            } catch {
-              setMsg('Could not mark notifications as read.');
+            } catch (e) {
+              setMarkErr(e instanceof ApiClientError ? e.message : 'Could not mark notifications as read. Try again.');
+            } finally {
+              setMarking(false);
             }
           }}
         >
           <CheckCheck />
-          Mark all read
+          {marking ? 'Marking…' : 'Mark all read'}
         </Button>
       </div>
+      {markErr ? (
+        <Callout tone="danger" role="alert" className="shrink-0">
+          {markErr}
+        </Callout>
+      ) : null}
       {msg ? (
         <Callout tone="neutral" role="status" className="shrink-0">
           {msg}

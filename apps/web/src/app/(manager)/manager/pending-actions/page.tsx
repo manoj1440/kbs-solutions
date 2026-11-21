@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, EmptyState, IconTile, MiniStat, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
-export const metadata = { title: 'Pending actions · KBS Solutions' };
+export const metadata = { title: 'Pending actions' };
 
 /** F-409 → F-811 (Manager): concrete pending actions across the team — owner / what / source / date. Nothing is invented from blank bank values. */
 export default async function ManagerPendingActionsPage() {

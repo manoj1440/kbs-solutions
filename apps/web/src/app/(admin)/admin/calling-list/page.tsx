@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { CallingRecordsTable } from './calling-records-table';
 import { UploadListButton } from './new-batch';
 
-export const metadata = { title: 'Calling records · KBS Solutions' };
+export const metadata = { title: 'Calling records' };
 
 const PAGE_SIZE = 100;
 

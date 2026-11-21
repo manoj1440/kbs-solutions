@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { StatusScreen } from '@/components/status-screen';
 import { Button } from '@/components/ui/button';
 
+export const metadata = { title: 'Page not found' };
+
 /** F-804: unknown URL or a record the user cannot see (API 404s surface as not-found). */
 export default function NotFound() {
   return (

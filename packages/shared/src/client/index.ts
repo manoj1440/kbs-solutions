@@ -68,7 +68,13 @@ export function createApiClient(opts: ApiClientOptions) {
       credentials: opts.credentials,
     });
     const text = await res.text();
-    const json = text ? (JSON.parse(text) as ApiSuccess<T> | ApiFailure) : ({} as ApiSuccess<T>);
+    let json: ApiSuccess<T> | ApiFailure;
+    try {
+      json = text ? (JSON.parse(text) as ApiSuccess<T> | ApiFailure) : ({} as ApiSuccess<T>);
+    } catch {
+      // F-908 P8: a proxy or host error page (HTML) instead of the JSON envelope. Never surface a raw SyntaxError.
+      throw new ApiClientError(res.status, { code: 'INTERNAL', message: 'Unexpected response from the server. Try again.' }, undefined);
+    }
     if (res.ok) return json as ApiSuccess<T>;
     if (res.status === 401 && !init.retry && opts.onUnauthorized) {
       const shouldRetry = await opts.onUnauthorized();

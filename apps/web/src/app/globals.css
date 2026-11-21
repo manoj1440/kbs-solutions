@@ -617,11 +617,14 @@ html:has(.admin-workspace)::-webkit-scrollbar-thumb:hover,
   }
 }
 
+/* F-908 P8: every screen (status pages, verify, errors), not only the workspace and login. */
 @media (prefers-reduced-motion: reduce) {
-  .admin-workspace *,
-  .admin-login * {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
 

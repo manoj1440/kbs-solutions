@@ -2,6 +2,8 @@ import { apiFetch } from '@/lib/api';
 
 import { BatchWizard, type BatchDetail } from './wizard';
 
+export const metadata = { title: 'Calling list upload' };
+
 /** F-303 wizard steps (b)–(f) + review queue + allocation status for one batch. */
 export default async function BatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

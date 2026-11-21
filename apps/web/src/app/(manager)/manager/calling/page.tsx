@@ -1,7 +1,7 @@
 import { CallingDistribution } from '@/components/calling-distribution';
 import { TeamOverview } from '@/components/team-ops';
 
-export const metadata = { title: 'Team calling · KBS Solutions' };
+export const metadata = { title: 'Team calling' };
 
 /** F-305/F-307 → F-811 Manager: team calling distribution + records (scoped server-side). */
 export default async function ManagerCallingPage({ searchParams }: { searchParams: Promise<{ telecallerId?: string; tab?: 'active' | 'followups' | 'hidden'; from?: string; to?: string }> }) {

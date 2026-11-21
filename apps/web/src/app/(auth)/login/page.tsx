@@ -1,11 +1,12 @@
 import { Info } from 'lucide-react';
+import Link from 'next/link';
 
 import { LOGIN_NOTICES, loginReason } from '@/lib/session-paths';
 
 import { LoginForm } from './login-form';
 import { LoginShowcase } from './login-showcase';
 
-export const metadata = { title: 'Sign in · KBS Solutions' };
+export const metadata = { title: 'Sign in' };
 
 export default async function LoginPage({
   searchParams,
@@ -15,9 +16,10 @@ export default async function LoginPage({
   const { next, reason: rawReason } = await searchParams;
   const reason = loginReason(rawReason);
   return (
-    <main className="admin-login grid h-dvh overflow-hidden bg-canvas lg:grid-cols-[1.2fr_1fr]">
+    // F-908 P7: grows and scrolls on short phones / with the keyboard open; desktop keeps the fixed two-pane look.
+    <main className="admin-login grid min-h-dvh bg-canvas lg:h-dvh lg:grid-cols-[1.2fr_1fr] lg:overflow-hidden">
       <LoginShowcase />
-      <section className="relative flex h-dvh min-h-0 flex-col items-center justify-center gap-6 overflow-hidden px-6">
+      <section className="relative flex min-h-dvh flex-col items-center justify-center-safe gap-6 px-6 py-10 lg:h-dvh lg:min-h-0 lg:overflow-y-auto">
         <div className="relative flex items-center gap-2.5 lg:hidden">
           <span className="flex size-8 items-center justify-center brand-gradient rounded-lg text-sm font-semibold text-white" aria-hidden="true">
             K
@@ -36,6 +38,14 @@ export default async function LoginPage({
           </p>
         ) : null}
         <LoginForm next={next} />
+        <nav aria-label="Legal" className="relative flex flex-wrap justify-center gap-x-2 text-xs text-muted-foreground">
+          <Link href="/privacy" prefetch={false} className="inline-flex min-h-11 items-center rounded-md px-2 underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring">
+            Privacy notice
+          </Link>
+          <Link href="/grievance" prefetch={false} className="inline-flex min-h-11 items-center rounded-md px-2 underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring">
+            Grievances
+          </Link>
+        </nav>
       </section>
     </main>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { ApiClientError, formatDateTime } from '@kbs/shared';
-import { ArrowLeft, Check, CheckCircle2, ClipboardCheck, EyeOff, FileSpreadsheet, Info, ListChecks, Phone, ShieldAlert, ShieldCheck, TableProperties, UserCheck, Users } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ClipboardCheck, EyeOff, FileSpreadsheet, Info, ListChecks, Phone, RotateCw, ShieldAlert, ShieldCheck, TableProperties, UserCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -128,9 +128,9 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
   const [attest, setAttest] = useState(false);
   const [vendor, setVendor] = useState('');
   const [basis, setBasis] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const fail = (e: unknown, fallback: string) => setMsg(e instanceof ApiClientError ? e.message : fallback);
+  const fail = (e: unknown, fallback: string) => setMsg({ ok: false, text: e instanceof ApiClientError ? e.message : fallback });
 
   /** Batches uploaded before F-816 still sit in UPLOADED: check them with the columns read by name. */
   const check = async () => {
@@ -153,7 +153,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
       const fresh = await clientApi.get<BatchDetail>(`/calling-list/batches/${batch.id}`);
       setBatch(fresh.data);
       const a = r.data.allocation;
-      setMsg(a.ran ? `Imported. ${a.assigned} record(s) allocated, ${a.unassigned} unassigned.${a.blockedReason === 'NO_ELIGIBLE_TELECALLER' ? ' No active, training-complete Telecaller is available yet.' : ''}` : `Imported. Allocation not run: ${a.blockedReason === 'COMPLIANCE_NOT_CONFIRMED' ? 'calling-list consent is not confirmed (compliance confirmation or per-batch attestation required).' : a.blockedReason}`);
+      setMsg({ ok: true, text: a.ran ? `Imported. ${a.assigned} record(s) allocated, ${a.unassigned} unassigned.${a.blockedReason === 'NO_ELIGIBLE_TELECALLER' ? ' No active, training-complete Telecaller is available yet.' : ''}` : `Imported. Allocation not run: ${a.blockedReason === 'COMPLIANCE_NOT_CONFIRMED' ? 'calling-list consent is not confirmed (compliance confirmation or per-batch attestation required).' : a.blockedReason}` });
       router.refresh();
     } catch (e) {
       fail(e, 'Could not confirm.');
@@ -168,7 +168,7 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
       const r = await clientApi.post<AllocationRun>(`/calling-list/batches/${batch.id}/allocate`, {});
       const fresh = await clientApi.get<BatchDetail>(`/calling-list/batches/${batch.id}`);
       setBatch(fresh.data);
-      setMsg(r.data.assigned > 0 ? `${r.data.assigned} record(s) allocated; ${r.data.unassigned} unassigned.` : r.data.blockedReason === 'NO_ELIGIBLE_TELECALLER' ? 'No active, training-complete Telecaller is available — records stay unassigned.' : 'Nothing to allocate.');
+      setMsg({ ok: true, text: r.data.assigned > 0 ? `${r.data.assigned} record(s) allocated; ${r.data.unassigned} unassigned.` : r.data.blockedReason === 'NO_ELIGIBLE_TELECALLER' ? 'No active, training-complete Telecaller is available — records stay unassigned.' : 'Nothing to allocate.' });
     } catch (e) {
       fail(e, 'Could not allocate.');
     } finally {
@@ -213,8 +213,8 @@ export function BatchWizard({ initial }: { initial: BatchDetail }) {
         </div>
       </PageHeader>
       {msg ? (
-        <Callout tone="neutral" icon={Info} role="status">
-          {msg}
+        <Callout tone={msg.ok ? 'neutral' : 'danger'} icon={msg.ok ? Info : ShieldAlert} role={msg.ok ? 'status' : 'alert'}>
+          {msg.text}
         </Callout>
       ) : null}
 
@@ -363,9 +363,21 @@ function ReviewQueue({ batchId, onChanged }: { batchId: string; onChanged: () =>
   const [rows, setRows] = useState<ReviewRow[] | null>(null);
   const [reason, setReason] = useState<Record<string, string>>({});
   const [err, setErr] = useState<string | null>(null);
+  // F-908 P5: a failed load is an error with a retry, never "Nothing to review".
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [acting, setActing] = useState<string | null>(null);
   const load = async () => {
     const r = await clientApi.get<ReviewRow[]>(`/calling-list/batches/${batchId}/rows?reviewStatus=NEEDS_REVIEW&pageSize=100`);
     setRows(r.data);
+  };
+  const firstLoad = async () => {
+    setLoadErr(null);
+    setRows(null);
+    try {
+      await load();
+    } catch (e) {
+      setLoadErr(e instanceof ApiClientError ? e.message : 'Could not load the review queue.');
+    }
   };
   useEffect(() => {
     // first load after mount (was scheduled during render, which React rejects)
@@ -373,18 +385,22 @@ function ReviewQueue({ batchId, onChanged }: { batchId: string; onChanged: () =>
       clientApi
         .get<ReviewRow[]>(`/calling-list/batches/${batchId}/rows?reviewStatus=NEEDS_REVIEW&pageSize=100`)
         .then((r) => setRows(r.data))
-        .catch(() => setRows([]));
+        .catch((e: unknown) => setLoadErr(e instanceof ApiClientError ? e.message : 'Could not load the review queue.'));
     }, 0);
     return () => clearTimeout(t);
   }, [batchId]);
   const act = async (id: string, action: 'ACCEPT' | 'EXCLUDE') => {
+    if (acting) return;
     setErr(null);
+    setActing(id);
     try {
       await clientApi.post(`/calling-list/records/${id}/review`, { action, reason: reason[id] ?? '' });
       await load();
       await onChanged();
     } catch (e) {
-      setErr(e instanceof ApiClientError ? e.message : 'Could not review.');
+      setErr(e instanceof ApiClientError ? e.message : 'Could not review this row. Try again.');
+    } finally {
+      setActing(null);
     }
   };
   return (
@@ -393,17 +409,27 @@ function ReviewQueue({ batchId, onChanged }: { batchId: string; onChanged: () =>
       tone="amber"
       title="Review queue"
       description="Rows with invalid or suspicious data. Accepting allocates the row; excluding hides it (nothing is deleted). A reason is required."
-      flush={rows?.length !== 0}
+      flush={!loadErr && rows?.length !== 0}
     >
       {err ? (
         <Callout tone="danger" icon={ShieldAlert} role="alert" className={rows?.length !== 0 ? 'mx-5 mb-4 sm:mx-6' : 'mb-4'}>
           {err}
         </Callout>
       ) : null}
-      {rows?.length === 0 ? (
+      {loadErr ? (
+        <Callout tone="danger" icon={ShieldAlert} role="alert">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{loadErr}</span>
+            <Button size="sm" variant="outline" onClick={() => void firstLoad()}>
+              <RotateCw />
+              Try again
+            </Button>
+          </div>
+        </Callout>
+      ) : rows?.length === 0 ? (
         <EmptyState icon={CheckCircle2} title="Nothing to review." description="Every imported row passed validation or has already been accepted or excluded." />
       ) : (
-        <ReviewQueueTable rows={rows ?? []} reason={reason} setReason={setReason} act={act} />
+        <ReviewQueueTable rows={rows ?? []} reason={reason} setReason={setReason} act={act} acting={acting} />
       )}
     </SectionCard>
   );
@@ -423,7 +449,7 @@ function PreviewTable({ rows }: { rows: PreviewRow[] }) {
   return <DataTable columns={columns} data={rows} getRowId={(r) => String(r.row)} />;
 }
 
-function ReviewQueueTable({ rows, reason, setReason, act }: { rows: ReviewRow[]; reason: Record<string, string>; setReason: (v: Record<string, string>) => void; act: (id: string, action: 'ACCEPT' | 'EXCLUDE') => void }) {
+function ReviewQueueTable({ rows, reason, setReason, act, acting }: { rows: ReviewRow[]; reason: Record<string, string>; setReason: (v: Record<string, string>) => void; act: (id: string, action: 'ACCEPT' | 'EXCLUDE') => void; acting: string | null }) {
   const columns = rq.columns([
     rq.accessor('sourceRowNumber', { header: 'Row', meta: { cellClassName: 'text-xs text-muted-foreground' } }),
     rq.accessor('fullName', { header: 'Name', meta: { cellClassName: 'font-medium text-foreground' } }),
@@ -467,10 +493,10 @@ function ReviewQueueTable({ rows, reason, setReason, act }: { rows: ReviewRow[];
       meta: { hideLabel: true },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <Button size="sm" variant="outline" onClick={() => act(row.original.id, 'ACCEPT')}>
+          <Button size="sm" variant="outline" disabled={acting !== null} aria-busy={acting === row.original.id || undefined} onClick={() => act(row.original.id, 'ACCEPT')}>
             Accept
           </Button>
-          <Button size="sm" variant="destructive" onClick={() => act(row.original.id, 'EXCLUDE')}>
+          <Button size="sm" variant="destructive" disabled={acting !== null} aria-busy={acting === row.original.id || undefined} onClick={() => act(row.original.id, 'EXCLUDE')}>
             Exclude
           </Button>
         </div>

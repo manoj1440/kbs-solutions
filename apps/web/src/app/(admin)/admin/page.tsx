@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 
 import { RecentLeadsTable } from './recent-leads-table';
 
-export const metadata = { title: 'Business overview · KBS Solutions' };
+export const metadata = { title: 'Business overview' };
 
 interface Metric {
   value: number;

@@ -33,6 +33,7 @@ import {
   Search,
   Settings2,
   ShieldCheck,
+  Fingerprint,
   Ticket,
   UserPlus,
   UserRound,
@@ -124,6 +125,7 @@ const ADMIN_GROUPS: NavGroup[] = [
       { href: '/admin/compliance', label: 'Compliance', icon: ShieldCheck },
       { href: '/admin/network', label: 'Office network', icon: Wifi },
       { href: '/admin/retention', label: 'Retention & legal hold', icon: Archive },
+      { href: '/admin/privacy-requests', label: 'Privacy requests', icon: Fingerprint },
       { href: '/admin/audit', label: 'Audit trail', icon: History },
     ],
   },
@@ -233,6 +235,15 @@ export function WorkspaceShell({
   const [cursor, setCursor] = useState(0);
   const search = useRef<HTMLDialogElement>(null);
   const mobileNav = useRef<HTMLDialogElement>(null);
+  const [navOpen, setNavOpen] = useState(false);
+  const accountMenu = useRef<HTMLDetailsElement>(null);
+  /** F-908 P8: the account menu closes on Escape (focus back on its button) and when one of its links is followed. */
+  function closeAccountMenu(refocus: boolean) {
+    const d = accountMenu.current;
+    if (!d?.open) return;
+    d.open = false;
+    if (refocus) d.querySelector('summary')?.focus();
+  }
   const active =
     ITEMS.map((n) => ({
       n,
@@ -304,7 +315,7 @@ export function WorkspaceShell({
                 onClick={() => mobileNav.current?.close()}
                 aria-current={on ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-9 items-center gap-2.5 rounded-lg px-3 py-2 text-ui font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                  'flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-ui font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                   on ? 'bg-brand-soft text-brand-strong' : 'text-fg-2 hover:bg-surface-muted hover:text-foreground',
                 )}
               >
@@ -423,7 +434,17 @@ export function WorkspaceShell({
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 bg-canvas">
           <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-4 sm:gap-3 sm:px-6">
-            <button type="button" aria-label="Open navigation" className={cn(pill, 'inline-flex size-11 shrink-0 items-center justify-center text-fg-2 hover:text-foreground md:hidden')} onClick={() => mobileNav.current?.showModal()}>
+            <button
+              type="button"
+              aria-label="Open navigation"
+              aria-haspopup="dialog"
+              aria-expanded={navOpen}
+              className={cn(pill, 'inline-flex size-11 shrink-0 items-center justify-center text-fg-2 hover:text-foreground md:hidden')}
+              onClick={() => {
+                mobileNav.current?.showModal();
+                setNavOpen(true);
+              }}
+            >
               <Menu className="size-5" />
             </button>
             <Link href={home} prefetch={false} aria-label={`KBS Solutions — ${subtitle}`} className={cn(pill, 'flex h-11 shrink-0 items-center gap-2 pr-4 pl-1 md:hidden')}>
@@ -445,7 +466,17 @@ export function WorkspaceShell({
                   <RefreshCw className={cn('size-[18px]', refreshing && 'animate-spin')} />
                 </button>
               </div>
-              <details data-popover className="relative">
+              <details
+                ref={accountMenu}
+                data-popover
+                className="relative"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeAccountMenu(true);
+                  }
+                }}
+              >
                 <summary className={cn(pill, 'flex h-11 cursor-pointer list-none items-center gap-2 p-1 focus-visible:outline-2 focus-visible:outline-ring sm:pr-3 [&::-webkit-details-marker]:hidden')} aria-label="Account menu">
                   <Avatar name={name} className="bg-foreground text-background" />
                   <span className="hidden text-left sm:block">
@@ -463,10 +494,10 @@ export function WorkspaceShell({
                     </div>
                   </div>
                   <div className="grid p-1.5">
-                    <Link href={`${accountBase}/account`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
+                    <Link href={`${accountBase}/account`} onClick={() => closeAccountMenu(false)} className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring">
                       <UserRound className="size-4 text-fg-3" /> Account & support
                     </Link>
-                    <Link href={`${accountBase}/notifications`} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted">
+                    <Link href={`${accountBase}/notifications`} onClick={() => closeAccountMenu(false)} className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg-2 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring">
                       <Bell className="size-4 text-fg-3" /> All notifications
                     </Link>
                   </div>
@@ -489,6 +520,7 @@ export function WorkspaceShell({
       </div>
       <dialog
         ref={mobileNav}
+        onClose={() => setNavOpen(false)}
         aria-label={`${humanize(area)} navigation menu`}
         className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[90vw] glass-strong rounded-r-2xl p-0 text-foreground backdrop:bg-black/45 backdrop:backdrop-blur-sm open:flex open:flex-col"
       >
@@ -499,7 +531,7 @@ export function WorkspaceShell({
               KBS<span className="font-normal text-fg-3"> Solutions</span>
             </span>
           </Link>
-          <button type="button" aria-label="Close navigation" className={iconButton} onClick={() => mobileNav.current?.close()}>
+          <button type="button" aria-label="Close navigation" className={cn(iconButton, 'size-11')} onClick={() => mobileNav.current?.close()}>
             <X className="size-5" />
           </button>
         </div>
@@ -515,7 +547,7 @@ export function WorkspaceShell({
             <span className="block truncate text-ui font-semibold">{name}</span>
             <span className="block text-2xs text-muted-foreground">{roleLabel}</span>
           </span>
-          <button type="button" aria-label="Sign out" title="Sign out" className={iconButton} onClick={() => void signOut()}>
+          <button type="button" aria-label="Sign out" title="Sign out" className={cn(iconButton, 'size-11')} onClick={() => void signOut()}>
             <LogOut className="size-[18px]" />
           </button>
         </div>

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 import { AuditActionsTable, type AuditRow, SensitiveAccessTable, type SensitiveRow } from './audit-tables';
 
-export const metadata = { title: 'Audit · KBS Solutions' };
+export const metadata = { title: 'Audit' };
 
 interface Catalogue {
   groups: { key: string; label: string; actions: { action: string; count: number }[] }[];

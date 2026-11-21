@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { CreateUserDialog } from './user-actions';
 import { UsersTable, type UserRow } from './users-table';
 
-export const metadata = { title: 'Users & teams · KBS Solutions' };
+export const metadata = { title: 'Users & teams' };
 
 type Search = { role?: string; status?: string; q?: string; page?: string };
 

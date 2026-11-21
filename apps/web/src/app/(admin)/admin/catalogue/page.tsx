@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { CardModalButton } from './card-modal';
 import { type CardRow, CardsTable } from './cards-table';
 
-export const metadata = { title: 'Card catalogue · KBS Solutions' };
+export const metadata = { title: 'Card catalogue' };
 
 const PAGE_SIZE = 20;
 

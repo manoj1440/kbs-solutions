@@ -1,7 +1,7 @@
 'use client';
 
 import { ApiClientError } from '@kbs/shared';
-import { Check, Eye, FileImage, FileWarning, Undo2 } from 'lucide-react';
+import { Check, CircleAlert, CircleCheck, Eye, FileImage, FileWarning, Undo2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -29,9 +29,24 @@ export function ReviewActions({
 }) {
   const router = useRouter();
   const [reason, setReason] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
   const [revealed, setRevealed] = useState<string | null>(null);
-  const fail = (e: unknown, fb: string) => setMsg(e instanceof ApiClientError ? e.message : fb);
+  const fail = (e: unknown, fb: string) => setMsg({ ok: false, text: e instanceof ApiClientError ? e.message : fb });
+  // F-908 P6: one decision at a time — both buttons lock while a request is in flight.
+  async function decide(body: { decision: 'APPROVE' | 'REJECT'; reason?: string }, done: string, fb: string) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await clientApi.post(`/onboarding/review/${userId}`, body);
+      setMsg({ ok: true, text: done });
+      router.refresh();
+    } catch (e) {
+      fail(e, fb);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <div className="grid gap-3">
       {part !== 'decision' ? (
@@ -85,32 +100,16 @@ export function ReviewActions({
           <div className="grid gap-2 sm:grid-cols-2">
             <Button
               // the API accepts no reason or one of at least 3 characters (OnboardingReviewBody)
-              disabled={reason.trim().length > 0 && reason.trim().length < 3}
-              onClick={async () => {
-                try {
-                  await clientApi.post(`/onboarding/review/${userId}`, { decision: 'APPROVE', reason: reason.trim() || undefined });
-                  setMsg('Approved — Advisor is now active.');
-                  router.refresh();
-                } catch (e) {
-                  fail(e, 'Could not approve.');
-                }
-              }}
+              disabled={busy || (reason.trim().length > 0 && reason.trim().length < 3)}
+              onClick={() => void decide({ decision: 'APPROVE', reason: reason.trim() || undefined }, 'Approved. The Advisor is now active.', 'Could not approve. Try again.')}
             >
               <Check />
               Approve
             </Button>
             <Button
               variant="destructive"
-              disabled={reason.trim().length < 3}
-              onClick={async () => {
-                try {
-                  await clientApi.post(`/onboarding/review/${userId}`, { decision: 'REJECT', reason });
-                  setMsg('Sent back to the Advisor with your reason.');
-                  router.refresh();
-                } catch (e) {
-                  fail(e, 'Could not reject.');
-                }
-              }}
+              disabled={busy || reason.trim().length < 3}
+              onClick={() => void decide({ decision: 'REJECT', reason: reason.trim() }, 'Sent back to the Advisor with your reason.', 'Could not send it back. Try again.')}
             >
               <Undo2 />
               Request changes
@@ -119,8 +118,8 @@ export function ReviewActions({
         </div>
       ) : null}
       {msg ? (
-        <Callout tone="neutral" role="status">
-          {msg}
+        <Callout tone={msg.ok ? 'success' : 'danger'} role={msg.ok ? 'status' : 'alert'} icon={msg.ok ? CircleCheck : CircleAlert}>
+          {msg.text}
         </Callout>
       ) : null}
     </div>

@@ -7,6 +7,8 @@ import { DetailHeader, RailCard, StatCard, StatGrid } from '@/components/ui/kit'
 import { TrendChart } from '@/components/ui/trend-chart';
 import { PAYOUT_SAMPLES, SAMPLE_AS_OF, STATUS_SAMPLES } from '@/lib/status-samples';
 
+export const metadata = { title: 'Components' };
+
 // F-814 fixture series (illustrative numbers only)
 const DAYS = Array.from({ length: 14 }, (_, i) => `${i + 4} Oct`);
 const LEADS = [4, 6, 5, 9, 7, 12, 10, 8, 14, 11, 16, 13, 9, 15];

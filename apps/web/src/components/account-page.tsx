@@ -6,15 +6,23 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, Callout, humanize, KeyValueGrid, PageHeader, SectionCard, StatusDot } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 import type { MeResponse } from '@kbs/shared';
+import { YourDataPanel } from '@/components/your-data-panel';
 
 const ROLE_LABEL: Record<string, string> = { ADMIN: 'Admin (owner)', MANAGER: 'Manager', ACCOUNTS: 'Accounts' };
+
+/** F-908 P8: a bare 10-digit Indian mobile (optionally with a leading 0) dials as +91…; anything else is kept as typed. */
+function telNumber(raw: string): string {
+  const compact = raw.replace(/[\s()-]+/g, '');
+  const digits = compact.replace(/^0(?=\d{10}$)/, '');
+  return /^\d{10}$/.test(digits) ? `+91${digits}` : compact;
+}
 
 /** F-804: profile, support and sign-out for the web roles (REQ-25 §25.1, §25.5). Read-only profile; no self-edit. */
 export async function AccountPage() {
   const me = (await apiFetch<MeResponse>('/auth/me')).data;
   const u = me.user;
   const support = me.account?.supportContact ?? null;
-  const supportHref = support ? (support.includes('@') ? `mailto:${support}` : `tel:${support.replace(/\s+/g, '')}`) : null;
+  const supportHref = support ? (support.includes('@') ? `mailto:${support}` : `tel:${telNumber(support)}`) : null;
   const rows: [React.ReactNode, React.ReactNode][] = [
     ['Name', u.fullName || '—'],
     ['Role', <Badge key="role" variant="secondary">{ROLE_LABEL[u.role] ?? u.role}</Badge>],
@@ -75,6 +83,7 @@ export async function AccountPage() {
           >
             <AccountActions />
           </SectionCard>
+          <YourDataPanel />
         </div>
       </div>
     </div>

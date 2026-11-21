@@ -14,6 +14,7 @@ import { clientApi } from '@/lib/client-api';
 export function ComplianceActions() {
   const router = useRouter();
   const [mobile, setMobile] = useState('');
+  const [suppressing, setSuppressing] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const say = (m: string) => {
     setMsg({ ok: true, text: m });
@@ -41,19 +42,22 @@ export function ComplianceActions() {
           </Field>
           <Button
             className="justify-self-start"
-            disabled={!isValidE164India(mobile)}
+            disabled={suppressing || !isValidE164India(mobile)}
             onClick={async () => {
+              setSuppressing(true);
               try {
                 await clientApi.post('/suppressions', { mobile, reason: 'COMPLIANCE' });
                 setMobile('');
                 say('Mobile suppressed.');
               } catch (e) {
                 fail(e, 'Could not suppress.');
+              } finally {
+                setSuppressing(false);
               }
             }}
           >
             <Ban />
-            Suppress
+            {suppressing ? 'Suppressing…' : 'Suppress'}
           </Button>
         </div>
       </SectionCard>
@@ -105,7 +109,7 @@ export function ComplianceActions() {
       </SectionCard>
       {msg ? (
         <Callout
-          role="status"
+          role={msg.ok ? 'status' : 'alert'}
           tone={msg.ok ? 'success' : 'danger'}
           icon={msg.ok ? CircleCheck : CircleAlert}
           className="lg:col-span-3"
@@ -117,28 +121,67 @@ export function ComplianceActions() {
   );
 }
 
+/** F-908 P5: inline reason (recorded in the audit log) instead of window.prompt; failures show, not vanish. */
 export function LiftButton({ id }: { id: string }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!open)
+    return (
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+        <Undo2 />
+        Lift
+      </Button>
+    );
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      disabled={busy}
-      onClick={async () => {
-        const reason = window.prompt('Reason for lifting the suppression (recorded):');
-        if (!reason || reason.trim().length < 3) return;
-        setBusy(true);
-        try {
-          await clientApi.post(`/suppressions/${id}/lift`, { reason });
-          router.refresh();
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      <Undo2 />
-      Lift
-    </Button>
+    <div className="grid min-w-56 gap-1.5">
+      <Input
+        aria-label="Reason for lifting the suppression"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason (recorded)"
+        autoFocus
+      />
+      <div className="flex gap-1">
+        <Button
+          size="sm"
+          disabled={busy || reason.trim().length < 3}
+          onClick={async () => {
+            setBusy(true);
+            setErr(null);
+            try {
+              await clientApi.post(`/suppressions/${id}/lift`, { reason: reason.trim() });
+              setOpen(false);
+              setReason('');
+              router.refresh();
+            } catch (e) {
+              setErr(e instanceof ApiClientError ? e.message : 'Could not lift the suppression. Try again.');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? 'Lifting…' : 'Lift suppression'}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            setOpen(false);
+            setErr(null);
+          }}
+        >
+          Cancel
+        </Button>
+      </div>
+      {err ? (
+        <Callout role="alert" tone="danger" icon={CircleAlert}>
+          {err}
+        </Callout>
+      ) : null}
+    </div>
   );
 }

@@ -8,7 +8,7 @@ import { EmptyState, Meter, MiniStat, StatusDot, StatStrip } from '@/components/
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-export const metadata = { title: 'Training modules · KBS Solutions' };
+export const metadata = { title: 'Training modules' };
 
 type ModuleRow = TrainingModuleView & { draftQuestionCount?: number };
 

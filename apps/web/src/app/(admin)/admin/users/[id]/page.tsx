@@ -34,6 +34,8 @@ import { cn } from '@/lib/utils';
 import { ChangeReportingAction, LifecycleAction } from '../user-actions';
 import { roleChipClass, statusVariant } from '../user-status';
 
+export const metadata = { title: 'User details' };
+
 interface UserDetail {
   id: string;
   publicRef: string;
@@ -143,7 +145,16 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                     {u.mobileMasked}
                   </span>,
                 ],
-                ['E-mail', u.email ?? '—'],
+                [
+                  'E-mail',
+                  u.email ? (
+                    <a key="e" href={`mailto:${u.email}`} className="break-all underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring">
+                      {u.email}
+                    </a>
+                  ) : (
+                    '—'
+                  ),
+                ],
                 [
                   'Employee code',
                   <span key="c" className="font-mono">

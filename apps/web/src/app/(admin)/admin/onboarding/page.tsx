@@ -8,7 +8,7 @@ import { Avatar, EmptyState, humanize, MiniStat, type Tone, TONE, StatStrip } fr
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-export const metadata = { title: 'Advisor onboarding · KBS Solutions' };
+export const metadata = { title: 'Advisor onboarding' };
 
 interface Row {
   userId: string;
@@ -73,7 +73,9 @@ export default async function OnboardingQueuePage() {
                       {r.email ? (
                         <div className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
                           <Mail className="size-3 shrink-0" aria-hidden="true" />
-                          <span className="truncate">{r.email}</span>
+                          <a href={`mailto:${r.email}`} className="truncate rounded-sm underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring">
+                            {r.email}
+                          </a>
                         </div>
                       ) : null}
                     </div>

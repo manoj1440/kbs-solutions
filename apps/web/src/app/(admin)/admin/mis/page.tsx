@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { MisApplicationsTable, type MisApplication } from './mis-applications-table';
 import { UploadMisButton } from './new-batch';
 
-export const metadata = { title: 'Bank MIS · KBS Solutions' };
+export const metadata = { title: 'Bank MIS' };
 
 const PAGE_SIZE = 50;
 

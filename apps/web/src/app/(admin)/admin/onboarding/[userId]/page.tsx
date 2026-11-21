@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 
 import { ReviewActions } from './review-actions';
 
+export const metadata = { title: 'Onboarding review' };
+
 type Detail = OnboardingView & { userId: string; profileId: string; bankAccountNumber: string | null };
 
 export default async function OnboardingReviewPage({ params }: { params: Promise<{ userId: string }> }) {

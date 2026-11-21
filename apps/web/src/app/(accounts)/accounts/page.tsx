@@ -1,5 +1,7 @@
 import { PayoutRequestsList } from '@/components/payout-requests-list';
 
+export const metadata = { title: 'Payments' };
+
 /** F-605 / REQ-18 §18.1 — Accounts queues: Awaiting payment (dual-approved only), Paid, Exceptions. */
 export default async function AccountsHome({ searchParams }: { searchParams: Promise<{ queue?: string; page?: string }> }) {
   const sp = await searchParams;

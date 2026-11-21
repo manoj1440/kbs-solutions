@@ -5,7 +5,7 @@ import { type OverviewRow, RangeForm, rangeParams, TeamActivityTable } from '@/c
 import { EmptyState, MiniStat, StatStrip } from '@/components/ui/kit';
 import { apiFetch } from '@/lib/api';
 
-export const metadata = { title: 'Caller performance · KBS Solutions' };
+export const metadata = { title: 'Caller performance' };
 
 interface DistributionRow {
   id: string;

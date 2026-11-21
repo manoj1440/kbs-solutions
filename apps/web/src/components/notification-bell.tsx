@@ -30,6 +30,7 @@ export function NotificationBell({ area }: { area: Area }) {
   const [unread, setUnread] = useState(0);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [marking, setMarking] = useState(false);
 
   const poll = useCallback(async () => {
     try {
@@ -88,14 +89,22 @@ export function NotificationBell({ area }: { area: Area }) {
             <Button
               size="sm"
               variant="outline"
-              disabled={!unread}
+              disabled={!unread || marking}
               onClick={async () => {
-                await clientApi.post('/notifications/read-all', {});
-                setRows((r) => r?.map((x) => ({ ...x, readAt: x.readAt ?? new Date().toISOString() })) ?? r);
-                setUnread(0);
+                setMarking(true);
+                setMsg(null);
+                try {
+                  await clientApi.post('/notifications/read-all', {});
+                  setRows((r) => r?.map((x) => ({ ...x, readAt: x.readAt ?? new Date().toISOString() })) ?? r);
+                  setUnread(0);
+                } catch (e) {
+                  setMsg(e instanceof ApiClientError ? e.message : 'Could not mark notifications as read. Try again.');
+                } finally {
+                  setMarking(false);
+                }
               }}
             >
-              Mark all read
+              {marking ? 'Marking…' : 'Mark all read'}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => ref.current?.close()} aria-label="Close notifications">
               Close

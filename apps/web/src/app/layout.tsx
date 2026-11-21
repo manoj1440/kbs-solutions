@@ -9,7 +9,9 @@ const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', displa
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'KBS Solutions',
+  title: { default: 'KBS Solutions', template: '%s · KBS Solutions' },
+  // F-908 P1: an internal workspace — nothing here should be indexed (the public /verify page shows a name).
+  robots: { index: false, follow: false },
   description: 'Credit-card DSA operations — Admin, Manager and Accounts workspace',
 };
 

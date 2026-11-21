@@ -15,7 +15,7 @@ import { apiFetch } from '@/lib/api';
 import { LegalHoldForm } from './actions';
 import { type CategoryPlan, type Hold, LegalHoldsTable, RetentionPlanTable } from './retention-tables';
 
-export const metadata = { title: 'Retention · KBS Solutions' };
+export const metadata = { title: 'Retention' };
 
 interface Plan {
   executionEnabled: boolean;

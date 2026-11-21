@@ -8,6 +8,8 @@ import { istNow } from '@/lib/admin-overview';
 import { apiFetch } from '@/lib/api';
 import type { OverviewRow } from '@/lib/calling-shared';
 
+export const metadata = { title: 'Team dashboard' };
+
 /**
  * F-702 Manager dashboard (REQ-15 §15.2). F-814: greeting + Today rail of what waits on the Manager — pending
  * actions, payout requests awaiting their approval, team callbacks due — from endpoints the Manager already reads.

@@ -49,6 +49,8 @@ import { bankText } from '@/lib/bank-text';
 
 import { type AdvisorRequestRow, AdvisorLeadsTable, AdvisorRequestsTable, AdvisorEntitlementsTable } from './advisor-detail-tables';
 
+export const metadata = { title: 'Advisor details' };
+
 
 function Tile({
   label,

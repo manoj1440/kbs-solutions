@@ -32,6 +32,8 @@ import { apiFetch } from '@/lib/api';
 
 import { ConfigRowActions } from './config-row-actions';
 
+export const metadata = { title: 'Configuration' };
+
 /** Section label, icon and tone per key prefix (presentation only; unknown prefixes fall back to the prefix itself). */
 const GROUP: Record<string, { label: string; icon: LucideIcon; tone: Tone }> = {
   app: { label: 'Mobile app updates', icon: Smartphone, tone: 'teal' },

@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api';
 import { ComplianceActions } from './actions';
 import { type Suppression, SuppressionTable } from './suppression-table';
 
-export const metadata = { title: 'Compliance · KBS Solutions' };
+export const metadata = { title: 'Compliance' };
 
 /** F-306/F-304 → F-811 Admin: suppression list, DND import, pincode master import. */
 export default async function CompliancePage() {

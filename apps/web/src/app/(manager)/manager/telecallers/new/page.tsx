@@ -4,6 +4,8 @@ import { PageHeader } from '@/components/ui/kit';
 
 import { CreateTelecallerForm } from './create-telecaller-form';
 
+export const metadata = { title: 'Create Telecaller' };
+
 export default function NewTelecallerPage() {
   return (
     <div className="grid max-w-2xl gap-6">

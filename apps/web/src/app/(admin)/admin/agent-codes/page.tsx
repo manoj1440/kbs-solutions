@@ -12,7 +12,7 @@ import {
   PendingChangesTable,
 } from './agent-codes-tables';
 
-export const metadata = { title: 'Agent codes · KBS Solutions' };
+export const metadata = { title: 'Agent codes' };
 
 /** A code past its expiry is still ACTIVE in the database but can no longer be applied. */
 function withState(codes: AgentCode[]): AgentCodeRow[] {

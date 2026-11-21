@@ -5,6 +5,8 @@ import { StatusScreen } from '@/components/status-screen';
 import { Button } from '@/components/ui/button';
 import { getSession } from '@/lib/api';
 
+export const metadata = { title: 'Access denied' };
+
 /** Role-aware access error (REQ-25 §25.1). */
 export default async function AccessDenied({ searchParams }: { searchParams: Promise<{ reason?: string }> }) {
   const [session, sp] = await Promise.all([getSession(), searchParams]);

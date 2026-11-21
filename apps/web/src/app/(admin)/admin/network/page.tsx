@@ -15,7 +15,7 @@ import { type WfhRow, wfhOpen } from '@/lib/wfh';
 
 import { type AccessEvent, AccessEventsTable, type Network, NetworksTable, WfhTable } from './network-tables';
 
-export const metadata = { title: 'Network policy · KBS Solutions' };
+export const metadata = { title: 'Network policy' };
 
 const OUTCOME_LABEL: Record<string, string> = { DENIED: 'Denied', ALLOWED_OFFICE: 'Office', ALLOWED_WFH: 'WFH' };
 

@@ -13,6 +13,8 @@ import { STATUS_LABEL, statusTone, type TrainingDetail } from '@/lib/training-ty
 
 import { ReactivateButton } from './reactivate-button';
 
+export const metadata = { title: 'Telecaller training' };
+
 /** F-204/F-205: Telecaller training detail with Manager reactivation. */
 export default async function TelecallerTrainingPage({
   params,

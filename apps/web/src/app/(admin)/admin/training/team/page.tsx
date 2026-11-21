@@ -8,7 +8,7 @@ import { STATUS_LABEL, statusTone, type TrainingTeamRow } from '@/lib/training-t
 
 const TONE_BY_STATUS: Record<ReturnType<typeof statusTone>, Tone> = { success: 'emerald', destructive: 'rose', unknown: 'slate', info: 'sky' };
 
-export const metadata = { title: 'Training progress · KBS Solutions' };
+export const metadata = { title: 'Training progress' };
 
 /** F-205 → F-811 (Admin): org-wide training progress — tiles, compact breakdowns, internal-scroll team table. */
 export default async function AdminTrainingTeam() {

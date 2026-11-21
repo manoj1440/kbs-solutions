@@ -9,7 +9,7 @@ import type { TrainingTeamRow } from '@/lib/training-types';
 
 import { type TeamAdvisorRow, TeamAdvisorsTable } from './team-advisors-table';
 
-export const metadata = { title: 'My team · KBS Solutions' };
+export const metadata = { title: 'My team' };
 
 interface TeamUser extends TeamAdvisorRow {
   employeeCode: string | null;
